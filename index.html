@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>The Far Realm</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #121416;
+        --panel: #1c2024;
+        --text: #f0ede6;
+        --muted: #b8b0a4;
+        --accent: #d1a85b;
+        --line: #343a40;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at 25% 20%, rgba(118, 75, 162, 0.22), transparent 32rem),
+          radial-gradient(circle at 78% 74%, rgba(209, 168, 91, 0.16), transparent 28rem),
+          var(--bg);
+        color: var(--text);
+        font-family: Georgia, "Times New Roman", serif;
+      }
+
+      main {
+        width: min(42rem, calc(100vw - 2rem));
+        border: 1px solid var(--line);
+        background: rgba(28, 32, 36, 0.82);
+        padding: clamp(2rem, 7vw, 4rem);
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.5rem, 8vw, 5.5rem);
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 1.25rem auto 0;
+        max-width: 28rem;
+        color: var(--muted);
+        font: 1rem/1.6 system-ui, sans-serif;
+      }
+
+      .mark {
+        width: 4rem;
+        height: 0.25rem;
+        margin: 1.75rem auto 0;
+        background: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>The Far Realm</h1>
+      <div class="mark" aria-hidden="true"></div>
+      <p>Le projet est initialise. Le jeu de role sera construit sur cette base.</p>
+    </main>
+  </body>
+</html>
