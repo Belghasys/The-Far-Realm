@@ -1,0 +1,240 @@
+// D&D 5e Skill System
+// Maps skills to their governing ability scores
+import type { Ability } from '../types';
+
+export const SKILL_ABILITIES: Record<string, 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'> = {
+    // Strength
+    'Athletics': 'STR',
+
+    // Dexterity
+    'Acrobatics': 'DEX',
+    'Sleight of Hand': 'DEX',
+    'Stealth': 'DEX',
+
+    // Intelligence
+    'Arcana': 'INT',
+    'History': 'INT',
+    'Investigation': 'INT',
+    'Nature': 'INT',
+    'Religion': 'INT',
+
+    // Wisdom
+    'Animal Handling': 'WIS',
+    'Insight': 'WIS',
+    'Medicine': 'WIS',
+    'Perception': 'WIS',
+    'Survival': 'WIS',
+
+    // Charisma
+    'Deception': 'CHA',
+    'Intimidation': 'CHA',
+    'Performance': 'CHA',
+    'Persuasion': 'CHA',
+};
+
+// French translations for skill names
+export const SKILL_TRANSLATIONS: Record<string, string> = {
+    'Athlétisme': 'Athletics',
+    'Acrobatie': 'Acrobatics',
+    'Escamotage': 'Sleight of Hand',
+    'Discrétion': 'Stealth',
+    'Arcanes': 'Arcana',
+    'Histoire': 'History',
+    'Investigation': 'Investigation',
+    'Nature': 'Nature',
+    'Religion': 'Religion',
+    'Dressage': 'Animal Handling',
+    'Perspicacité': 'Insight',
+    'Médecine': 'Medicine',
+    'Perception': 'Perception',
+    'Survie': 'Survival',
+    'Tromperie': 'Deception',
+    'Intimidation': 'Intimidation',
+    'Représentation': 'Performance',
+    'Persuasion': 'Persuasion',
+};
+
+// Get the ability modifier for a skill
+export function getSkillAbility(skillName: string): 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' {
+    // Try direct match
+    if (SKILL_ABILITIES[skillName]) {
+        return SKILL_ABILITIES[skillName];
+    }
+
+    // Try French translation
+    const englishName = SKILL_TRANSLATIONS[skillName];
+    if (englishName && SKILL_ABILITIES[englishName]) {
+        return SKILL_ABILITIES[englishName];
+    }
+
+    // Fuzzy match
+    const lower = skillName.toLowerCase();
+    for (const [skill, ability] of Object.entries(SKILL_ABILITIES)) {
+        if (skill.toLowerCase().includes(lower) || lower.includes(skill.toLowerCase())) {
+            return ability;
+        }
+    }
+
+    // Default fallback by common keywords
+    if (lower.includes('strength') || lower.includes('force')) return 'STR';
+    if (lower.includes('dex') || lower.includes('reflex')) return 'DEX';
+    if (lower.includes('con') || lower.includes('fortitude')) return 'CON';
+    if (lower.includes('int') || lower.includes('knowledge')) return 'INT';
+    if (lower.includes('wis') || lower.includes('will') || lower.includes('sagesse')) return 'WIS';
+    if (lower.includes('cha') || lower.includes('social')) return 'CHA';
+
+    // Ultimate fallback
+    return 'WIS';
+}
+
+// Saving throw abilities
+export const SAVING_THROWS: Record<string, 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'> = {
+    'Strength': 'STR',
+    'Force': 'STR',
+    'STR': 'STR',
+    'Dexterity': 'DEX',
+    'Dextérité': 'DEX',
+    'DEX': 'DEX',
+    'Reflex': 'DEX',
+    'Constitution': 'CON',
+    'CON': 'CON',
+    'Fortitude': 'CON',
+    'Intelligence': 'INT',
+    'INT': 'INT',
+    'Wisdom': 'WIS',
+    'Sagesse': 'WIS',
+    'WIS': 'WIS',
+    'Will': 'WIS',
+    'Charisma': 'CHA',
+    'Charisme': 'CHA',
+    'CHA': 'CHA',
+};
+
+export function getSaveAbility(saveName: string): 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' {
+    // Direct match
+    if (SAVING_THROWS[saveName]) {
+        return SAVING_THROWS[saveName];
+    }
+
+    // Fuzzy match
+    const lower = saveName.toLowerCase();
+    for (const [save, ability] of Object.entries(SAVING_THROWS)) {
+        if (save.toLowerCase().includes(lower) || lower.includes(save.toLowerCase())) {
+            return ability;
+        }
+    }
+
+    return 'CON'; // Default
+}
+
+// Calculate skill modifier
+export function calculateSkillModifier(
+    stats: Record<string, number>,
+    skillName: string,
+    proficiencies: string[] = [],
+    level: number = 1
+): number {
+    const ability = getSkillAbility(skillName);
+    const abilityMod = Math.floor((stats[ability] - 10) / 2);
+
+    // Proficiency bonus by level
+    const profBonus = Math.floor((level - 1) / 4) + 2;
+
+    // Check if proficient (case-insensitive exact match to avoid false positives like Perception ↔ Deception)
+    const lowerSkill = skillName.toLowerCase();
+    const isProficient = proficiencies.some(p => {
+        const lowerP = p.toLowerCase();
+        return lowerP === lowerSkill || lowerP === ability.toLowerCase();
+    });
+
+    return abilityMod + (isProficient ? profBonus : 0);
+}
+
+// Calculate save modifier
+export function calculateSaveModifier(
+    stats: Record<string, number>,
+    saveName: string,
+    proficiencies: string[] = [],
+    level: number = 1
+): number {
+    const ability = getSaveAbility(saveName);
+    const abilityMod = Math.floor((stats[ability] - 10) / 2);
+
+    // Proficiency bonus by level
+    const profBonus = Math.floor((level - 1) / 4) + 2;
+
+    // Check if proficient in this save (exact ability match, not loose 'save' keyword)
+    const isProficient = proficiencies.some(p => {
+        const lowerP = p.toLowerCase();
+        return lowerP === ability.toLowerCase() ||
+               lowerP === saveName.toLowerCase() ||
+               lowerP.includes(ability.toLowerCase() + ' save');
+    });
+
+    return abilityMod + (isProficient ? profBonus : 0);
+}
+
+export const proficiencyBonus = (level: number) => Math.floor((Math.max(1, level) - 1) / 4) + 2;
+
+/**
+ * The single source of truth for "what modifier does the SHEET give for this
+ * check?" — used by request_roll so a skill/save/ability check uses the
+ * character's real ability modifier + proficiency + expertise instead of a
+ * number the LLM invented. `effectiveStats` must already include racial bonuses
+ * (pass getEffectiveStat results). For a save, pass isSave + proficientSaves
+ * (the class's two save proficiencies, e.g. ['DEX','INT']).
+ */
+export function getCheckModifier(params: {
+    effectiveStats: Record<string, number>;
+    level: number;
+    skill?: string;
+    ability?: string;
+    isSave?: boolean;
+    proficiencies?: string[];
+    expertise?: string[];
+    proficientSaves?: string[];
+}): { modifier: number; ability: Ability; proficient: boolean; expert: boolean; label: string } {
+    const { effectiveStats, level, skill, ability, isSave, proficiencies = [], expertise = [], proficientSaves = [] } = params;
+    const prof = proficiencyBonus(level);
+
+    const abil: Ability = skill ? getSkillAbility(skill) : ability ? getSaveAbility(ability) : 'STR';
+    const abilityMod = Math.floor(((effectiveStats[abil] ?? 10) - 10) / 2);
+
+    let proficient = false;
+    let expert = false;
+    if (isSave) {
+        proficient = proficientSaves.some(s => s.toUpperCase() === abil);
+    } else if (skill) {
+        const ls = skill.toLowerCase();
+        proficient = proficiencies.some(p => p.toLowerCase() === ls);
+        expert = expertise.some(e => e.toLowerCase() === ls);
+    }
+
+    const modifier = abilityMod + (proficient ? prof : 0) + (expert ? prof : 0);
+    const label = skill ? skill : isSave ? `Sauvegarde de ${abil}` : `Test de ${abil}`;
+    return { modifier, ability: abil, proficient, expert, label };
+}
+
+/** Passive Perception = 10 + WIS mod + proficiency (doubled if expertise). */
+export function passivePerception(effectiveStats: Record<string, number>, level: number, proficiencies: string[] = [], expertise: string[] = []): number {
+    const wisMod = Math.floor(((effectiveStats['WIS'] ?? 10) - 10) / 2);
+    const prof = proficiencyBonus(level);
+    const isProf = proficiencies.some(p => p.toLowerCase() === 'perception');
+    const isExpert = expertise.some(e => e.toLowerCase() === 'perception');
+    return 10 + wisMod + (isProf ? prof : 0) + (isExpert ? prof : 0);
+}
+
+// Roll with advantage/disadvantage
+export function rollWithAdvantage(advantage: boolean, disadvantage: boolean): { roll: number, rolls: number[] } {
+    const roll1 = Math.floor(Math.random() * 20) + 1;
+    const roll2 = Math.floor(Math.random() * 20) + 1;
+
+    if (advantage && !disadvantage) {
+        return { roll: Math.max(roll1, roll2), rolls: [roll1, roll2] };
+    }
+    if (disadvantage && !advantage) {
+        return { roll: Math.min(roll1, roll2), rolls: [roll1, roll2] };
+    }
+    // Normal or both cancel out
+    return { roll: roll1, rolls: [roll1] };
+}

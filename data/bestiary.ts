@@ -1,0 +1,294 @@
+// D&D 5e Bestiary - Complete Creature Library
+// Contains stat blocks for monsters, beasts, NPCs, and allies
+
+// ========== TYPES ==========
+
+export type CreatureType =
+    | 'beast' | 'humanoid' | 'undead' | 'fiend' | 'dragon'
+    | 'monstrosity' | 'construct' | 'elemental' | 'celestial' | 'plant'
+    | 'aberration' | 'ooze' | 'fey' | 'giant' | 'swarm';
+
+export type CreatureSize = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
+
+export type DamageType =
+    | 'slashing' | 'piercing' | 'bludgeoning'
+    | 'fire' | 'cold' | 'lightning' | 'thunder' | 'acid' | 'poison'
+    | 'radiant' | 'necrotic' | 'force' | 'psychic';
+
+export interface AttackDamagePart {
+    damage: string;
+    damageType: DamageType;
+}
+
+export interface Attack {
+    name: string;
+    attackBonus: number;
+    damage: string;           // "1d8+3"
+    damageType: DamageType;
+    reach: number;            // In feet: 5, 10, etc.
+    ranged?: { short: number; long: number };  // For ranged attacks
+    damageParts?: AttackDamagePart[];
+}
+
+export interface CreatureStats {
+    id: string;
+    name: string;
+    type: CreatureType;
+    size: CreatureSize;
+    alignment?: string;
+    cr: number;               // Challenge Rating
+    xp: number;
+    hp: {
+        base: number;           // Average HP
+        dice: string;           // "4d10+8"
+    };
+    ac: number;
+    speed: number;            // In feet
+    flySpeed?: number;
+    swimSpeed?: number;
+    climbSpeed?: number;
+    stats: {
+        STR: number;
+        DEX: number;
+        CON: number;
+        INT: number;
+        WIS: number;
+        CHA: number;
+    };
+    saves?: Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>;
+    skills?: Record<string, number>;
+    resistances?: DamageType[];
+    immunities?: DamageType[];
+    conditionImmunities?: string[];
+    vulnerabilities?: DamageType[];
+    senses?: string[];
+    languages?: string[];
+    attacks: Attack[];
+    legendaryActions?: number;
+    emoji: string;            // For grid display
+    action?: string;          // Action text from CSV
+    speedStr?: string;        // Full text speed from CSV
+    skill?: string;           // Skill text from CSV
+    url?: string;             // External reference URL
+    imageUrl?: string;        // Image URL derived from reference
+}
+
+// ========== HELPER ==========
+
+function mod(stat: number): number {
+    return Math.floor((stat - 10) / 2);
+}
+
+const DAMAGE_TYPE_ALIASES: Record<string, DamageType> = {
+    acid: 'acid',
+    bludgeon: 'bludgeoning',
+    bludgeoning: 'bludgeoning',
+    blunt: 'bludgeoning',
+    cold: 'cold',
+    fire: 'fire',
+    force: 'force',
+    lightning: 'lightning',
+    necrotic: 'necrotic',
+    pierce: 'piercing',
+    piercing: 'piercing',
+    poison: 'poison',
+    psychic: 'psychic',
+    radiant: 'radiant',
+    slash: 'slashing',
+    slashing: 'slashing',
+    thunder: 'thunder',
+};
+
+function normalizeDamageType(value?: string): DamageType | null {
+    const key = String(value || '').toLowerCase().trim().replace(/[^a-z]/g, '');
+    return DAMAGE_TYPE_ALIASES[key] || null;
+}
+
+function normalizeDiceFormula(value: string): string {
+    return value.replace(/\s+/g, '').replace(/([+-])/g, '$1');
+}
+
+function isGenericBasicAttack(attack: Attack): boolean {
+    return attack.name.toLowerCase() === 'basic attack';
+}
+
+function cleanAttackName(value: string): string {
+    return String(value || 'Attack')
+        .replace(/^[^A-Za-z]+/, '')
+        .replace(/\s+/g, ' ')
+        .trim() || 'Attack';
+}
+
+export function parseCreatureActionAttacks(action?: string): Attack[] {
+    const text = String(action || '');
+    if (!text) return [];
+
+    const attackPattern = /([A-Z][A-Za-z'’() /-]{1,70})\.\s*((?:Melee|Ranged|Melee or Ranged)\s+(?:Weapon|Spell)\s+Attack):\s*([\s\S]*?)(?=(?:[A-Z][A-Za-z'’() /-]{1,70}\.\s*(?:Melee|Ranged|Melee or Ranged)\s+(?:Weapon|Spell)\s+Attack:)|$)/g;
+    const damagePattern = /(?:Hit:\s*)?(?:\d+\s*)?\((\d+d\d+(?:\s*[+-]\s*\d+)?)\)\s*([a-z]+)\s+damage/gi;
+    const attacks: Attack[] = [];
+
+    for (const match of text.matchAll(attackPattern)) {
+        const name = cleanAttackName(match[1]);
+        const attackKind = match[2].toLowerCase();
+        const details = match[3] || '';
+        const bonusMatch = details.match(/([+-]\d+)\s+to hit/i);
+        if (!bonusMatch) continue;
+
+        const damageParts: AttackDamagePart[] = [];
+        for (const damageMatch of details.matchAll(damagePattern)) {
+            const damageType = normalizeDamageType(damageMatch[2]);
+            if (!damageType) continue;
+            damageParts.push({
+                damage: normalizeDiceFormula(damageMatch[1]),
+                damageType,
+            });
+        }
+        if (!damageParts.length) continue;
+
+        const reachMatch = details.match(/reach\s+(\d+)\s*ft/i);
+        const rangeMatch = details.match(/range\s+(\d+)\s*\/\s*(\d+)\s*ft/i);
+        const ranged = rangeMatch
+            ? { short: Number(rangeMatch[1]), long: Number(rangeMatch[2]) }
+            : undefined;
+
+        attacks.push({
+            name,
+            attackBonus: Number(bonusMatch[1]),
+            damage: damageParts[0].damage,
+            damageType: damageParts[0].damageType,
+            reach: reachMatch ? Number(reachMatch[1]) : attackKind.includes('ranged') ? 30 : 5,
+            ranged,
+            damageParts,
+        });
+    }
+
+    return attacks;
+}
+
+// How many attacks does this creature make per turn? Reads the "Multiattack"
+// sentence ("makes two/three attacks", "makes 3 attacks") and returns the count.
+// Falls back to 1 when there is no multiattack, capped at 6 for safety.
+const _WORD_NUM: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6 };
+export function getMultiattackCount(creature?: { action?: string } | null): number {
+    if (!creature?.action) return 1;
+    const text = creature.action;
+    if (!/multiattack/i.test(text)) return 1;
+    // Only look at the multiattack sentence (up to the first period after the word).
+    const seg = text.slice(text.search(/multiattack/i));
+    const m = seg.match(/makes?\s+(\w+|\d+)\s+(?:\w+\s+){0,3}?attacks?/i)
+        || seg.match(/(\w+|\d+)\s+(?:\w+\s+){0,3}?attacks?/i);
+    if (!m) return 2; // multiattack present but unparseable → safe default of 2
+    const tok = m[1].toLowerCase();
+    const n = _WORD_NUM[tok] ?? Number(tok);
+    return Number.isFinite(n) && n >= 1 ? Math.min(6, n) : 2;
+}
+
+export function getCreatureAttacks(creature?: CreatureStats | null): Attack[] {
+    if (!creature) return [];
+    const existing = creature.attacks || [];
+    const hasOnlyFallback = existing.length === 0 || existing.every(isGenericBasicAttack);
+    if (!hasOnlyFallback) return existing;
+
+    const parsed = parseCreatureActionAttacks(creature.action);
+    return parsed.length ? parsed : existing;
+}
+
+// ========== LAZY-LOADED BESTIARY ==========
+// monsterData.ts is 514KB — lazy-loaded on first use to avoid blocking app startup.
+
+let _lazyBestiary: Record<string, CreatureStats> | null = null;
+
+async function getBestiary(): Promise<Record<string, CreatureStats>> {
+    if (!_lazyBestiary) {
+        const { CSV_MONSTERS } = await import('./monsterData');
+        _lazyBestiary = { ...CSV_MONSTERS };
+    }
+    return _lazyBestiary;
+}
+
+// Synchronous bestiary for initial render (empty until loaded).
+// The BESTIARY object is kept for backwards compatibility and fills lazily.
+export const BESTIARY: Record<string, CreatureStats> = {};
+
+// Pre-load in background when app starts (so it's ready before combat)
+getBestiary().then(monsters => {
+    Object.assign(BESTIARY, monsters);
+});
+
+// French to English fallback mapping for common creatures
+const FRENCH_BESTIARY_DICT: Record<string, string> = {
+    'loup': 'wolf',
+    'ours': 'bear',
+    'araignée': 'giant_spider',
+    'araignee': 'giant_spider',
+    'rat': 'giant_rat',
+    'cheval': 'horse',
+    'gobelin': 'goblin',
+    'orque': 'orc',
+    'bandit': 'bandit',
+    'garde': 'guard',
+    'chevalier': 'knight',
+    'cultiste': 'cultist',
+    'sectateur': 'cultist',
+    'squelette': 'skeleton',
+    'zombie': 'zombie',
+    'goule': 'ghoul',
+    'spectre': 'wraith',
+    'ours-hibou': 'owlbear',
+    'hibours': 'owlbear',
+    'mimique': 'mimic',
+    'diablotin': 'imp',
+    'chien de l\'enfer': 'hell_hound',
+    'dragon': 'young_red_dragon'
+};
+
+// Get creature by name (case insensitive, robust fuzzy matching)
+export function getCreature(name: string): CreatureStats | null {
+    if (!name) return null;
+
+    // 1. Clean the string (lowercase, trim)
+    let cleanName = name.toLowerCase().trim();
+
+    // 2. Remove trailing numbers (e.g., "Goblin 1" -> "goblin", "Cultiste 2" -> "cultiste")
+    let baseName = cleanName.replace(/\s+\d+$/, '').trim();
+
+    // 3. Direct match via exact key format
+    let key = baseName.replace(/\s+/g, '_');
+    if (BESTIARY[key]) return BESTIARY[key];
+
+    // 4. Try English lookup from French lookup table
+    for (const [fr, en] of Object.entries(FRENCH_BESTIARY_DICT)) {
+        if (baseName.includes(fr)) {
+            if (BESTIARY[en]) return BESTIARY[en];
+        }
+    }
+
+    // 5. Fuzzy Substring Matching against Bestiary keys
+    for (const bestiaryKey of Object.keys(BESTIARY)) {
+        // e.g if they type "huge giant spider of doom", it contains "giant_spider" (replace _ with space)
+        if (baseName.includes(bestiaryKey.replace(/_/g, ' '))) {
+            return BESTIARY[bestiaryKey];
+        }
+        // e.g if bestiary key is "cultist" and they typed "cultist of the dead three"
+        if (baseName.includes(bestiaryKey)) {
+            return BESTIARY[bestiaryKey];
+        }
+    }
+
+    return null;
+}
+
+// Create instance of creature with rolled HP
+export function spawnCreature(name: string, id?: string): CreatureStats | null {
+    const template = getCreature(name);
+    if (!template) return null;
+
+    return {
+        ...template,
+        id: id || `${template.id}_${Date.now()}`,
+        hp: {
+            ...template.hp,
+            base: template.hp.base  // Could roll dice here for variation
+        }
+    };
+}

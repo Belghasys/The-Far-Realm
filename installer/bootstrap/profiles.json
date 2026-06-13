@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "_comment": "GPU profiles for DnD: The Far Realm. The installer auto-picks the highest profile whose min_vram_gb fits the detected card, but the player can override it. All image dimensions must be multiples of 16 (FLUX requirement). These are deliberately conservative, tunable defaults — edit freely.",
+  "profiles": {
+    "balanced": {
+      "label": "Balanced — RTX 5070 Ti / 5080 (16 GB)",
+      "min_vram_gb": 14,
+      "image": {
+        "enabled": true,
+        "model": "black-forest-labs/FLUX.2-klein-9B",
+        "transformer_quant": "nf4",
+        "text_encoder_quant": "nf4",
+        "cpu_offload": true,
+        "width": 1024,
+        "height": 576,
+        "steps": 4,
+        "max_sequence_length": 256
+      },
+      "audio": {
+        "enabled": true,
+        "preload": ["small-sfx"],
+        "half": true
+      },
+      "download": {
+        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
+      }
+    },
+    "performance": {
+      "label": "Performance — 18-24 GB, sans CPU offload",
+      "min_vram_gb": 18,
+      "image": {
+        "enabled": true,
+        "model": "black-forest-labs/FLUX.2-klein-9B",
+        "transformer_quant": "nf4",
+        "text_encoder_quant": "nf4",
+        "cpu_offload": false,
+        "width": 1280,
+        "height": 720,
+        "steps": 6,
+        "max_sequence_length": 256
+      },
+      "audio": {
+        "enabled": true,
+        "preload": ["small-sfx", "small-music"],
+        "half": true
+      },
+      "download": {
+        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
+      }
+    },
+    "ultra": {
+      "label": "Ultra — RTX 5090 (32 GB)",
+      "min_vram_gb": 30,
+      "image": {
+        "enabled": true,
+        "model": "black-forest-labs/FLUX.2-klein-9B",
+        "transformer_quant": "none",
+        "text_encoder_quant": "int8",
+        "cpu_offload": false,
+        "width": 1344,
+        "height": 768,
+        "steps": 8,
+        "max_sequence_length": 512
+      },
+      "audio": {
+        "enabled": true,
+        "preload": ["small-sfx", "small-music"],
+        "half": false
+      },
+      "download": {
+        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
+      }
+    }
+  }
+}

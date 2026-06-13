@@ -1,0 +1,35 @@
+# Python deps for the local media engine (image + audio).
+# Installed by setup.py into an isolated venv via `uv pip install`.
+#
+# IMPORTANT — PyTorch + CUDA:
+#   The extra-index-url below pulls the CUDA build of torch. Match it to the
+#   driver/toolkit you target. The audio stack was verified on torch 2.12 + cu130.
+#   If a cu130 wheel is unavailable for the installed Python, fall back to cu128
+#   by editing the URL below. uv reads these --extra-index-url lines from the file.
+--extra-index-url https://download.pytorch.org/whl/cu130
+
+torch
+torchaudio
+
+# Diffusion / image — FLUX.2 support is recent, so track diffusers main.
+# Pin to a known-good commit before shipping to players for reproducibility.
+diffusers @ git+https://github.com/huggingface/diffusers.git
+transformers>=4.46
+accelerate>=1.0
+bitsandbytes>=0.45        # 4-bit / 8-bit quant (Windows wheels supported)
+sentencepiece
+pillow
+protobuf
+
+# Audio — Stable Audio 3 inference (the stable_audio_3 package is bundled separately)
+soundfile
+einops
+einops-exts
+numpy
+
+# Server + tooling
+fastapi
+uvicorn[standard]
+pydantic>=2
+python-dotenv
+huggingface_hub[cli,hf_transfer]

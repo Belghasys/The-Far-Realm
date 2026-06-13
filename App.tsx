@@ -1,0 +1,74 @@
+import React, { Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './services/firebase';
+import { memoryManager } from './services/memoryManager';
+import { saveService } from './services/saveService';
+import { useGameStore } from './store/gameStore';
+import { LiveConnectionManager } from './services/geminiRealtime';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+const LoginView = React.lazy(() => import('./views/LoginView').then(module => ({ default: module.LoginView })));
+const ModeSelectionView = React.lazy(() => import('./views/ModeSelectionView').then(module => ({ default: module.ModeSelectionView })));
+const LobbyView = React.lazy(() => import('./views/LobbyView').then(module => ({ default: module.LobbyView })));
+const CharacterCreationView = React.lazy(() => import('./views/CharacterCreationView').then(module => ({ default: module.CharacterCreationView })));
+const GameSessionView = React.lazy(() => import('./views/GameSessionView').then(module => ({ default: module.GameSessionView })));
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+   const user = useGameStore(state => state.user);
+   const authReady = useGameStore(state => state.authReady);
+   // Wait for Firebase to rehydrate the session before deciding — otherwise a page
+   // refresh (user still null for a tick) would eject a logged-in player to login.
+   if (!authReady) return <div className="min-h-screen bg-gray-950 text-white grid place-items-center">Chargement…</div>;
+   if (!user) return <Navigate to="/" replace />;
+   return <>{children}</>;
+}
+
+export default function App() {
+   const setUser = useGameStore(state => state.setUser);
+
+   useEffect(() => {
+      const unsubscribe = onAuthStateChanged(auth, (u) => {
+         setUser(u);
+         memoryManager.setUserId(u?.uid || null);
+         if (u) {
+            saveService.setUser(u.uid);
+         } else {
+            saveService.clearUser();
+            LiveConnectionManager.getInstance().disconnect();
+            useGameStore.getState().resetSessionState();
+         }
+      });
+      return unsubscribe;
+   }, [setUser]);
+
+   return (
+      <ErrorBoundary>
+         <BrowserRouter>
+            <Suspense fallback={<div className="min-h-screen bg-gray-950 text-white grid place-items-center">Loading...</div>}>
+               <Routes>
+                  <Route path="/" element={<LoginView />} />
+
+                  <Route path="/mode" element={
+                     <AuthGuard><ModeSelectionView /></AuthGuard>
+                  } />
+
+                  <Route path="/lobby" element={
+                     <AuthGuard><LobbyView /></AuthGuard>
+                  } />
+
+                  <Route path="/create" element={
+                     <AuthGuard><CharacterCreationView /></AuthGuard>
+                  } />
+
+                  <Route path="/session" element={
+                     <AuthGuard><GameSessionView /></AuthGuard>
+                  } />
+
+                  <Route path="*" element={<Navigate to="/" replace />} />
+               </Routes>
+            </Suspense>
+         </BrowserRouter>
+      </ErrorBoundary>
+   );
+}

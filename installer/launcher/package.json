@@ -1,0 +1,36 @@
+{
+  "name": "dnd-far-realm-launcher",
+  "version": "1.0.0",
+  "description": "Desktop launcher for DnD: The Far Realm — drives the local media engine and serves the game UI.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "build": {
+    "appId": "com.salimai.dndthefarrealm",
+    "productName": "DnD - The Far Realm",
+    "files": [
+      "main.js",
+      "preload.js",
+      "loading.html",
+      "static-server.js"
+    ],
+    "extraResources": [
+      { "from": "client", "to": "client" }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "dir"
+      ]
+    }
+  }
+}
