@@ -20,22 +20,24 @@ export function ModeSelectionView() {
             solo: "Solo Journey",
             soloDesc: "Brave the darkness alone. You are the sole hero of your story.",
             multi: "Gather Your Party",
-            multiDesc: "Multiplayer is disabled until real-time state sync is implemented.",
+            multiDesc: "Team up with friends in real time. Coming soon.",
             host: "Host Game",
             join: "Join",
             enterCode: "ENTER CODE",
-            unavailable: "Unavailable"
+            unavailable: "Unavailable",
+            comingSoon: "Coming Soon"
         },
         fr: {
             choosePath: "Choisissez Votre Voie",
             solo: "Aventure Solo",
             soloDesc: "Affrontez les ténèbres seul. Vous êtes le seul héros de votre histoire.",
             multi: "Rassemblez Votre Groupe",
-            multiDesc: "Multijoueur désactivé tant que la synchronisation temps réel n'est pas implémentée.",
+            multiDesc: "Jouez à plusieurs en temps réel. Bientôt disponible.",
             host: "Héberger",
             join: "Rejoindre",
             enterCode: "CODE",
-            unavailable: "Indisponible"
+            unavailable: "Indisponible",
+            comingSoon: "Bientôt disponible"
         }
     };
     const t = TRANS[language as keyof typeof TRANS];
@@ -82,14 +84,17 @@ export function ModeSelectionView() {
                     <p className="text-gray-400">{t.soloDesc}</p>
                 </div>
 
-                <div className="bg-gray-800 border-2 border-gray-700 p-8 rounded-xl opacity-70 text-center">
+                <div className="relative bg-gray-800 border-2 border-gray-700 p-8 rounded-xl opacity-60 grayscale cursor-not-allowed select-none text-center">
+                    <span className="absolute top-3 right-3 bg-gold/20 text-gold text-xs font-bold px-2 py-1 rounded-full border border-gold/40 uppercase tracking-wide">
+                        {t.comingSoon}
+                    </span>
                     <Users className="w-16 h-16 mx-auto mb-4 text-gray-500" />
                     <h2 className="text-2xl font-bold mb-4">{t.multi}</h2>
                     <p className="text-gray-400 mb-6">{t.multiDesc}</p>
 
                     <div className="flex flex-col gap-4 justify-center">
-                        <button disabled className="cursor-not-allowed bg-gray-700 text-gray-400 px-6 py-2 rounded font-bold">
-                            {t.unavailable}
+                        <button disabled className="cursor-not-allowed bg-gray-700 text-gray-500 px-6 py-2 rounded font-bold">
+                            {t.comingSoon}
                         </button>
                     </div>
                 </div>
