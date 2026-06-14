@@ -88,8 +88,8 @@ $EngineDst = Join-Path $Payload "engine\sa3"
 New-Item -ItemType Directory -Force -Path $EngineDst | Out-Null
 if (Test-Path $Sa3Dir) { Copy-Item -Recurse -Force (Join-Path $Sa3Dir "*") $EngineDst }
 else { Write-Host "WARNING: $Sa3Dir not found - audio engine missing until stable_audio_3 is provided." -ForegroundColor Yellow }
-# strip python bytecode caches / VCS from the bundled engine (build bloat)
-Get-ChildItem $EngineDst -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+# strip python bytecode caches / VCS from the whole staged payload (build bloat)
+Get-ChildItem $Payload -Recurse -Directory -Force -ErrorAction SilentlyContinue |
   Where-Object { $_.Name -in '__pycache__', '.git' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 # uv.exe (download once, cache in tools\)
