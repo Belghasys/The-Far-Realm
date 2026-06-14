@@ -25,7 +25,10 @@ param(
   [string]$AppVersion = "1.0.0"
 )
 
-$ErrorActionPreference = "Stop"
+# 'Continue', not 'Stop': npm / vite / electron-builder write progress and
+# warnings to stderr, which under 'Stop' PowerShell 5.1 turns into terminating
+# errors even on success. We gate on $LASTEXITCODE and Test-Path instead.
+$ErrorActionPreference = "Continue"
 $Installer = $PSScriptRoot
 $Launcher  = Join-Path $Installer "launcher"
 $Payload   = Join-Path $Installer "dist-installer\payload"
@@ -92,8 +95,8 @@ $Uv = Join-Path $Tools "uv.exe"
 if (-not (Test-Path $Uv)) {
   Step "Downloading uv.exe"
   $zip = Join-Path $env:TEMP "uv.zip"
-  Invoke-WebRequest -Uri "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip" -OutFile $zip
-  Expand-Archive -Path $zip -DestinationPath $Tools -Force
+  Invoke-WebRequest -Uri "https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-pc-windows-msvc.zip" -OutFile $zip -ErrorAction Stop
+  Expand-Archive -Path $zip -DestinationPath $Tools -Force -ErrorAction Stop
   Remove-Item $zip -Force
 }
 $PayloadTools = Join-Path $Payload "tools"
