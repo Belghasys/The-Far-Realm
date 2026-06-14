@@ -1,4 +1,20 @@
 import React from 'react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        action: 'Action',
+        actions: 'Actions',
+        bonus: 'Bonus',
+        endTurn: 'End the turn ▸',
+    },
+    fr: {
+        action: 'Action',
+        actions: 'Actions',
+        bonus: 'Bonus',
+        endTurn: 'Terminer le tour ▸',
+    },
+} as const;
 
 interface Props {
     attacksMax: number;
@@ -32,6 +48,8 @@ function Pips({ max, used, color }: { max: number; used: number; color: 'green' 
  * GameSession only during the player's own turn in combat.
  */
 export function ActionPips({ attacksMax, attacksUsed, bonusMax, bonusUsed }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     if (attacksMax <= 0 && bonusMax <= 0) return null;
     const noneLeft = (attacksMax - attacksUsed) <= 0 && (bonusMax - bonusUsed) <= 0;
 
@@ -39,17 +57,17 @@ export function ActionPips({ attacksMax, attacksUsed, bonusMax, bonusUsed }: Pro
         <div className="flex items-center gap-3 rounded-md border border-white/10 bg-zinc-950/85 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide backdrop-blur-xl">
             {attacksMax > 0 && (
                 <div className="flex items-center gap-1.5">
-                    <span className="text-emerald-300/80">Action{attacksMax > 1 ? 's' : ''}</span>
+                    <span className="text-emerald-300/80">{attacksMax > 1 ? tr.actions : tr.action}</span>
                     <Pips max={attacksMax} used={attacksUsed} color="green" />
                 </div>
             )}
             {bonusMax > 0 && (
                 <div className="flex items-center gap-1.5">
-                    <span className="text-amber-300/80">Bonus</span>
+                    <span className="text-amber-300/80">{tr.bonus}</span>
                     <Pips max={bonusMax} used={bonusUsed} color="amber" />
                 </div>
             )}
-            {noneLeft && <span className="animate-pulse text-amber-200">Terminer le tour ▸</span>}
+            {noneLeft && <span className="animate-pulse text-amber-200">{tr.endTurn}</span>}
         </div>
     );
 }

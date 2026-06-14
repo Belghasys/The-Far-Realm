@@ -4,6 +4,103 @@ import { getPlayerAttackModifier } from '../types';
 import { combatantSide } from './CombatTracker';
 import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield } from 'lucide-react';
 
+const TRANS = {
+    en: {
+        offhand: (name: string) => `Off-hand: ${name}`,
+        frenzy: (name: string) => `Frenzy: ${name}`,
+        warPriest: (name: string, uses: number) => `War Priest: ${name} (${uses})`,
+        waitingTurnOf: (name: string) => `Waiting — ${name}'s turn…`,
+        waitingUpdate: 'Waiting for the combat update…',
+        combatActionsHeader: '⚔️ Combat Actions (Your Turn)',
+        actionAvailable: 'Action Available',
+        attack: 'Attack',
+        spells: 'Spells',
+        items: 'Items',
+        dodge: 'Dodge',
+        equippedWeapon: 'Equipped Weapon',
+        noWeaponEquipped: 'No weapon equipped! Open the inventory to equip one.',
+        damage: 'damage',
+        target: 'Target',
+        noEnemyTarget: 'No enemy target in combat.',
+        hpLabel: 'HP',
+        acLabel: 'AC',
+        resolving: 'Resolving…',
+        attackBtn: 'Attack ⚔️',
+        bonusNeedsMain: "Attack first with your main weapon (Attack action), then the bonus attack unlocks.",
+        bonusAlreadyUsed: 'Bonus action already used this turn.',
+        bonusAction: (label: string) => `Bonus action: ${label}`,
+        bonusBtnOffhand: 'Bonus 🗡️ Off-hand',
+        bonusBtnFrenzy: 'Bonus 🗡️ Frenzy',
+        bonusBtnWar: 'Bonus 🗡️ War',
+        afterMainAttack: 'After your main attack',
+        bonusUsed: 'Bonus used',
+        spell: 'Spell',
+        noSpellKnown: 'No spell known!',
+        cantripsGroup: 'Cantrips (Unlimited)',
+        leveledSpellsGroup: 'Leveled Spells',
+        resourceSlot: 'Resource / Slot',
+        freeCantrip: 'Free (Cantrip)',
+        noSlots: 'No slots',
+        levelPrefix: 'Level ',
+        player: 'Player',
+        enemyHp: (cur: number, max: number) => `Enemy, HP: ${cur}/${max}`,
+        castSpell: 'Cast the Spell ✨',
+        itemToUse: 'Item to Use',
+        noConsumable: 'No consumable item available in your inventory!',
+        noEffectDesc: 'No effect description',
+        useItem: "Use the Item 🧪",
+        dodgeDescription: 'Taking the Dodge action lets you focus on defense. Until the start of your next turn, any attack roll against you has Disadvantage, and you gain a defensive bonus.',
+        activateDodge: 'Activate Dodge 🛡️',
+    },
+    fr: {
+        offhand: (name: string) => `Off-hand : ${name}`,
+        frenzy: (name: string) => `Frénésie : ${name}`,
+        warPriest: (name: string, uses: number) => `Prêtre de guerre : ${name} (${uses})`,
+        waitingTurnOf: (name: string) => `En attente — tour de ${name}…`,
+        waitingUpdate: 'En attente de la mise à jour du combat…',
+        combatActionsHeader: '⚔️ Actions de Combat (Ton Tour)',
+        actionAvailable: 'Action Disponible',
+        attack: 'Attaquer',
+        spells: 'Sorts',
+        items: 'Objets',
+        dodge: 'Esquiver',
+        equippedWeapon: 'Arme Équipée',
+        noWeaponEquipped: "Aucune arme équipée ! Ouvrez l'inventaire pour vous équiper.",
+        damage: 'dégâts',
+        target: 'Cible',
+        noEnemyTarget: 'Aucune cible ennemie en combat.',
+        hpLabel: 'PV',
+        acLabel: 'CA',
+        resolving: 'Résolution…',
+        attackBtn: 'Attaque ⚔️',
+        bonusNeedsMain: "Attaque d'abord avec ton arme principale (action Attaque), puis l'attaque bonus se débloque.",
+        bonusAlreadyUsed: 'Action bonus déjà utilisée ce tour.',
+        bonusAction: (label: string) => `Action bonus : ${label}`,
+        bonusBtnOffhand: 'Bonus 🗡️ Off-hand',
+        bonusBtnFrenzy: 'Bonus 🗡️ Frénésie',
+        bonusBtnWar: 'Bonus 🗡️ Guerre',
+        afterMainAttack: 'Après ton attaque principale',
+        bonusUsed: 'Bonus utilisé',
+        spell: 'Sortilège',
+        noSpellKnown: 'Aucun sort connu !',
+        cantripsGroup: 'Tours de magie (Cantrips - Illimités)',
+        leveledSpellsGroup: 'Sorts de Niveau',
+        resourceSlot: 'Ressource / Slot',
+        freeCantrip: 'Gratuit (Cantrip)',
+        noSlots: "Pas d'emplacements",
+        levelPrefix: 'Niveau ',
+        player: 'Joueur',
+        enemyHp: (cur: number, max: number) => `Ennemi, PV: ${cur}/${max}`,
+        castSpell: 'Lancer le Sort ✨',
+        itemToUse: 'Objet à Utiliser',
+        noConsumable: 'Aucun objet consommable disponible dans votre inventaire !',
+        noEffectDesc: 'Aucune description d\'effet',
+        useItem: "Utiliser l'Objet 🧪",
+        dodgeDescription: "Prendre l'action d'esquive (Dodge) vous permet de vous concentrer sur la défense. Jusqu'au début de votre prochain tour, tout jet d'attaque contre vous aura un Désavantage, et vous gagnez un bonus défensif.",
+        activateDodge: "Activer l'Esquive 🛡️",
+    },
+} as const;
+
 interface CombatActionsPanelProps {
     selectedTargetId: string;
     onSelectTarget: (id: string) => void;
@@ -31,6 +128,8 @@ export function CombatActionsPanel({
     const character = useGameStore(s => s.character);
     const combatState = useGameStore(s => s.combatState);
     const isNPCTurn = useGameStore(s => s.isNPCTurn);
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
 
     const [selectedTab, setSelectedTab] = useState<'attack' | 'spell' | 'dodge' | 'potion'>('attack');
     const [selectedWeaponId, setSelectedWeaponId] = useState<string>('');
@@ -61,18 +160,18 @@ export function CombatActionsPanel({
 
     const bonusAttack = useMemo((): { mode: 'offhand' | 'frenzy' | 'warpriest'; weapon: any; label: string } | null => {
         if (offhandWeapon) {
-            return { mode: 'offhand', weapon: offhandWeapon, label: `Off-hand : ${offhandWeapon.name}` };
+            return { mode: 'offhand', weapon: offhandWeapon, label: tr.offhand(offhandWeapon.name) };
         }
         const raging = (character?.activeEffects || []).some(e => /rage|fr[ée]n[ée]sie|frenzy/i.test(e.name));
         if (character?.subclass === 'Berserker' && raging && mainHandWeapon) {
-            return { mode: 'frenzy', weapon: mainHandWeapon, label: `Frénésie : ${mainHandWeapon.name}` };
+            return { mode: 'frenzy', weapon: mainHandWeapon, label: tr.frenzy(mainHandWeapon.name) };
         }
         const warPriestUses = (character as any)?.resources?.warPriest?.current ?? 0;
         if (character?.subclass === 'War Domain' && warPriestUses > 0 && mainHandWeapon) {
-            return { mode: 'warpriest', weapon: mainHandWeapon, label: `Prêtre de guerre : ${mainHandWeapon.name} (${warPriestUses})` };
+            return { mode: 'warpriest', weapon: mainHandWeapon, label: tr.warPriest(mainHandWeapon.name, warPriestUses) };
         }
         return null;
-    }, [offhandWeapon, mainHandWeapon, character]);
+    }, [offhandWeapon, mainHandWeapon, character, tr]);
 
     // Extract consumables (specifically healing/potions) from player inventory
     const potions = useMemo(() => {
@@ -159,8 +258,8 @@ export function CombatActionsPanel({
         return (
             <div className="rounded-md border border-white/5 bg-black/40 p-4 text-center text-xs text-white/40">
                 {combatState.currentTurn
-                    ? `En attente — tour de ${combatState.combatants.find(c => c.id === combatState.currentTurn || c.name === combatState.currentTurn)?.name || combatState.currentTurn}…`
-                    : 'En attente de la mise à jour du combat…'}
+                    ? tr.waitingTurnOf(combatState.combatants.find(c => c.id === combatState.currentTurn || c.name === combatState.currentTurn)?.name || combatState.currentTurn)
+                    : tr.waitingUpdate}
             </div>
         );
     }
@@ -190,9 +289,9 @@ export function CombatActionsPanel({
         <div className="flex flex-col bg-black/85 p-4 rounded-lg border border-gray-700 font-sans text-white max-w-full">
             {/* Header */}
             <div className="flex items-center justify-between pb-2 mb-3 border-b border-gray-700">
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">⚔️ Actions de Combat (Ton Tour)</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">{tr.combatActionsHeader}</span>
                 <div className="flex gap-2">
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase border border-emerald-500/30 text-emerald-400">Action Disponible</span>
+                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase border border-emerald-500/30 text-emerald-400">{tr.actionAvailable}</span>
                 </div>
             </div>
 
@@ -204,7 +303,7 @@ export function CombatActionsPanel({
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded uppercase transition ${selectedTab === 'attack' ? 'bg-amber-500 text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Sword className="h-3.5 w-3.5" />
-                    Attaquer
+                    {tr.attack}
                 </button>
                 <button
                     type="button"
@@ -212,7 +311,7 @@ export function CombatActionsPanel({
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded uppercase transition ${selectedTab === 'spell' ? 'bg-amber-500 text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Sparkles className="h-3.5 w-3.5" />
-                    Sorts
+                    {tr.spells}
                 </button>
                 <button
                     type="button"
@@ -220,7 +319,7 @@ export function CombatActionsPanel({
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded uppercase transition ${selectedTab === 'potion' ? 'bg-amber-500 text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                     <HeartPulse className="h-3.5 w-3.5" />
-                    Objets
+                    {tr.items}
                 </button>
                 <button
                     type="button"
@@ -228,7 +327,7 @@ export function CombatActionsPanel({
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded uppercase transition ${selectedTab === 'dodge' ? 'bg-amber-500 text-black' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Shield className="h-3.5 w-3.5" />
-                    Esquiver
+                    {tr.dodge}
                 </button>
             </div>
 
@@ -237,10 +336,10 @@ export function CombatActionsPanel({
                 <form onSubmit={handleAttackSubmit} className="space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Arme Équipée</label>
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.equippedWeapon}</label>
                             {equippedWeapons.length === 0 ? (
                                 <div className="text-xs text-red-400 bg-red-950/20 border border-red-500/20 p-2.5 rounded italic">
-                                    Aucune arme équipée ! Ouvrez l'inventaire pour vous équiper.
+                                    {tr.noWeaponEquipped}
                                 </div>
                             ) : (
                                 <select
@@ -252,7 +351,7 @@ export function CombatActionsPanel({
                                         const dmg = w.damageDice || w.damage || '1d4';
                                         return (
                                             <option key={w.id} value={w.id}>
-                                                {w.name} ({dmg} {w.damageType || 'damage'})
+                                                {w.name} ({dmg} {w.damageType || tr.damage})
                                             </option>
                                         );
                                     })}
@@ -261,10 +360,10 @@ export function CombatActionsPanel({
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Cible</label>
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.target}</label>
                             {enemies.length === 0 ? (
                                 <div className="text-xs text-gray-400 bg-gray-900 border border-gray-800 p-2.5 rounded italic">
-                                    Aucune cible ennemie en combat.
+                                    {tr.noEnemyTarget}
                                 </div>
                             ) : (
                                 <select
@@ -274,7 +373,7 @@ export function CombatActionsPanel({
                                 >
                                     {enemies.map(e => (
                                         <option key={e.id} value={e.id}>
-                                            {e.name} (PV: {e.hp.current}/{e.hp.max}, CA: {e.ac})
+                                            {e.name} ({tr.hpLabel}: {e.hp.current}/{e.hp.max}, {tr.acLabel}: {e.ac})
                                         </option>
                                     ))}
                                 </select>
@@ -298,7 +397,7 @@ export function CombatActionsPanel({
                                     disabled={disabled || equippedWeapons.length === 0 || enemies.length === 0}
                                     className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                                 >
-                                    {disabled ? 'Résolution…' : "Attaque ⚔️"}
+                                    {disabled ? tr.resolving : tr.attackBtn}
                                 </button>
                                 {bonusAttack && onBonusAttack && (
                                     <div className="flex flex-col">
@@ -307,16 +406,16 @@ export function CombatActionsPanel({
                                             onClick={() => onBonusAttack(bonusAttack.weapon, selectedTargetId, bonusAttack.mode)}
                                             disabled={bonusDisabled}
                                             title={needsMainFirst
-                                                ? "Attaque d'abord avec ton arme principale (action Attaque), puis l'attaque bonus se débloque."
+                                                ? tr.bonusNeedsMain
                                                 : bonusLeft <= 0
-                                                    ? 'Action bonus déjà utilisée ce tour.'
-                                                    : `Action bonus : ${bonusAttack.label}`}
+                                                    ? tr.bonusAlreadyUsed
+                                                    : tr.bonusAction(bonusAttack.label)}
                                             className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold uppercase rounded text-sm transition-colors shadow-lg"
                                         >
-                                            {disabled ? 'Résolution…' : `Bonus 🗡️ ${bonusAttack.mode === 'offhand' ? 'Off-hand' : bonusAttack.mode === 'frenzy' ? 'Frénésie' : 'Guerre'}`}
+                                            {disabled ? tr.resolving : (bonusAttack.mode === 'offhand' ? tr.bonusBtnOffhand : bonusAttack.mode === 'frenzy' ? tr.bonusBtnFrenzy : tr.bonusBtnWar)}
                                         </button>
                                         <span className="mt-1 text-center text-[9px] uppercase tracking-wide text-white/35">
-                                            {needsMainFirst ? 'Après ton attaque principale' : bonusLeft <= 0 ? 'Bonus utilisé' : bonusAttack.label}
+                                            {needsMainFirst ? tr.afterMainAttack : bonusLeft <= 0 ? tr.bonusUsed : bonusAttack.label}
                                         </span>
                                     </div>
                                 )}
@@ -330,10 +429,10 @@ export function CombatActionsPanel({
                 <form onSubmit={handleSpellSubmit} className="space-y-3">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="md:col-span-2">
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Sortilège</label>
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.spell}</label>
                             {playerSpells.cantrips.length === 0 && playerSpells.spells.length === 0 ? (
                                 <div className="text-xs text-red-400 bg-red-950/20 border border-red-500/20 p-2.5 rounded italic">
-                                    Aucun sort connu !
+                                    {tr.noSpellKnown}
                                 </div>
                             ) : (
                                 <select
@@ -346,14 +445,14 @@ export function CombatActionsPanel({
                                     className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
                                 >
                                     {playerSpells.cantrips.length > 0 && (
-                                        <optgroup label="Tours de magie (Cantrips - Illimités)">
+                                        <optgroup label={tr.cantripsGroup}>
                                             {playerSpells.cantrips.map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </optgroup>
                                     )}
                                     {playerSpells.spells.length > 0 && (
-                                        <optgroup label="Sorts de Niveau">
+                                        <optgroup label={tr.leveledSpellsGroup}>
                                             {playerSpells.spells.map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
@@ -364,14 +463,14 @@ export function CombatActionsPanel({
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Ressource / Slot</label>
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.resourceSlot}</label>
                             {playerSpells.cantrips.includes(selectedSpellName) ? (
                                 <div className="bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-xs text-emerald-400 italic">
-                                    Gratuit (Cantrip)
+                                    {tr.freeCantrip}
                                 </div>
                             ) : spellSlotsAvailable.length === 0 ? (
                                 <div className="bg-red-950/25 border border-red-500/20 rounded px-2.5 py-1.5 text-xs text-red-400 italic">
-                                    Pas d'emplacements
+                                    {tr.noSlots}
                                 </div>
                             ) : (
                                 <select
@@ -381,7 +480,7 @@ export function CombatActionsPanel({
                                 >
                                     {spellSlotsAvailable.map(s => (
                                         <option key={s.level} value={s.level} disabled={s.current <= 0}>
-                                            {s.level.replace('level', 'Niveau ')} ({s.current}/{s.max})
+                                            {s.level.replace('level', tr.levelPrefix)} ({s.current}/{s.max})
                                         </option>
                                     ))}
                                 </select>
@@ -391,7 +490,7 @@ export function CombatActionsPanel({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Cible</label>
+                            <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.target}</label>
                             <select
                                 value={selectedTargetId}
                                 onChange={(e) => onSelectTarget(e.target.value)}
@@ -399,7 +498,7 @@ export function CombatActionsPanel({
                             >
                                 {targets.map(t => (
                                     <option key={t.id} value={t.id}>
-                                        {t.name} ({t.isPlayer ? 'Joueur' : `Ennemi, PV: ${t.hp.current}/${t.hp.max}`})
+                                        {t.name} ({t.isPlayer ? tr.player : tr.enemyHp(t.hp.current, t.hp.max)})
                                     </option>
                                 ))}
                             </select>
@@ -410,7 +509,7 @@ export function CombatActionsPanel({
                                 disabled={disabled || !selectedSpellName || !selectedTargetId || (!playerSpells.cantrips.includes(selectedSpellName) && spellSlotsAvailable.every(s => s.current <= 0))}
                                 className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                             >
-                                {disabled ? 'Résolution…' : 'Lancer le Sort ✨'}
+                                {disabled ? tr.resolving : tr.castSpell}
                             </button>
                         </div>
                     </div>
@@ -420,10 +519,10 @@ export function CombatActionsPanel({
             {selectedTab === 'potion' && (
                 <form onSubmit={handlePotionSubmit} className="space-y-3">
                     <div>
-                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">Objet à Utiliser</label>
+                        <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.itemToUse}</label>
                         {potions.length === 0 ? (
                             <div className="text-xs text-amber-400 bg-amber-950/20 border border-amber-500/20 p-2.5 rounded italic">
-                                Aucun objet consommable disponible dans votre inventaire !
+                                {tr.noConsumable}
                             </div>
                         ) : (
                             <select
@@ -433,7 +532,7 @@ export function CombatActionsPanel({
                             >
                                 {potions.map(p => (
                                     <option key={p.id} value={p.id}>
-                                        {p.name} (x{p.quantity}) - {p.effect || p.description || 'No effect description'}
+                                        {p.name} (x{p.quantity}) - {p.effect || p.description || tr.noEffectDesc}
                                     </option>
                                 ))}
                             </select>
@@ -445,7 +544,7 @@ export function CombatActionsPanel({
                         disabled={disabled || potions.length === 0}
                         className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg animate-pulse"
                     >
-                        {disabled ? 'Résolution…' : "Utiliser l'Objet 🧪"}
+                        {disabled ? tr.resolving : tr.useItem}
                     </button>
                 </form>
             )}
@@ -453,8 +552,7 @@ export function CombatActionsPanel({
             {selectedTab === 'dodge' && (
                 <div className="space-y-3 text-center">
                     <p className="text-xs text-gray-400 leading-relaxed max-w-md mx-auto">
-                        Prendre l'action d'esquive (Dodge) vous permet de vous concentrer sur la défense. 
-                        Jusqu'au début de votre prochain tour, tout jet d'attaque contre vous aura un <strong>Désavantage</strong>, et vous gagnez un bonus défensif.
+                        {tr.dodgeDescription}
                     </p>
                     <button
                         type="button"
@@ -462,7 +560,7 @@ export function CombatActionsPanel({
                         disabled={disabled}
                         className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                     >
-                        {disabled ? 'Résolution…' : "Activer l'Esquive 🛡️"}
+                        {disabled ? tr.resolving : tr.activateDodge}
                     </button>
                 </div>
             )}

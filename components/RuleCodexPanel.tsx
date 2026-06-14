@@ -3,23 +3,107 @@ import { BookOpen, ExternalLink, Search, Shield, Swords, Wand2 } from 'lucide-re
 import { preloadCodexBestiary, searchCodex } from '../services/codexService';
 import { CodexEntry, CodexEntryKind } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';
+import { useGameStore } from '../store/gameStore';
 
 type CodexTab = 'spell' | 'rule' | 'item' | 'condition' | 'monster';
 
-const TABS: { id: CodexTab; label: string }[] = [
-    { id: 'spell', label: 'Spells' },
-    { id: 'rule', label: 'Rules' },
-    { id: 'item', label: 'Items' },
-    { id: 'condition', label: 'Conditions' },
-    { id: 'monster', label: 'Monsters' },
-];
+const TRANS = {
+    en: {
+        tabSpell: 'Spells',
+        tabRule: 'Rules',
+        tabItem: 'Items',
+        tabCondition: 'Conditions',
+        tabMonster: 'Monsters',
+        windowTitle: 'SRD Codex',
+        windowSubtitle: 'Rules, spells, items, conditions and bestiary references',
+        searchPlaceholder: 'Search Codex',
+        noEntry: 'No Codex entry found.',
+        selectEntry: 'Select an entry.',
+        cantrip: 'Cantrip',
+        level: 'Level',
+        condition: 'Condition',
+        casting: 'Casting',
+        range: 'Range',
+        duration: 'Duration',
+        components: 'Components',
+        spellAttack: 'Spell attack',
+        save: 'Save',
+        success: 'success',
+        damage: 'Damage',
+        healing: 'Healing',
+        castingAbility: 'casting ability',
+        conditionOnFailure: 'Condition on failure',
+        concentration: 'Concentration',
+        movement: 'Movement',
+        normal: 'normal',
+        actions: 'Actions',
+        type: 'Type',
+        weight: 'Weight',
+        ac: 'AC',
+        properties: 'Properties',
+        none: 'none',
+        na: 'n/a',
+        legacyEffect: 'Legacy effect',
+        hp: 'HP',
+        xp: 'XP',
+        role: 'Role',
+        size: 'Size',
+        mechanics: 'Mechanics',
+        viewReference: 'View reference',
+    },
+    fr: {
+        tabSpell: 'Sorts',
+        tabRule: 'Règles',
+        tabItem: 'Objets',
+        tabCondition: 'États',
+        tabMonster: 'Monstres',
+        windowTitle: 'Codex SRD',
+        windowSubtitle: 'Règles, sorts, objets, états et références du bestiaire',
+        searchPlaceholder: 'Rechercher dans le Codex',
+        noEntry: 'Aucune entrée de Codex trouvée.',
+        selectEntry: 'Sélectionne une entrée.',
+        cantrip: 'Tour de magie',
+        level: 'Niveau',
+        condition: 'État',
+        casting: 'Incantation',
+        range: 'Portée',
+        duration: 'Durée',
+        components: 'Composantes',
+        spellAttack: 'Attaque de sort',
+        save: 'Sauvegarde',
+        success: 'réussite',
+        damage: 'Dégâts',
+        healing: 'Soins',
+        castingAbility: 'caractéristique d’incantation',
+        conditionOnFailure: 'État en cas d’échec',
+        concentration: 'Concentration',
+        movement: 'Déplacement',
+        normal: 'normal',
+        actions: 'Actions',
+        type: 'Type',
+        weight: 'Poids',
+        ac: 'CA',
+        properties: 'Propriétés',
+        none: 'aucune',
+        na: 'n/a',
+        legacyEffect: 'Effet hérité',
+        hp: 'PV',
+        xp: 'XP',
+        role: 'Rôle',
+        size: 'Taille',
+        mechanics: 'Mécaniques',
+        viewReference: 'Voir la référence',
+    },
+} as const;
 
-function entrySubtitle(entry: CodexEntry): string {
-    if (entry.kind === 'spell') return `${entry.level === 0 ? 'Cantrip' : `Level ${entry.level}`} - ${entry.school}`;
+type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
+
+function entrySubtitle(entry: CodexEntry, tr: Tr): string {
+    if (entry.kind === 'spell') return `${entry.level === 0 ? tr.cantrip : `${tr.level} ${entry.level}`} - ${entry.school}`;
     if (entry.kind === 'rule') return entry.category;
     if (entry.kind === 'action') return entry.actionType.replace('_', ' ');
     if (entry.kind === 'item') return entry.itemType;
-    if (entry.kind === 'condition') return 'Condition';
+    if (entry.kind === 'condition') return tr.condition;
     return `CR ${entry.cr} - ${entry.type}`;
 }
 
@@ -38,6 +122,15 @@ export function RuleCodexPanel({
     initialQuery?: string;
     onOpenExternalReference?: (url: string) => void;
 }) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
+    const TABS: { id: CodexTab; label: string }[] = [
+        { id: 'spell', label: tr.tabSpell },
+        { id: 'rule', label: tr.tabRule },
+        { id: 'item', label: tr.tabItem },
+        { id: 'condition', label: tr.tabCondition },
+        { id: 'monster', label: tr.tabMonster },
+    ];
     const [tab, setTab] = useState<CodexTab>(initialTab || 'spell');
     const [query, setQuery] = useState(initialQuery || '');
     const [bestiaryReady, setBestiaryReady] = useState(false);
@@ -77,8 +170,8 @@ export function RuleCodexPanel({
 
     return (
         <GameWindow
-            title="Codex SRD"
-            subtitle="Rules, spells, items, conditions and bestiary references"
+            title={tr.windowTitle}
+            subtitle={tr.windowSubtitle}
             icon={<BookOpen className="h-5 w-5" />}
             onClose={onClose}
             size="xl"
@@ -95,7 +188,7 @@ export function RuleCodexPanel({
                             <input
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
-                                placeholder="Search Codex"
+                                placeholder={tr.searchPlaceholder}
                                 className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30"
                             />
                         </label>
@@ -118,32 +211,32 @@ export function RuleCodexPanel({
                                 </div>
                                 <div className="min-w-0">
                                     <div className="truncate text-sm font-bold text-white/85">{entry.name}</div>
-                                    <div className="truncate text-xs text-white/40">{entrySubtitle(entry)}</div>
+                                    <div className="truncate text-xs text-white/40">{entrySubtitle(entry, tr)}</div>
                                 </div>
                             </button>
                         ))}
                         {!entries.length && (
-                            <div className="rounded-md border border-white/10 p-4 text-sm text-white/45">No Codex entry found.</div>
+                            <div className="rounded-md border border-white/10 p-4 text-sm text-white/45">{tr.noEntry}</div>
                         )}
                     </div>
                 </aside>
 
                 <div className="min-h-0 flex-1 bg-gradient-to-b from-zinc-950 to-black">
-                    {selected ? <Detail entry={selected} onOpenExternalReference={onOpenExternalReference} /> : <div className="p-6 text-white/50">Select an entry.</div>}
+                    {selected ? <Detail entry={selected} onOpenExternalReference={onOpenExternalReference} tr={tr} /> : <div className="p-6 text-white/50">{tr.selectEntry}</div>}
                 </div>
             </div>
         </GameWindow>
     );
 }
 
-function Detail({ entry, onOpenExternalReference }: { entry: CodexEntry; onOpenExternalReference?: (url: string) => void }) {
+function Detail({ entry, onOpenExternalReference, tr }: { entry: CodexEntry; onOpenExternalReference?: (url: string) => void; tr: Tr }) {
     return (
         <div className="h-full overflow-y-auto p-5 custom-scrollbar">
             <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
                 <div className="min-w-0">
                     <div className="text-xs uppercase tracking-[0.24em] text-amber-400/70">{entry.kind}</div>
                     <h3 className="mt-1 text-2xl font-fantasy font-bold text-white">{entry.name}</h3>
-                    <p className="text-sm text-white/50">{entrySubtitle(entry)}</p>
+                    <p className="text-sm text-white/50">{entrySubtitle(entry, tr)}</p>
                 </div>
                 {entry.kind === 'monster' && entry.portrait && (
                     <img
@@ -158,19 +251,19 @@ function Detail({ entry, onOpenExternalReference }: { entry: CodexEntry; onOpenE
                 {entry.kind === 'spell' && (
                     <>
                         <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <Info label="Casting" value={entry.castingTime} />
-                            <Info label="Range" value={entry.range} />
-                            <Info label="Duration" value={entry.duration} />
-                            <Info label="Components" value={entry.components.join(', ')} />
+                            <Info label={tr.casting} value={entry.castingTime} />
+                            <Info label={tr.range} value={entry.range} />
+                            <Info label={tr.duration} value={entry.duration} />
+                            <Info label={tr.components} value={entry.components.join(', ')} />
                         </div>
                         <p>{entry.effectSummary}</p>
-                        <Mechanics items={[
-                            ...(entry.attack ? [`Spell attack: ${entry.attack.type}`] : []),
-                            ...(entry.save ? [`Save: ${entry.save.ability}, success ${entry.save.effectOnSuccess}`] : []),
-                            ...(entry.damage ? [`Damage: ${entry.damage.dice} ${entry.damage.type}`] : []),
-                            ...(entry.healing ? [`Healing: ${entry.healing.dice}${entry.healing.abilityModifier ? ' + casting ability' : ''}`] : []),
-                            ...(entry.condition ? [`Condition on failure: ${entry.condition}`] : []),
-                            ...(entry.concentration ? ['Concentration'] : []),
+                        <Mechanics tr={tr} items={[
+                            ...(entry.attack ? [`${tr.spellAttack}: ${entry.attack.type}`] : []),
+                            ...(entry.save ? [`${tr.save}: ${entry.save.ability}, ${tr.success} ${entry.save.effectOnSuccess}`] : []),
+                            ...(entry.damage ? [`${tr.damage}: ${entry.damage.dice} ${entry.damage.type}`] : []),
+                            ...(entry.healing ? [`${tr.healing}: ${entry.healing.dice}${entry.healing.abilityModifier ? ` + ${tr.castingAbility}` : ''}`] : []),
+                            ...(entry.condition ? [`${tr.conditionOnFailure}: ${entry.condition}`] : []),
+                            ...(entry.concentration ? [tr.concentration] : []),
                             ...(entry.mechanics || []),
                         ]} />
                     </>
@@ -179,17 +272,17 @@ function Detail({ entry, onOpenExternalReference }: { entry: CodexEntry; onOpenE
                 {(entry.kind === 'rule' || entry.kind === 'action') && (
                     <>
                         <p>{entry.kind === 'rule' ? entry.summary : entry.effectSummary}</p>
-                        <Mechanics items={entry.mechanics} />
+                        <Mechanics tr={tr} items={entry.mechanics} />
                     </>
                 )}
 
                 {entry.kind === 'condition' && (
                     <>
                         <p>{entry.summary}</p>
-                        <Mechanics items={entry.effects} />
+                        <Mechanics tr={tr} items={entry.effects} />
                         <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <Info label="Movement" value={entry.movement || 'normal'} />
-                            <Info label="Actions" value={entry.actionRestrictions?.join(', ') || 'normal'} />
+                            <Info label={tr.movement} value={entry.movement || tr.normal} />
+                            <Info label={tr.actions} value={entry.actionRestrictions?.join(', ') || tr.normal} />
                         </div>
                     </>
                 )}
@@ -197,28 +290,28 @@ function Detail({ entry, onOpenExternalReference }: { entry: CodexEntry; onOpenE
                 {entry.kind === 'item' && (
                     <>
                         <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
-                            <Info label="Type" value={entry.itemType} />
-                            <Info label="Weight" value={entry.weight !== undefined ? `${entry.weight} lb` : 'n/a'} />
-                            <Info label="Damage" value={entry.damageDice ? `${entry.damageDice} ${entry.damageType}` : 'n/a'} />
-                            <Info label="AC" value={entry.ac ? String(entry.ac) : entry.acBonus ? `+${entry.acBonus}` : 'n/a'} />
-                            <Info label="Range" value={entry.range || 'n/a'} />
-                            <Info label="Properties" value={entry.properties?.join(', ') || 'none'} />
+                            <Info label={tr.type} value={entry.itemType} />
+                            <Info label={tr.weight} value={entry.weight !== undefined ? `${entry.weight} lb` : tr.na} />
+                            <Info label={tr.damage} value={entry.damageDice ? `${entry.damageDice} ${entry.damageType}` : tr.na} />
+                            <Info label={tr.ac} value={entry.ac ? String(entry.ac) : entry.acBonus ? `+${entry.acBonus}` : tr.na} />
+                            <Info label={tr.range} value={entry.range || tr.na} />
+                            <Info label={tr.properties} value={entry.properties?.join(', ') || tr.none} />
                         </div>
-                        {entry.effect && <p className="text-white/60">Legacy effect: {entry.effect}</p>}
+                        {entry.effect && <p className="text-white/60">{tr.legacyEffect}: {entry.effect}</p>}
                     </>
                 )}
 
                 {entry.kind === 'monster' && (
                     <>
                         <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                            <Info label="HP" value={`${entry.hp}${entry.hpDice ? ` (${entry.hpDice})` : ''}`} />
-                            <Info label="AC" value={String(entry.ac)} />
-                            <Info label="XP" value={String(entry.xp)} />
-                            <Info label="Role" value={entry.role} />
-                            <Info label="Size" value={entry.size} />
-                            <Info label="Type" value={entry.type} />
+                            <Info label={tr.hp} value={`${entry.hp}${entry.hpDice ? ` (${entry.hpDice})` : ''}`} />
+                            <Info label={tr.ac} value={String(entry.ac)} />
+                            <Info label={tr.xp} value={String(entry.xp)} />
+                            <Info label={tr.role} value={entry.role} />
+                            <Info label={tr.size} value={entry.size} />
+                            <Info label={tr.type} value={entry.type} />
                         </div>
-                        <Mechanics items={entry.attacks.map(attack => `${attack.name}: +${attack.attackBonus}, ${attack.damage} ${attack.damageType}`)} />
+                        <Mechanics tr={tr} items={entry.attacks.map(attack => `${attack.name}: +${attack.attackBonus}, ${attack.damage} ${attack.damageType}`)} />
                     </>
                 )}
             </div>
@@ -233,7 +326,7 @@ function Detail({ entry, onOpenExternalReference }: { entry: CodexEntry; onOpenE
                         className="mt-3 inline-flex items-center gap-2 rounded-md border border-blue-400/20 bg-blue-500/10 px-3 py-2 font-bold uppercase tracking-wide text-blue-300 hover:bg-blue-500/20 text-xs"
                     >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        Voir reference
+                        {tr.viewReference}
                     </button>
                 )}
             </div>
@@ -250,13 +343,13 @@ function Info({ label, value }: { label: string; value: string }) {
     );
 }
 
-function Mechanics({ items }: { items: string[] }) {
+function Mechanics({ items, tr }: { items: string[]; tr: Tr }) {
     if (!items.length) return null;
     return (
         <div className="rounded-md border border-white/10 bg-black/20 p-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-300/70">
                 <Swords className="h-3.5 w-3.5" />
-                Mechanics
+                {tr.mechanics}
             </div>
             <ul className="space-y-1.5">
                 {items.map((item, index) => (

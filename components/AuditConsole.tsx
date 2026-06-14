@@ -3,6 +3,41 @@ import { createPortal } from 'react-dom';
 import { auditBus, AuditEntry, AuditChannel, AUDIT_CHANNELS, AUDIT_CHANNEL_LABEL } from '../services/auditBus';
 import { useGameStore } from '../store/gameStore';
 
+const TRANS = {
+  en: {
+    title: '🔍 AUDIT CONSOLE',
+    filterPlaceholder: 'filter text…',
+    resume: '▶ resume',
+    pause: '⏸ pause',
+    clear: 'clear',
+    devMode: '🛠 Dev Mode',
+    on: 'ON',
+    off: 'OFF',
+    noEntries: 'No entries. Play, talk to the DM, trigger an image/sound… everything shows up here live.',
+    copy: 'copy',
+    selectEntry: 'Select an entry to see the full detail (prompt, args, response…).',
+    noDetail: '(no detail)',
+    popupBlocked: "The audit window was blocked by the browser. Allow pop-ups for this site, then try again.",
+    windowTitle: "DungeonAI — Audit Console",
+  },
+  fr: {
+    title: '🔍 CONSOLE D\'AUDIT',
+    filterPlaceholder: 'filtrer le texte…',
+    resume: '▶ reprendre',
+    pause: '⏸ pause',
+    clear: 'vider',
+    devMode: '🛠 Mode Dév',
+    on: 'ON',
+    off: 'OFF',
+    noEntries: 'Aucune entrée. Joue, parle au MJ, déclenche une image/son… tout apparaît ici en direct.',
+    copy: 'copier',
+    selectEntry: 'Sélectionne une entrée pour voir le détail complet (prompt, args, réponse…).',
+    noDetail: '(pas de détail)',
+    popupBlocked: "La fenêtre d'audit a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.",
+    windowTitle: "DungeonAI — Console d'audit",
+  },
+} as const;
+
 const CHANNEL_COLOR: Record<AuditChannel, string> = {
   'gemini-system': '#a78bfa',
   'gemini-out': '#38bdf8',
@@ -34,6 +69,8 @@ function AuditConsoleView() {
   const [query, setQuery] = useState('');
   const devMode = useGameStore(s => s.devMode);
   const setDevMode = useGameStore(s => s.setDevMode);
+  const language = useGameStore(s => s.language);
+  const tr = TRANS[language];
   const listRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
@@ -67,19 +104,19 @@ function AuditConsoleView() {
     <div className="flex h-screen flex-col bg-zinc-950 font-mono text-xs text-zinc-100">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-black/60 p-2">
-        <span className="font-bold text-amber-300">🔍 AUDIT CONSOLE</span>
+        <span className="font-bold text-amber-300">{tr.title}</span>
         <input
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="filtrer le texte…"
+          placeholder={tr.filterPlaceholder}
           className="min-w-[140px] flex-1 rounded bg-white/10 px-2 py-1 text-xs text-white outline-none placeholder:text-white/30"
         />
         <button onClick={() => setPaused(p => { const next = !p; if (!next) setEntries(auditBus.getAll().slice(-600)); return next; })} className={`rounded px-2 py-1 ${paused ? 'bg-amber-500 text-black' : 'bg-white/10 text-white/80'}`}>
-          {paused ? '▶ reprendre' : '⏸ pause'}
+          {paused ? tr.resume : tr.pause}
         </button>
-        <button onClick={() => { auditBus.clear(); setEntries([]); setSelected(null); }} className="rounded bg-white/10 px-2 py-1 text-white/80">vider</button>
+        <button onClick={() => { auditBus.clear(); setEntries([]); setSelected(null); }} className="rounded bg-white/10 px-2 py-1 text-white/80">{tr.clear}</button>
         <button onClick={() => setDevMode(!devMode)} className={`rounded px-2 py-1 font-bold ${devMode ? 'bg-red-600 text-white' : 'bg-white/10 text-white/80'}`}>
-          🛠 Mode Dév : {devMode ? 'ON' : 'OFF'}
+          {tr.devMode} : {devMode ? tr.on : tr.off}
         </button>
         <span className="ml-auto text-white/40">{filtered.length}/{entries.length}</span>
       </div>
@@ -102,7 +139,7 @@ function AuditConsoleView() {
       <div className="flex min-h-0 flex-1">
         <div ref={listRef} className="w-1/2 overflow-y-auto border-r border-white/10">
           {filtered.length === 0 ? (
-            <div className="p-4 text-center text-white/30">Aucune entrée. Joue, parle au MJ, déclenche une image/son… tout apparaît ici en direct.</div>
+            <div className="p-4 text-center text-white/30">{tr.noEntries}</div>
           ) : filtered.map(e => (
             <button
               key={e.id}
@@ -123,13 +160,13 @@ function AuditConsoleView() {
                 <button
                   onClick={() => { try { navigator.clipboard?.writeText(selected.detail || selected.title); } catch { /* ignore */ } }}
                   className="rounded bg-white/10 px-2 py-0.5 text-white/80"
-                >copier</button>
+                >{tr.copy}</button>
               </div>
               <div className="border-b border-white/5 px-2 py-1 text-white/60">{selected.title}</div>
-              <pre className="flex-1 overflow-auto whitespace-pre-wrap break-words p-2 text-[11px] leading-relaxed text-white/80">{selected.detail || '(pas de détail)'}</pre>
+              <pre className="flex-1 overflow-auto whitespace-pre-wrap break-words p-2 text-[11px] leading-relaxed text-white/80">{selected.detail || tr.noDetail}</pre>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-white/30">Sélectionne une entrée pour voir le détail complet (prompt, args, réponse…).</div>
+            <div className="flex flex-1 items-center justify-center text-white/30">{tr.selectEntry}</div>
           )}
         </div>
       </div>
@@ -144,6 +181,11 @@ function AuditConsoleView() {
  */
 export function AuditWindow({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [container, setContainer] = useState<HTMLElement | null>(null);
+  const language = useGameStore(s => s.language);
+  // Read translations through a ref so the window-open effect can depend ONLY on
+  // `open` (re-running it on language change would tear down & reopen the popup).
+  const trRef = useRef(TRANS[language]);
+  trRef.current = TRANS[language];
   // Keep onClose in a ref so the effect depends ONLY on `open` — otherwise a new
   // onClose identity each parent render would tear down & reopen the window.
   const onCloseRef = useRef(onClose);
@@ -155,10 +197,10 @@ export function AuditWindow({ open, onClose }: { open: boolean; onClose: () => v
     if (!win) {
       // Popup blocked.
       onCloseRef.current();
-      try { alert("La fenêtre d'audit a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie."); } catch { /* ignore */ }
+      try { alert(trRef.current.popupBlocked); } catch { /* ignore */ }
       return;
     }
-    win.document.title = "DungeonAI — Console d'audit";
+    win.document.title = trRef.current.windowTitle;
     // Clone stylesheets so Tailwind utilities render in the popup. Use the resolved
     // absolute href for <link> (about:blank has no usable base URL otherwise).
     document.querySelectorAll('link[rel="stylesheet"]').forEach(node => {

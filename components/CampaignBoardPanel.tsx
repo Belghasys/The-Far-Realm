@@ -3,15 +3,90 @@ import { Clock3, EyeOff, GitBranch, Map as MapIcon, Milestone, Route, ScrollText
 import { AdventureManifest, CampaignRuntimeState } from '../types';
 import { CampaignEvent } from '../services/campaignEventLog';
 import { GameWindow, WindowTabs } from './GameWindow';
+import { useGameStore } from '../store/gameStore';
 
 type CampaignTab = 'spine' | 'branch' | 'state' | 'timeline';
 
-const TABS: { id: CampaignTab; label: string }[] = [
-    { id: 'spine', label: 'Spine' },
-    { id: 'branch', label: 'Branch' },
-    { id: 'state', label: 'State' },
-    { id: 'timeline', label: 'Timeline' },
-];
+const TRANS = {
+    en: {
+        tabSpine: 'Spine',
+        tabBranch: 'Branch',
+        tabState: 'State',
+        tabTimeline: 'Timeline',
+        windowTitle: 'Campaign Board',
+        defaultSubtitle: 'Director state, branch plan, and campaign timeline',
+        mainArc: 'Main Arc',
+        villain: 'Villain',
+        motivation: 'Motivation',
+        currentChapter: 'Current Chapter',
+        legacySave: 'Legacy save: parsed manifest metadata is not available.',
+        noManifest: 'No adventure manifest loaded yet.',
+        chapters: 'Chapters',
+        active: 'active',
+        noChapters: 'No structured chapters available.',
+        activeBranch: 'Active Branch',
+        min: 'min',
+        noActiveBranch: 'No active side branch. The DM can call request_branch_plan when the player makes a major detour.',
+        reconnectHooks: 'Reconnect Hooks',
+        noReconnectHooks: 'No reconnect hooks planned.',
+        branchHistory: 'Branch History',
+        noBranchHistory: 'No branch history yet.',
+        directorState: 'Director State',
+        chapter: 'Chapter',
+        scene: 'Scene',
+        objective: 'Objective',
+        auto: 'auto',
+        none: 'none',
+        protectedSecrets: 'Protected secrets',
+        secretsHint: 'Hidden from this player-facing board, still available to the director context.',
+        canonFacts: 'Canon Facts',
+        noCanonFacts: 'No canon facts recorded yet.',
+        worldClocks: 'World Clocks',
+        noWorldClocks: 'No active world clocks.',
+        recentEvents: 'Recent Campaign Events',
+        noEvents: 'No campaign events recorded yet.',
+    },
+    fr: {
+        tabSpine: 'Trame',
+        tabBranch: 'Embranchement',
+        tabState: 'État',
+        tabTimeline: 'Chronologie',
+        windowTitle: 'Tableau de campagne',
+        defaultSubtitle: 'État du metteur en scène, plan d’embranchement et chronologie de la campagne',
+        mainArc: 'Arc principal',
+        villain: 'Antagoniste',
+        motivation: 'Motivation',
+        currentChapter: 'Chapitre en cours',
+        legacySave: 'Sauvegarde héritée : les métadonnées du manifeste analysé ne sont pas disponibles.',
+        noManifest: 'Aucun manifeste d’aventure chargé pour l’instant.',
+        chapters: 'Chapitres',
+        active: 'actif',
+        noChapters: 'Aucun chapitre structuré disponible.',
+        activeBranch: 'Embranchement actif',
+        min: 'min',
+        noActiveBranch: 'Aucun embranchement secondaire actif. Le MJ peut appeler request_branch_plan quand le joueur fait un détour majeur.',
+        reconnectHooks: 'Accroches de reconnexion',
+        noReconnectHooks: 'Aucune accroche de reconnexion prévue.',
+        branchHistory: 'Historique des embranchements',
+        noBranchHistory: 'Aucun historique d’embranchement pour l’instant.',
+        directorState: 'État du metteur en scène',
+        chapter: 'Chapitre',
+        scene: 'Scène',
+        objective: 'Objectif',
+        auto: 'auto',
+        none: 'aucun',
+        protectedSecrets: 'Secrets protégés',
+        secretsHint: 'Cachés de ce tableau visible par le joueur, mais toujours disponibles pour le contexte du metteur en scène.',
+        canonFacts: 'Faits canoniques',
+        noCanonFacts: 'Aucun fait canonique enregistré pour l’instant.',
+        worldClocks: 'Horloges du monde',
+        noWorldClocks: 'Aucune horloge du monde active.',
+        recentEvents: 'Événements récents de la campagne',
+        noEvents: 'Aucun événement de campagne enregistré pour l’instant.',
+    },
+} as const;
+
+type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
 
 interface Props {
     manifest: AdventureManifest | null;
@@ -58,6 +133,14 @@ function Empty({ text }: { text: string }) {
 }
 
 export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, onClose }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
+    const TABS: { id: CampaignTab; label: string }[] = [
+        { id: 'spine', label: tr.tabSpine },
+        { id: 'branch', label: tr.tabBranch },
+        { id: 'state', label: tr.tabState },
+        { id: 'timeline', label: tr.tabTimeline },
+    ];
     const [tab, setTab] = useState<CampaignTab>('spine');
     const chapter = currentChapter(manifest, runtime);
     const filteredEvents = useMemo(
@@ -77,8 +160,8 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
 
     return (
         <GameWindow
-            title="Campaign Board"
-            subtitle={runtime.currentObjective || chapter?.objective || 'Director state, branch plan, and campaign timeline'}
+            title={tr.windowTitle}
+            subtitle={runtime.currentObjective || chapter?.objective || tr.defaultSubtitle}
             icon={<Route className="h-5 w-5" />}
             onClose={onClose}
             size="xl"
@@ -90,18 +173,18 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
             <div className="min-h-0 flex-1 overflow-y-auto bg-gradient-to-b from-zinc-950 to-black p-4 custom-scrollbar">
                 {tab === 'spine' && (
                     <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
-                        <Section title="Main Arc" icon={<Milestone className="h-4 w-4" />}>
+                        <Section title={tr.mainArc} icon={<Milestone className="h-4 w-4" />}>
                             {manifest ? (
                                 <div className="space-y-4 text-sm text-white/70">
                                     <div>
-                                        <div className="text-xs uppercase tracking-wide text-white/40">Villain</div>
+                                        <div className="text-xs uppercase tracking-wide text-white/40">{tr.villain}</div>
                                         <div className="mt-1 text-lg font-bold text-white">{manifest.villain.name}</div>
                                         <p className="mt-1">{trim(manifest.villain.description, 320)}</p>
-                                        {manifest.villain.motivation && <p className="mt-2 text-amber-100/70">Motivation: {trim(manifest.villain.motivation, 220)}</p>}
+                                        {manifest.villain.motivation && <p className="mt-2 text-amber-100/70">{tr.motivation}: {trim(manifest.villain.motivation, 220)}</p>}
                                     </div>
                                     {chapter && (
                                         <div className="rounded-md border border-amber-400/20 bg-amber-400/10 p-3">
-                                            <div className="text-xs uppercase tracking-wide text-amber-300/80">Current Chapter</div>
+                                            <div className="text-xs uppercase tracking-wide text-amber-300/80">{tr.currentChapter}</div>
                                             <div className="mt-1 font-bold text-white">{chapter.title}</div>
                                             <p className="mt-1 text-white/65">{trim(runtime.currentObjective || chapter.objective, 260)}</p>
                                         </div>
@@ -110,14 +193,14 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                             ) : manifestoText ? (
                                 <div className="space-y-2 text-sm text-white/65">
                                     <p>{trim(manifestoText, 900)}</p>
-                                    <p className="text-xs text-white/35">Legacy save: parsed manifest metadata is not available.</p>
+                                    <p className="text-xs text-white/35">{tr.legacySave}</p>
                                 </div>
                             ) : (
-                                <Empty text="No adventure manifest loaded yet." />
+                                <Empty text={tr.noManifest} />
                             )}
                         </Section>
 
-                        <Section title="Chapters" icon={<MapIcon className="h-4 w-4" />}>
+                        <Section title={tr.chapters} icon={<MapIcon className="h-4 w-4" />}>
                             {manifest?.chapters?.length ? (
                                 <div className="space-y-2">
                                     {manifest.chapters.map(item => {
@@ -129,7 +212,7 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                             >
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div className="min-w-0 font-bold">{item.title}</div>
-                                                    <div className="shrink-0 text-[10px] uppercase tracking-wide opacity-70">{active ? 'active' : item.status}</div>
+                                                    <div className="shrink-0 text-[10px] uppercase tracking-wide opacity-70">{active ? tr.active : item.status}</div>
                                                 </div>
                                                 <p className="mt-1 text-xs opacity-75">{trim(item.objective, 240)}</p>
                                             </div>
@@ -137,7 +220,7 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                     })}
                                 </div>
                             ) : (
-                                <Empty text="No structured chapters available." />
+                                <Empty text={tr.noChapters} />
                             )}
                         </Section>
                     </div>
@@ -145,14 +228,14 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
 
                 {tab === 'branch' && (
                     <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                        <Section title="Active Branch" icon={<GitBranch className="h-4 w-4" />}>
+                        <Section title={tr.activeBranch} icon={<GitBranch className="h-4 w-4" />}>
                             {runtime.activeBranch ? (
                                 <div className="space-y-4 text-sm text-white/70">
                                     <div>
                                         <div className="text-xl font-bold text-white">{runtime.activeBranch.branchTitle}</div>
                                         <p className="mt-1">{runtime.activeBranch.purpose}</p>
                                         <div className="mt-2 text-xs uppercase tracking-wide text-amber-300/75">
-                                            {runtime.activeBranch.status} - {runtime.activeBranch.estimatedPlayTimeMinutes} min
+                                            {runtime.activeBranch.status} - {runtime.activeBranch.estimatedPlayTimeMinutes} {tr.min}
                                         </div>
                                     </div>
                                     <div className="space-y-2">
@@ -169,12 +252,12 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                     </div>
                                 </div>
                             ) : (
-                                <Empty text="No active side branch. The DM can call request_branch_plan when the player makes a major detour." />
+                                <Empty text={tr.noActiveBranch} />
                             )}
                         </Section>
 
                         <div className="space-y-4">
-                            <Section title="Reconnect Hooks" icon={<Route className="h-4 w-4" />}>
+                            <Section title={tr.reconnectHooks} icon={<Route className="h-4 w-4" />}>
                                 {runtime.activeBranch?.reconnectHooks?.length ? (
                                     <div className="space-y-2 text-sm">
                                         {runtime.activeBranch.reconnectHooks.map((hook, index) => (
@@ -185,11 +268,11 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                         ))}
                                     </div>
                                 ) : (
-                                    <Empty text="No reconnect hooks planned." />
+                                    <Empty text={tr.noReconnectHooks} />
                                 )}
                             </Section>
 
-                            <Section title="Branch History" icon={<ScrollText className="h-4 w-4" />}>
+                            <Section title={tr.branchHistory} icon={<ScrollText className="h-4 w-4" />}>
                                 {runtime.branchHistory.length ? (
                                     <div className="space-y-2 text-sm">
                                         {runtime.branchHistory.slice(-8).reverse().map(branch => (
@@ -200,7 +283,7 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                         ))}
                                     </div>
                                 ) : (
-                                    <Empty text="No branch history yet." />
+                                    <Empty text={tr.noBranchHistory} />
                                 )}
                             </Section>
                         </div>
@@ -209,23 +292,23 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
 
                 {tab === 'state' && (
                     <div className="grid gap-4 lg:grid-cols-3">
-                        <Section title="Director State" icon={<ShieldAlert className="h-4 w-4" />}>
+                        <Section title={tr.directorState} icon={<ShieldAlert className="h-4 w-4" />}>
                             <div className="space-y-3 text-sm text-white/70">
-                                <Info label="Chapter" value={runtime.currentChapterId || chapter?.id || 'auto'} />
-                                <Info label="Scene" value={runtime.currentSceneId || 'auto'} />
-                                <Info label="Objective" value={runtime.currentObjective || chapter?.objective || 'none'} />
+                                <Info label={tr.chapter} value={runtime.currentChapterId || chapter?.id || tr.auto} />
+                                <Info label={tr.scene} value={runtime.currentSceneId || tr.auto} />
+                                <Info label={tr.objective} value={runtime.currentObjective || chapter?.objective || tr.none} />
                                 <div className="rounded-md border border-white/10 bg-black/20 p-3">
                                     <div className="flex items-center gap-2 text-white/45">
                                         <EyeOff className="h-4 w-4" />
-                                        Protected secrets
+                                        {tr.protectedSecrets}
                                     </div>
                                     <div className="mt-1 font-mono text-lg text-amber-200">{runtime.protectedSecrets.length}</div>
-                                    <p className="mt-1 text-xs text-white/35">Hidden from this player-facing board, still available to the director context.</p>
+                                    <p className="mt-1 text-xs text-white/35">{tr.secretsHint}</p>
                                 </div>
                             </div>
                         </Section>
 
-                        <Section title="Canon Facts" icon={<ScrollText className="h-4 w-4" />}>
+                        <Section title={tr.canonFacts} icon={<ScrollText className="h-4 w-4" />}>
                             {runtime.canonFacts.length ? (
                                 <ul className="space-y-2 text-sm text-white/70">
                                     {runtime.canonFacts.slice(-12).map((fact, index) => (
@@ -233,11 +316,11 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                     ))}
                                 </ul>
                             ) : (
-                                <Empty text="No canon facts recorded yet." />
+                                <Empty text={tr.noCanonFacts} />
                             )}
                         </Section>
 
-                        <Section title="World Clocks" icon={<Clock3 className="h-4 w-4" />}>
+                        <Section title={tr.worldClocks} icon={<Clock3 className="h-4 w-4" />}>
                             {runtime.worldClocks.length ? (
                                 <div className="space-y-3">
                                     {runtime.worldClocks.map(clock => {
@@ -257,14 +340,14 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                     })}
                                 </div>
                             ) : (
-                                <Empty text="No active world clocks." />
+                                <Empty text={tr.noWorldClocks} />
                             )}
                         </Section>
                     </div>
                 )}
 
                 {tab === 'timeline' && (
-                    <Section title="Recent Campaign Events" icon={<ScrollText className="h-4 w-4" />}>
+                    <Section title={tr.recentEvents} icon={<ScrollText className="h-4 w-4" />}>
                         {filteredEvents.length ? (
                             <div className="space-y-2">
                                 {filteredEvents.map(event => (
@@ -278,7 +361,7 @@ export function CampaignBoardPanel({ manifest, manifestoText, runtime, events, o
                                 ))}
                             </div>
                         ) : (
-                            <Empty text="No campaign events recorded yet." />
+                            <Empty text={tr.noEvents} />
                         )}
                     </Section>
                 )}

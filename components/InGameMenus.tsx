@@ -20,6 +20,200 @@ import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } f
 import { structureInventoryItem } from '../services/codexService';
 import { ensureProgressionState } from '../services/rulesEngine';
 import { GameWindow, WindowTabs } from './GameWindow';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        // Equipment slot labels
+        head: 'Head', neck: 'Neck', back: 'Back', chest: 'Chest', waist: 'Waist',
+        hands: 'Hands', mainHand: 'Main hand', offHand: 'Off hand', ring: 'Ring',
+        legs: 'Legs', feet: 'Feet',
+        // Inventory panel
+        inventory: 'Inventory',
+        visibleItems: 'visible items',
+        carried: 'lb carried',
+        equipment: 'Equipment',
+        backpack: 'Backpack',
+        consumables: 'Consumables',
+        gp: 'gp',
+        backpackEmpty: 'Your backpack is empty.',
+        noConsumables: 'No consumables available.',
+        // Equip warnings
+        twoHandedWarn: 'You cannot equip an off-hand item while holding a two-handed weapon.',
+        offHandWarn: 'Off-hand weapons must be light or finesse.',
+        // Item lines
+        damage: 'damage',
+        ac: 'AC',
+        noMechanicalEffect: 'No mechanical effect',
+        // Equipment view
+        combatReady: 'Combat ready',
+        speed: 'Speed',
+        hp: 'HP',
+        equippedAttacks: 'Equipped attacks',
+        noWeaponEquipped: 'No weapon equipped.',
+        empty: 'Empty',
+        noItemEquipped: 'No item equipped',
+        attack: 'Attack',
+        use: 'Use',
+        mainHandBtn: 'Main',
+        offHandBtn: 'Off-hand',
+        unequip: 'Unequip',
+        equip: 'Equip',
+        // Character sheet
+        level: 'Level',
+        armorClass: 'Armor Class',
+        base: 'base',
+        initiative: 'Initiative',
+        hitPoints: 'Hit Points',
+        temp: 'Temp',
+        max: 'Max',
+        experience: 'Experience',
+        maxLevel: 'MAX LEVEL',
+        xpBeforeLevel1: 'XP until level',
+        xpBeforeLevel2: '',
+        pendingASI: 'Pending ability points',
+        clickAbility: 'Click an ability to add +1 (max 20).',
+        choiceRequired: 'choice required!',
+        mustChoose1: 'Your',
+        mustChoose2: 'level',
+        mustChoose3: 'must choose its specialization. This choice unlocks real mechanical abilities.',
+        attacksSpells: 'Attacks & Spells',
+        name: 'Name',
+        attackCol: 'Attack',
+        damageCol: 'Damage',
+        properties: 'Properties',
+        none: 'none',
+        activeEffects: 'Active Effects',
+        resources: 'Resources',
+        slotLevel: 'Slot lvl.',
+        pact: 'pact ',
+        noLimitedResources: 'No limited resources for now.',
+        spellsMagic: 'Spells & Magic',
+        cantrips: 'Cantrips',
+        preparedSpells: 'Prepared spells',
+        knownSpells: 'Known spells',
+        spellcastingAbility: 'Spellcasting ability',
+        focus: 'Focus',
+        abilitiesTraits: 'Abilities & Traits',
+        noAbility: 'No abilities recorded.',
+        proficiencies: 'Proficiencies',
+        // Effect durations
+        longRest: 'Long rest',
+        shortRest: 'Short rest',
+        concentration: 'Concentration',
+        oneHour: '1 hour',
+        eightHours: '8 hours',
+        rounds: 'Rounds',
+        permanent: 'Permanent',
+    },
+    fr: {
+        head: 'Tête', neck: 'Cou', back: 'Dos', chest: 'Torse', waist: 'Taille',
+        hands: 'Mains', mainHand: 'Main directrice', offHand: 'Main gauche', ring: 'Anneau',
+        legs: 'Jambes', feet: 'Pieds',
+        inventory: 'Inventaire',
+        visibleItems: 'objets visibles',
+        carried: 'lb portées',
+        equipment: 'Équipement',
+        backpack: 'Sac à dos',
+        consumables: 'Consommables',
+        gp: 'PO',
+        backpackEmpty: 'Ton sac à dos est vide.',
+        noConsumables: 'Aucun consommable disponible.',
+        twoHandedWarn: "Vous ne pouvez pas équiper un objet en main gauche en tenant une arme à deux mains.",
+        offHandWarn: 'Les armes en main gauche doivent être légères ou avoir la propriété finesse.',
+        damage: 'dégâts',
+        ac: 'CA',
+        noMechanicalEffect: 'Aucun effet mécanique',
+        combatReady: 'Prêt au combat',
+        speed: 'Vitesse',
+        hp: 'PV',
+        equippedAttacks: 'Attaques équipées',
+        noWeaponEquipped: 'Aucune arme équipée.',
+        empty: 'Vide',
+        noItemEquipped: 'Aucun objet équipé',
+        attack: 'Attaque',
+        use: 'Utiliser',
+        mainHandBtn: 'Principale',
+        offHandBtn: 'Off-hand',
+        unequip: 'Retirer',
+        equip: 'Équiper',
+        level: 'Niveau',
+        armorClass: "Classe d'Armure",
+        base: 'base',
+        initiative: 'Initiative',
+        hitPoints: 'Points de Vie',
+        temp: 'Temp',
+        max: 'Max',
+        experience: 'Expérience',
+        maxLevel: 'NIVEAU MAX',
+        xpBeforeLevel1: 'XP avant le niveau',
+        xpBeforeLevel2: '',
+        pendingASI: 'Points de caractéristique en attente',
+        clickAbility: 'Clique sur une caractéristique pour y ajouter +1 (max 20).',
+        choiceRequired: 'choix requis !',
+        mustChoose1: 'Ton',
+        mustChoose2: 'niveau',
+        mustChoose3: 'doit choisir sa spécialisation. Ce choix débloque de vraies capacités mécaniques.',
+        attacksSpells: 'Attaques & Sorts',
+        name: 'Nom',
+        attackCol: 'Attaque',
+        damageCol: 'Dégâts',
+        properties: 'Propriétés',
+        none: 'aucune',
+        activeEffects: 'Effets actifs',
+        resources: 'Ressources',
+        slotLevel: 'Emplacement niv.',
+        pact: 'pacte ',
+        noLimitedResources: "Aucune ressource limitée pour l'instant.",
+        spellsMagic: 'Sorts & Magie',
+        cantrips: 'Tours de magie',
+        preparedSpells: 'Sorts préparés',
+        knownSpells: 'Sorts connus',
+        spellcastingAbility: 'Caractéristique magique',
+        focus: 'Focaliseur',
+        abilitiesTraits: 'Capacités & Traits',
+        noAbility: 'Aucune capacité enregistrée.',
+        proficiencies: 'Maîtrises',
+        longRest: 'Repos long',
+        shortRest: 'Repos court',
+        concentration: 'Concentration',
+        oneHour: '1 heure',
+        eightHours: '8 heures',
+        rounds: 'Rounds',
+        permanent: 'Permanent',
+    },
+} as const;
+
+type Tr = { [K in keyof typeof TRANS['en']]: string };
+
+/**
+ * EN / FR language toggle wired to the zustand store. Highlights the active
+ * language and switches the whole UI immediately via setLanguage.
+ */
+function LanguageToggle({ tone = 'dark' }: { tone?: 'dark' | 'paper' }) {
+    const language = useGameStore(s => s.language);
+    const setLanguage = useGameStore(s => s.setLanguage);
+    const inactive = tone === 'paper'
+        ? 'text-stone-600 hover:bg-stone-900/10 hover:text-stone-950'
+        : 'text-white/55 hover:bg-white/10 hover:text-white';
+    return (
+        <div className={`flex items-center gap-1 rounded-md border p-0.5 ${tone === 'paper' ? 'border-stone-900/20 bg-white/30' : 'border-white/10 bg-black/30'}`}>
+            {(['en', 'fr'] as const).map(lng => (
+                <button
+                    key={lng}
+                    type="button"
+                    onClick={() => setLanguage(lng)}
+                    aria-pressed={language === lng}
+                    className={`rounded px-2 py-1 text-[11px] font-bold uppercase tracking-wide transition ${
+                        language === lng ? 'bg-amber-400 text-black' : inactive
+                    }`}
+                >
+                    {lng.toUpperCase()}
+                </button>
+            ))}
+        </div>
+    );
+}
 
 interface Props {
     character: CharacterSheet;
@@ -34,17 +228,17 @@ interface Props {
 type InventoryTab = 'equipment' | 'backpack' | 'consumables';
 
 const EQUIPMENT_SLOTS = [
-    { id: 'head', label: 'Tête' },
-    { id: 'neck', label: 'Cou' },
-    { id: 'back', label: 'Dos' },
-    { id: 'chest', label: 'Torse' },
-    { id: 'waist', label: 'Taille' },
-    { id: 'hands', label: 'Mains' },
-    { id: 'mainHand', label: 'Main directrice' },
-    { id: 'offHand', label: 'Main gauche' },
-    { id: 'ring', label: 'Anneau' },
-    { id: 'legs', label: 'Jambes' },
-    { id: 'feet', label: 'Pieds' },
+    { id: 'head', labelKey: 'head' },
+    { id: 'neck', labelKey: 'neck' },
+    { id: 'back', labelKey: 'back' },
+    { id: 'chest', labelKey: 'chest' },
+    { id: 'waist', labelKey: 'waist' },
+    { id: 'hands', labelKey: 'hands' },
+    { id: 'mainHand', labelKey: 'mainHand' },
+    { id: 'offHand', labelKey: 'offHand' },
+    { id: 'ring', labelKey: 'ring' },
+    { id: 'legs', labelKey: 'legs' },
+    { id: 'feet', labelKey: 'feet' },
 ] as const;
 
 const ABILITIES: Ability[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
@@ -76,12 +270,12 @@ function normalizeInventoryItem(item: InventoryItem): InventoryItem {
     };
 }
 
-function itemMechanicLine(item: InventoryItem): string {
+function itemMechanicLine(item: InventoryItem, tr: Tr): string {
     const structured = structureInventoryItem(item);
-    if (structured.damageDice) return `${structured.damageDice} ${structured.damageType || 'dégâts'}`;
-    if (structured.ac) return `CA ${structured.ac}`;
-    if (structured.acBonus) return `+${structured.acBonus} CA`;
-    return item.effect || item.description || 'Aucun effet mécanique';
+    if (structured.damageDice) return `${structured.damageDice} ${structured.damageType || tr.damage}`;
+    if (structured.ac) return `${tr.ac} ${structured.ac}`;
+    if (structured.acBonus) return `+${structured.acBonus} ${tr.ac}`;
+    return item.effect || item.description || tr.noMechanicalEffect;
 }
 
 function itemTags(item: InventoryItem): string[] {
@@ -176,6 +370,8 @@ function inferItemSlot(item: InventoryItem): ItemSlot {
 }
 
 export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUsed }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
     const visibleInventory = useVisibleInventory(character);
     const equippedItems = visibleInventory.filter(item => item.equipped);
@@ -184,9 +380,9 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
     const totalWeight = visibleInventory.reduce((sum, item) => sum + item.weight * item.quantity, 0);
 
     const tabs = [
-        { id: 'equipment' as const, label: 'Équipement', count: equippedItems.length },
-        { id: 'backpack' as const, label: 'Sac à dos', count: bagItems.length },
-        { id: 'consumables' as const, label: 'Consommables', count: consumables.length },
+        { id: 'equipment' as const, label: tr.equipment, count: equippedItems.length },
+        { id: 'backpack' as const, label: tr.backpack, count: bagItems.length },
+        { id: 'consumables' as const, label: tr.consumables, count: consumables.length },
     ];
 
     const recalcBaseAC = (inventory: InventoryItem[]): number => {
@@ -234,7 +430,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
                 if (mainWeapon) {
                     const mainProps = mainWeapon.properties || [];
                     if (mainProps.includes('two-handed')) {
-                        alert("You cannot equip an off-hand item while holding a two-handed weapon.");
+                        alert(tr.twoHandedWarn);
                         return;
                     }
                 }
@@ -242,7 +438,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
                 if (current.type === 'weapon') {
                     const offProps = current.properties || [];
                     if (!offProps.includes('light') && !offProps.includes('finesse')) {
-                        alert("Off-hand weapons must be light or finesse.");
+                        alert(tr.offHandWarn);
                         return;
                     }
                 }
@@ -307,10 +503,11 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
 
     return (
         <GameWindow
-            title="Inventaire"
-            subtitle={`${visibleInventory.length} objets visibles / ${totalWeight.toFixed(1)} lb portées`}
+            title={tr.inventory}
+            subtitle={`${visibleInventory.length} ${tr.visibleItems} / ${totalWeight.toFixed(1)} ${tr.carried}`}
             icon={<Backpack className="h-5 w-5" />}
             onClose={onClose}
+            actions={<LanguageToggle />}
             size="lg"
             bodyClassName="min-h-0 flex flex-1 flex-col overflow-hidden"
             footer={
@@ -321,7 +518,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
                     </div>
                     <div className="flex items-center gap-2 font-mono text-amber-300">
                         <Coins className="h-4 w-4" />
-                        <span>{character.gold || 0} PO</span>
+                        <span>{character.gold || 0} {tr.gp}</span>
                     </div>
                 </div>
             }
@@ -329,13 +526,13 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
             <WindowTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
             <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {activeTab === 'equipment' && (
-                    <EquipmentView character={character} inventory={visibleInventory} onToggle={handleEquipToggle} />
+                    <EquipmentView character={character} inventory={visibleInventory} onToggle={handleEquipToggle} tr={tr} />
                 )}
                 {activeTab === 'backpack' && (
-                    <ItemList list={bagItems} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty="Ton sac à dos est vide." />
+                    <ItemList list={bagItems} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty={tr.backpackEmpty} tr={tr} />
                 )}
                 {activeTab === 'consumables' && (
-                    <ItemList list={consumables} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty="Aucun consommable disponible." />
+                    <ItemList list={consumables} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty={tr.noConsumables} tr={tr} />
                 )}
             </div>
         </GameWindow>
@@ -346,10 +543,12 @@ function EquipmentView({
     character,
     inventory,
     onToggle,
+    tr,
 }: {
     character: CharacterSheet;
     inventory: InventoryItem[];
     onToggle: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
+    tr: Tr;
 }) {
     const getEquipped = (slot: string) => inventory.find(item => item.equipped && item.slot === slot);
     const weapons = inventory.filter(item => item.equipped && item.type === 'weapon');
@@ -360,9 +559,10 @@ function EquipmentView({
                 {EQUIPMENT_SLOTS.map(slot => (
                     <SlotCard
                         key={slot.id}
-                        label={slot.label}
+                        label={tr[slot.labelKey]}
                         item={getEquipped(slot.id)}
                         onUnequip={onToggle}
+                        tr={tr}
                     />
                 ))}
             </div>
@@ -371,19 +571,19 @@ function EquipmentView({
                 <div className="rounded-md border border-white/10 bg-black/30 p-4">
                     <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-300">
                         <Shield className="h-4 w-4" />
-                        Prêt au combat
+                        {tr.combatReady}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                        <Metric label="CA" value={String(getEffectiveAC(character))} />
-                        <Metric label="Vitesse" value={`${getEffectiveSpeed(character)} ft`} />
-                        <Metric label="PV" value={`${character.hp.current}/${character.hp.max}`} />
+                        <Metric label={tr.ac} value={String(getEffectiveAC(character))} />
+                        <Metric label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
+                        <Metric label={tr.hp} value={`${character.hp.current}/${character.hp.max}`} />
                     </div>
                 </div>
 
                 <div className="rounded-md border border-white/10 bg-black/30 p-4">
                     <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-300">
                         <Sword className="h-4 w-4" />
-                        Attaques équipées
+                        {tr.equippedAttacks}
                     </div>
                     <div className="space-y-2">
                         {weapons.map(item => {
@@ -398,7 +598,7 @@ function EquipmentView({
                                 </div>
                             );
                         })}
-                        {!weapons.length && <div className="rounded-md border border-white/10 p-3 text-sm text-white/40">Aucune arme équipée.</div>}
+                        {!weapons.length && <div className="rounded-md border border-white/10 p-3 text-sm text-white/40">{tr.noWeaponEquipped}</div>}
                     </div>
                 </div>
             </aside>
@@ -410,11 +610,13 @@ function SlotCard({
     label,
     item,
     onUnequip,
+    tr,
 }: {
     key?: React.Key;
     label: string;
     item?: InventoryItem;
     onUnequip: (item: InventoryItem) => void;
+    tr: Tr;
 }) {
     return (
         <button
@@ -428,8 +630,8 @@ function SlotCard({
             }`}
         >
             <div className="text-[10px] font-bold uppercase tracking-wide text-white/35">{label}</div>
-            <div className={`mt-2 truncate font-bold ${item ? 'text-amber-200' : 'text-white/30'}`}>{item?.name || 'Vide'}</div>
-            <div className="mt-1 truncate text-xs text-white/40">{item ? itemMechanicLine(item) : 'Aucun objet équipé'}</div>
+            <div className={`mt-2 truncate font-bold ${item ? 'text-amber-200' : 'text-white/30'}`}>{item?.name || tr.empty}</div>
+            <div className="mt-1 truncate text-xs text-white/40">{item ? itemMechanicLine(item, tr) : tr.noItemEquipped}</div>
         </button>
     );
 }
@@ -440,12 +642,14 @@ function ItemList({
     onEquip,
     onUse,
     empty,
+    tr,
 }: {
     list: InventoryItem[];
     character: CharacterSheet;
     onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
     onUse: (item: InventoryItem) => void;
     empty: string;
+    tr: Tr;
 }) {
     if (!list.length) {
         return <div className="rounded-md border border-white/10 p-8 text-center text-white/40">{empty}</div>;
@@ -454,7 +658,7 @@ function ItemList({
     return (
         <div className="grid grid-cols-1 gap-2">
             {list.map(item => (
-                <InventoryRow key={item.id} item={item} character={character} onEquip={onEquip} onUse={onUse} />
+                <InventoryRow key={item.id} item={item} character={character} onEquip={onEquip} onUse={onUse} tr={tr} />
             ))}
         </div>
     );
@@ -465,12 +669,14 @@ function InventoryRow({
     character,
     onEquip,
     onUse,
+    tr,
 }: {
     key?: React.Key;
     item: InventoryItem;
     character: CharacterSheet;
     onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
     onUse: (item: InventoryItem) => void;
+    tr: Tr;
 }) {
     const stats = item.type === 'weapon' ? attackStats(character, item) : null;
 
@@ -485,8 +691,8 @@ function InventoryRow({
                         <h3 className="truncate font-bold text-white/90">{item.name}</h3>
                         {item.quantity > 1 && <span className="rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold text-white/55">x{item.quantity}</span>}
                     </div>
-                    <div className="mt-1 text-xs text-white/50">{itemMechanicLine(item)}</div>
-                    {stats && <div className="mt-1 text-xs text-amber-200/80">Attack {stats.attack >= 0 ? `+${stats.attack}` : stats.attack} / {stats.damage}</div>}
+                    <div className="mt-1 text-xs text-white/50">{itemMechanicLine(item, tr)}</div>
+                    {stats && <div className="mt-1 text-xs text-amber-200/80">{tr.attack} {stats.attack >= 0 ? `+${stats.attack}` : stats.attack} / {stats.damage}</div>}
                     <div className="mt-2 flex flex-wrap gap-1">
                         {itemTags(item).slice(0, 5).map(tag => (
                             <span key={tag} className="rounded border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/35">{tag}</span>
@@ -502,7 +708,7 @@ function InventoryRow({
                         onClick={() => onUse(item)}
                         className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-emerald-200 hover:bg-emerald-500/20"
                     >
-                        Utiliser
+                        {tr.use}
                     </button>
                 )}
                 {item.type === 'weapon' && (
@@ -512,14 +718,14 @@ function InventoryRow({
                             onClick={() => onEquip(item, 'mainHand')}
                             className={`rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wide ${item.equipped && item.slot === 'mainHand' ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/10 text-white/60 hover:bg-white/10'}`}
                         >
-                            Principale
+                            {tr.mainHandBtn}
                         </button>
                         <button
                             type="button"
                             onClick={() => onEquip(item, 'offHand')}
                             className={`rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wide ${item.equipped && item.slot === 'offHand' ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/10 text-white/60 hover:bg-white/10'}`}
                         >
-                            Off-hand
+                            {tr.offHandBtn}
                         </button>
                     </>
                 )}
@@ -529,7 +735,7 @@ function InventoryRow({
                         onClick={() => onEquip(item)}
                         className={`rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wide ${item.equipped ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/10 text-white/60 hover:bg-white/10'}`}
                     >
-                        {item.equipped ? 'Retirer' : 'Équiper'}
+                        {item.equipped ? tr.unequip : tr.equip}
                     </button>
                 )}
             </div>
@@ -555,6 +761,8 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const visibleInventory = useVisibleInventory(character);
     const equippedWeapons = visibleInventory.filter(item => item.type === 'weapon' && item.equipped);
     const resources = Object.entries(character.resources || {});
@@ -584,9 +792,10 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
     return (
         <GameWindow
             title={character.name}
-            subtitle={`${character.race} ${character.class}${character.subclass ? ` (${character.subclass})` : ''} / Niveau ${character.level} / ${character.background}`}
+            subtitle={`${character.race} ${character.class}${character.subclass ? ` (${character.subclass})` : ''} / ${tr.level} ${character.level} / ${character.background}`}
             icon={<User className="h-5 w-5" />}
             onClose={onClose}
+            actions={<LanguageToggle tone="paper" />}
             size="xl"
             tone="paper"
             bodyClassName="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar sm:p-6"
@@ -618,17 +827,17 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
                 <section className="space-y-4">
                     <div className="grid grid-cols-3 gap-3">
-                        <PaperMetric icon={<Shield className="h-4 w-4" />} label="Classe d'Armure" value={String(getEffectiveAC(character))} hint={`base ${character.ac}`} />
-                        <PaperMetric icon={<Zap className="h-4 w-4" />} label="Initiative" value={formatMod(getEffectiveStat(character, 'DEX'))} />
-                        <PaperMetric icon={<HeartPulse className="h-4 w-4" />} label="Vitesse" value={`${getEffectiveSpeed(character)} ft`} />
+                        <PaperMetric icon={<Shield className="h-4 w-4" />} label={tr.armorClass} value={String(getEffectiveAC(character))} hint={`${tr.base} ${character.ac}`} />
+                        <PaperMetric icon={<Zap className="h-4 w-4" />} label={tr.initiative} value={formatMod(getEffectiveStat(character, 'DEX'))} />
+                        <PaperMetric icon={<HeartPulse className="h-4 w-4" />} label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
                     </div>
 
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600">Points de Vie</h3>
+                            <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600">{tr.hitPoints}</h3>
                             <div className="flex gap-3 text-xs font-bold uppercase text-stone-500">
-                                {(character.tempHP || 0) > 0 && <span>Temp +{character.tempHP}</span>}
-                                <span>Max {character.hp.max}</span>
+                                {(character.tempHP || 0) > 0 && <span>{tr.temp} +{character.tempHP}</span>}
+                                <span>{tr.max} {character.hp.max}</span>
                             </div>
                         </div>
                         <div className="flex items-end justify-between gap-4">
@@ -649,12 +858,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
                                 <Star className="h-4 w-4" />
-                                Expérience — Niveau {character.level}
+                                {tr.experience} — {tr.level} {character.level}
                             </h3>
                             <div className="text-xs font-bold uppercase text-amber-700">
                                 {xpProgress.nextLevelXP !== null
                                     ? `${character.xp} / ${xpProgress.nextLevelXP} XP`
-                                    : `${character.xp} XP — NIVEAU MAX`}
+                                    : `${character.xp} XP — ${tr.maxLevel}`}
                             </div>
                         </div>
                         <div className="h-4 overflow-hidden rounded-full border border-amber-300 bg-amber-100">
@@ -665,7 +874,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         </div>
                         {xpProgress.nextLevelXP !== null && (
                             <div className="mt-1 text-right text-[11px] text-amber-800/70">
-                                {xpProgress.neededForNext - xpProgress.intoLevel} XP avant le niveau {character.level + 1}
+                                {xpProgress.neededForNext - xpProgress.intoLevel} {tr.xpBeforeLevel1} {character.level + 1}
                             </div>
                         )}
                     </div>
@@ -675,10 +884,10 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="rounded-md border-2 border-green-600 bg-green-50 p-4">
                             <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-green-700">
                                 <Zap className="h-4 w-4" />
-                                Points de caractéristique en attente : {character.pendingASIPoints}
+                                {tr.pendingASI} : {character.pendingASIPoints}
                             </h3>
                             <p className="mb-3 text-xs text-green-800/80">
-                                Clique sur une caractéristique pour y ajouter +1 (max 20).
+                                {tr.clickAbility}
                             </p>
                             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
                                 {ABILITIES.map(stat => {
@@ -712,10 +921,10 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="rounded-md border-2 border-purple-500 bg-purple-50 p-4">
                             <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-700">
                                 <Gem className="h-4 w-4" />
-                                {subclassConfig.label} — choix requis !
+                                {subclassConfig.label} — {tr.choiceRequired}
                             </h3>
                             <p className="mb-3 text-xs text-purple-800/80">
-                                Ton {character.class} niveau {character.level} doit choisir sa spécialisation. Ce choix débloque de vraies capacités mécaniques.
+                                {tr.mustChoose1} {character.class} {tr.mustChoose2} {character.level} {tr.mustChoose3}
                             </p>
                             <div className="grid gap-2 sm:grid-cols-2">
                                 {subclassConfig.options.map(option => (
@@ -735,15 +944,15 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                     )}
 
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
-                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">Attaques & Sorts</h3>
+                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.attacksSpells}</h3>
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[460px] text-sm">
                                 <thead className="border-b border-stone-300 text-left text-xs uppercase tracking-wide text-stone-500">
                                     <tr>
-                                        <th className="pb-2">Nom</th>
-                                        <th className="pb-2">Attaque</th>
-                                        <th className="pb-2">Dégâts</th>
-                                        <th className="pb-2">Propriétés</th>
+                                        <th className="pb-2">{tr.name}</th>
+                                        <th className="pb-2">{tr.attackCol}</th>
+                                        <th className="pb-2">{tr.damageCol}</th>
+                                        <th className="pb-2">{tr.properties}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -754,12 +963,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                                 <td className="py-2 font-bold">{item.name}</td>
                                                 <td className="py-2 font-mono">{stats.attack >= 0 ? `+${stats.attack}` : stats.attack}</td>
                                                 <td className="py-2">{stats.damage}</td>
-                                                <td className="py-2 text-xs text-stone-500">{stats.properties.join(', ') || 'aucune'}</td>
+                                                <td className="py-2 text-xs text-stone-500">{stats.properties.join(', ') || tr.none}</td>
                                             </tr>
                                         );
                                     })}
                                     {!equippedWeapons.length && (
-                                        <tr><td colSpan={4} className="py-3 text-stone-500">Aucune arme équipée.</td></tr>
+                                        <tr><td colSpan={4} className="py-3 text-stone-500">{tr.noWeaponEquipped}</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -770,14 +979,14 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="rounded-md border-2 border-emerald-500 bg-emerald-50 p-4">
                             <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-700">
                                 <Sparkles className="h-4 w-4" />
-                                Effets actifs
+                                {tr.activeEffects}
                             </h3>
                             <div className="space-y-2">
                                 {character.activeEffects.map((effect, index) => (
                                     <div key={effect.id || index} className="rounded-md border border-emerald-200 bg-white p-3">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <span className="font-bold text-emerald-900">{effect.name}</span>
-                                            <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">{formatEffectDuration(effect.duration)}</span>
+                                            <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">{formatEffectDuration(effect.duration, tr)}</span>
                                         </div>
                                         <div className="mt-1 text-xs text-emerald-800/70">
                                             {effect.modifiers.map(modifier =>
@@ -795,16 +1004,16 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
                 <aside className="space-y-4">
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
-                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">Ressources</h3>
+                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.resources}</h3>
                         <div className="space-y-2">
                             {spellSlots.map(([slot, pool]) => (
-                                <ResourceBar key={slot} label={`Emplacement niv. ${slot.replace('level', '').replace('pact', 'pacte ')}`} current={pool.current} max={pool.max} />
+                                <ResourceBar key={slot} label={`${tr.slotLevel} ${slot.replace('level', '').replace('pact', tr.pact)}`} current={pool.current} max={pool.max} />
                             ))}
                             {resources.map(([key, resource]) => (
                                 <ResourceBar key={key} label={resource.label || key} current={resource.current} max={resource.max} />
                             ))}
                             {!spellSlots.length && !resources.length && (
-                                <p className="text-sm text-stone-500">Aucune ressource limitée pour l'instant.</p>
+                                <p className="text-sm text-stone-500">{tr.noLimitedResources}</p>
                             )}
                         </div>
                     </div>
@@ -813,12 +1022,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
                             <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-700">
                                 <Sparkles className="h-4 w-4 text-purple-600" />
-                                Sorts & Magie
+                                {tr.spellsMagic}
                             </h3>
                             <div className="space-y-3">
                                 {(character.cantrips || []).length > 0 && (
                                     <div>
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Tours de magie</div>
+                                        <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">{tr.cantrips}</div>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {character.cantrips?.map(spell => (
                                                 <span key={spell} className="rounded border border-purple-200 bg-purple-50 px-2 py-0.5 text-xs text-purple-900 font-serif">
@@ -831,7 +1040,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                 {((character.knownSpells || []).length > 0 || (character.preparedSpells || []).length > 0) && (
                                     <div>
                                         <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
-                                            {character.preparedSpells?.length ? 'Sorts préparés' : 'Sorts connus'}
+                                            {character.preparedSpells?.length ? tr.preparedSpells : tr.knownSpells}
                                         </div>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {(character.preparedSpells?.length ? character.preparedSpells : character.knownSpells)?.map(spell => (
@@ -844,9 +1053,9 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                 )}
                                 {character.spellcastingAbility && (
                                     <div className="text-[10px] border-t border-stone-200 pt-2 text-stone-500 font-mono">
-                                        Caractéristique magique : <span className="font-bold text-stone-700">{character.spellcastingAbility}</span>
+                                        {tr.spellcastingAbility} : <span className="font-bold text-stone-700">{character.spellcastingAbility}</span>
                                         {character.spellcastingFocus && (
-                                            <> | Focaliseur : <span className="font-bold text-stone-700">{character.spellcastingFocus}</span></>
+                                            <> | {tr.focus} : <span className="font-bold text-stone-700">{character.spellcastingFocus}</span></>
                                         )}
                                     </div>
                                 )}
@@ -857,7 +1066,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
                         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-stone-600">
                             <Gem className="h-4 w-4" />
-                            Capacités & Traits
+                            {tr.abilitiesTraits}
                         </h3>
                         <div className="max-h-72 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                             {character.features?.map((feature, index) => (
@@ -866,12 +1075,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                     <p className="text-sm leading-snug text-stone-600">{feature.description}</p>
                                 </div>
                             ))}
-                            {!character.features?.length && <p className="text-sm text-stone-500">Aucune capacité enregistrée.</p>}
+                            {!character.features?.length && <p className="text-sm text-stone-500">{tr.noAbility}</p>}
                         </div>
                     </div>
 
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
-                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">Maîtrises</h3>
+                        <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.proficiencies}</h3>
                         <div className="flex flex-wrap gap-1">
                             {character.proficiencies?.map(proficiency => (
                                 <span key={proficiency} className="rounded border border-stone-300 bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700">
@@ -913,13 +1122,13 @@ function ResourceBar({ label, current, max }: { key?: React.Key; label: string; 
     );
 }
 
-function formatEffectDuration(duration: string): string {
-    if (duration === 'long_rest') return 'Repos long';
-    if (duration === 'short_rest') return 'Repos court';
-    if (duration === 'concentration') return 'Concentration';
-    if (duration === '1_hour') return '1 heure';
-    if (duration === '8_hours') return '8 heures';
-    if (duration === 'rounds') return 'Rounds';
-    if (duration === 'permanent') return 'Permanent';
+function formatEffectDuration(duration: string, tr: Tr): string {
+    if (duration === 'long_rest') return tr.longRest;
+    if (duration === 'short_rest') return tr.shortRest;
+    if (duration === 'concentration') return tr.concentration;
+    if (duration === '1_hour') return tr.oneHour;
+    if (duration === '8_hours') return tr.eightHours;
+    if (duration === 'rounds') return tr.rounds;
+    if (duration === 'permanent') return tr.permanent;
     return duration;
 }

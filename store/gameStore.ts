@@ -15,6 +15,16 @@ import { ChatMessage } from '../hooks/useTranscript';
 import { SceneContext } from '../services/sceneImageService';
 import { Combatant } from '../components/CombatTracker';
 
+// Seed the UI language from a previous choice, else the browser, defaulting to English.
+function getInitialLanguage(): Language {
+    try {
+        const stored = localStorage.getItem('dungeonai-lang');
+        if (stored === 'fr' || stored === 'en') return stored;
+        if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('fr')) return 'fr';
+    } catch { /* SSR / restricted storage */ }
+    return 'en';
+}
+
 export interface SceneVisualRequest {
     id: string;
     key: string;
@@ -224,8 +234,11 @@ export const useGameStore = create<GameState>((set) => ({
     user: null,
     authReady: false,
     setUser: (user) => set({ user, authReady: true }),
-    language: 'en',
-    setLanguage: (language) => set({ language }),
+    language: getInitialLanguage(),
+    setLanguage: (language) => {
+        try { localStorage.setItem('dungeonai-lang', language); } catch { /* ignore */ }
+        set({ language });
+    },
 
     gameMode: 'solo',
     setGameMode: (gameMode) => set({ gameMode }),

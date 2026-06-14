@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 import { Send, MessageSquare, Sparkles } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        connecting: 'Connecting to Dungeon Master...',
+        whisper: 'Whisper to the Dungeon Master...',
+    },
+    fr: {
+        connecting: 'Connexion au Maître du Donjon...',
+        whisper: 'Murmurez au Maître du Donjon...',
+    },
+} as const;
 
 interface Props {
     onSend: (text: string) => void;
@@ -7,6 +19,8 @@ interface Props {
 }
 
 export function ConsoleInput({ onSend, isLoading }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const [input, setInput] = useState('');
     const [isFocused, setIsFocused] = useState(false);
 
@@ -41,7 +55,7 @@ export function ConsoleInput({ onSend, isLoading }: Props) {
                     onChange={(e) => setInput(e.target.value)}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    placeholder={isLoading ? "Connecting to Dungeon Master..." : "Whisper to the Dungeon Master..."}
+                    placeholder={isLoading ? tr.connecting : tr.whisper}
                     className={`flex-1 bg-transparent border-none text-white/90 px-4 py-4 focus:ring-0 placeholder-gray-500 font-sans tracking-wide text-lg ${isLoading ? 'opacity-50' : ''}`}
                     disabled={isLoading}
                 />

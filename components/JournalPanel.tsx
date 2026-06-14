@@ -1,6 +1,58 @@
 import React, { useState } from 'react';
 import { BookOpen, Clock, MapPin, Scroll, Users, ScrollText, Target, Skull, Compass } from 'lucide-react';
 import { GameWindow, WindowTabs } from './GameWindow';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        windowTitle: 'Adventure Journal',
+        subtitle: (active: number, chronicle: number) => `${active} active quests / ${chronicle} chronicle entries`,
+        tabPrologue: 'Prologue',
+        tabQuests: 'Quests',
+        tabPeople: 'NPCs',
+        tabPlaces: 'Places',
+        tabChronicle: 'Chronicle',
+        noPrologue: 'No prologue recorded for this campaign.',
+        objective: 'Objective',
+        startingPoint: 'Starting point',
+        theThreat: 'The threat',
+        prologue: 'Prologue',
+        adventureBeginning: 'Your adventure is only beginning.',
+        statusActive: 'Active',
+        statusCompleted: 'Completed',
+        statusFailed: 'Failed',
+        noNotableCharacter: 'No notable character recorded yet.',
+        unknown: 'Unknown',
+        noLocation: 'No discovered location yet.',
+        chronicleEmpty: 'The chronicle will fill as the campaign unfolds.',
+        new: 'New',
+    },
+    fr: {
+        windowTitle: 'Journal d’aventure',
+        subtitle: (active: number, chronicle: number) => `${active} quêtes actives / ${chronicle} entrées de chronique`,
+        tabPrologue: 'Prologue',
+        tabQuests: 'Quêtes',
+        tabPeople: 'PNJ',
+        tabPlaces: 'Lieux',
+        tabChronicle: 'Chronique',
+        noPrologue: 'Aucun prologue enregistré pour cette campagne.',
+        objective: 'Objectif',
+        startingPoint: 'Point de départ',
+        theThreat: 'La menace',
+        prologue: 'Prologue',
+        adventureBeginning: 'Ton aventure ne fait que commencer.',
+        statusActive: 'Active',
+        statusCompleted: 'Terminée',
+        statusFailed: 'Échouée',
+        noNotableCharacter: 'Aucun personnage notable enregistré pour l’instant.',
+        unknown: 'Inconnu',
+        noLocation: 'Aucun lieu découvert pour l’instant.',
+        chronicleEmpty: 'La chronique se remplira au fil de la campagne.',
+        new: 'Nouveau',
+    },
+} as const;
+
+type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
 
 export interface CampaignBriefing {
     prologue: string;
@@ -48,6 +100,8 @@ interface Props {
 type JournalTab = 'briefing' | 'quests' | 'people' | 'places' | 'chronicle';
 
 export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle = [], onClose }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const hasBriefing = Boolean(briefing?.prologue);
     // The prologue is the "tenants et aboutissants" — open on it by default so the
     // player lands on the context instead of feeling catapulted into the story.
@@ -55,17 +109,17 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
     const activeQuests = quests.filter(quest => quest.status === 'active');
 
     const tabs = [
-        ...(hasBriefing ? [{ id: 'briefing' as const, label: 'Prologue', count: 0 }] : []),
-        { id: 'quests' as const, label: 'Quêtes', count: activeQuests.length },
-        { id: 'people' as const, label: 'PNJ', count: npcs.length },
-        { id: 'places' as const, label: 'Lieux', count: locations.length },
-        { id: 'chronicle' as const, label: 'Chronique', count: chronicle.length },
+        ...(hasBriefing ? [{ id: 'briefing' as const, label: tr.tabPrologue, count: 0 }] : []),
+        { id: 'quests' as const, label: tr.tabQuests, count: activeQuests.length },
+        { id: 'people' as const, label: tr.tabPeople, count: npcs.length },
+        { id: 'places' as const, label: tr.tabPlaces, count: locations.length },
+        { id: 'chronicle' as const, label: tr.tabChronicle, count: chronicle.length },
     ];
 
     return (
         <GameWindow
-            title="Adventure Journal"
-            subtitle={`${activeQuests.length} active quests / ${chronicle.length} chronicle entries`}
+            title={tr.windowTitle}
+            subtitle={tr.subtitle(activeQuests.length, chronicle.length)}
             icon={<Scroll className="h-5 w-5" />}
             onClose={onClose}
             size="md"
@@ -73,19 +127,19 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
         >
             <WindowTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
             <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
-                {activeTab === 'briefing' && <BriefingView briefing={briefing} />}
-                {activeTab === 'quests' && <QuestList quests={quests} />}
-                {activeTab === 'people' && <PeopleList npcs={npcs} />}
-                {activeTab === 'places' && <PlaceList locations={locations} />}
-                {activeTab === 'chronicle' && <ChronicleList entries={chronicle} />}
+                {activeTab === 'briefing' && <BriefingView briefing={briefing} tr={tr} />}
+                {activeTab === 'quests' && <QuestList quests={quests} tr={tr} />}
+                {activeTab === 'people' && <PeopleList npcs={npcs} tr={tr} />}
+                {activeTab === 'places' && <PlaceList locations={locations} tr={tr} />}
+                {activeTab === 'chronicle' && <ChronicleList entries={chronicle} tr={tr} />}
             </div>
         </GameWindow>
     );
 }
 
-function BriefingView({ briefing }: { briefing?: CampaignBriefing }) {
+function BriefingView({ briefing, tr }: { briefing?: CampaignBriefing; tr: Tr }) {
     if (!briefing?.prologue) {
-        return <EmptyState icon={<ScrollText className="h-8 w-8" />} text="Aucun prologue enregistré pour cette campagne." />;
+        return <EmptyState icon={<ScrollText className="h-8 w-8" />} text={tr.noPrologue} />;
     }
     return (
         <div className="space-y-3">
@@ -93,19 +147,19 @@ function BriefingView({ briefing }: { briefing?: CampaignBriefing }) {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {briefing.objective && (
                     <div className="rounded-md border border-amber-500/35 bg-amber-500/10 p-3">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-200"><Target className="h-3.5 w-3.5" /> Objectif</div>
+                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-amber-200"><Target className="h-3.5 w-3.5" /> {tr.objective}</div>
                         <p className="text-sm leading-relaxed text-white/75">{briefing.objective}</p>
                     </div>
                 )}
                 {briefing.location && (
                     <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200"><Compass className="h-3.5 w-3.5" /> Point de départ</div>
+                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-200"><Compass className="h-3.5 w-3.5" /> {tr.startingPoint}</div>
                         <p className="text-sm leading-relaxed text-white/75">{briefing.location}</p>
                     </div>
                 )}
                 {briefing.threat && (
                     <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3 sm:col-span-2">
-                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-red-200"><Skull className="h-3.5 w-3.5" /> La menace</div>
+                        <div className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-red-200"><Skull className="h-3.5 w-3.5" /> {tr.theThreat}</div>
                         <p className="text-sm leading-relaxed text-white/75">{briefing.threat}</p>
                     </div>
                 )}
@@ -113,14 +167,14 @@ function BriefingView({ briefing }: { briefing?: CampaignBriefing }) {
 
             {/* The prologue narrative */}
             <div className="rounded-md border border-purple-400/25 bg-purple-500/10 p-4">
-                <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-purple-200"><ScrollText className="h-3.5 w-3.5" /> Prologue</div>
+                <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-purple-200"><ScrollText className="h-3.5 w-3.5" /> {tr.prologue}</div>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/75">{briefing.prologue}</p>
             </div>
         </div>
     );
 }
 
-function QuestList({ quests }: { quests: Quest[] }) {
+function QuestList({ quests, tr }: { quests: Quest[]; tr: Tr }) {
     const sorted = [
         ...quests.filter(quest => quest.status === 'active'),
         ...quests.filter(quest => quest.status === 'completed'),
@@ -128,7 +182,7 @@ function QuestList({ quests }: { quests: Quest[] }) {
     ];
 
     if (!sorted.length) {
-        return <EmptyState icon={<Scroll className="h-8 w-8" />} text="Your adventure is only beginning." />;
+        return <EmptyState icon={<Scroll className="h-8 w-8" />} text={tr.adventureBeginning} />;
     }
 
     return (
@@ -146,7 +200,7 @@ function QuestList({ quests }: { quests: Quest[] }) {
                 >
                     <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                         <h3 className={`font-bold ${quest.status !== 'active' ? 'text-white/55 line-through' : 'text-white'}`}>{quest.title}</h3>
-                        <QuestBadge status={quest.status} />
+                        <QuestBadge status={quest.status} tr={tr} />
                     </div>
                     <p className="text-sm leading-relaxed text-white/60">{quest.description}</p>
                 </div>
@@ -155,7 +209,7 @@ function QuestList({ quests }: { quests: Quest[] }) {
     );
 }
 
-function QuestBadge({ status }: { status: Quest['status'] }) {
+function QuestBadge({ status, tr }: { status: Quest['status']; tr: Tr }) {
     const className = status === 'active'
         ? 'border-amber-400/30 bg-amber-400/10 text-amber-200'
         : status === 'completed'
@@ -164,14 +218,14 @@ function QuestBadge({ status }: { status: Quest['status'] }) {
 
     return (
         <span className={`rounded border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${className}`}>
-            {status === 'active' ? 'Active' : status === 'completed' ? 'Completed' : 'Failed'}
+            {status === 'active' ? tr.statusActive : status === 'completed' ? tr.statusCompleted : tr.statusFailed}
         </span>
     );
 }
 
-function PeopleList({ npcs }: { npcs: NPC[] }) {
+function PeopleList({ npcs, tr }: { npcs: NPC[]; tr: Tr }) {
     if (!npcs.length) {
-        return <EmptyState icon={<Users className="h-8 w-8" />} text="No notable character recorded yet." />;
+        return <EmptyState icon={<Users className="h-8 w-8" />} text={tr.noNotableCharacter} />;
     }
 
     return (
@@ -186,7 +240,7 @@ function PeopleList({ npcs }: { npcs: NPC[] }) {
                             <h4 className="truncate font-bold text-blue-200">{npc.name}</h4>
                             <p className="mt-0.5 flex items-center gap-1 text-xs uppercase tracking-wide text-white/35">
                                 <MapPin className="h-3 w-3" />
-                                {npc.location || 'Unknown'}
+                                {npc.location || tr.unknown}
                             </p>
                         </div>
                     </div>
@@ -197,9 +251,9 @@ function PeopleList({ npcs }: { npcs: NPC[] }) {
     );
 }
 
-function PlaceList({ locations }: { locations: Location[] }) {
+function PlaceList({ locations, tr }: { locations: Location[]; tr: Tr }) {
     if (!locations.length) {
-        return <EmptyState icon={<MapPin className="h-8 w-8" />} text="No discovered location yet." />;
+        return <EmptyState icon={<MapPin className="h-8 w-8" />} text={tr.noLocation} />;
     }
 
     return (
@@ -219,9 +273,9 @@ function PlaceList({ locations }: { locations: Location[] }) {
     );
 }
 
-function ChronicleList({ entries }: { entries: ChronicleEntry[] }) {
+function ChronicleList({ entries, tr }: { entries: ChronicleEntry[]; tr: Tr }) {
     if (!entries.length) {
-        return <EmptyState icon={<BookOpen className="h-8 w-8" />} text="The chronicle will fill as the campaign unfolds." />;
+        return <EmptyState icon={<BookOpen className="h-8 w-8" />} text={tr.chronicleEmpty} />;
     }
 
     return (
@@ -230,7 +284,7 @@ function ChronicleList({ entries }: { entries: ChronicleEntry[] }) {
                 <div key={entry.id} className="relative rounded-md border border-purple-400/20 bg-purple-500/10 p-4">
                     {index === 0 && (
                         <div className="absolute right-3 top-3 rounded bg-purple-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
-                            New
+                            {tr.new}
                         </div>
                     )}
                     <h4 className="pr-12 font-bold text-purple-200">{entry.title}</h4>

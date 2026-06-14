@@ -1,5 +1,37 @@
 import React from 'react';
 import { Dices, Target, Swords, Sparkles, Shield, ArrowUp, ArrowDown } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        damageRoll: 'DAMAGE ROLL',
+        savingThrow: 'SAVING THROW',
+        attackRoll: 'ATTACK ROLL',
+        skillCheck: 'SKILL CHECK',
+        advantageBadge: 'ADVANTAGE - Roll 2d20, keep highest',
+        disadvantageBadge: 'DISADVANTAGE - Roll 2d20, keep lowest',
+        inclDmBonus: (b: number) => `(incl. DM bonus ${b >= 0 ? '+' : ''}${b})`,
+        rulesContext: 'Rules context',
+        rollAdvantage: 'ROLL WITH ADVANTAGE!',
+        rollDisadvantage: 'ROLL WITH DISADVANTAGE',
+        clickToRoll: 'CLICK TO ROLL',
+        cancel: 'Cancel',
+    },
+    fr: {
+        damageRoll: 'JET DE DÉGÂTS',
+        savingThrow: 'JET DE SAUVEGARDE',
+        attackRoll: "JET D'ATTAQUE",
+        skillCheck: 'TEST DE COMPÉTENCE',
+        advantageBadge: 'AVANTAGE - Lancez 2d20, gardez le plus haut',
+        disadvantageBadge: 'DÉSAVANTAGE - Lancez 2d20, gardez le plus bas',
+        inclDmBonus: (b: number) => `(incl. bonus MJ ${b >= 0 ? '+' : ''}${b})`,
+        rulesContext: 'Contexte des règles',
+        rollAdvantage: 'LANCER AVEC AVANTAGE !',
+        rollDisadvantage: 'LANCER AVEC DÉSAVANTAGE',
+        clickToRoll: 'CLIQUEZ POUR LANCER',
+        cancel: 'Annuler',
+    },
+} as const;
 
 interface Props {
     checkType: 'CHECK' | 'SAVE' | 'ATTACK' | 'DAMAGE' | 'DEATH_SAVE' | null;
@@ -25,6 +57,8 @@ const parseFormula = (formula: string) => {
 };
 
 export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'normal', dmBonus = 0, contextReasons = [], onRoll, onDismiss }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     if (!checkType) return null;
 
     const { dice, modifier } = parseFormula(formula);
@@ -55,7 +89,7 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                 <div className="flex items-center gap-3 text-gold">
                     <Icon className="w-8 h-8 animate-pulse" />
                     <h3 className="text-2xl font-fantasy uppercase tracking-widest">
-                        {isDamage ? 'DAMAGE ROLL' : isSave ? 'SAVING THROW' : isAttack ? 'ATTACK ROLL' : 'SKILL CHECK'}
+                        {isDamage ? tr.damageRoll : isSave ? tr.savingThrow : isAttack ? tr.attackRoll : tr.skillCheck}
                     </h3>
                 </div>
 
@@ -66,9 +100,9 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                             : 'bg-red-900/50 text-red-400 border border-red-500'
                         }`}>
                         {advantage === 'advantage' ? (
-                            <><ArrowUp className="w-4 h-4" /> ADVANTAGE - Roll 2d20, keep highest</>
+                            <><ArrowUp className="w-4 h-4" /> {tr.advantageBadge}</>
                         ) : (
-                            <><ArrowDown className="w-4 h-4" /> DISADVANTAGE - Roll 2d20, keep lowest</>
+                            <><ArrowDown className="w-4 h-4" /> {tr.disadvantageBadge}</>
                         )}
                     </div>
                 )}
@@ -94,7 +128,7 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                             </>
                         )}
                         {dmBonus !== 0 && (
-                            <span className="text-xs text-purple-400">(incl. DM bonus {dmBonus >= 0 ? '+' : ''}{dmBonus})</span>
+                            <span className="text-xs text-purple-400">{tr.inclDmBonus(dmBonus)}</span>
                         )}
                         {dc && dc > 0 && (
                             <>
@@ -109,7 +143,7 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
 
                 {contextReasons.length > 0 && (
                     <div className="w-full rounded-lg border border-white/10 bg-black/30 p-3 text-left">
-                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-gold/70">Rules context</div>
+                        <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-gold/70">{tr.rulesContext}</div>
                         <ul className="space-y-1 text-xs text-gray-300">
                             {contextReasons.slice(0, 4).map((reason, index) => (
                                 <li key={`${reason}-${index}`}>{reason}</li>
@@ -131,15 +165,15 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                     `}
                 >
                     <Sparkles className="w-6 h-6 animate-spin-slow" />
-                    {advantage === 'advantage' ? 'ROLL WITH ADVANTAGE!' :
-                        advantage === 'disadvantage' ? 'ROLL WITH DISADVANTAGE' :
-                            'CLICK TO ROLL'}
+                    {advantage === 'advantage' ? tr.rollAdvantage :
+                        advantage === 'disadvantage' ? tr.rollDisadvantage :
+                            tr.clickToRoll}
                     <Sparkles className="w-6 h-6 animate-spin-slow" />
                 </button>
 
                 {/* Dismiss */}
                 <button onClick={onDismiss} className="text-xs text-gray-500 hover:text-white underline opacity-50">
-                    Cancel
+                    {tr.cancel}
                 </button>
             </div>
         </div>

@@ -1,5 +1,11 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: { close: 'Close' },
+    fr: { close: 'Fermer' },
+} as const;
 
 type WindowSize = 'sm' | 'md' | 'lg' | 'xl';
 type WindowTone = 'dark' | 'paper';
@@ -45,6 +51,8 @@ export function GameWindow({
     bodyClassName = 'min-h-0 flex-1 overflow-hidden',
     className = '',
 }: GameWindowProps) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') onClose();
@@ -79,8 +87,8 @@ export function GameWindow({
                             type="button"
                             onClick={onClose}
                             className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${tone === 'paper' ? 'border-stone-900/20 text-stone-700 hover:bg-stone-900 hover:text-white' : 'border-white/10 text-white/55 hover:bg-white/10 hover:text-white'}`}
-                            title="Close"
-                            aria-label="Close"
+                            title={tr.close}
+                            aria-label={tr.close}
                         >
                             <X className="h-5 w-5" />
                         </button>

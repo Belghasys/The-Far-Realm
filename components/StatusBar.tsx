@@ -1,5 +1,25 @@
 import React from 'react';
 import { Shield, Sparkles, Flame, Eye, Zap, Heart, Swords } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        halfCover: 'Half cover',
+        threeQuarterCover: '3/4 cover',
+        coverTooltipSuffix: 'AC against ranged attacks',
+        turnsShort: 'turn(s)',
+        turnAbbrev: 't',
+        noActiveEffect: 'No active effect',
+    },
+    fr: {
+        halfCover: 'Demi-couvert',
+        threeQuarterCover: '3/4 couvert',
+        coverTooltipSuffix: 'CA contre les attaques à distance',
+        turnsShort: 'tour(s)',
+        turnAbbrev: 't',
+        noActiveEffect: 'Aucun effet actif',
+    },
+} as const;
 
 export interface StatusEffect {
     id: string;
@@ -29,12 +49,15 @@ const ICON_MAP = {
 
 const COVER_DISPLAY = {
     0: null,
-    2: { label: 'Demi-couvert', icon: '🛡️', color: 'bg-blue-900/60 border-blue-500' },
-    5: { label: '3/4 couvert', icon: '🏰', color: 'bg-green-900/60 border-green-500' }
-};
+    2: { labelKey: 'halfCover', icon: '🛡️', color: 'bg-blue-900/60 border-blue-500' },
+    5: { labelKey: 'threeQuarterCover', icon: '🏰', color: 'bg-green-900/60 border-green-500' }
+} as const;
 
 export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProps) {
-    const coverDisplay = COVER_DISPLAY[coverBonus as keyof typeof COVER_DISPLAY];
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
+    const coverEntry = COVER_DISPLAY[coverBonus as keyof typeof COVER_DISPLAY];
+    const coverDisplay = coverEntry ? { ...coverEntry, label: tr[coverEntry.labelKey] } : null;
 
     // No effects and no cover = don't render
     if (effects.length === 0 && !coverDisplay) {
@@ -47,7 +70,7 @@ export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProp
             {coverDisplay && (
                 <div
                     className={`flex items-center gap-1.5 px-2 py-1 rounded border text-xs font-medium ${coverDisplay.color}`}
-                    title={`${coverDisplay.label}: +${coverBonus} CA contre les attaques à distance`}
+                    title={`${coverDisplay.label}: +${coverBonus} ${tr.coverTooltipSuffix}`}
                 >
                     <span>{coverDisplay.icon}</span>
                     <span className="text-white">{coverDisplay.label}</span>
@@ -68,7 +91,7 @@ export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProp
                     <div
                         key={effect.id}
                         className={`flex items-center gap-1.5 px-2 py-1 rounded border text-xs font-medium ${bgColor} cursor-pointer hover:opacity-80 transition-opacity`}
-                        title={`${effect.name}${effect.source ? ` (${effect.source})` : ''}${effect.duration ? ` - ${effect.duration} tour(s)` : ''}`}
+                        title={`${effect.name}${effect.source ? ` (${effect.source})` : ''}${effect.duration ? ` - ${effect.duration} ${tr.turnsShort}` : ''}`}
                         onClick={() => onRemoveEffect?.(effect.id)}
                     >
                         <IconComponent className="w-3.5 h-3.5 text-white" />
@@ -77,7 +100,7 @@ export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProp
                             {effect.bonus}
                         </span>
                         {effect.duration && (
-                            <span className="text-gray-400 text-[10px]">({effect.duration}t)</span>
+                            <span className="text-gray-400 text-[10px]">({effect.duration}{tr.turnAbbrev})</span>
                         )}
                     </div>
                 );
@@ -85,7 +108,7 @@ export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProp
 
             {/* Empty state hint */}
             {effects.length === 0 && !coverDisplay && (
-                <span className="text-gray-500 text-xs italic">Aucun effet actif</span>
+                <span className="text-gray-500 text-xs italic">{tr.noActiveEffect}</span>
             )}
         </div>
     );

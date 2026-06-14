@@ -51,6 +51,155 @@ const RuleCodexPanel = React.lazy(() =>
   import('./RuleCodexPanel').then(module => ({ default: module.RuleCodexPanel }))
 );
 
+const TRANS = {
+  en: {
+    devModeOn: '🛠️ *[DEVELOPER MODE ON — the DM now obeys your direct orders. Type IDDAD again to disable.]*',
+    devModeOff: '🛠️ *[Developer mode disabled — the DM resumes its normal arbitration.]*',
+    connectionRestored: '🔗 Connection restored. You may continue.',
+    connectionLostRetry: '⚠️ Connection lost. Reconnecting…',
+    connectionLostNotSent: '⚠️ Connection lost. Message not sent. Reconnecting…',
+    sendError: '❌ Send error. Please try again.',
+    nothingToSave: 'Nothing to save!',
+    gameSaved: '💾 Game saved!',
+    saveErrorConcurrency: 'Save error (concurrency or empty data).',
+    saveError: 'Save error!',
+    sagaBegins: 'The saga begins…',
+    hero: 'Hero',
+    dm: 'DM',
+    talkToDM: 'Talk to the DM…',
+    reconnecting: 'Reconnecting…',
+    send: 'Send',
+    micActive: 'Mic active',
+    enableMic: 'Enable mic',
+    pendingReconnect: 'message(s) awaiting reconnection',
+    generatingScene: 'Generating the scene…',
+    npcTurnInProgress: '🎲 NPC turn in progress…',
+    campaign: 'Campaign',
+    codex: 'Codex',
+    spellbook: 'Spellbook',
+    connectionLostSimple: 'Unable to reconnect to the server.',
+    reference: 'Reference',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    waiting: 'waiting',
+    saving: 'Saving…',
+    save: 'Save',
+    music: 'Music',
+    shortRest: 'Short rest',
+    longRest: 'Long rest',
+    devBanner: '🛠️ Developer mode — the DM obeys',
+    auditTitle: "Audit console (separate window) — system prompts, Gemini, image, SFX, music, combat",
+    audit: '🔍 Audit',
+    devTooltip: 'Developer mode (the DM obeys your direct orders). Same as typing IDDAD in the chat.',
+    dev: '🛠 Dev',
+    on: 'ON',
+    off: 'OFF',
+    loadingCodex: 'Loading the Codex…',
+    hp: 'HP',
+    levelWord: 'Level',
+    combatEndedManually: '⚔️ Combat ended manually.',
+    appliedToAttack: 'applied to your attack',
+    damage: 'Damage',
+    hit: 'HIT!',
+    miss: 'MISS',
+    critHit: 'CRITICAL HIT',
+    touched: 'hit',
+    missed: 'missed',
+    attackLabel: 'Attack',
+    attackN: (n: number, max: number) => max > 1 ? `Attack ${n}/${max}` : 'Attack',
+    frenzy: 'Frenzy',
+    warPriest: 'War Priest',
+    offhandAttack: 'Off-hand attack',
+    vs: 'vs',
+    dodgeDesc: 'Active defense. Attacks against you have disadvantage.',
+    test: 'check',
+    saveWord: 'save',
+    saveSuccess: 'succeeded',
+    saveFail: 'failed',
+    checkSuccess: 'success',
+    checkFail: 'failure',
+    target: 'target',
+    takes: 'takes',
+    enemyTargets: (npc: string, t: string) => `🎯 ${npc} targets ${t} (DM's choice)`,
+    ac: 'AC',
+    potion: 'Potion',
+    healing: 'healing',
+  },
+  fr: {
+    devModeOn: '🛠️ *[MODE DÉVELOPPEUR ACTIVÉ — le MJ obéit désormais à tes ordres directs. Retape IDDAD pour désactiver.]*',
+    devModeOff: '🛠️ *[Mode développeur désactivé — le MJ reprend son arbitrage normal.]*',
+    connectionRestored: '🔗 Connexion rétablie. Vous pouvez continuer.',
+    connectionLostRetry: '⚠️ Connexion perdue. Tentative de reconnexion...',
+    connectionLostNotSent: '⚠️ Connexion perdue. Message non envoyé. Tentative de reconnexion...',
+    sendError: '❌ Erreur d\'envoi. Veuillez réessayer.',
+    nothingToSave: 'Rien à sauvegarder !',
+    gameSaved: '💾 Partie sauvegardée !',
+    saveErrorConcurrency: 'Erreur de sauvegarde (concurrence ou données vides).',
+    saveError: 'Erreur de sauvegarde !',
+    sagaBegins: 'La saga commence…',
+    hero: 'Héros',
+    dm: 'MJ',
+    talkToDM: 'Parler avec le DM...',
+    reconnecting: 'Reconnexion en cours...',
+    send: 'Envoyer',
+    micActive: 'Micro actif',
+    enableMic: 'Activer le micro',
+    pendingReconnect: 'message(s) en attente de reconnexion',
+    generatingScene: 'Génération de la scène…',
+    npcTurnInProgress: '🎲 Tour des PNJ en cours…',
+    campaign: 'Campagne',
+    codex: 'Codex',
+    spellbook: 'Grimoire',
+    connectionLostSimple: 'Impossible de se reconnecter au serveur.',
+    reference: 'Référence',
+    connected: 'Connecté',
+    disconnected: 'Déconnecté',
+    waiting: 'en attente',
+    saving: 'Sauvegarde…',
+    save: 'Sauver',
+    music: 'Musique',
+    shortRest: 'Repos court',
+    longRest: 'Repos long',
+    devBanner: '🛠️ Mode développeur — le MJ obéit',
+    auditTitle: "Console d'audit (fenêtre séparée) — system prompts, Gemini, image, SFX, musique, combat",
+    audit: '🔍 Audit',
+    devTooltip: 'Mode développeur (le MJ obéit à tes ordres directs). Équivaut à taper IDDAD dans le chat.',
+    dev: '🛠 Dév',
+    on: 'ON',
+    off: 'OFF',
+    loadingCodex: 'Chargement du Codex…',
+    hp: 'PV',
+    levelWord: 'Niveau',
+    combatEndedManually: '⚔️ Combat terminé manuellement.',
+    appliedToAttack: 'appliqué à votre attaque',
+    damage: 'Dégâts',
+    hit: 'TOUCHÉ !',
+    miss: 'MANQUÉ',
+    critHit: 'COUP CRITIQUE',
+    touched: 'touché',
+    missed: 'manqué',
+    attackLabel: 'Attaque',
+    attackN: (n: number, max: number) => max > 1 ? `Attaque ${n}/${max}` : 'Attaque',
+    frenzy: 'Frénésie',
+    warPriest: 'Prêtre de guerre',
+    offhandAttack: 'Attaque off-hand',
+    vs: 'vs',
+    dodgeDesc: 'Défense active. Les attaques contre vous ont un désavantage.',
+    test: 'test',
+    saveWord: 'sauvegarde',
+    saveSuccess: 'réussie',
+    saveFail: 'ratée',
+    checkSuccess: 'réussi',
+    checkFail: 'raté',
+    target: 'cible',
+    takes: 'subit',
+    enemyTargets: (npc: string, t: string) => `🎯 ${npc} cible ${t} (choix du MJ)`,
+    ac: 'CA',
+    potion: 'Potion',
+    healing: 'soin',
+  },
+} as const;
+
 function mergeTranscriptText(previous: string, incoming: string): string {
   const prev = previous.trimEnd();
   const next = incoming.trim();
@@ -90,6 +239,7 @@ interface Props {
 }
 
 export function GameSession({ character, adventure, adventureManifest = '', adventureManifestData = null, campaignRuntime, onLeave, onCharacterUpdate, language = 'en', initialHistory = [], initialJournal, saveId }: Props) {
+  const tr = TRANS[language === 'fr' ? 'fr' : 'en'];
   const [activePanel, setActivePanel] = useState<'none' | 'inventory' | 'character' | 'journal' | 'codex' | 'campaign' | 'spells'>('none');
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -381,7 +531,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     character, adventure, adventureManifest, language: dmLanguage, initialHistory, directorContext,
     onMessage: processMessage,
     onReconnectSuccessUpdate: () => {
-      setTranscript(prev => [...prev, { speaker: 'dm', text: '🔗 Connexion rétablie. Vous pouvez continuer.' }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: tr.connectionRestored }]);
     },
     onReconnectFailedSave: triggerManualSave,
     onToolCall: processToolCall
@@ -490,9 +640,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       setChatInput('');
       setTranscript(prev => [...prev, {
         speaker: 'dm',
-        text: next
-          ? '🛠️ *[MODE DÉVELOPPEUR ACTIVÉ — le MJ obéit désormais à tes ordres directs. Retape IDDAD pour désactiver.]*'
-          : '🛠️ *[Mode développeur désactivé — le MJ reprend son arbitrage normal.]*'
+        text: next ? tr.devModeOn : tr.devModeOff
       }]);
       if (dm && isConnected) {
         dm.sendSystemMessage(next
@@ -518,7 +666,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           await dm.sendUserMessage(message);
           console.log('✅ Combat message sent (Narrative):', message.substring(0, 50));
         } else {
-          setTranscript(prev => [...prev, { speaker: 'dm', text: '⚠️ Connexion perdue. Tentative de reconnexion...' }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: tr.connectionLostRetry }]);
           if (dm) dm.manualReconnect();
         }
       } else {
@@ -531,7 +679,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           console.warn('⚠️ Cannot send: not connected. Attempting reconnect...');
           setTranscript(prev => [...prev, {
             speaker: 'dm',
-            text: '⚠️ Connexion perdue. Message non envoyé. Tentative de reconnexion...'
+            text: tr.connectionLostNotSent
           }]);
           dm.manualReconnect();
         }
@@ -540,7 +688,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       console.error('❌ Failed to send message:', error);
       setTranscript(prev => [...prev, {
         speaker: 'dm',
-        text: '❌ Erreur d\'envoi. Veuillez réessayer.'
+        text: tr.sendError
       }]);
     } finally {
       setIsSending(false);
@@ -575,20 +723,20 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // Manual save function
   const handleManualSave = async () => {
     if (transcript.length === 0) {
-      alert('Rien à sauvegarder !');
+      alert(tr.nothingToSave);
       return;
     }
 
     try {
       const success = await triggerManualSave();
       if (success) {
-        setTranscript(prev => [...prev, { speaker: 'dm', text: '💾 Partie sauvegardée !' }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: tr.gameSaved }]);
       } else {
-        alert('Erreur de sauvegarde (concurrence ou données vides).');
+        alert(tr.saveErrorConcurrency);
       }
     } catch (err) {
       console.error('❌ Save failed:', err);
-      alert('Erreur de sauvegarde !');
+      alert(tr.saveError);
     }
   };
 
@@ -597,7 +745,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     persistCompanionHP(useGameStore.getState().combatState);
     setCombatState({ isActive: false, combatants: [], currentTurn: '' });
     setIsNPCTurn(false);
-    setTranscript(prev => [...prev, { speaker: 'dm', text: '⚔️ Combat terminé manuellement.' }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: tr.combatEndedManually }]);
   };
 
   const handleAdvanceTurn = () => {
@@ -727,14 +875,14 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             const adv = m.mode && m.mode !== 'normal' ? ` (${m.mode})` : '';
             return `${m.name}${b}${adv}`;
           }).join(', ');
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[🎲 ${labels} — appliqué à votre attaque]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[🎲 ${labels} — ${tr.appliedToAttack}]*` }]);
         }
         dmBonus = mod.prompt.dmBonus || 0;
         advantage = mod.prompt.advantage;
       }
 
       const attackNum = attacksUsed + 1;
-      const label = attacksMax > 1 ? `Attaque ${attackNum}/${attacksMax} : ${weaponItem.name}` : `Attaque : ${weaponItem.name}`;
+      const label = `${tr.attackN(attackNum, attacksMax)} : ${weaponItem.name}`;
 
       const result = resolveAttackAction(combatState, {
         attacker: 'player',
@@ -754,21 +902,21 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const res = result.resolution;
       let state = result.state;
 
-      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} vs ${res.target} (${res.hit ? 'TOUCHÉ !' : 'MANQUÉ'})`, success: res.hit });
+      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, success: res.hit });
       await waitDice();
       if (res.hit && res.damage > 0) {
-        setPlayerRoll({ result: res.damage, reason: `Dégâts : ${res.damage} (${res.damageType})` });
+        setPlayerRoll({ result: res.damage, reason: `${tr.damage} : ${res.damage} (${res.damageType})` });
         await waitDice();
       }
 
       logCombatRoll({
         type: 'attack', name: label,
         total: res.attackRoll.total,
-        formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} vs CA ${res.attackRoll.prompt.dc}`,
+        formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} ${tr.vs} ${tr.ac} ${res.attackRoll.prompt.dc}`,
         isDM: false, success: res.hit,
       });
       if (res.hit && res.damage > 0) {
-        logCombatRoll({ type: 'damage', name: `Dégâts : ${weaponItem.name}`, total: res.damage, formula: res.damageFormula, isDM: false });
+        logCombatRoll({ type: 'damage', name: `${tr.damage} : ${weaponItem.name}`, total: res.damage, formula: res.damageFormula, isDM: false });
       }
 
       // Consume ONE attack pip (the pip turns green → gray in the HUD).
@@ -824,10 +972,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const damageDice = weaponItem.damageDice || weaponItem.damage || '1d4';
       const damageFormula = `${damageDice}${damageBonus >= 0 ? '+' : ''}${damageBonus}`;
       const label = mode === 'frenzy'
-        ? `Frénésie : ${weaponItem.name}`
+        ? `${tr.frenzy} : ${weaponItem.name}`
         : mode === 'warpriest'
-          ? `Prêtre de guerre : ${weaponItem.name}`
-          : `Attaque off-hand : ${weaponItem.name}`;
+          ? `${tr.warPriest} : ${weaponItem.name}`
+          : `${tr.offhandAttack} : ${weaponItem.name}`;
 
       const result = resolveAttackAction(combatState, {
         attacker: 'player',
@@ -846,21 +994,21 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const res = result.resolution;
       let state = result.state;
 
-      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} vs ${res.target} (${res.hit ? 'TOUCHÉ !' : 'MANQUÉ'})`, success: res.hit });
+      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, success: res.hit });
       await waitDice();
       if (res.hit && res.damage > 0) {
-        setPlayerRoll({ result: res.damage, reason: `Dégâts : ${res.damage} (${res.damageType})` });
+        setPlayerRoll({ result: res.damage, reason: `${tr.damage} : ${res.damage} (${res.damageType})` });
         await waitDice();
       }
 
       logCombatRoll({
         type: 'attack', name: label,
         total: res.attackRoll.total,
-        formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} vs CA ${res.attackRoll.prompt.dc}`,
+        formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} ${tr.vs} ${tr.ac} ${res.attackRoll.prompt.dc}`,
         isDM: false, success: res.hit,
       });
       if (res.hit && res.damage > 0) {
-        logCombatRoll({ type: 'damage', name: `Dégâts : ${weaponItem.name}`, total: res.damage, formula: res.damageFormula, isDM: false });
+        logCombatRoll({ type: 'damage', name: `${tr.damage} : ${weaponItem.name}`, total: res.damage, formula: res.damageFormula, isDM: false });
       }
 
       // Consume the amber bonus pip.
@@ -1075,7 +1223,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             source: 'condition' as const,
             duration: 'rounds' as const,
             roundsRemaining: 1,
-            description: 'Défense active. Les attaques contre vous ont un désavantage.',
+            description: tr.dodgeDesc,
             modifiers: []
           }
         ];
@@ -1094,7 +1242,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           source: 'condition' as const,
           duration: 'rounds' as const,
           roundsRemaining: 1,
-          description: 'Défense active. Les attaques contre vous ont un désavantage.',
+          description: tr.dodgeDesc,
           modifiers: []
         }
       ]
@@ -1289,13 +1437,13 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           if (result.success && result.resolution) {
             const res = result.resolution;
             state = result.state;
-            setPlayerRoll({ result: res.attackRoll.total, reason: `${p.label} vs ${res.target} (${res.hit ? 'TOUCHÉ !' : 'MANQUÉ'})`, success: res.hit });
+            setPlayerRoll({ result: res.attackRoll.total, reason: `${p.label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, success: res.hit });
             await waitDice();
-            logCombatRoll({ type: 'attack', name: p.label, total: res.attackRoll.total, formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} vs CA ${res.attackRoll.prompt.dc}`, isDM: false, success: res.hit });
+            logCombatRoll({ type: 'attack', name: p.label, total: res.attackRoll.total, formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} = ${res.attackRoll.total} ${tr.vs} ${tr.ac} ${res.attackRoll.prompt.dc}`, isDM: false, success: res.hit });
             if (res.hit && res.damage > 0) {
-              setPlayerRoll({ result: res.damage, reason: `${p.label} — dégâts : ${res.damage} ${res.damageType}` });
+              setPlayerRoll({ result: res.damage, reason: `${p.label} — ${tr.damage} : ${res.damage} ${res.damageType}` });
               await waitDice();
-              logCombatRoll({ type: 'damage', name: `${p.label} (dégâts)`, total: res.damage, formula: res.damageFormula, isDM: false });
+              logCombatRoll({ type: 'damage', name: `${p.label} (${tr.damage})`, total: res.damage, formula: res.damageFormula, isDM: false });
             }
             summaries.push(`${res.target} : ${res.hit ? `${res.damage} ${res.damageType}` : 'manqué'}`);
           }
@@ -1314,15 +1462,15 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           // The ENEMY rolls this save → show it on the DM (red) overlay. setPlayerRoll
           // renders blue and silently drops isDM (its state has no isDM field), so the
           // enemy's save looked like a player roll.
-          setCurrentRoll({ result: outcome.total, reason: `${target.name} — sauvegarde ${ability} (${outcome.success ? 'réussie' : 'ratée'})`, isDM: true, success: outcome.success });
+          setCurrentRoll({ result: outcome.total, reason: `${target.name} — ${tr.saveWord} ${ability} (${outcome.success ? tr.saveSuccess : tr.saveFail})`, isDM: true, success: outcome.success });
           await waitDice();
-          logCombatRoll({ type: 'save', name: `${target.name} : save ${ability} vs ${p.label}`, total: outcome.total, formula: `${outcome.formulaLabel} vs DC ${dc}`, isDM: true, success: outcome.success });
+          logCombatRoll({ type: 'save', name: `${target.name} : ${tr.saveWord} ${ability} ${tr.vs} ${p.label}`, total: outcome.total, formula: `${outcome.formulaLabel} vs DC ${dc}`, isDM: true, success: outcome.success });
           if (!outcome.success) {
             if (p.damageFormula) {
               const dmg = rollDice(p.damageFormula).total;
               const applied = applyDamageToEncounter(state, id, dmg, p.damageType);
               if (applied.found) state = applied.state;
-              setPlayerRoll({ result: dmg, reason: `${target.name} subit ${dmg} ${p.damageType || ''}` });
+              setPlayerRoll({ result: dmg, reason: `${target.name} ${tr.takes} ${dmg} ${p.damageType || ''}` });
               await waitDice();
               logCombatRoll({ type: 'damage', name: `${p.label} → ${target.name}`, total: dmg, formula: p.damageFormula, isDM: false });
             }
@@ -1334,8 +1482,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         const ability = (p.checkAbility || 'STR') as any;
         const mod = Math.floor((getEffectiveStat(character, ability) - 10) / 2);
         const dc = p.dc ?? 13;
-        const outcome = resolveRollPrompt(normalizeRollPrompt({ reason: `${p.label} (test ${ability})`, formula: `1d20${mod >= 0 ? '+' : ''}${mod}`, dc, advantage: p.advantage }));
-        setPlayerRoll({ result: outcome.total, reason: `${p.label} — test ${ability} (${outcome.success ? 'réussi' : 'raté'})`, success: outcome.success });
+        const outcome = resolveRollPrompt(normalizeRollPrompt({ reason: `${p.label} (${tr.test} ${ability})`, formula: `1d20${mod >= 0 ? '+' : ''}${mod}`, dc, advantage: p.advantage }));
+        setPlayerRoll({ result: outcome.total, reason: `${p.label} — ${tr.test} ${ability} (${outcome.success ? tr.checkSuccess : tr.checkFail})`, success: outcome.success });
         await waitDice();
         logCombatRoll({ type: 'check', name: `${p.label} (${ability})`, total: outcome.total, formula: `${outcome.formulaLabel} vs DC ${dc}`, isDM: false, success: outcome.success });
         if (outcome.success) {
@@ -1344,7 +1492,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
               const dmg = rollDice(p.damageFormula).total;
               const applied = applyDamageToEncounter(state, id, dmg, p.damageType);
               if (applied.found) state = applied.state;
-              logCombatRoll({ type: 'damage', name: `${p.label} (dégâts)`, total: dmg, formula: p.damageFormula, isDM: false });
+              logCombatRoll({ type: 'damage', name: `${p.label} (${tr.damage})`, total: dmg, formula: p.damageFormula, isDM: false });
             }
             if (p.condition) { const cond = applyConditionToEncounter(state, id, p.condition); if (cond.found) state = cond.state; }
           }
@@ -1359,7 +1507,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             if (applied.found) state = applied.state;
             setPlayerRoll({ result: dmg, reason: `${p.label} → ${target?.name} : ${dmg} ${p.damageType || ''}` });
             await waitDice();
-            logCombatRoll({ type: 'damage', name: `${p.label} → ${target?.name || 'cible'}`, total: dmg, formula: p.damageFormula, isDM: false });
+            logCombatRoll({ type: 'damage', name: `${p.label} → ${target?.name || tr.target}`, total: dmg, formula: p.damageFormula, isDM: false });
           }
           if (p.condition) { const cond = applyConditionToEncounter(state, id, p.condition); if (cond.found) state = cond.state; }
           summaries.push(`${target?.name || 'cible'} : touché`);
@@ -1578,7 +1726,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const target = selectEnemyTarget(livingHeroes, intentTargetId)!;
     const usedIntent = !!intentTargetId && target.id === intentTargetId;
     if (usedIntent) {
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[🎯 ${npc.name} cible ${target.name} (choix du MJ)]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[${tr.enemyTargets(npc.name, target.name)}]*` }]);
     }
 
     // Resolve the SAME attack list the rules engine will use. The old code read
@@ -1706,7 +1854,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       // journal). Also push to the store DIRECTLY so the enemy roll appears in the
       // "Jets" HUD even if the DiceTray panel is unmounted (e.g. narrow layout),
       // and mirror to the audit console so we can always verify enemy turns fire.
-      pushCombatRoll({ name: `${npc.name} : ${attack.name}`, total: res.attackRoll.total, formula: `vs CA ${target.ac}`, isDM: true, success: res.hit });
+      pushCombatRoll({ name: `${npc.name} : ${attack.name}`, total: res.attackRoll.total, formula: `${tr.vs} ${tr.ac} ${target.ac}`, isDM: true, success: res.hit });
       auditBus.publish('combat', `${npc.name} ${attack.name}: ${res.attackRoll.total} vs CA ${target.ac} → ${res.hit ? 'TOUCHE' : 'raté'}`, `attack roll ${res.attackRoll.total} (hit=${res.hit})`);
       diceTrayRef.current?.addLogNoMirror?.({
         type: 'attack',
@@ -1718,7 +1866,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       });
 
       if (res.hit && res.damage > 0) {
-        pushCombatRoll({ name: `${npc.name} : ${attack.name} (dégâts)`, total: res.damage, formula: res.damageFormula, isDM: true });
+        pushCombatRoll({ name: `${npc.name} : ${attack.name} (${tr.damage})`, total: res.damage, formula: res.damageFormula, isDM: true });
         auditBus.publish('combat', `${npc.name} dégâts: ${res.damage} ${res.damageType}`, res.damageFormula);
         diceTrayRef.current?.addLogNoMirror?.({
           type: 'damage',
@@ -1874,7 +2022,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 <h2 className="text-xl font-bold text-amber-400 mb-2">{t('dm.reconnecting', language as Language)}</h2>
                 <p className="text-gray-400 mb-4">{t('dm.attempt', language as Language).replace('{attempt}', reconnectAttempt.toString())}</p>
                 {queuedMessageCount > 0 && (
-                  <p className="text-xs text-amber-300 mb-4">{queuedMessageCount} message(s) en attente de reconnexion</p>
+                  <p className="text-xs text-amber-300 mb-4">{queuedMessageCount} {tr.pendingReconnect}</p>
                 )}
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div
@@ -1887,7 +2035,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
               <>
                 <div className="text-4xl mb-4">⚠️</div>
                 <h2 className="text-xl font-bold text-red-400 mb-2">{t('dm.connectionLostTitle', language as Language)}</h2>
-                <p className="text-gray-400 mb-4">Impossible de se reconnecter au serveur.</p>
+                <p className="text-gray-400 mb-4">{tr.connectionLostSimple}</p>
                 {connectionError && (
                   <pre className="mb-6 max-h-36 overflow-auto whitespace-pre-wrap rounded border border-red-900/60 bg-black/40 p-3 text-left text-xs text-red-100">
                     {connectionError}
@@ -1949,7 +2097,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="relative flex h-[85vh] w-full max-w-5xl flex-col rounded-md border border-white/10 bg-zinc-950 text-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-white/10 bg-black/45 px-4 py-3">
-              <h3 className="font-fantasy text-lg font-bold tracking-wide text-amber-300">Référence</h3>
+              <h3 className="font-fantasy text-lg font-bold tracking-wide text-amber-300">{tr.reference}</h3>
               <button
                 type="button"
                 onClick={() => setActiveReferenceUrl(null)}
@@ -1980,10 +2128,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
               <span className="flex items-center gap-2"><MessageSquare className="w-3 h-3" /> Chronicle</span>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-700 bg-[url('https://www.transparenttextures.com/patterns/dark-leather.png')]" ref={chatScrollRef}>
-              {transcript.length === 0 && <div className="text-gray-600 italic text-xs text-center mt-10">La saga commence…</div>}
+              {transcript.length === 0 && <div className="text-gray-600 italic text-xs text-center mt-10">{tr.sagaBegins}</div>}
               {transcript.filter(msg => !/\[\s*SYSTEM(?::|\])/i.test(msg.text)).map((msg, i) => (
                 <div key={i} className={`text-sm leading-relaxed ${msg.speaker === 'dm' ? 'text-parchment/90' : 'text-blue-200/90 text-right'}`}>
-                  <span className="font-bold opacity-40 uppercase text-[9px] block mb-1 tracking-widest">{msg.speaker === 'user' ? 'Héros' : 'MJ'}</span>
+                  <span className="font-bold opacity-40 uppercase text-[9px] block mb-1 tracking-widest">{msg.speaker === 'user' ? tr.hero : tr.dm}</span>
                   {msg.text}
                 </div>
               ))}
@@ -1995,7 +2143,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder={isConnected ? "Parler avec le DM..." : "Reconnexion en cours..."}
+                placeholder={isConnected ? tr.talkToDM : tr.reconnecting}
                 disabled={!isConnected || isSending}
                 className={`flex-1 bg-gray-800 border rounded-lg px-3 py-2 text-sm text-parchment placeholder-gray-500 focus:outline-none transition-colors ${isConnected
                   ? 'border-gray-700 focus:border-amber-600'
@@ -2015,7 +2163,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                   ? 'bg-amber-600 text-white hover:bg-amber-500'
                   : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
-                title="Envoyer"
+                title={tr.send}
               >
                 <MessageSquare className="w-4 h-4" />
               </button>
@@ -2024,7 +2172,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 className={`p-2 rounded-full transition-all ${isMicOn
                   ? 'bg-red-600 text-white animate-pulse'
                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'}`}
-                title={isMicOn ? 'Micro actif' : 'Activer le micro'}
+                title={isMicOn ? tr.micActive : tr.enableMic}
               >
                 {isMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
               </button>
@@ -2054,7 +2202,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             <div className="w-2 h-2 rounded-full bg-gold animate-bounce" style={{ animationDelay: '0ms' }}></div>
             <div className="w-2 h-2 rounded-full bg-gold animate-bounce" style={{ animationDelay: '150ms' }}></div>
             <div className="w-2 h-2 rounded-full bg-gold animate-bounce" style={{ animationDelay: '300ms' }}></div>
-            <span className="ml-2">Génération de la scène…</span>
+            <span className="ml-2">{tr.generatingScene}</span>
           </div>
         )}
 
@@ -2064,7 +2212,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             {/* NPC Turn Indicator */}
             {isNPCTurn && (
               <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-red-900/90 text-white px-6 py-2 rounded-full border border-red-500 shadow-lg animate-pulse z-50">
-                🎲 Tour des PNJ en cours…
+                {tr.npcTurnInProgress}
               </div>
             )}
 
@@ -2119,13 +2267,13 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             <div className="pointer-events-auto grid w-full gap-2 rounded-md border border-white/10 bg-zinc-950/85 p-2 shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl sm:grid-cols-[minmax(0,1fr)_auto]">
               <div className="grid min-w-0 grid-cols-2 gap-2">
                 <HudMeter
-                  label="PV"
+                  label={tr.hp}
                   value={`${character.hp.current}/${character.hp.max}`}
                   percent={Math.max(0, Math.min(100, (character.hp.current / character.hp.max) * 100))}
                   tone="red"
                 />
                 <HudMeter
-                  label={`Niveau ${character.level}`}
+                  label={`${tr.levelWord} ${character.level}`}
                   value={getXPProgress(character.level, character.xp).nextLevelXP !== null
                     ? `${character.xp} / ${getXPProgress(character.level, character.xp).nextLevelXP} XP`
                     : `${character.xp} XP (MAX)`}
@@ -2149,19 +2297,19 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 />
                 <NavButton
                   icon={<MapIcon className="w-5 h-5" />}
-                  label="Campagne"
+                  label={tr.campaign}
                   onClick={() => setActivePanel(activePanel === 'campaign' ? 'none' : 'campaign')}
                   active={activePanel === 'campaign'}
                 />
                 <NavButton
                   icon={<Scroll className="w-5 h-5" />}
-                  label="Codex"
+                  label={tr.codex}
                   onClick={() => setActivePanel(activePanel === 'codex' ? 'none' : 'codex')}
                   active={activePanel === 'codex'}
                 />
                 <NavButton
                   icon={<BookOpen className="w-5 h-5" />}
-                  label="Grimoire"
+                  label={tr.spellbook}
                   onClick={() => setActivePanel(activePanel === 'spells' ? 'none' : 'spells')}
                   active={activePanel === 'spells'}
                 />
@@ -2192,7 +2340,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       {/* Developer-mode banner (IDDAD) */}
       {devMode && (
         <div className="pointer-events-none fixed left-1/2 top-2 z-[60] -translate-x-1/2 rounded-full border border-emerald-400/60 bg-emerald-950/85 px-4 py-1 text-xs font-bold uppercase tracking-widest text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.4)] backdrop-blur-md animate-pulse">
-          🛠️ Mode développeur — le MJ obéit
+          {tr.devBanner}
         </div>
       )}
 
@@ -2201,7 +2349,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         <div className="flex items-start justify-between gap-3">
           <div className="pointer-events-auto min-w-0 max-w-[min(620px,calc(100vw-1.5rem))] rounded-md border border-white/10 bg-zinc-950/80 px-3 py-2 shadow-xl backdrop-blur-xl">
             <div className="flex min-w-0 items-center gap-3">
-              <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${dm ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-red-500 animate-pulse'}`} title={dm ? "Connecté" : "Déconnecté"} />
+              <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${dm ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-red-500 animate-pulse'}`} title={dm ? tr.connected : tr.disconnected} />
               <div className="min-w-0">
                 <h2 className="truncate font-fantasy text-lg font-bold tracking-wide text-white">
                   {character.name}
@@ -2210,7 +2358,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
               </div>
               {queuedMessageCount > 0 && (
                 <div className="ml-auto shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-200">
-                  {queuedMessageCount} en attente
+                  {queuedMessageCount} {tr.waiting}
                 </div>
               )}
             </div>
@@ -2239,10 +2387,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
               <h3 className="truncate font-fantasy text-sm uppercase tracking-widest text-gold/70">{adventure}</h3>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <HeaderActionButton icon={<Save className="h-3.5 w-3.5" />} label={isSaving ? 'Sauvegarde…' : 'Sauver'} onClick={handleManualSave} />
-              <HeaderActionButton icon={<Music className="h-3.5 w-3.5" />} label="Musique" onClick={musicDirector.toggleMusic} />
-              <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label="Repos court" onClick={handleShortRest} />
-              <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label="Repos long" onClick={handleLongRest} />
+              <HeaderActionButton icon={<Save className="h-3.5 w-3.5" />} label={isSaving ? tr.saving : tr.save} onClick={handleManualSave} />
+              <HeaderActionButton icon={<Music className="h-3.5 w-3.5" />} label={tr.music} onClick={musicDirector.toggleMusic} />
+              <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label={tr.shortRest} onClick={handleShortRest} />
+              <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label={tr.longRest} onClick={handleLongRest} />
             </div>
           </div>
         </div>
@@ -2258,8 +2406,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             // Out-of-combat consumable: same visible feedback as in combat
             // (dice overlay + roll log + DM kept in the loop).
             if (healing > 0) {
-              setPlayerRoll({ result: healing, reason: `${name} : +${healing} PV` });
-              logCombatRoll({ type: 'damage', name: `Potion : ${name}`, total: healing, formula: formula || 'soin', isDM: false });
+              setPlayerRoll({ result: healing, reason: `${name} : +${healing} ${tr.hp}` });
+              logCombatRoll({ type: 'damage', name: `${tr.potion} : ${name}`, total: healing, formula: formula || tr.healing, isDM: false });
               setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${name} consommé — +${healing} PV]*` }]);
               if (dm && isConnected) {
                 dm.sendSystemMessage(`[SYSTEM] Player consumed ${name} outside combat and healed ${healing} HP. Briefly acknowledge it in the fiction if relevant.`);
@@ -2303,7 +2451,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       )}
 
       {activePanel === 'codex' && (
-        <React.Suspense fallback={<div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 text-white">Chargement du Codex…</div>}>
+        <React.Suspense fallback={<div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 text-white">{tr.loadingCodex}</div>}>
           <RuleCodexPanel
             onClose={() => setActivePanel('none')}
             initialTab={codexInitialTab}
@@ -2351,17 +2499,17 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       <div className="fixed bottom-3 left-3 z-[60] flex gap-2">
         <button
           onClick={() => setAuditOpen(o => !o)}
-          title="Console d'audit (fenêtre séparée) — system prompts, Gemini, image, SFX, musique, combat"
+          title={tr.auditTitle}
           className={`rounded-md border px-2.5 py-1.5 text-xs font-bold shadow-lg backdrop-blur transition ${auditOpen ? 'border-amber-400 bg-amber-500/90 text-black' : 'border-white/15 bg-black/70 text-amber-200 hover:bg-black/90'}`}
         >
-          🔍 Audit
+          {tr.audit}
         </button>
         <button
           onClick={() => setDevMode(!devMode)}
-          title="Mode développeur (le MJ obéit à tes ordres directs). Équivaut à taper IDDAD dans le chat."
+          title={tr.devTooltip}
           className={`rounded-md border px-2.5 py-1.5 text-xs font-bold shadow-lg backdrop-blur transition ${devMode ? 'border-red-400 bg-red-600/90 text-white' : 'border-white/15 bg-black/70 text-white/70 hover:bg-black/90'}`}
         >
-          🛠 Dév {devMode ? 'ON' : 'OFF'}
+          {tr.dev} {devMode ? tr.on : tr.off}
         </button>
       </div>
       <AuditWindow open={auditOpen} onClose={() => setAuditOpen(false)} />

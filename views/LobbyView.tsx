@@ -43,9 +43,37 @@ const ADVENTURES = [
     }
 ];
 
+const TRANS = {
+    en: {
+        back: "Back",
+        selectAdventure: "Select Your Adventure",
+        shareCode: "Share Session Code",
+        inviteFriends: "Invite your friends to join your adventure!",
+        selected: "Selected",
+        continueExisting: "Continue Existing Adventure",
+        createCharacter: "Create Character",
+        saveCorrupted: "Save data is corrupted. Please create a new character.",
+        noSaves: "No saved games found. Create a new hero!",
+        loadFailed: "Failed to load: ",
+    },
+    fr: {
+        back: "Retour",
+        selectAdventure: "Choisissez Votre Aventure",
+        shareCode: "Partager le Code de Session",
+        inviteFriends: "Invitez vos amis à rejoindre votre aventure !",
+        selected: "Sélectionné",
+        continueExisting: "Continuer une Aventure Existante",
+        createCharacter: "Créer un Personnage",
+        saveCorrupted: "Les données de sauvegarde sont corrompues. Veuillez créer un nouveau personnage.",
+        noSaves: "Aucune partie sauvegardée trouvée. Créez un nouveau héros !",
+        loadFailed: "Échec du chargement : ",
+    },
+} as const;
+
 export function LobbyView() {
     const navigate = useNavigate();
-    const { user, gameMode, sessionId, isHost, selectedAdventure, setSelectedAdventure, setActiveSaveId, loadSaveState } = useGameStore();
+    const { user, gameMode, sessionId, isHost, selectedAdventure, setSelectedAdventure, setActiveSaveId, loadSaveState, language } = useGameStore();
+    const tr = TRANS[language];
 
     const shareUrl = `${window.location.origin}?session=${sessionId}`;
 
@@ -66,14 +94,14 @@ export function LobbyView() {
                     saveService.setCurrentSave(mostRecentSave.id);
                     navigate('/session');
                 } else {
-                    alert("Save data is corrupted. Please create a new character.");
+                    alert(tr.saveCorrupted);
                 }
             } else {
-                alert("No saved games found. Create a new hero!");
+                alert(tr.noSaves);
             }
         } catch (e: any) {
             console.error("Load Error:", e);
-            alert("Failed to load: " + e.message);
+            alert(tr.loadFailed + e.message);
         }
     };
 
@@ -85,17 +113,17 @@ export function LobbyView() {
                     className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                     <ArrowRight className="w-4 h-4 rotate-180" />
-                    <span>Retour / Back</span>
+                    <span>{tr.back}</span>
                 </button>
 
-                <h1 className="text-4xl font-fantasy text-gold mb-8 border-b border-gray-700 pb-4">Select Your Adventure</h1>
+                <h1 className="text-4xl font-fantasy text-gold mb-8 border-b border-gray-700 pb-4">{tr.selectAdventure}</h1>
 
                 {isHost && gameMode === 'multiplayer' && (
                     <div className="bg-gray-800 p-6 rounded-lg mb-8 border border-blue-700 text-center">
                         <h2 className="text-2xl font-bold text-blue-400 mb-4 flex items-center justify-center gap-2">
-                            <Share2 className="w-6 h-6" /> Share Session Code
+                            <Share2 className="w-6 h-6" /> {tr.shareCode}
                         </h2>
-                        <p className="text-gray-300 mb-4">Invite your friends to join your adventure!</p>
+                        <p className="text-gray-300 mb-4">{tr.inviteFriends}</p>
                         <div className="flex flex-col items-center justify-center gap-4">
                             <div className="bg-white p-2 rounded-lg">
                                 <QRCodeSVG value={shareUrl} size={128} fgColor="#000000" />
@@ -127,7 +155,7 @@ export function LobbyView() {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <Book className={`w-8 h-8 ${selectedAdventure === adv.id ? 'text-red-500' : 'text-gray-500'}`} />
-                                {selectedAdventure === adv.id && <div className="bg-red-600 text-xs px-2 py-1 rounded font-bold uppercase">Selected</div>}
+                                {selectedAdventure === adv.id && <div className="bg-red-600 text-xs px-2 py-1 rounded font-bold uppercase">{tr.selected}</div>}
                             </div>
                             <h3 className="text-2xl font-bold font-fantasy mb-2">{adv.title}</h3>
                             <p className="text-gray-400 font-serif leading-relaxed text-sm">{adv.desc}</p>
@@ -138,7 +166,7 @@ export function LobbyView() {
 
                 <div className="mt-12 flex justify-between items-center">
                     <button onClick={handleContinueLatest} className="text-gray-400 hover:text-white underline">
-                        Continue Existing Adventure
+                        {tr.continueExisting}
                     </button>
 
                     <button
@@ -146,7 +174,7 @@ export function LobbyView() {
                         onClick={() => navigate('/create')}
                         className="bg-gold text-black font-bold text-xl px-12 py-4 rounded hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-fantasy transition-transform hover:translate-x-2"
                     >
-                        Create Character <ArrowRight className="w-6 h-6" />
+                        {tr.createCharacter} <ArrowRight className="w-6 h-6" />
                     </button>
                 </div>
             </div>

@@ -3,6 +3,27 @@ import { Swords, Dices } from 'lucide-react';
 import { localSfxService } from '../services/localSfxService';
 import { useGameStore } from '../store/gameStore';
 
+const TRANS = {
+    en: {
+        success: '✓ Success',
+        failure: '✗ Failure',
+        combatTitle: 'Combat rolls',
+        skillTitle: 'Skill rolls',
+        combatEmpty: 'Attacks, damage and saving throws will appear here.',
+        skillEmpty: 'Skill checks will appear here.',
+    },
+    fr: {
+        success: '✓ Réussite',
+        failure: '✗ Échec',
+        combatTitle: 'Jets de combat',
+        skillTitle: 'Jets de compétence',
+        combatEmpty: "Attaques, dégâts et sauvegardes s'afficheront ici.",
+        skillEmpty: "Les jets de compétence s'afficheront ici.",
+    },
+} as const;
+
+type Tr = (typeof TRANS)[keyof typeof TRANS];
+
 export interface LogEntry {
     id: number;
     type: 'damage' | 'check' | 'save' | 'attack' | 'initiative';
@@ -30,7 +51,7 @@ interface DiceTrayProps {
 // initiative. Skill window = pure ability/skill checks.
 const COMBAT_TYPES: LogEntry['type'][] = ['attack', 'damage', 'save', 'initiative'];
 
-function RollRow({ entry }: { key?: React.Key; entry: LogEntry }) {
+function RollRow({ entry, tr }: { key?: React.Key; entry: LogEntry; tr: Tr }) {
     return (
         <div
             className={`
@@ -59,7 +80,7 @@ function RollRow({ entry }: { key?: React.Key; entry: LogEntry }) {
                 <span className="text-gray-500 text-[11px] font-mono truncate">{entry.formula}</span>
                 {entry.success !== undefined && (
                     <span className={`text-[10px] font-bold uppercase shrink-0 ${entry.success ? 'text-green-400' : 'text-red-400'}`}>
-                        {entry.success ? '✓ Réussite' : '✗ Échec'}
+                        {entry.success ? tr.success : tr.failure}
                     </span>
                 )}
             </div>
@@ -75,6 +96,7 @@ function RollWindow({
     emptyIcon,
     emptyText,
     bottomRef,
+    tr,
 }: {
     title: string;
     icon: React.ReactNode;
@@ -83,6 +105,7 @@ function RollWindow({
     emptyIcon: string;
     emptyText: string;
     bottomRef?: React.RefObject<HTMLDivElement>;
+    tr: Tr;
 }) {
     return (
         <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gray-700 bg-black/60">
@@ -98,7 +121,7 @@ function RollWindow({
                         <p className="text-[11px] italic">{emptyText}</p>
                     </div>
                 ) : (
-                    logs.map(l => <RollRow key={l.id} entry={l} />)
+                    logs.map(l => <RollRow key={l.id} entry={l} tr={tr} />)
                 )}
                 {bottomRef && <div ref={bottomRef} />}
             </div>
@@ -112,6 +135,8 @@ function RollWindow({
  *   🎲 Jets de compétence — ability/skill checks
  */
 export const DiceTray = forwardRef<DiceTrayRef, DiceTrayProps>((_props, ref) => {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const combatBottomRef = useRef<HTMLDivElement>(null);
     const skillBottomRef = useRef<HTMLDivElement>(null);
@@ -153,22 +178,24 @@ export const DiceTray = forwardRef<DiceTrayRef, DiceTrayProps>((_props, ref) => 
     return (
         <div className="flex h-full flex-col gap-2 bg-black/80 p-2 font-sans">
             <RollWindow
-                title="Jets de combat"
+                title={tr.combatTitle}
                 icon={<Swords className="h-3.5 w-3.5" />}
                 accent="text-red-300/85"
                 logs={combatLogs}
                 emptyIcon="⚔️"
-                emptyText="Attaques, dégâts et sauvegardes s'afficheront ici."
+                emptyText={tr.combatEmpty}
                 bottomRef={combatBottomRef}
+                tr={tr}
             />
             <RollWindow
-                title="Jets de compétence"
+                title={tr.skillTitle}
                 icon={<Dices className="h-3.5 w-3.5" />}
                 accent="text-sky-300/85"
                 logs={skillLogs}
                 emptyIcon="🎲"
-                emptyText="Les skill checks s'afficheront ici."
+                emptyText={tr.skillEmpty}
                 bottomRef={skillBottomRef}
+                tr={tr}
             />
         </div>
     );

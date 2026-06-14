@@ -1,5 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DICE_ANIM_MS, skipDice } from '../services/diceTiming';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        defaultReason: 'Check',
+        rolling: 'Rolling...',
+        dmRolled: 'DM Rolled',
+        youRolled: 'You Rolled',
+        success: '✓ SUCCESS',
+        failure: '✗ FAILURE',
+        dismiss: 'Click anywhere to dismiss',
+    },
+    fr: {
+        defaultReason: 'Test',
+        rolling: 'Lancer...',
+        dmRolled: 'Le MJ a lancé',
+        youRolled: 'Vous avez lancé',
+        success: '✓ RÉUSSITE',
+        failure: '✗ ÉCHEC',
+        dismiss: 'Cliquez n\'importe où pour fermer',
+    },
+} as const;
 
 interface Props {
     onComplete?: () => void;
@@ -11,7 +33,10 @@ interface Props {
 
 const SPIN_MS = 1000;
 
-export function RollingDice({ onComplete, result = 20, reason = "Check", isDM = false, success }: Props) {
+export function RollingDice({ onComplete, result = 20, reason, isDM = false, success }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
+    const reasonText = reason ?? tr.defaultReason;
     const [stage, setStage] = useState<'rolling' | 'result'>('rolling');
 
     // Keep the latest onComplete in a ref so it is NOT an effect dependency.
@@ -30,7 +55,7 @@ export function RollingDice({ onComplete, result = 20, reason = "Check", isDM = 
         const spin = setTimeout(() => setStage('result'), SPIN_MS);
         const close = setTimeout(() => { onCompleteRef.current?.(); }, DICE_ANIM_MS);
         return () => { clearTimeout(spin); clearTimeout(close); };
-    }, [result, reason]);
+    }, [result, reasonText]);
 
     // Clicking the overlay must advance the GAME (skip the pending dice wait),
     // not merely hide the dice — otherwise the turn still froze for the full
@@ -78,20 +103,20 @@ export function RollingDice({ onComplete, result = 20, reason = "Check", isDM = 
                 {/* Labels */}
                 <div className="text-center">
                     <div className={`text-2xl font-fantasy font-bold uppercase tracking-widest ${isDM ? 'text-red-500' : 'text-blue-400'}`}>
-                        {stage === 'rolling' ? 'Rolling...' : (isDM ? 'DM Rolled' : 'You Rolled')}
+                        {stage === 'rolling' ? tr.rolling : (isDM ? tr.dmRolled : tr.youRolled)}
                     </div>
                     <div className="text-white font-mono bg-black/50 px-4 py-2 rounded-lg mt-3 border border-gray-600 text-lg">
-                        {reason}
+                        {reasonText}
                     </div>
                     {stage === 'result' && success !== undefined && (
                         <div className={`mt-3 text-xl font-bold uppercase tracking-widest ${success ? 'text-green-400' : 'text-red-400'}`}>
-                            {success ? '✓ SUCCESS' : '✗ FAILURE'}
+                            {success ? tr.success : tr.failure}
                         </div>
                     )}
                 </div>
 
                 {/* Click hint */}
-                <div className="text-gray-500 text-xs opacity-50">Click anywhere to dismiss</div>
+                <div className="text-gray-500 text-xs opacity-50">{tr.dismiss}</div>
             </div>
         </div>
     );

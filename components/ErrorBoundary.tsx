@@ -1,4 +1,22 @@
 import React, { ErrorInfo, ReactNode } from 'react';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        defaultTitle: 'Something went wrong',
+        body: 'An unexpected error occurred. Your game data has been auto-saved.',
+        errorDetails: 'Error details',
+        retry: '⚡ Retry',
+        reload: '🔄 Reload Page',
+    },
+    fr: {
+        defaultTitle: 'Une erreur est survenue',
+        body: "Une erreur inattendue s'est produite. Vos données de jeu ont été sauvegardées automatiquement.",
+        errorDetails: "Détails de l'erreur",
+        retry: '⚡ Réessayer',
+        reload: '🔄 Recharger la page',
+    },
+} as const;
 
 interface Props {
     children: ReactNode;
@@ -40,6 +58,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
     render() {
         if (this.state.hasError) {
+            const tr = TRANS[useGameStore.getState().language] || TRANS.en;
             return (
                 <div style={{
                     minHeight: '100vh',
@@ -64,10 +83,10 @@ export class ErrorBoundary extends React.Component<Props, State> {
                     }}>
                         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💥</div>
                         <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-                            {this.props.fallbackTitle || 'Something went wrong'}
+                            {this.props.fallbackTitle || tr.defaultTitle}
                         </h2>
                         <p style={{ color: '#94a3b8', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-                            An unexpected error occurred. Your game data has been auto-saved.
+                            {tr.body}
                         </p>
 
                         {this.state.error && (
@@ -79,7 +98,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                                 padding: '0.75rem 1rem',
                             }}>
                                 <summary style={{ cursor: 'pointer', color: '#f59e0b', fontWeight: 600 }}>
-                                    Error details
+                                    {tr.errorDetails}
                                 </summary>
                                 <pre style={{
                                     marginTop: '0.5rem',
@@ -112,7 +131,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                                 onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                                 onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                             >
-                                ⚡ Retry
+                                {tr.retry}
                             </button>
                             <button
                                 onClick={() => window.location.reload()}
@@ -130,7 +149,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                                 onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
                                 onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                             >
-                                🔄 Reload Page
+                                {tr.reload}
                             </button>
                         </div>
                     </div>

@@ -5,6 +5,61 @@ import type { ActiveEffect } from '../types';
 import { CombatActionsPanel } from './CombatActionsPanel';
 import { useGameStore } from '../store/gameStore';
 
+const TRANS = {
+    en: {
+        mainActionTitle: 'Main Action (Green = Available, Gray = Used)',
+        bonusActionTitle: 'Bonus Action (Yellow = Available, Gray = Used)',
+        reactionTitle: 'Reaction (Purple = Available, Gray = Used)',
+        extraAttackTitle: 'Extra Attack (Blue = Available, Gray = Used)',
+        target: '🎯 TARGET',
+        init: 'Init',
+        usesRemaining: (n: number) => `${n} uses remaining`,
+        currentTurn: 'Current turn',
+        reference: 'Reference',
+        combat: 'Combat',
+        initiative: 'Initiative',
+        round: 'Round',
+        enemies: 'Enemies',
+        endMyTurn: 'End my turn',
+        waiting: 'Waiting',
+        endTurnTitle: 'End your turn — the enemies play next',
+        otherCombatantsTurn: "Other combatants' turn",
+        endCombat: 'End the combat',
+        end: 'End',
+        combatRolls: 'Combat rolls',
+        playerLegend: '● player',
+        enemyLegend: '● enemy/DM',
+        rollsEmpty: 'Attack and damage rolls will appear here.',
+    },
+    fr: {
+        mainActionTitle: 'Action Principale (Vert = Disponible, Gris = Utilisé)',
+        bonusActionTitle: 'Action Bonus (Jaune = Disponible, Gris = Utilisé)',
+        reactionTitle: 'Réaction (Violet = Disponible, Gris = Utilisé)',
+        extraAttackTitle: 'Attaque Supplémentaire (Bleu = Disponible, Gris = Utilisé)',
+        target: '🎯 CIBLE',
+        init: 'Init',
+        usesRemaining: (n: number) => `${n} utilisations restantes`,
+        currentTurn: 'Tour actuel',
+        reference: 'Référence',
+        combat: 'Combat',
+        initiative: 'Initiative',
+        round: 'Round',
+        enemies: 'Ennemis',
+        endMyTurn: 'Terminer mon tour',
+        waiting: 'En attente',
+        endTurnTitle: 'Terminer ton tour — les ennemis jouent ensuite',
+        otherCombatantsTurn: 'Tour des autres combattants',
+        endCombat: 'Terminer le combat',
+        end: 'Fin',
+        combatRolls: 'Jets de combat',
+        playerLegend: '● joueur',
+        enemyLegend: '● ennemi/MJ',
+        rollsEmpty: "Les jets d'attaque et de dégâts s'afficheront ici.",
+    },
+} as const;
+
+type Tr = (typeof TRANS)[keyof typeof TRANS];
+
 export interface Combatant {
     id: string;
     name: string;
@@ -159,6 +214,7 @@ const CombatantRow: React.FC<{
     playerStoryModifiers?: any[];
     isSelectedTarget?: boolean;
     onClick?: () => void;
+    tr: Tr;
 }> = ({
     combatant,
     index,
@@ -170,6 +226,7 @@ const CombatantRow: React.FC<{
     playerStoryModifiers,
     isSelectedTarget,
     onClick,
+    tr,
 }) => {
     const percent = hpPercent(combatant);
     const isDown = combatant.hp.current <= 0;
@@ -218,7 +275,7 @@ const CombatantRow: React.FC<{
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'action'); }}
-                                        title="Action Principale (Vert = Disponible, Gris = Utilisé)"
+                                        title={tr.mainActionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
                                         <Swords className={`h-4 w-4 transition-colors ${actionEconomy?.actionUsed ? 'text-zinc-600 opacity-40' : 'text-emerald-400 drop-shadow-[0_0_5px_rgba(52,211,153,0.5)]'}`} />
@@ -226,7 +283,7 @@ const CombatantRow: React.FC<{
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'bonusAction'); }}
-                                        title="Action Bonus (Jaune = Disponible, Gris = Utilisé)"
+                                        title={tr.bonusActionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
                                         <Swords className={`h-4 w-4 transition-colors ${actionEconomy?.bonusActionUsed ? 'text-zinc-600 opacity-40' : 'text-amber-400 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]'}`} />
@@ -234,7 +291,7 @@ const CombatantRow: React.FC<{
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'reaction'); }}
-                                        title="Réaction (Violet = Disponible, Gris = Utilisé)"
+                                        title={tr.reactionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
                                         <Shield className={`h-3.5 w-3.5 transition-colors ${actionEconomy?.reactionUsed ? 'text-zinc-600 opacity-40' : 'text-purple-400 drop-shadow-[0_0_5px_rgba(168,85,247,0.5)]'}`} />
@@ -243,7 +300,7 @@ const CombatantRow: React.FC<{
                                         <button
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'extraAttack'); }}
-                                            title="Attaque Supplémentaire (Bleu = Disponible, Gris = Utilisé)"
+                                            title={tr.extraAttackTitle}
                                             className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                         >
                                             <Swords className={`h-3.5 w-3.5 transition-colors ${actionEconomy?.extraAttackUsed ? 'text-zinc-600 opacity-40' : 'text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]'}`} />
@@ -255,12 +312,12 @@ const CombatantRow: React.FC<{
                                 </span>
                                 {isSelectedTarget && (
                                     <span className="shrink-0 inline-flex items-center gap-0.5 rounded bg-red-500/20 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-400 animate-pulse">
-                                        🎯 CIBLE
+                                        {tr.target}
                                     </span>
                                 )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/45">
-                                <span>Init {combatant.initiative}</span>
+                                <span>{tr.init} {combatant.initiative}</span>
                                 {creature && <span>CR {creature.cr}</span>}
                                 {primaryAttack && <span className="truncate">{primaryAttack.damage} {primaryAttack.damageType}</span>}
                             </div>
@@ -313,7 +370,7 @@ const CombatantRow: React.FC<{
                                 return (
                                     <span
                                         key={mod.id}
-                                        title={`${mod.reason} (${mod.remainingUses} uses remaining)`}
+                                        title={`${mod.reason} (${tr.usesRemaining(mod.remainingUses)})`}
                                         className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                                             isNegative
                                                 ? 'border-red-900/45 bg-red-955/45 text-red-300'
@@ -333,7 +390,7 @@ const CombatantRow: React.FC<{
                 <div className="mt-2 flex items-center justify-between border-t border-amber-400/20 pt-2 text-[11px] text-amber-100/75">
                     <span className="inline-flex items-center gap-1">
                         <Activity className="h-3.5 w-3.5" />
-                        Tour actuel
+                        {tr.currentTurn}
                     </span>
                     {creature?.url && (
                         <button
@@ -349,7 +406,7 @@ const CombatantRow: React.FC<{
                             className="inline-flex items-center gap-1 text-sky-300 hover:text-sky-200 text-xs"
                         >
                             <ExternalLink className="h-3 w-3" />
-                            Référence
+                            {tr.reference}
                         </button>
                     )}
                 </div>
@@ -382,6 +439,8 @@ export function CombatTracker({
     // useGameStore was previously below the guard → "rendered more/fewer hooks"
     // crash when isActive toggled.)
     const combatRolls = useGameStore(s => s.combatRolls);
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
 
     if (!isActive || !combatants.length) return null;
 
@@ -407,20 +466,20 @@ export function CombatTracker({
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-red-300/75">
                             <Swords className="h-4 w-4 text-red-400" />
-                            Combat
+                            {tr.combat}
                         </div>
                         <h2 className="truncate text-lg font-black leading-6 text-white">
-                            {current ? displayNames.get(combatantMapKey(current, currentIndex)) || current.name : 'Initiative'}
+                            {current ? displayNames.get(combatantMapKey(current, currentIndex)) || current.name : tr.initiative}
                         </h2>
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5 text-center text-[10px]">
                         <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
-                            <div className="text-white/40">Round</div>
+                            <div className="text-white/40">{tr.round}</div>
                             <div className="font-mono text-sm font-bold text-amber-200">{round}</div>
                         </div>
                         <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1">
-                            <div className="text-white/40">Ennemis</div>
+                            <div className="text-white/40">{tr.enemies}</div>
                             <div className="font-mono text-sm font-bold text-red-200">{enemiesAlive}</div>
                         </div>
                     </div>
@@ -435,19 +494,19 @@ export function CombatTracker({
                                 : 'border-white/10 bg-white/5 text-white/40'
                         }`}
                         disabled={!onAdvanceTurn || !isPlayerTurn}
-                        title={isPlayerTurn ? 'Terminer ton tour — les ennemis jouent ensuite' : 'Tour des autres combattants'}
+                        title={isPlayerTurn ? tr.endTurnTitle : tr.otherCombatantsTurn}
                     >
                         <SkipForward className="h-4 w-4" />
-                        {isPlayerTurn ? 'Terminer mon tour' : 'En attente'}
+                        {isPlayerTurn ? tr.endMyTurn : tr.waiting}
                     </button>
                     <button
                         onClick={onEndCombat}
                         className="inline-flex items-center justify-center gap-2 rounded-md border border-red-400/35 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-100 hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-40"
                         disabled={!onEndCombat}
-                        title="Terminer le combat"
+                        title={tr.endCombat}
                     >
                         <XCircle className="h-4 w-4" />
-                        Fin
+                        {tr.end}
                     </button>
                 </div>
             </div>
@@ -471,6 +530,7 @@ export function CombatTracker({
                                     onSelectTarget(combatant.id);
                                 }
                             }}
+                            tr={tr}
                         />
                     ))}
                 </div>
@@ -479,13 +539,13 @@ export function CombatTracker({
             {/* Combat roll journal — enemy + player attack/damage/save rolls, persistent in the combat area. */}
             <div className="border-t-2 border-amber-400/30 bg-black/55 px-2 py-2 flex-none">
                 <div className="mb-1.5 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/70">
-                    <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> Jets de combat</span>
+                    <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" /> {tr.combatRolls}</span>
                     <span className="text-[9px] font-normal normal-case text-white/40">
-                        <span className="text-sky-300/80">● joueur</span> · <span className="text-red-300/80">● ennemi/MJ</span>
+                        <span className="text-sky-300/80">{tr.playerLegend}</span> · <span className="text-red-300/80">{tr.enemyLegend}</span>
                     </span>
                 </div>
                 {recentRolls.length === 0 ? (
-                    <div className="px-1 py-2 text-center text-[11px] italic text-white/30">Les jets d'attaque et de dégâts s'afficheront ici.</div>
+                    <div className="px-1 py-2 text-center text-[11px] italic text-white/30">{tr.rollsEmpty}</div>
                 ) : (
                     <div className="max-h-[150px] space-y-1 overflow-y-auto custom-scrollbar">
                         {recentRolls.map(r => (

@@ -25,7 +25,12 @@ export function ModeSelectionView() {
             join: "Join",
             enterCode: "ENTER CODE",
             unavailable: "Unavailable",
-            comingSoon: "Coming Soon"
+            comingSoon: "Coming Soon",
+            logout: "Log Out",
+            arenaTitle: "ARENA MODE",
+            arenaDesc: "Instant Combat. No Story. Pure Glory.",
+            loadSavedGame: "Load a Saved Game",
+            loadError: "Error while loading the save"
         },
         fr: {
             choosePath: "Choisissez Votre Voie",
@@ -37,7 +42,12 @@ export function ModeSelectionView() {
             join: "Rejoindre",
             enterCode: "CODE",
             unavailable: "Indisponible",
-            comingSoon: "Bientôt disponible"
+            comingSoon: "Bientôt disponible",
+            logout: "Déconnexion",
+            arenaTitle: "MODE ARÈNE",
+            arenaDesc: "Combat instantané. Pas d'histoire. Gloire pure.",
+            loadSavedGame: "Charger une Partie Sauvegardée",
+            loadError: "Erreur lors du chargement de la sauvegarde"
         }
     };
     const t = TRANS[language as keyof typeof TRANS];
@@ -54,7 +64,7 @@ export function ModeSelectionView() {
                 className="absolute top-4 left-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
                 <ArrowRight className="w-4 h-4 rotate-180" />
-                <span>Déconnexion</span>
+                <span>{t.logout}</span>
             </button>
 
             <div className="absolute top-4 right-4 flex gap-4 bg-gray-800 p-2 rounded-lg border border-gray-600">
@@ -71,8 +81,8 @@ export function ModeSelectionView() {
                     className="bg-red-950/40 border-2 border-red-800 p-8 rounded-xl cursor-pointer hover:border-red-500 hover:bg-red-900/60 transition-all group text-center"
                 >
                     <Sword className="w-16 h-16 mx-auto mb-4 text-red-700 group-hover:text-red-500 animate-pulse" />
-                    <h2 className="text-2xl font-bold mb-2 text-red-500">ARENA MODE</h2>
-                    <p className="text-red-300/60">Instant Combat. No Story. Pure Glory.</p>
+                    <h2 className="text-2xl font-bold mb-2 text-red-500">{t.arenaTitle}</h2>
+                    <p className="text-red-300/60">{t.arenaDesc}</p>
                 </div>
 
                 <div
@@ -101,7 +111,7 @@ export function ModeSelectionView() {
             </div>
 
             <button onClick={() => setShowLoadMenu(true)} className="mt-8 flex items-center gap-2 text-gray-400 hover:text-gold transition-colors underline">
-                <FolderOpen className="w-5 h-5" /> Charger une Partie Sauvegardée
+                <FolderOpen className="w-5 h-5" /> {t.loadSavedGame}
             </button>
 
             {showLoadMenu && (
@@ -122,7 +132,7 @@ export function ModeSelectionView() {
                             }
                         } catch (err) {
                             console.error('Failed to load save:', err);
-                            alert('Erreur lors du chargement de la sauvegarde');
+                            alert(t.loadError);
                         }
                     }}
                     onClose={() => setShowLoadMenu(false)}

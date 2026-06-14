@@ -5,6 +5,29 @@ import { generateIntroCinematicAssets, IntroCinematicAssets } from '../services/
 import { lyriaMusicService } from '../services/lyriaMusic';
 import { log } from '../services/logger';
 
+const TRANS = {
+  en: {
+    hero: 'Hero',
+    adventureBegins: 'Adventure Begins',
+    firstSceneWaits: 'The first scene waits in the dark.',
+    openingVeil: 'Opening Veil',
+    playIntro: 'Play Intro',
+    narration: 'Narration',
+    beginScene: 'Begin Scene',
+    veilGathers: 'The veil gathers',
+  },
+  fr: {
+    hero: 'Héros',
+    adventureBegins: "L'aventure commence",
+    firstSceneWaits: 'La première scène attend dans le noir.',
+    openingVeil: 'Lever du voile',
+    playIntro: "Lancer l'intro",
+    narration: 'Narration',
+    beginScene: 'Commencer la scène',
+    veilGathers: 'Le voile se rassemble',
+  },
+} as const;
+
 interface Props {
   character: CharacterSheet;
   manifest: AdventureManifest;
@@ -13,6 +36,7 @@ interface Props {
 }
 
 export function IntroCinematic({ character, manifest, language, onComplete }: Props) {
+  const tr = TRANS[language === 'fr' ? 'fr' : 'en'];
   const [assets, setAssets] = useState<IntroCinematicAssets | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,7 +112,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
     });
   };
 
-  const title = manifest.cinematicBrief?.logline || manifest.firstScene?.title || manifest.chapters?.[0]?.title || 'Adventure Begins';
+  const title = manifest.cinematicBrief?.logline || manifest.firstScene?.title || manifest.chapters?.[0]?.title || tr.adventureBegins;
   const scene = manifest.firstScene;
 
   return (
@@ -116,13 +140,13 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
         <div className="w-full px-5 pb-8 md:px-12 md:pb-12">
           <div className="max-w-4xl">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
-              {character.name || 'Hero'} / {character.race} {character.class}
+              {character.name || tr.hero} / {character.race} {character.class}
             </p>
             <h1 className="font-fantasy text-3xl font-black leading-tight text-white drop-shadow-2xl md:text-6xl">
               {title}
             </h1>
             <p className="mt-4 max-w-3xl font-serif text-base leading-relaxed text-white/82 md:text-lg">
-              {assets?.script || manifest.introduction || scene?.setup || 'The first scene waits in the dark.'}
+              {assets?.script || manifest.introduction || scene?.setup || tr.firstSceneWaits}
             </p>
 
             {scene && (
@@ -141,14 +165,14 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
                   className="inline-flex items-center gap-2 rounded-md bg-amber-500 px-5 py-3 text-sm font-black uppercase tracking-wide text-black transition hover:bg-amber-400 disabled:cursor-wait disabled:opacity-60"
                 >
                   {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                  {isLoading ? 'Opening Veil' : 'Play Intro'}
+                  {isLoading ? tr.openingVeil : tr.playIntro}
                 </button>
               )}
 
               {isPlaying && (
                 <div className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-black/40 px-4 py-3 text-sm font-bold uppercase tracking-wide text-white/75 backdrop-blur">
                   <Volume2 className="h-4 w-4 text-amber-300" />
-                  Narration
+                  {tr.narration}
                 </div>
               )}
 
@@ -159,7 +183,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
                   className="inline-flex items-center gap-2 rounded-md border border-white/15 bg-white/10 px-5 py-3 text-sm font-black uppercase tracking-wide text-white transition hover:bg-white/18"
                 >
                   <SkipForward className="h-4 w-4" />
-                  Begin Scene
+                  {tr.beginScene}
                 </button>
               )}
             </div>
@@ -169,7 +193,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
 
       {isLoading && (
         <div className="absolute right-5 top-5 z-20 rounded-md border border-white/10 bg-black/45 px-3 py-2 text-xs font-bold uppercase tracking-wide text-white/60 backdrop-blur">
-          The veil gathers
+          {tr.veilGathers}
         </div>
       )}
     </div>

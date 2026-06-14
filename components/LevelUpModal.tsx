@@ -13,6 +13,38 @@ import { getNewFeaturesAtLevel, asiLevelsBetween, getFeaturesForLevel, CLASS_FEA
 import { getSubclassConfig, getSubclassFeaturesForLevel, getNewSubclassFeaturesAtLevel, SUBCLASS_DATA } from '../data/subclasses';
 import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus } from 'lucide-react';
 import { ensureProgressionState } from '../services/rulesEngine';
+import { useGameStore } from '../store/gameStore';
+
+const TRANS = {
+    en: {
+        levelUp: '🎊 LEVEL UP! 🎊',
+        reachesLevel: (name: string, lvl: number) => <>{name} reaches <span className="font-bold text-amber-200">Level {lvl}</span>!</>,
+        multiLevel: (n: number) => `(${n} levels gained at once — every improvement is counted)`,
+        newAbilities: 'New Abilities',
+        chooseYourPath: 'choose your path',
+        choiceIsFinal: 'This choice is permanent and unlocks real mechanical abilities.',
+        asiTitle: 'Ability Score Improvement',
+        distribute: (n: number) => <>Distribute <span className="font-bold text-amber-200">{n} point{n > 1 ? 's' : ''}</span> (max 20 per ability).</>,
+        remaining: 'Remaining:',
+        later: 'Later',
+        laterTitle: 'Your abilities are applied; the ability points stay available on the character sheet.',
+        confirm: '✓ Confirm',
+    },
+    fr: {
+        levelUp: '🎊 NIVEAU SUPÉRIEUR ! 🎊',
+        reachesLevel: (name: string, lvl: number) => <>{name} atteint le <span className="font-bold text-amber-200">Niveau {lvl}</span>!</>,
+        multiLevel: (n: number) => `(${n} niveaux gagnés d'un coup — toutes les améliorations sont comptées)`,
+        newAbilities: 'Nouvelles Capacités',
+        chooseYourPath: 'choisis ta voie',
+        choiceIsFinal: 'Ce choix est définitif et débloque de vraies capacités mécaniques.',
+        asiTitle: 'Amélioration de Caractéristiques',
+        distribute: (n: number) => <>Répartis <span className="font-bold text-amber-200">{n} point{n > 1 ? 's' : ''}</span> (max 20 par caractéristique).</>,
+        remaining: 'Restant :',
+        later: 'Plus tard',
+        laterTitle: 'Tes capacités sont appliquées ; les points de caractéristique restent disponibles dans la fiche personnage.',
+        confirm: '✓ Confirmer',
+    },
+} as const;
 
 interface Props {
     character: CharacterSheet;
@@ -26,6 +58,8 @@ interface Props {
 const ABILITIES: Ability[] = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClose }: Props) {
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     const previousLevel = fromLevel ?? Math.max(1, newLevel - 1);
     // 2 points per crossed ASI level + any points banked from earlier dismissals.
     const asiBudget = asiLevelsBetween(previousLevel, newLevel).length * 2 + (character.pendingASIPoints || 0);
@@ -131,14 +165,14 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                         <Sparkles className="w-16 h-16 text-amber-400 animate-bounce" />
                     </div>
                     <h2 className="text-3xl font-bold text-amber-200 font-fantasy">
-                        🎊 NIVEAU SUPÉRIEUR ! 🎊
+                        {tr.levelUp}
                     </h2>
                     <p className="text-amber-400 text-xl mt-2">
-                        {character.name} atteint le <span className="font-bold text-amber-200">Niveau {newLevel}</span>!
+                        {tr.reachesLevel(character.name, newLevel)}
                     </p>
                     {newLevel - previousLevel > 1 && (
                         <p className="text-amber-300/70 text-xs mt-1">
-                            ({newLevel - previousLevel} niveaux gagnés d'un coup — toutes les améliorations sont comptées)
+                            {tr.multiLevel(newLevel - previousLevel)}
                         </p>
                     )}
                 </div>
@@ -147,7 +181,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                 {(newFeatures.length > 0 || newSubclassFeatures.length > 0) && (
                     <div className="bg-black/40 rounded-lg p-4 mb-4 border border-amber-700/50">
                         <h3 className="text-amber-300 font-bold mb-2 flex items-center gap-2">
-                            <Star className="w-4 h-4" /> Nouvelles Capacités
+                            <Star className="w-4 h-4" /> {tr.newAbilities}
                         </h3>
                         <ul className="space-y-2">
                             {newFeatures.map((feature, i) => (
@@ -172,10 +206,10 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                 {showSubclassChoice && subclassConfig && (
                     <div className="bg-black/40 rounded-lg p-4 mb-4 border border-purple-500/60">
                         <h3 className="text-purple-300 font-bold mb-1 flex items-center gap-2">
-                            <Gem className="w-4 h-4" /> {subclassConfig.label} — choisis ta voie
+                            <Gem className="w-4 h-4" /> {subclassConfig.label} — {tr.chooseYourPath}
                         </h3>
                         <p className="text-gray-400 text-xs mb-3">
-                            Ce choix est définitif et débloque de vraies capacités mécaniques.
+                            {tr.choiceIsFinal}
                         </p>
                         <div className="space-y-2">
                             {subclassConfig.options.map(option => {
@@ -214,11 +248,11 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                 {asiBudget > 0 && (
                     <div className="bg-black/40 rounded-lg p-4 mb-4 border border-amber-700/50">
                         <h3 className="text-amber-300 font-bold mb-1 flex items-center gap-2">
-                            <ArrowUp className="w-4 h-4" /> Amélioration de Caractéristiques
+                            <ArrowUp className="w-4 h-4" /> {tr.asiTitle}
                         </h3>
                         <p className="text-gray-400 text-xs mb-3">
-                            Répartis <span className="font-bold text-amber-200">{asiBudget} point{asiBudget > 1 ? 's' : ''}</span> (max 20 par caractéristique).
-                            Restant : <span className={`font-bold ${remaining > 0 ? 'text-amber-200' : 'text-green-400'}`}>{remaining}</span>
+                            {tr.distribute(asiBudget)}
+                            {' '}{tr.remaining} <span className={`font-bold ${remaining > 0 ? 'text-amber-200' : 'text-green-400'}`}>{remaining}</span>
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                             {ABILITIES.map(stat => {
@@ -265,10 +299,10 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                 <div className="flex gap-3">
                     <button
                         onClick={handleDismiss}
-                        title={asiBudget > 0 ? 'Tes capacités sont appliquées ; les points de caractéristique restent disponibles dans la fiche personnage.' : undefined}
+                        title={asiBudget > 0 ? tr.laterTitle : undefined}
                         className="flex-1 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors"
                     >
-                        Plus tard
+                        {tr.later}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -278,7 +312,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                             : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                             }`}
                     >
-                        ✓ Confirmer
+                        {tr.confirm}
                     </button>
                 </div>
             </div>

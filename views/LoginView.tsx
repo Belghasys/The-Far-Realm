@@ -6,11 +6,44 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithP
 import { LanguageSelector } from '../components/LanguageContext';
 import { useGameStore } from '../store/gameStore';
 
+const TRANS = {
+    en: {
+        tagline: "The Realms Are Waiting...",
+        emailPlaceholder: "Email",
+        passwordPlaceholder: "Password",
+        login: "Login",
+        register: "Register",
+        orContinue: "Or continue with",
+        signInGoogle: "Sign in with Google",
+        loginFailed: "Login failed: ",
+        signupFailed: "Signup failed: ",
+        googleLoginFailed: "Google Login failed: ",
+        authFailed: "Authentication failed",
+        googleBlocked: (domain: string, url: string) => `Google login is blocked by Firebase because "${domain}" is not in Authentication > Settings > Authorized domains. Add "${domain}" there, or open the app from localhost instead: ${url}`,
+    },
+    fr: {
+        tagline: "Les Royaumes Vous Attendent...",
+        emailPlaceholder: "E-mail",
+        passwordPlaceholder: "Mot de passe",
+        login: "Connexion",
+        register: "S'inscrire",
+        orContinue: "Ou continuez avec",
+        signInGoogle: "Se connecter avec Google",
+        loginFailed: "Échec de la connexion : ",
+        signupFailed: "Échec de l'inscription : ",
+        googleLoginFailed: "Échec de la connexion Google : ",
+        authFailed: "Échec de l'authentification",
+        googleBlocked: (domain: string, url: string) => `La connexion Google est bloquée par Firebase car "${domain}" ne figure pas dans Authentication > Settings > Authorized domains. Ajoutez-y "${domain}", ou ouvrez l'application depuis localhost à la place : ${url}`,
+    },
+} as const;
+
 export function LoginView() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [authError, setAuthError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const language = useGameStore(s => s.language);
+    const tr = TRANS[language];
     // Auth listener is handled globally in App.tsx now
 
     const currentAuthDomain = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -20,9 +53,9 @@ export function LoginView() {
 
     const formatAuthError = (e: any) => {
         if (e?.code === 'auth/unauthorized-domain') {
-            return `Google login is blocked by Firebase because "${currentAuthDomain}" is not in Authentication > Settings > Authorized domains. Add "${currentAuthDomain}" there, or open the app from localhost instead: ${localhostUrl}`;
+            return tr.googleBlocked(currentAuthDomain, localhostUrl);
         }
-        return e?.message || 'Authentication failed';
+        return e?.message || tr.authFailed;
     };
 
     const handleLogin = async () => {
@@ -31,7 +64,7 @@ export function LoginView() {
             await signInWithEmailAndPassword(auth, email, password);
             navigate('/mode');
         } catch (e: any) {
-            setAuthError("Login failed: " + formatAuthError(e));
+            setAuthError(tr.loginFailed + formatAuthError(e));
         }
     };
 
@@ -41,7 +74,7 @@ export function LoginView() {
             await createUserWithEmailAndPassword(auth, email, password);
             navigate('/mode');
         } catch (e: any) {
-            setAuthError("Signup failed: " + formatAuthError(e));
+            setAuthError(tr.signupFailed + formatAuthError(e));
         }
     };
 
@@ -51,7 +84,7 @@ export function LoginView() {
             await signInWithPopup(auth, googleProvider);
             navigate('/mode');
         } catch (e: any) {
-            setAuthError("Google Login failed: " + formatAuthError(e));
+            setAuthError(tr.googleLoginFailed + formatAuthError(e));
         }
     };
 
@@ -69,7 +102,7 @@ export function LoginView() {
                 </div>
                 <div>
                     <h1 className="text-6xl font-fantasy text-red-600 tracking-wider">DUNGEON AI</h1>
-                    <p className="text-gray-400 mt-2 font-serif italic text-xl">The Realms Are Waiting...</p>
+                    <p className="text-gray-400 mt-2 font-serif italic text-xl">{tr.tagline}</p>
                 </div>
 
                 <div className="bg-gray-900/80 p-8 rounded-lg border border-gray-700 shadow-2xl backdrop-blur-sm space-y-4">
@@ -81,14 +114,14 @@ export function LoginView() {
 
                     <input
                         type="email"
-                        placeholder="Email"
+                        placeholder={tr.emailPlaceholder}
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         className="w-full bg-black/50 border border-gray-600 p-4 rounded text-white focus:border-red-600 focus:outline-none transition-colors"
                     />
                     <input
                         type="password"
-                        placeholder="Password"
+                        placeholder={tr.passwordPlaceholder}
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         className="w-full bg-black/50 border border-gray-600 p-4 rounded text-white focus:border-red-600 focus:outline-none transition-colors"
@@ -99,19 +132,19 @@ export function LoginView() {
                             onClick={handleLogin}
                             className="flex-1 bg-red-800 hover:bg-red-700 text-white font-bold py-3 rounded-lg transition-all transform hover:scale-105"
                         >
-                            Login
+                            {tr.login}
                         </button>
                         <button
                             onClick={handleSignup}
                             className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 rounded-lg transition-all"
                         >
-                            Register
+                            {tr.register}
                         </button>
                     </div>
 
                     <div className="relative my-6">
                         <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-700"></div></div>
-                        <div className="relative flex justify-center text-sm"><span className="px-2 bg-gray-900 text-gray-400">Or continue with</span></div>
+                        <div className="relative flex justify-center text-sm"><span className="px-2 bg-gray-900 text-gray-400">{tr.orContinue}</span></div>
                     </div>
 
                     <button
@@ -119,7 +152,7 @@ export function LoginView() {
                         className="w-full bg-white text-black font-bold py-3 rounded-lg transition-all hover:bg-gray-200 flex items-center justify-center gap-2"
                     >
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                        Sign in with Google
+                        {tr.signInGoogle}
                     </button>
 
                 </div>

@@ -15,6 +15,158 @@ import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../service
 import { SRD51_SPELLS } from '../data/srd51/spells';
 import { WEAPON_TABLE, WeaponTemplate } from '../data/weapons';
 import { ARMOR_CATALOG, ArmorTemplate, parsePriceToGp, startingGoldFor, getDefaultLoadout, weaponTemplateToItem, armorTemplateToItem } from '../data/equipment';
+import { useGameStore } from '../store/gameStore';
+
+type Lang = 'en' | 'fr';
+
+const TRANS = {
+  en: {
+    stepIdentity: 'Identity', stepBuild: 'Build', stepGear: 'Equipment', stepSpells: 'Spells', stepStory: 'Story', stepReview: 'Recap',
+    builderHint: 'Build the sheet, then give the DM enough identity hooks to write a personal campaign opening.',
+    name: 'Name', class: 'Class', race: 'Race', background: 'Background', style: 'Style', deity: 'Deity', none: 'None',
+    characterName: 'Character name', namePlaceholder: 'Give your hero a name…',
+    classHint: '— hit dice, saving throws, abilities',
+    mandatoryLvl1: '— mandatory at level 1',
+    startingAbilities: '— starting abilities',
+    raceHint: '— ability bonuses and traits',
+    subraceOf: (r: string) => `Subrace of ${r}`, mandatory: '— mandatory',
+    traits: '— traits', proficienciesLabel: 'Proficiencies:', resistancesLabel: 'Resistances:', darkvision: 'Darkvision',
+    bgHint: '— skills and social trait', skillsAbbr: 'Skills:',
+    fightingStyle: 'Fighting Style', deityHint: '— optional',
+    lvl: 'lvl.',
+    characterBible: 'Character Bible',
+    bibleHint: "These fields feed the DM, the campaign opening, and the cinematic. Ideal / Bond / Flaw + a secret = the SRD pillars.",
+    quickArchetype: 'Quick archetype', quickArchetypeHint: '— pre-fills the pillars, then edit freely',
+    appearance: 'Appearance', desire: 'Desire', personality: 'Personality', fearWeakness: 'Fear / Weakness',
+    bondLien: 'Bond', woundRegret: 'Wound / Regret', secret: 'Secret', secretHint: '— private, DM-only',
+    appearancePh: 'Armor, scars, colors, posture, symbol, weapon silhouette...',
+    desirePh: 'What does the hero want badly enough to risk death?',
+    personalityPh: 'How do they speak, decide, threaten, comfort, joke?',
+    fearPh: 'What can the villain exploit?',
+    bondPh: 'A person, oath, place, mentor, family, rival, or debt.',
+    woundPh: 'The old failure, loss, exile, betrayal, or shame.',
+    secretPh: 'A secret the DM can reveal or exploit: a hidden betrayal, a true identity, a pact, a shameful debt...',
+    backstory: 'Backstory',
+    backstoryPh: "Write the short version of the hero's past. The DM will use it as personal campaign fuel.",
+    dmHooks: 'DM Hooks',
+    dmHooksPh: 'One hook per line:\nA missing sibling\nA cursed rank insignia\nA debt to a temple',
+    ideal: 'Ideal', idealPh: 'Justice, freedom...', flaw: 'Flaw', flawPh: 'Pride, mercy, rage...',
+    cinematicTone: 'Cinematic Tone',
+    abilityScores: 'Ability Scores', pointsRemaining: 'Points Remaining', base: 'base',
+    armorClass: 'Armor Class', acTooltip: '10 + DEX Mod', hitPoints: 'Hit Points', hitDie: 'Hit Die',
+    startingEquipment: 'Starting Equipment', resetKit: 'Reset Kit',
+    item: 'Item', qty: 'Qty', wgt: 'Wgt', noEquipment: 'No equipment selected',
+    skills: 'Skills', atChoice: 'at choice', passivePerception: 'Passive Perception',
+    expertiseHint: (cur: number, max: number) => `★ Expertise (${cur}/${max}) — click the star of a proficient skill to double the proficiency.`,
+    grantedByBgRace: 'Granted by background/race', classSkillChoice: 'Class skill (at choice)', outOfClassList: 'Outside your class list',
+    expertiseTitle: 'Expertise (double proficiency)',
+    gearTitle: 'Starting equipment', gold: 'gp',
+    gearIntro1: 'You receive your class', gearIntroPack: 'pack', gearIntro2: '(focus, explorer pack…)', gearIntroFree: 'for free', gearIntro3: ', plus a',
+    gearIntroDefaultKit: 'default kit', gearIntro4: 'already equipped. With your starting gold (your class SRD wealth + background bonus),',
+    gearIntroBuy: 'buy', gearIntroSell: 'resell', gearIntroEquip: 'equip', gearIntro5: 'your gear as you see fit.',
+    yourEquipment: 'Your equipment', nothingEquippable: 'Nothing equippable yet — buy a weapon or armor below.',
+    equipped: 'Equipped', equip: 'Equip', resellTitle: 'Resell (recover gold)',
+    packIncluded: 'Pack (included)',
+    shop: 'Shop', simpleWeapons: 'Simple weapons', martialWeapons: 'Martial weapons', armors: 'Armors',
+    twoHanded: 'two-handed', buy: 'Buy', stealthDisadv: '⚠ Stealth disadv.',
+    casterSetup: 'Caster Setup',
+    casterIntro: (cantrips: number, spells: number, mode: string) => `Choose ${cantrips} cantrip(s) and ${spells} ${mode} level 1 spell(s).`,
+    prepared: 'prepared', known: 'known',
+    noCasterSetup: 'This class has no spellcasting setup at level 1.',
+    noCasterClass: (cls: string) => `${cls} starts as a martial/non-caster in the current rules setup. Continue to Story.`,
+    castingAbility: 'Casting Ability', focus: 'Focus', spellSlots: 'Spell Slots', cantripsOnly: 'Cantrips only',
+    cantrips: 'Cantrips', level1Spells: 'Level 1 Spells', concentration: 'concentration',
+    heroBrief: 'Hero Brief', identity: 'Identity', unnamedHero: 'Unnamed Hero', deityColon: 'Deity:',
+    mechanics: 'Mechanics', weapon: 'Weapon:', unarmed: 'Unarmed', pointBuy: 'Point buy:', complete: 'complete', remaining: 'remaining',
+    cinematic: 'Cinematic', readyForIntro: 'Ready for personal intro', appearanceDesireRequired: 'Appearance and desire required',
+    magic: 'Magic', chooseCantrips: 'Choose cantrips before starting.', preparedSpells: 'Prepared Spells', knownSpells: 'Known Spells',
+    chooseLvl1: 'Choose level 1 spells before starting.',
+    appearanceMissing: 'Missing. The intro image will be generic until this is filled.', coreDesire: 'Core Desire',
+    desireMissing: 'Missing. The campaign hook needs a personal goal.',
+    back: 'Back', continue: 'Continue', nameRequired: 'Name required',
+    spendPoints: (n: number) => `Spend your remaining points (${n})`,
+    chooseYour: (l: string) => `Choose your ${l}`, archetype: 'archetype',
+    addAppearanceDesire: 'Add appearance + desire', chooseStartingSpells: 'Choose your starting spells', toAdventure: "To adventure!",
+    hitDiceLabel: 'Hit Die', primaryAbility: 'Primary Ability', savingThrows: 'Saving Throws', proficiencies: 'Proficiencies',
+    classFeatures: 'Class Features', xpPerLevel: 'XP per Level', levelAbbr: 'Lvl',
+  },
+  fr: {
+    stepIdentity: 'Identité', stepBuild: 'Build', stepGear: 'Équipement', stepSpells: 'Sorts', stepStory: 'Histoire', stepReview: 'Récap',
+    builderHint: "Construis la fiche, puis donne au MJ assez d'accroches d'identité pour écrire une ouverture de campagne personnelle.",
+    name: 'Nom', class: 'Classe', race: 'Race', background: 'Historique', style: 'Style', deity: 'Divinité', none: 'Aucune',
+    characterName: 'Nom du personnage', namePlaceholder: 'Donne un nom à ton héros…',
+    classHint: '— dés de vie, sauvegardes, capacités',
+    mandatoryLvl1: '— obligatoire au niveau 1',
+    startingAbilities: '— aptitudes de départ',
+    raceHint: '— bonus de caractéristiques et traits',
+    subraceOf: (r: string) => `Sous-race de ${r}`, mandatory: '— obligatoire',
+    traits: '— traits', proficienciesLabel: 'Maîtrises :', resistancesLabel: 'Résistances :', darkvision: 'Vision dans le noir',
+    bgHint: '— compétences et trait social', skillsAbbr: 'Comp. :',
+    fightingStyle: 'Style de combat', deityHint: '— optionnel',
+    lvl: 'niv.',
+    characterBible: 'Character Bible',
+    bibleHint: "Ces champs nourrissent le MJ, l'ouverture de campagne et la cinématique. Idéal / Lien / Défaut + un secret = les piliers SRD.",
+    quickArchetype: 'Archétype rapide', quickArchetypeHint: '— pré-remplit les piliers, puis édite librement',
+    appearance: 'Apparence', desire: 'Désir', personality: 'Personnalité', fearWeakness: 'Peur / Faiblesse',
+    bondLien: 'Lien', woundRegret: 'Blessure / Regret', secret: 'Secret', secretHint: '— privé, connu du seul MJ',
+    appearancePh: 'Armure, cicatrices, couleurs, posture, symbole, silhouette d\'arme...',
+    desirePh: 'Que veut le héros au point de risquer la mort ?',
+    personalityPh: 'Comment parle-t-il, décide-t-il, menace-t-il, réconforte-t-il, plaisante-t-il ?',
+    fearPh: 'Que peut exploiter le méchant ?',
+    bondPh: 'Une personne, un serment, un lieu, un mentor, une famille, un rival ou une dette.',
+    woundPh: "L'ancien échec, la perte, l'exil, la trahison ou la honte.",
+    secretPh: "Un secret que le MJ pourra révéler ou exploiter : une trahison cachée, une vraie identité, un pacte, une dette honteuse...",
+    backstory: 'Histoire personnelle',
+    backstoryPh: "Écris la version courte du passé du héros. Le MJ s'en servira comme carburant personnel de campagne.",
+    dmHooks: 'Accroches MJ',
+    dmHooksPh: 'Une accroche par ligne :\nUn frère ou une sœur disparu(e)\nUn insigne de rang maudit\nUne dette envers un temple',
+    ideal: 'Idéal', idealPh: 'Justice, liberté...', flaw: 'Défaut', flawPh: 'Orgueil, pitié, rage...',
+    cinematicTone: 'Ton cinématique',
+    abilityScores: 'Caractéristiques', pointsRemaining: 'Points restants', base: 'base',
+    armorClass: 'Classe d\'armure', acTooltip: '10 + mod. DEX', hitPoints: 'Points de vie', hitDie: 'Dé de vie',
+    startingEquipment: 'Équipement de départ', resetKit: 'Réinit. kit',
+    item: 'Objet', qty: 'Qté', wgt: 'Poids', noEquipment: 'Aucun équipement sélectionné',
+    skills: 'Compétences', atChoice: 'au choix', passivePerception: 'Perception passive',
+    expertiseHint: (cur: number, max: number) => `★ Expertise (${cur}/${max}) — clique l'étoile d'une compétence maîtrisée pour doubler la maîtrise.`,
+    grantedByBgRace: 'Accordée par le background/la race', classSkillChoice: 'Compétence de classe au choix', outOfClassList: 'Hors de la liste de ta classe',
+    expertiseTitle: 'Expertise (double maîtrise)',
+    gearTitle: 'Équipement de départ', gold: 'po',
+    gearIntro1: 'Tu reçois ton', gearIntroPack: 'paquetage', gearIntro2: "de classe (focalisateur, sac d'exploration…)", gearIntroFree: 'gratuitement', gearIntro3: ', plus un',
+    gearIntroDefaultKit: 'kit par défaut', gearIntro4: "déjà équipé. Avec ton or de départ (richesse SRD de ta classe + bonus de background),",
+    gearIntroBuy: 'achète', gearIntroSell: 'revends', gearIntroEquip: 'équipe', gearIntro5: "ton matériel comme tu l'entends.",
+    yourEquipment: 'Ton équipement', nothingEquippable: "Rien d'équipable pour l'instant — achète une arme ou une armure ci-dessous.",
+    equipped: 'Équipé', equip: 'Équiper', resellTitle: "Revendre (récupère l'or)",
+    packIncluded: 'Paquetage (inclus)',
+    shop: 'Boutique', simpleWeapons: 'Armes courantes', martialWeapons: 'Armes de guerre', armors: 'Armures',
+    twoHanded: 'à 2 mains', buy: 'Acheter', stealthDisadv: '⚠ Discrétion désav.',
+    casterSetup: 'Préparation des sorts',
+    casterIntro: (cantrips: number, spells: number, mode: string) => `Choisis ${cantrips} sort(s) mineur(s) et ${spells} sort(s) de niveau 1 ${mode}.`,
+    prepared: 'préparé(s)', known: 'connu(s)',
+    noCasterSetup: 'Cette classe ne lance pas de sorts au niveau 1.',
+    noCasterClass: (cls: string) => `${cls} débute comme classe martiale/non-lanceuse de sorts dans les règles actuelles. Continue vers Histoire.`,
+    castingAbility: 'Caractéristique d\'incantation', focus: 'Focaliseur', spellSlots: 'Emplacements de sorts', cantripsOnly: 'Sorts mineurs uniquement',
+    cantrips: 'Sorts mineurs', level1Spells: 'Sorts de niveau 1', concentration: 'concentration',
+    heroBrief: 'Fiche du héros', identity: 'Identité', unnamedHero: 'Héros sans nom', deityColon: 'Divinité :',
+    mechanics: 'Mécaniques', weapon: 'Arme :', unarmed: 'Mains nues', pointBuy: 'Achat de points :', complete: 'complet', remaining: 'restants',
+    cinematic: 'Cinématique', readyForIntro: 'Prêt pour une intro personnelle', appearanceDesireRequired: 'Apparence et désir requis',
+    magic: 'Magie', chooseCantrips: 'Choisis tes sorts mineurs avant de commencer.', preparedSpells: 'Sorts préparés', knownSpells: 'Sorts connus',
+    chooseLvl1: 'Choisis tes sorts de niveau 1 avant de commencer.',
+    appearanceMissing: "Manquant. L'image d'intro restera générique tant que ce champ est vide.", coreDesire: 'Désir central',
+    desireMissing: "Manquant. L'accroche de campagne a besoin d'un objectif personnel.",
+    back: 'Retour', continue: 'Continuer', nameRequired: 'Nom requis',
+    spendPoints: (n: number) => `Dépense tes points restants (${n})`,
+    chooseYour: (l: string) => `Choisis ton ${l}`, archetype: 'archétype',
+    addAppearanceDesire: 'Ajoute apparence + désir', chooseStartingSpells: 'Choisis tes sorts de départ', toAdventure: "À l'aventure !",
+    hitDiceLabel: 'Dé de Vie', primaryAbility: 'Caractéristique Principale', savingThrows: 'Jets de Sauvegarde', proficiencies: 'Maîtrises',
+    classFeatures: 'Capacités de Classe', xpPerLevel: 'XP par Niveau', levelAbbr: 'Niv',
+  },
+} as const;
+
+// Localized step labels for the creation wizard (icons are reused from CREATION_STEPS).
+const STEP_LABELS: Record<Lang, Record<CreationStep, string>> = {
+  en: { identity: 'Identity', build: 'Build', gear: 'Equipment', spells: 'Spells', story: 'Story', review: 'Recap' },
+  fr: { identity: 'Identité', build: 'Build', gear: 'Équipement', spells: 'Sorts', story: 'Histoire', review: 'Récap' },
+};
 
 // English skill name → French label for the creation UI (proficiencies are stored in English).
 const SKILL_FR: Record<string, string> = {
@@ -25,6 +177,8 @@ const SKILL_FR: Record<string, string> = {
     'Stealth': 'Discrétion', 'Survival': 'Survie',
 };
 const ABILITY_FR_SHEET: Record<string, string> = { STR: 'FOR', DEX: 'DEX', CON: 'CON', INT: 'INT', WIS: 'SAG', CHA: 'CHA' };
+// Ability abbreviation by language: English keys for 'en', French D&D abbreviations for 'fr'.
+const dispAbbr = (a: string, lang: 'en' | 'fr') => (lang === 'fr' ? (ABILITY_FR_SHEET[a] || a) : a);
 
 // ── Equipment-shop French labels ────────────────────────────────────────────
 const WEAPON_PROP_FR: Record<string, string> = {
@@ -38,16 +192,27 @@ const ITEM_NAME_FR: Record<string, string> = {
   "Thieves' Tools": 'Outils de voleur', 'Backpack': 'Sac à dos', 'Bedroll': 'Couchage', 'Tinderbox': 'Briquet',
   'Torches': 'Torches', 'Rations (days)': 'Rations', 'Waterskin': 'Gourde', 'Hempen Rope (50 ft)': 'Corde (15 m)',
 };
-const dmgFr = (t?: string) => (t ? (DMG_FR[t] || t) : '');
-const armorTypeFr = (t: string) => (t === 'light' ? 'Légère' : t === 'medium' ? 'Intermédiaire' : t === 'heavy' ? 'Lourde' : 'Bouclier');
-const frItemName = (item: any): string => {
-  if (item.type === 'weapon') { const w = Object.values(WEAPON_TABLE).find(x => x.name === item.name); if (w) return w.nameFr; }
-  if (item.type === 'armor') { const a = ARMOR_CATALOG.find(x => x.name === item.name); if (a) return a.nameFr; }
-  return ITEM_NAME_FR[item.name] || item.name;
+const DMG_EN: Record<string, string> = { slashing: 'slashing', piercing: 'piercing', bludgeoning: 'bludgeoning' };
+// Damage type label by language.
+const dmgLabel = (t: string | undefined, lang: Lang) => (t ? (lang === 'fr' ? (DMG_FR[t] || t) : (DMG_EN[t] || t)) : '');
+// Armor category label by language.
+const armorTypeLabel = (t: string, lang: Lang) => lang === 'fr'
+  ? (t === 'light' ? 'Légère' : t === 'medium' ? 'Intermédiaire' : t === 'heavy' ? 'Lourde' : 'Bouclier')
+  : (t === 'light' ? 'Light' : t === 'medium' ? 'Medium' : t === 'heavy' ? 'Heavy' : 'Shield');
+// Item display name by language (English keeps the data's English name).
+const itemName = (item: any, lang: Lang): string => {
+  if (lang === 'fr') {
+    if (item.type === 'weapon') { const w = Object.values(WEAPON_TABLE).find(x => x.name === item.name); if (w) return w.nameFr; }
+    if (item.type === 'armor') { const a = ARMOR_CATALOG.find(x => x.name === item.name); if (a) return a.nameFr; }
+    return ITEM_NAME_FR[item.name] || item.name;
+  }
+  return item.name;
 };
-const acLabel = (item: any): string => {
-  if (item.armorType === 'shield') return `+${item.acBonus} CA`;
-  if (item.baseAC) return `CA ${item.baseAC}`;
+// AC summary on an equippable item, localized AC abbreviation (CA in French).
+const acLabel = (item: any, lang: Lang): string => {
+  const ac = lang === 'fr' ? 'CA' : 'AC';
+  if (item.armorType === 'shield') return `+${item.acBonus} ${ac}`;
+  if (item.baseAC) return `${ac} ${item.baseAC}`;
   return item.effect || '';
 };
 
@@ -65,19 +230,35 @@ const STYLE_FR: Record<string, string> = {
   Archery: 'Tir', Defense: 'Défense', Dueling: 'Duel', 'Great Weapon Fighting': 'Arme lourde',
   Protection: 'Protection', 'Two-Weapon Fighting': 'Combat à deux armes',
 };
-const frClass = (c: string) => CLASS_FR[c] || c;
-const frRace = (r: string) => RACE_FR[r] || r; // subraces already have French keys
-const frStyle = (s: string) => STYLE_FR[s] || s;
+// Class/Race/Style display names: English keys for 'en', French map for 'fr'.
+const dispClass = (c: string, lang: Lang) => (lang === 'fr' ? (CLASS_FR[c] || c) : c);
+const dispRace = (r: string, lang: Lang) => (lang === 'fr' ? (RACE_FR[r] || r) : r); // subraces already have French keys for fr
+const dispStyle = (s: string, lang: Lang) => (lang === 'fr' ? (STYLE_FR[s] || s) : s);
 
 // One-click personality presets — fill the four SRD pillars + hooks, then editable.
-const ARCHETYPES: { name: string; profile: Partial<CharacterStoryProfile> }[] = [
-  { name: 'Vétéran hanté', profile: { personality: 'Taciturne, vigilant, économe de ses mots.', desire: 'Trouver la paix après une guerre qui ne le quitte pas.', fear: 'Revivre le massacre auquel il a survécu.', bond: "Les frères d'armes tombés à ses côtés.", ideal: "Plus jamais d'innocents sacrifiés.", flaw: "La rage l'aveugle face à l'ennemi de jadis.", dmHooks: ['Un ancien camarade réapparaît', 'Un ordre injuste à exécuter'] } },
-  { name: 'Érudit obsédé', profile: { personality: 'Curieux, précis, parfois distrait par le savoir.', desire: "Percer un mystère que nul n'a résolu.", fear: "Mourir avant d'avoir compris.", bond: 'Une œuvre inachevée ; un mentor disparu.', ideal: "La vérité, quel qu'en soit le prix.", flaw: 'Ignore le danger quand le savoir l\'appelle.', dmHooks: ['Un grimoire interdit', 'Une ruine à déchiffrer'] } },
-  { name: 'Filou au grand cœur', profile: { personality: 'Charmeur, vif, désarmant.', desire: "Un dernier gros coup pour s'affranchir.", fear: 'Que ses proches paient pour ses fautes.', bond: "Les gosses des rues qui l'ont élevé.", ideal: 'On ne trahit jamais les siens.', flaw: 'Ne résiste pas à un trésor mal gardé.', dmHooks: ['Une dette envers un parrain', 'Un coup qui a mal tourné'] } },
-  { name: 'Zélote ardent', profile: { personality: 'Intense, inébranlable, inspiré.', desire: 'Accomplir la volonté de sa divinité.', fear: 'Être abandonné par sa foi.', bond: 'Un temple, une relique, un serment.', ideal: 'La foi guide chacun de mes pas.', flaw: 'Juge durement les incroyants.', dmHooks: ['Une relique volée', 'Une prophétie le concernant'] } },
-  { name: 'Noble déchu', profile: { personality: 'Fier, raffiné, amer.', desire: 'Reconquérir son nom et ses terres.', fear: "Sombrer dans l'anonymat du commun.", bond: "L'honneur de sa maison.", ideal: 'Le rang impose des devoirs.', flaw: 'Croit que tout lui est dû.', dmHooks: ['Une intrigue de cour', 'Un héritage contesté'] } },
-  { name: 'Enfant des rues', profile: { personality: 'Méfiant, débrouillard, loyal aux siens.', desire: 'Ne plus jamais avoir faim ni peur.', fear: 'Retomber dans la misère.', bond: 'Ceux qui ont survécu avec lui.', ideal: 'La liberté avant tout.', flaw: 'Vole et cache par réflexe.', dmHooks: ["Un protecteur d'enfance refait surface", 'Un secret de la ville'] } },
-  { name: 'Ermite illuminé', profile: { personality: 'Calme, étrange, perçant.', desire: 'Partager (ou protéger) une vérité entrevue dans la solitude.', fear: 'Que sa découverte tombe en de mauvaises mains.', bond: 'Le secret de sa retraite.', ideal: 'La vérité se trouve en soi.', flaw: 'Ses visions frôlent parfois la folie.', dmHooks: ["La question qui l'a poussé à l'exil", 'Un culte qui veut son secret'] } },
+type Archetype = { nameEn: string; nameFr: string; profileEn: Partial<CharacterStoryProfile>; profileFr: Partial<CharacterStoryProfile> };
+const ARCHETYPES: Archetype[] = [
+  { nameEn: 'Haunted Veteran', nameFr: 'Vétéran hanté',
+    profileEn: { personality: 'Taciturn, watchful, sparing with words.', desire: "Find peace after a war that won't leave him.", fear: 'Reliving the massacre he survived.', bond: 'The brothers-in-arms who fell at his side.', ideal: 'Never again shall innocents be sacrificed.', flaw: 'Rage blinds him before the enemy of old.', dmHooks: ['A former comrade resurfaces', 'An unjust order to carry out'] },
+    profileFr: { personality: 'Taciturne, vigilant, économe de ses mots.', desire: 'Trouver la paix après une guerre qui ne le quitte pas.', fear: 'Revivre le massacre auquel il a survécu.', bond: "Les frères d'armes tombés à ses côtés.", ideal: "Plus jamais d'innocents sacrifiés.", flaw: "La rage l'aveugle face à l'ennemi de jadis.", dmHooks: ['Un ancien camarade réapparaît', 'Un ordre injuste à exécuter'] } },
+  { nameEn: 'Obsessed Scholar', nameFr: 'Érudit obsédé',
+    profileEn: { personality: 'Curious, precise, sometimes distracted by knowledge.', desire: 'Crack a mystery no one has solved.', fear: 'Dying before understanding.', bond: 'An unfinished work; a vanished mentor.', ideal: 'The truth, whatever the price.', flaw: 'Ignores danger when knowledge calls.', dmHooks: ['A forbidden grimoire', 'A ruin to decipher'] },
+    profileFr: { personality: 'Curieux, précis, parfois distrait par le savoir.', desire: "Percer un mystère que nul n'a résolu.", fear: "Mourir avant d'avoir compris.", bond: 'Une œuvre inachevée ; un mentor disparu.', ideal: "La vérité, quel qu'en soit le prix.", flaw: 'Ignore le danger quand le savoir l\'appelle.', dmHooks: ['Un grimoire interdit', 'Une ruine à déchiffrer'] } },
+  { nameEn: 'Rogue with a Heart', nameFr: 'Filou au grand cœur',
+    profileEn: { personality: 'Charming, quick, disarming.', desire: 'One last big score to break free.', fear: 'That his loved ones pay for his faults.', bond: 'The street kids who raised him.', ideal: 'You never betray your own.', flaw: "Can't resist a poorly guarded treasure.", dmHooks: ['A debt to a crime boss', 'A job that went wrong'] },
+    profileFr: { personality: 'Charmeur, vif, désarmant.', desire: "Un dernier gros coup pour s'affranchir.", fear: 'Que ses proches paient pour ses fautes.', bond: "Les gosses des rues qui l'ont élevé.", ideal: 'On ne trahit jamais les siens.', flaw: 'Ne résiste pas à un trésor mal gardé.', dmHooks: ['Une dette envers un parrain', 'Un coup qui a mal tourné'] } },
+  { nameEn: 'Ardent Zealot', nameFr: 'Zélote ardent',
+    profileEn: { personality: 'Intense, unwavering, inspired.', desire: 'Fulfill the will of his deity.', fear: 'Being abandoned by his faith.', bond: 'A temple, a relic, an oath.', ideal: 'Faith guides my every step.', flaw: 'Judges the unbelievers harshly.', dmHooks: ['A stolen relic', 'A prophecy about him'] },
+    profileFr: { personality: 'Intense, inébranlable, inspiré.', desire: 'Accomplir la volonté de sa divinité.', fear: 'Être abandonné par sa foi.', bond: 'Un temple, une relique, un serment.', ideal: 'La foi guide chacun de mes pas.', flaw: 'Juge durement les incroyants.', dmHooks: ['Une relique volée', 'Une prophétie le concernant'] } },
+  { nameEn: 'Fallen Noble', nameFr: 'Noble déchu',
+    profileEn: { personality: 'Proud, refined, bitter.', desire: 'Reclaim his name and his lands.', fear: 'Sinking into common anonymity.', bond: 'The honor of his house.', ideal: 'Rank imposes duties.', flaw: 'Believes everything is owed to him.', dmHooks: ['A court intrigue', 'A contested inheritance'] },
+    profileFr: { personality: 'Fier, raffiné, amer.', desire: 'Reconquérir son nom et ses terres.', fear: "Sombrer dans l'anonymat du commun.", bond: "L'honneur de sa maison.", ideal: 'Le rang impose des devoirs.', flaw: 'Croit que tout lui est dû.', dmHooks: ['Une intrigue de cour', 'Un héritage contesté'] } },
+  { nameEn: 'Street Child', nameFr: 'Enfant des rues',
+    profileEn: { personality: 'Wary, resourceful, loyal to his own.', desire: 'Never be hungry or afraid again.', fear: 'Falling back into misery.', bond: 'Those who survived alongside him.', ideal: 'Freedom above all.', flaw: 'Steals and hides by reflex.', dmHooks: ['A childhood protector resurfaces', 'A secret of the city'] },
+    profileFr: { personality: 'Méfiant, débrouillard, loyal aux siens.', desire: 'Ne plus jamais avoir faim ni peur.', fear: 'Retomber dans la misère.', bond: 'Ceux qui ont survécu avec lui.', ideal: 'La liberté avant tout.', flaw: 'Vole et cache par réflexe.', dmHooks: ["Un protecteur d'enfance refait surface", 'Un secret de la ville'] } },
+  { nameEn: 'Enlightened Hermit', nameFr: 'Ermite illuminé',
+    profileEn: { personality: 'Calm, strange, piercing.', desire: 'Share (or protect) a truth glimpsed in solitude.', fear: 'That his discovery falls into the wrong hands.', bond: 'The secret of his retreat.', ideal: 'Truth is found within.', flaw: 'His visions sometimes border on madness.', dmHooks: ['The question that drove him into exile', 'A cult that wants his secret'] },
+    profileFr: { personality: 'Calme, étrange, perçant.', desire: 'Partager (ou protéger) une vérité entrevue dans la solitude.', fear: 'Que sa découverte tombe en de mauvaises mains.', bond: 'Le secret de sa retraite.', ideal: 'La vérité se trouve en soi.', flaw: 'Ses visions frôlent parfois la folie.', dmHooks: ["La question qui l'a poussé à l'exil", 'Un culte qui veut son secret'] } },
 ];
 
 type CreationStep = 'identity' | 'build' | 'gear' | 'spells' | 'story' | 'review';
@@ -176,6 +357,8 @@ const IbfChips: React.FC<{ items?: string[]; onPick: (v: string) => void }> = ({
 };
 
 export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnly = false }) => {
+  const language = useGameStore(s => s.language);
+  const tr = TRANS[language];
   const [char, setChar] = useState<CharacterSheet>(initialChar || DEFAULT_CHAR);
   const [pointsSpent, setPointsSpent] = useState(0);
   const [activeStep, setActiveStep] = useState<CreationStep>(readOnly ? 'review' : 'identity');
@@ -522,12 +705,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   {index + 1}
                 </span>
                 {step.icon}
-                {step.label}
+                {STEP_LABELS[language][step.id]}
               </button>
             ))}
           </div>
           <p className="mt-2 text-center text-xs font-sans text-gray-700">
-            Build the sheet, then give the DM enough identity hooks to write a personal campaign opening.
+            {tr.builderHint}
           </p>
         </div>
       )}
@@ -535,15 +718,15 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
       {readOnly && (
         <div className="flex flex-col md:flex-row gap-4 border-b-4 border-gray-800 pb-6 mb-6">
           <div className="flex-1">
-            <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest">Nom</label>
+            <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest">{tr.name}</label>
             <h1 className="text-3xl md:text-5xl font-black text-blood border-b-2 border-gray-400">{char.name}</h1>
           </div>
           <div className="flex gap-6 items-end flex-wrap">
-            <div><label className="text-xs font-bold uppercase block mb-1">Classe</label><div className="text-xl font-bold">{frClass(char.class)}</div></div>
-            <div><label className="text-xs font-bold uppercase block mb-1">Race</label><div className="text-xl font-bold">{frRace(char.race)}</div></div>
-            <div><label className="text-xs font-bold uppercase block mb-1">Historique</label><div className="text-xl font-bold">{char.background}</div></div>
-            {MARTIAL_CLASSES.includes(char.class) && <div><label className="text-xs font-bold uppercase block mb-1">Style</label><div className="text-xl font-bold">{frStyle(char.fightingStyle)}</div></div>}
-            <div><label className="text-xs font-bold uppercase block mb-1">Divinité</label><div className="text-xl font-bold">{char.deity || 'Aucune'}</div></div>
+            <div><label className="text-xs font-bold uppercase block mb-1">{tr.class}</label><div className="text-xl font-bold">{dispClass(char.class, language)}</div></div>
+            <div><label className="text-xs font-bold uppercase block mb-1">{tr.race}</label><div className="text-xl font-bold">{dispRace(char.race, language)}</div></div>
+            <div><label className="text-xs font-bold uppercase block mb-1">{tr.background}</label><div className="text-xl font-bold">{char.background}</div></div>
+            {MARTIAL_CLASSES.includes(char.class) && <div><label className="text-xs font-bold uppercase block mb-1">{tr.style}</label><div className="text-xl font-bold">{dispStyle(char.fightingStyle, language)}</div></div>}
+            <div><label className="text-xs font-bold uppercase block mb-1">{tr.deity}</label><div className="text-xl font-bold">{char.deity || tr.none}</div></div>
           </div>
         </div>
       )}
@@ -558,7 +741,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           handleRaceChange(subs.length ? subs[0] : base);
         };
         const raceASI = (r: string) => (['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as Ability[])
-          .map(a => ({ a, v: getRacialBonus(r, a) })).filter(x => x.v).map(x => `+${x.v} ${ABILITY_FR_SHEET[x.a]}`).join(' ');
+          .map(a => ({ a, v: getRacialBonus(r, a) })).filter(x => x.v).map(x => `+${x.v} ${dispAbbr(x.a, language)}`).join(' ');
         const cardCls = (s: boolean) =>
           `text-left rounded-lg border-2 p-3 transition ${s ? 'border-blood bg-blood/5 ring-1 ring-blood/40' : 'border-gray-300 bg-white hover:border-blood/60'}`;
         const selRace = RACE_DATA[char.race];
@@ -567,27 +750,27 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           <div className="space-y-6 mb-6">
             {/* Name */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-1">Nom du personnage</label>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-1">{tr.characterName}</label>
               <input
                 value={char.name}
                 onChange={e => setChar({ ...char, name: e.target.value })}
                 className="w-full text-2xl font-black bg-transparent border-b-2 border-black focus:outline-none focus:border-blood placeholder-gray-400"
-                placeholder="Donne un nom à ton héros…"
+                placeholder={tr.namePlaceholder}
               />
             </div>
 
             {/* Classe */}
             <section>
               <div className="mb-2 flex items-center gap-2">
-                <Swords className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">Classe</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">— dés de vie, sauvegardes, capacités</span>
+                <Swords className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.class}</h2>
+                <span className="text-xs font-normal normal-case text-gray-500">{tr.classHint}</span>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(CLASS_DATA).map(([c, d]) => (
                   <button key={c} type="button" onClick={() => handleClassChange(c)} className={cardCls(char.class === c)}>
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-bold">{frClass(c)}</span>
-                      <span className="text-[10px] font-mono text-gray-500">d{d.hitDie} · {d.savingThrows.map(s => ABILITY_FR_SHEET[s] || s).join('/')}</span>
+                      <span className="font-bold">{dispClass(c, language)}</span>
+                      <span className="text-[10px] font-mono text-gray-500">d{d.hitDie} · {d.savingThrows.map(s => dispAbbr(s, language)).join('/')}</span>
                     </div>
                     <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
                   </button>
@@ -600,7 +783,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               {SUBCLASS_DATA[char.class]?.level === 1 && (
                 <div className="mt-3 rounded-lg border-2 border-dashed border-purple-600/40 bg-purple-600/5 p-3">
                   <div className="mb-2 text-xs font-bold uppercase tracking-widest text-purple-700">
-                    {SUBCLASS_DATA[char.class].label} <span className="font-normal normal-case text-gray-500">— obligatoire au niveau 1</span>
+                    {SUBCLASS_DATA[char.class].label} <span className="font-normal normal-case text-gray-500">{tr.mandatoryLvl1}</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {SUBCLASS_DATA[char.class].options.map(o => (
@@ -622,9 +805,9 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
               {selClass && (
                 <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-3 text-xs">
-                  <div className="mb-1 font-bold">{frClass(char.class)} — aptitudes de départ</div>
+                  <div className="mb-1 font-bold">{dispClass(char.class, language)} {tr.startingAbilities}</div>
                   <ul className="list-disc pl-5 space-y-0.5 text-gray-700">
-                    {selClass.features.filter(f => f.level <= 3).map((f, i) => <li key={i}><b>{f.name}</b> <span className="text-gray-400">(niv. {f.level})</span> — {f.desc}</li>)}
+                    {selClass.features.filter(f => f.level <= 3).map((f, i) => <li key={i}><b>{f.name}</b> <span className="text-gray-400">({tr.lvl} {f.level})</span> — {f.desc}</li>)}
                   </ul>
                 </div>
               )}
@@ -633,8 +816,8 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             {/* Race + sous-race */}
             <section>
               <div className="mb-2 flex items-center gap-2">
-                <UserRound className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">Race</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">— bonus de caractéristiques et traits</span>
+                <UserRound className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.race}</h2>
+                <span className="text-xs font-normal normal-case text-gray-500">{tr.raceHint}</span>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {baseRaces.map(r => {
@@ -643,7 +826,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   return (
                     <button key={r} type="button" onClick={() => pickBaseRace(r)} className={cardCls(selectedBase === r)}>
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-bold">{frRace(r)}{hasSubs && <ChevronRight className="inline h-3 w-3 text-gray-400" />}</span>
+                        <span className="font-bold">{dispRace(r, language)}{hasSubs && <ChevronRight className="inline h-3 w-3 text-gray-400" />}</span>
                         <span className="text-[10px] font-mono text-green-700">{raceASI(r) || '—'}</span>
                       </div>
                       <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
@@ -655,7 +838,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               {subraces.length > 0 && (
                 <div className="mt-3 rounded-lg border-2 border-dashed border-blood/40 bg-blood/5 p-3">
                   <div className="mb-2 text-xs font-bold uppercase tracking-widest text-blood">
-                    Sous-race de {frRace(selectedBase)} <span className="font-normal normal-case text-gray-500">— obligatoire</span>
+                    {tr.subraceOf(dispRace(selectedBase, language))} <span className="font-normal normal-case text-gray-500">{tr.mandatory}</span>
                   </div>
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {subraces.map(s => {
@@ -676,14 +859,14 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
               {selRace && (
                 <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-3 text-xs">
-                  <div className="mb-1 font-bold">{frRace(char.race)} — traits</div>
+                  <div className="mb-1 font-bold">{dispRace(char.race, language)} {tr.traits}</div>
                   <ul className="list-disc pl-5 space-y-0.5 text-gray-700">
                     {selRace.features.map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
                   <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-gray-600">
-                    {selRace.profs.length > 0 && <span><b>Maîtrises :</b> {selRace.profs.join(', ')}</span>}
-                    {selRace.resistances?.length ? <span className="text-orange-700"><b>Résistances :</b> {selRace.resistances.join(', ')}</span> : null}
-                    {selRace.darkvision ? <span><b>Vision dans le noir</b></span> : null}
+                    {selRace.profs.length > 0 && <span><b>{tr.proficienciesLabel}</b> {selRace.profs.join(', ')}</span>}
+                    {selRace.resistances?.length ? <span className="text-orange-700"><b>{tr.resistancesLabel}</b> {selRace.resistances.join(', ')}</span> : null}
+                    {selRace.darkvision ? <span><b>{tr.darkvision}</b></span> : null}
                   </div>
                 </div>
               )}
@@ -692,15 +875,15 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             {/* Historique */}
             <section>
               <div className="mb-2 flex items-center gap-2">
-                <ScrollText className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">Historique</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">— compétences et trait social</span>
+                <ScrollText className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.background}</h2>
+                <span className="text-xs font-normal normal-case text-gray-500">{tr.bgHint}</span>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {Object.entries(BACKGROUNDS).map(([b, d]) => (
                   <button key={b} type="button" onClick={() => handleBackgroundChange(b)} className={cardCls(char.background === b)}>
                     <div className="font-bold">{b}</div>
                     <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
-                    <div className="text-[10px] text-blue-800 mt-1"><b>Comp. :</b> {d.profs.map(p => SKILL_FR[p] || p).join(', ')}</div>
+                    <div className="text-[10px] text-blue-800 mt-1"><b>{tr.skillsAbbr}</b> {d.profs.map(p => language === 'fr' ? (SKILL_FR[p] || p) : p).join(', ')}</div>
                     <div className="text-[10px] text-yellow-800 mt-0.5"><b>{d.feature.name} :</b> {d.feature.description}</div>
                   </button>
                 ))}
@@ -711,11 +894,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {MARTIAL_CLASSES.includes(char.class) && (
                 <section>
-                  <div className="mb-2 flex items-center gap-2"><Target className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">Style de combat</h2></div>
+                  <div className="mb-2 flex items-center gap-2"><Target className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.fightingStyle}</h2></div>
                   <div className="grid grid-cols-1 gap-2">
                     {FIGHTING_STYLES.map(s => (
                       <button key={s.name} type="button" onClick={() => handleFightingStyleChange(s.name)} className={cardCls(char.fightingStyle === s.name)}>
-                        <div className="font-bold">{frStyle(s.name)}</div>
+                        <div className="font-bold">{dispStyle(s.name, language)}</div>
                         <div className="text-[11px] text-gray-600 mt-0.5">{s.desc}</div>
                       </button>
                     ))}
@@ -724,8 +907,8 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               )}
               <section>
                 <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">Divinité</h2>
-                  <span className="text-xs font-normal normal-case text-gray-500">— optionnel</span>
+                  <Sparkles className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.deity}</h2>
+                  <span className="text-xs font-normal normal-case text-gray-500">{tr.deityHint}</span>
                 </div>
                 <select
                   value={char.deity || 'Aucune'}
@@ -752,18 +935,18 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="mb-3 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
               <Sparkles className="h-5 w-5 text-blood" />
               <div>
-                <h2 className="text-xl font-black uppercase tracking-wide">Character Bible</h2>
-                <p className="font-sans text-xs text-gray-600">Ces champs nourrissent le MJ, l'ouverture de campagne et la cinématique. Idéal / Lien / Défaut + un secret = les piliers SRD.</p>
+                <h2 className="text-xl font-black uppercase tracking-wide">{tr.characterBible}</h2>
+                <p className="font-sans text-xs text-gray-600">{tr.bibleHint}</p>
               </div>
             </div>
 
             <div className="mb-4">
-              <div className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-700">Archétype rapide <span className="font-normal normal-case text-gray-500">— pré-remplit les piliers, puis édite librement</span></div>
+              <div className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.quickArchetype} <span className="font-normal normal-case text-gray-500">{tr.quickArchetypeHint}</span></div>
               <div className="flex flex-wrap gap-1.5">
                 {ARCHETYPES.map(a => (
-                  <button key={a.name} type="button" onClick={() => updateProfile(a.profile)}
+                  <button key={a.nameEn} type="button" onClick={() => updateProfile(language === 'fr' ? a.profileFr : a.profileEn)}
                     className="rounded-full border border-blood/40 bg-blood/5 px-3 py-1 text-xs font-bold text-blood hover:bg-blood/15">
-                    {a.name}
+                    {language === 'fr' ? a.nameFr : a.nameEn}
                   </button>
                 ))}
               </div>
@@ -771,55 +954,55 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Eye className="h-3.5 w-3.5" /> Appearance *</span>
+                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Eye className="h-3.5 w-3.5" /> {tr.appearance} *</span>
                 <textarea
                   value={profile.appearance || ''}
                   onChange={e => updateProfile({ appearance: e.target.value })}
-                  placeholder="Armor, scars, colors, posture, symbol, weapon silhouette..."
+                  placeholder={tr.appearancePh}
                   className="h-24 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={360}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Target className="h-3.5 w-3.5" /> Desire *</span>
+                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Target className="h-3.5 w-3.5" /> {tr.desire} *</span>
                 <textarea
                   value={profile.desire || ''}
                   onChange={e => updateProfile({ desire: e.target.value })}
-                  placeholder="What does the hero want badly enough to risk death?"
+                  placeholder={tr.desirePh}
                   className="h-24 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={320}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">Personality</span>
+                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.personality}</span>
                 <textarea
                   value={profile.personality || ''}
                   onChange={e => updateProfile({ personality: e.target.value })}
-                  placeholder="How do they speak, decide, threaten, comfort, joke?"
+                  placeholder={tr.personalityPh}
                   className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">Fear / Weakness</span>
+                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.fearWeakness}</span>
                 <textarea
                   value={profile.fear || ''}
                   onChange={e => updateProfile({ fear: e.target.value })}
-                  placeholder="What can the villain exploit?"
+                  placeholder={tr.fearPh}
                   className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">Bond / Lien</span>
+                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.bondLien}</span>
                 <textarea
                   value={profile.bond || ''}
                   onChange={e => updateProfile({ bond: e.target.value })}
-                  placeholder="A person, oath, place, mentor, family, rival, or debt."
+                  placeholder={tr.bondPh}
                   className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
                 />
@@ -827,22 +1010,22 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               </label>
 
               <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">Wound / Regret</span>
+                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.woundRegret}</span>
                 <textarea
                   value={profile.wound || ''}
                   onChange={e => updateProfile({ wound: e.target.value })}
-                  placeholder="The old failure, loss, exile, betrayal, or shame."
+                  placeholder={tr.woundPh}
                   className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
                 />
               </label>
 
               <label className="block md:col-span-2">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">Secret <span className="font-normal normal-case text-gray-500">— privé, connu du seul MJ</span></span>
+                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.secret} <span className="font-normal normal-case text-gray-500">{tr.secretHint}</span></span>
                 <textarea
                   value={profile.secret || ''}
                   onChange={e => updateProfile({ secret: e.target.value })}
-                  placeholder="Un secret que le MJ pourra révéler ou exploiter : une trahison cachée, une vraie identité, un pacte, une dette honteuse..."
+                  placeholder={tr.secretPh}
                   className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
                 />
@@ -853,12 +1036,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
               <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-                Backstory
+                {tr.backstory}
               </label>
               <textarea
                 value={char.customBackground || ''}
                 onChange={e => setChar({ ...char, customBackground: e.target.value, backstory: e.target.value })}
-                placeholder="Write the short version of the hero's past. The DM will use it as personal campaign fuel."
+                placeholder={tr.backstoryPh}
                 className="w-full h-32 p-3 bg-parchment/60 border-2 border-gray-400 rounded font-serif text-sm focus:outline-none focus:border-blood resize-none"
                 maxLength={700}
               />
@@ -867,24 +1050,24 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
             <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
               <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-                DM Hooks
+                {tr.dmHooks}
               </label>
               <textarea
                 value={storyHookText}
                 onChange={e => updateHooks(e.target.value)}
-                placeholder={"One hook per line:\nA missing sibling\nA cursed rank insignia\nA debt to a temple"}
+                placeholder={tr.dmHooksPh}
                 className="w-full h-32 p-3 bg-parchment/60 border-2 border-gray-400 rounded font-serif text-sm focus:outline-none focus:border-blood resize-none"
                 maxLength={500}
               />
               <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Idéal</span>
-                  <input value={profile.ideal || ''} onChange={e => updateProfile({ ideal: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder="Justice, liberté..." />
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">{tr.ideal}</span>
+                  <input value={profile.ideal || ''} onChange={e => updateProfile({ ideal: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder={tr.idealPh} />
                   <IbfChips items={BACKGROUNDS[char.background]?.ideals} onPick={v => updateProfile({ ideal: v })} />
                 </label>
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">Défaut</span>
-                  <input value={profile.flaw || ''} onChange={e => updateProfile({ flaw: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder="Orgueil, pitié, rage..." />
+                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">{tr.flaw}</span>
+                  <input value={profile.flaw || ''} onChange={e => updateProfile({ flaw: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder={tr.flawPh} />
                   <IbfChips items={BACKGROUNDS[char.background]?.flaws} onPick={v => updateProfile({ flaw: v })} />
                 </label>
               </div>
@@ -893,7 +1076,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
           <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
             <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-              Cinematic Tone
+              {tr.cinematicTone}
             </label>
             <select
               value={profile.cinematicStyle || 'dark fantasy cinematic'}
@@ -910,11 +1093,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
       {(readOnly || activeStep === 'build') && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Stats Column */}
         <div className="bg-gray-200/50 p-4 rounded border-2 border-gray-400 relative">
-          <h2 className="text-center font-bold text-xl border-b-2 border-gray-800 mb-4">Ability Scores</h2>
+          <h2 className="text-center font-bold text-xl border-b-2 border-gray-800 mb-4">{tr.abilityScores}</h2>
 
           {!readOnly && (
             <div className="mb-4 bg-gray-800 text-parchment p-2 rounded text-center">
-              <div className="text-xs uppercase tracking-widest text-gray-400">Points Remaining</div>
+              <div className="text-xs uppercase tracking-widest text-gray-400">{tr.pointsRemaining}</div>
               <div className={`text-2xl font-bold ${pointsRemaining === 0 ? 'text-green-400' : 'text-gold'}`}>
                 {pointsRemaining} / {MAX_POINTS}
               </div>
@@ -946,7 +1129,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     )}
                     <div className="w-14 text-center">
                       <div className="text-2xl font-black leading-6">{effectiveVal}</div>
-                      {racialBonus !== 0 && <div className="text-[10px] font-bold text-green-700">base {val} +{racialBonus}</div>}
+                      {racialBonus !== 0 && <div className="text-[10px] font-bold text-green-700">{tr.base} {val} +{racialBonus}</div>}
                     </div>
                     {!readOnly && (
                       <button
@@ -975,21 +1158,21 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="flex flex-col items-center group relative">
               <Shield className="w-8 h-8 text-gray-400" />
               <span className="text-3xl font-bold mt-1">{char.ac}</span>
-              <span className="text-xs uppercase tracking-widest text-gray-500">Armor Class</span>
+              <span className="text-xs uppercase tracking-widest text-gray-500">{tr.armorClass}</span>
               <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs bg-black p-1 rounded transition-opacity whitespace-nowrap">
-                10 + DEX Mod
+                {tr.acTooltip}
               </span>
             </div>
             <div className="flex flex-col items-center">
               <Heart className="w-8 h-8 text-blood" />
               <span className="text-3xl font-bold mt-1">{char.hp.current} <span className="text-lg text-gray-500">/ {char.hp.max}</span></span>
-              <span className="text-xs uppercase tracking-widest text-gray-500">Hit Points</span>
+              <span className="text-xs uppercase tracking-widest text-gray-500">{tr.hitPoints}</span>
             </div>
             <div className="flex flex-col items-center">
               <div className="font-fantasy font-black text-2xl border-2 border-gold rounded-full w-10 h-10 flex items-center justify-center text-gold">
                 d{CLASS_DATA[char.class]?.hitDie || 8}
               </div>
-              <span className="text-xs uppercase tracking-widest text-gray-500 mt-2">Hit Die</span>
+              <span className="text-xs uppercase tracking-widest text-gray-500 mt-2">{tr.hitDie}</span>
             </div>
           </div>
 
@@ -998,14 +1181,14 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="flex items-center justify-between border-b-2 border-black mb-4 pb-2">
               <div className="flex items-center gap-2">
                 <Backpack className="w-6 h-6" />
-                <h3 className="font-bold text-xl">Starting Equipment</h3>
+                <h3 className="font-bold text-xl">{tr.startingEquipment}</h3>
               </div>
               {!readOnly && (
                 <button
                   onClick={() => handleClassChange(char.class)}
                   className="text-xs flex items-center gap-1 text-gray-500 hover:text-black"
                 >
-                  <RefreshCw className="w-3 h-3" /> Reset Kit
+                  <RefreshCw className="w-3 h-3" /> {tr.resetKit}
                 </button>
               )}
             </div>
@@ -1013,9 +1196,9 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               <table className="w-full text-sm font-mono">
                 <thead>
                   <tr className="text-left text-gray-500 border-b">
-                    <th className="pb-2 pl-2">Item</th>
-                    <th className="pb-2">Qty</th>
-                    <th className="pb-2">Wgt</th>
+                    <th className="pb-2 pl-2">{tr.item}</th>
+                    <th className="pb-2">{tr.qty}</th>
+                    <th className="pb-2">{tr.wgt}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1030,7 +1213,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   ))}
                   {(char.inventory || []).length === 0 && (
                     <tr>
-                      <td colSpan={3} className="py-4 text-center text-gray-400 italic">No equipment selected</td>
+                      <td colSpan={3} className="py-4 text-center text-gray-400 italic">{tr.noEquipment}</td>
                     </tr>
                   )}
                 </tbody>
@@ -1043,20 +1226,20 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
       {(readOnly || activeStep === 'build') && (
         <div className="mt-6 bg-gray-200/50 p-4 rounded border-2 border-gray-400">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b-2 border-gray-800 pb-2">
-            <h2 className="text-xl font-bold">Compétences</h2>
+            <h2 className="text-xl font-bold">{tr.skills}</h2>
             <div className="flex flex-wrap items-center gap-3 text-sm">
               {classSkillData && !readOnly && (
                 <span className={`font-bold ${classSkillPicks.length === classSkillData.choices ? 'text-green-700' : 'text-blood'}`}>
-                  {classSkillPicks.length}/{classSkillData.choices} au choix ({char.class})
+                  {classSkillPicks.length}/{classSkillData.choices} {tr.atChoice} ({dispClass(char.class, language)})
                 </span>
               )}
               <span className="flex items-center gap-1 rounded bg-gray-800 px-2 py-1 text-parchment">
-                <Eye className="h-4 w-4" /> Perception passive&nbsp;: <b className="text-gold">{passive}</b>
+                <Eye className="h-4 w-4" /> {tr.passivePerception}&nbsp;: <b className="text-gold">{passive}</b>
               </span>
             </div>
           </div>
           {expertiseMax > 0 && (
-            <p className="mb-2 text-xs text-gray-700">★ Expertise ({(char.expertise || []).length}/{expertiseMax}) — clique l'étoile d'une compétence maîtrisée pour doubler la maîtrise.</p>
+            <p className="mb-2 text-xs text-gray-700">{tr.expertiseHint((char.expertise || []).length, expertiseMax)}</p>
           )}
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {ALL_SKILLS.map(skill => {
@@ -1074,16 +1257,16 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     type="button"
                     disabled={!canToggle}
                     onClick={() => toggleClassSkill(skill)}
-                    title={grantedFree ? 'Accordée par le background/la race' : inClassList ? 'Compétence de classe au choix' : 'Hors de la liste de ta classe'}
+                    title={grantedFree ? tr.grantedByBgRace : inClassList ? tr.classSkillChoice : tr.outOfClassList}
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${prof ? 'border-blood bg-blood text-white' : canToggle ? 'border-gray-500 hover:border-blood' : 'border-gray-300 opacity-40'}`}
                   >
                     {prof && <CheckCircle2 className="h-3.5 w-3.5" />}
                   </button>
                   <span className="flex-1 truncate">
-                    {SKILL_FR[skill] || skill} <span className="text-[10px] text-gray-500">({ABILITY_FR_SHEET[abil]})</span>
+                    {language === 'fr' ? (SKILL_FR[skill] || skill) : skill} <span className="text-[10px] text-gray-500">({dispAbbr(abil, language)})</span>
                   </span>
                   {expertiseMax > 0 && prof && (
-                    <button type="button" onClick={() => toggleExpertise(skill)} title="Expertise (double maîtrise)"
+                    <button type="button" onClick={() => toggleExpertise(skill)} title={tr.expertiseTitle}
                       className={`text-base leading-none ${expert ? 'text-gold' : 'text-gray-300 hover:text-gold'}`}>★</button>
                   )}
                   <span className="w-8 text-right font-mono font-bold">{mod >= 0 ? '+' : ''}{mod}</span>
@@ -1108,35 +1291,34 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b-2 border-gray-800 pb-2">
                 <div className="flex items-center gap-2">
                   <ShoppingCart className="h-5 w-5 text-blood" />
-                  <h2 className="text-xl font-bold">Équipement de départ</h2>
+                  <h2 className="text-xl font-bold">{tr.gearTitle}</h2>
                 </div>
                 <span className="flex items-center gap-1.5 rounded-full border border-gold bg-gold/20 px-3 py-1 font-bold text-yellow-800">
-                  <Coins className="h-4 w-4" /> {gold} po
+                  <Coins className="h-4 w-4" /> {gold} {tr.gold}
                 </span>
               </div>
               <p className="text-sm text-gray-700">
-                Tu reçois ton <b>paquetage</b> de classe (focalisateur, sac d'exploration…) <b>gratuitement</b>, plus un <b>kit par défaut</b> déjà équipé.
-                Avec ton or de départ (richesse SRD de ta classe + bonus de background), <b>achète</b>, <b>revends</b> et <b>équipe</b> ton matériel comme tu l'entends.
+                {tr.gearIntro1} <b>{tr.gearIntroPack}</b> {tr.gearIntro2} <b>{tr.gearIntroFree}</b>{tr.gearIntro3} <b>{tr.gearIntroDefaultKit}</b> {tr.gearIntro4} <b>{tr.gearIntroBuy}</b>, <b>{tr.gearIntroSell}</b> {language === 'fr' ? 'et' : 'and'} <b>{tr.gearIntroEquip}</b> {tr.gearIntro5}
               </p>
             </div>
 
             {/* Ton équipement */}
             <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-bold"><Backpack className="h-5 w-5" /> Ton équipement</h3>
-              {ownedGear.length === 0 && <p className="text-sm italic text-gray-500">Rien d'équipable pour l'instant — achète une arme ou une armure ci-dessous.</p>}
+              <h3 className="mb-3 flex items-center gap-2 text-lg font-bold"><Backpack className="h-5 w-5" /> {tr.yourEquipment}</h3>
+              {ownedGear.length === 0 && <p className="text-sm italic text-gray-500">{tr.nothingEquippable}</p>}
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {ownedGear.map(item => (
                   <div key={item.id} className={`flex items-center gap-2 rounded border p-2 ${item.equipped ? 'border-green-600 bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
                     {item.type === 'weapon' ? <Swords className="h-4 w-4 shrink-0 text-gray-600" /> : <Shield className="h-4 w-4 shrink-0 text-gray-600" />}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold">{frItemName(item)}</div>
-                      <div className="text-[11px] text-gray-600">{item.type === 'weapon' ? `${item.damageDice || ''} ${dmgFr(item.damageType)}`.trim() : acLabel(item)}</div>
+                      <div className="truncate text-sm font-bold">{itemName(item, language)}</div>
+                      <div className="text-[11px] text-gray-600">{item.type === 'weapon' ? `${item.damageDice || ''} ${dmgLabel(item.damageType, language)}`.trim() : acLabel(item, language)}</div>
                     </div>
                     <button type="button" onClick={() => toggleEquip(item)}
                       className={`rounded px-2 py-1 text-xs font-bold ${item.equipped ? 'bg-green-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-800'}`}>
-                      {item.equipped ? 'Équipé' : 'Équiper'}
+                      {item.equipped ? tr.equipped : tr.equip}
                     </button>
-                    <button type="button" onClick={() => sellItem(item)} title="Revendre (récupère l'or)" className="rounded p-1 text-gray-400 hover:bg-blood/10 hover:text-blood">
+                    <button type="button" onClick={() => sellItem(item)} title={tr.resellTitle} className="rounded p-1 text-gray-400 hover:bg-blood/10 hover:text-blood">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -1144,11 +1326,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               </div>
               {ownedSac.length > 0 && (
                 <div className="mt-3 border-t border-gray-200 pt-2">
-                  <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-500">Paquetage (inclus)</div>
+                  <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-500">{tr.packIncluded}</div>
                   <div className="flex flex-wrap gap-1.5">
                     {ownedSac.map(item => (
                       <span key={item.id} className="rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                        {frItemName(item)}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
+                        {itemName(item, language)}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
                       </span>
                     ))}
                   </div>
@@ -1160,10 +1342,10 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
               <div className="mb-3 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
                 <Coins className="h-5 w-5 text-blood" />
-                <h3 className="text-lg font-bold">Boutique</h3>
+                <h3 className="text-lg font-bold">{tr.shop}</h3>
               </div>
               <div className="mb-3 flex flex-wrap gap-2">
-                {([['simple', 'Armes courantes'], ['martial', 'Armes de guerre'], ['armor', 'Armures']] as const).map(([id, label]) => (
+                {([['simple', tr.simpleWeapons], ['martial', tr.martialWeapons], ['armor', tr.armors]] as const).map(([id, label]) => (
                   <button key={id} type="button" onClick={() => setShopTab(id)}
                     className={`rounded border-2 px-3 py-1.5 text-sm font-bold ${shopTab === id ? 'border-blood bg-blood text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-blood'}`}>
                     {label}
@@ -1180,16 +1362,16 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                       <div key={w.name} className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2">
                         <Swords className="h-4 w-4 shrink-0 text-gray-500" />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold">{w.nameFr}</div>
+                          <div className="truncate text-sm font-bold">{language === 'fr' ? w.nameFr : w.name}</div>
                           <div className="text-[11px] text-gray-600">
-                            {w.damage} {dmgFr(w.damageType)}{w.versatile ? ` (${w.versatile} à 2 mains)` : ''}{w.range ? ` · ${w.range} m` : ''}
-                            {w.properties.length ? ` · ${w.properties.map(p => WEAPON_PROP_FR[p] || p).join(', ')}` : ''}
+                            {w.damage} {dmgLabel(w.damageType, language)}{w.versatile ? ` (${w.versatile} ${tr.twoHanded})` : ''}{w.range ? ` · ${w.range} m` : ''}
+                            {w.properties.length ? ` · ${w.properties.map(p => language === 'fr' ? (WEAPON_PROP_FR[p] || p) : p).join(', ')}` : ''}
                           </div>
                         </div>
-                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{cost} po</span>
+                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{cost} {tr.gold}</span>
                         <button type="button" disabled={!afford} onClick={() => buyWeapon(w)}
                           className={`rounded px-2 py-1 text-xs font-bold ${afford ? 'bg-gold text-gray-900 hover:brightness-95' : 'cursor-not-allowed bg-gray-200 text-gray-400'}`}>
-                          Acheter
+                          {tr.buy}
                         </button>
                       </div>
                     );
@@ -1203,16 +1385,16 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                       <div key={a.key} className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2">
                         <Shield className="h-4 w-4 shrink-0 text-gray-500" />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold">{a.nameFr}</div>
+                          <div className="truncate text-sm font-bold">{language === 'fr' ? a.nameFr : a.name}</div>
                           <div className="text-[11px] text-gray-600">
-                            {a.armorType === 'shield' ? `+${a.acBonus} CA` : `CA ${a.baseAC}${a.maxDexBonus !== undefined ? ` + DEX (max ${a.maxDexBonus})` : a.armorType === 'light' ? ' + DEX' : ''}`}
-                            {' · '}{armorTypeFr(a.armorType)}{a.stealthDisadvantage ? ' · ⚠ Discrétion désav.' : ''}
+                            {a.armorType === 'shield' ? `+${a.acBonus} ${language === 'fr' ? 'CA' : 'AC'}` : `${language === 'fr' ? 'CA' : 'AC'} ${a.baseAC}${a.maxDexBonus !== undefined ? ` + DEX (max ${a.maxDexBonus})` : a.armorType === 'light' ? ' + DEX' : ''}`}
+                            {' · '}{armorTypeLabel(a.armorType, language)}{a.stealthDisadvantage ? ` · ${tr.stealthDisadv}` : ''}
                           </div>
                         </div>
-                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{a.price} po</span>
+                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{a.price} {tr.gold}</span>
                         <button type="button" disabled={!afford} onClick={() => buyArmor(a)}
                           className={`rounded px-2 py-1 text-xs font-bold ${afford ? 'bg-gold text-gray-900 hover:brightness-95' : 'cursor-not-allowed bg-gray-200 text-gray-400'}`}>
-                          Acheter
+                          {tr.buy}
                         </button>
                       </div>
                     );
@@ -1230,28 +1412,28 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="mb-4 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
               <WandSparkles className="h-5 w-5 text-blood" />
               <div>
-                <h2 className="text-2xl font-black uppercase tracking-wide">Caster Setup</h2>
+                <h2 className="text-2xl font-black uppercase tracking-wide">{tr.casterSetup}</h2>
                 <p className="font-sans text-xs text-gray-600">
                   {casterConfig
-                    ? `Choose ${casterConfig.cantrips} cantrip(s) and ${casterConfig.spells} ${casterConfig.mode === 'prepared' ? 'prepared' : 'known'} level 1 spell(s).`
-                    : 'This class has no spellcasting setup at level 1.'}
+                    ? tr.casterIntro(casterConfig.cantrips, casterConfig.spells, casterConfig.mode === 'prepared' ? tr.prepared : tr.known)
+                    : tr.noCasterSetup}
                 </p>
               </div>
             </div>
 
             {!casterConfig ? (
               <div className="rounded border border-gray-300 bg-parchment/60 p-4 font-serif text-sm text-gray-700">
-                {char.class} starts as a martial/non-caster in the current rules setup. Continue to Story.
+                {tr.noCasterClass(dispClass(char.class, language))}
               </div>
             ) : (
               <div className="space-y-5">
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Casting Ability</div>
-                    <div className="mt-1 text-2xl font-black">{casterConfig.ability}</div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.castingAbility}</div>
+                    <div className="mt-1 text-2xl font-black">{dispAbbr(casterConfig.ability, language)}</div>
                   </div>
                   <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Focus</div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.focus}</div>
                     <input
                       value={char.spellcastingFocus || casterConfig.focus}
                       onChange={e => setChar(prev => ({ ...prev, spellcastingFocus: e.target.value }))}
@@ -1259,14 +1441,14 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     />
                   </div>
                   <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Spell Slots</div>
-                    <div className="mt-1 text-sm font-bold">{char.spellSlots ? (Object.entries(char.spellSlots) as [string, { current: number; max: number }][]).map(([slot, pool]) => `L${slot}: ${pool.current}/${pool.max}`).join(', ') : 'Cantrips only'}</div>
+                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.spellSlots}</div>
+                    <div className="mt-1 text-sm font-bold">{char.spellSlots ? (Object.entries(char.spellSlots) as [string, { current: number; max: number }][]).map(([slot, pool]) => `${language === 'fr' ? 'N' : 'L'}${slot}: ${pool.current}/${pool.max}`).join(', ') : tr.cantripsOnly}</div>
                   </div>
                 </div>
 
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-lg font-black uppercase tracking-wide">Cantrips</h3>
+                    <h3 className="text-lg font-black uppercase tracking-wide">{tr.cantrips}</h3>
                     <span className={(char.cantrips || []).length >= Math.min(casterConfig.cantrips, cantripOptions.length) ? 'text-sm font-bold text-green-700' : 'text-sm font-bold text-blood'}>
                       {(char.cantrips || []).length}/{Math.min(casterConfig.cantrips, cantripOptions.length)}
                     </span>
@@ -1294,7 +1476,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-lg font-black uppercase tracking-wide">Level 1 Spells</h3>
+                    <h3 className="text-lg font-black uppercase tracking-wide">{tr.level1Spells}</h3>
                     <span className={selectedLevelOneSpells.length >= Math.min(casterConfig.spells, levelOneSpellOptions.length) ? 'text-sm font-bold text-green-700' : 'text-sm font-bold text-blood'}>
                       {selectedLevelOneSpells.length}/{Math.min(casterConfig.spells, levelOneSpellOptions.length)}
                     </span>
@@ -1314,7 +1496,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                             {selected && <CheckCircle2 className="h-4 w-4 text-blood" />}
                           </div>
                           <p className="mt-1 font-serif text-xs text-gray-700">{spell.effectSummary}</p>
-                          <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">{spell.castingTime} / {spell.range}{spell.concentration ? ' / concentration' : ''}</p>
+                          <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">{spell.castingTime} / {spell.range}{spell.concentration ? ` / ${tr.concentration}` : ''}</p>
                         </button>
                       );
                     })}
@@ -1331,26 +1513,26 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
             <div className="mb-4 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
               <CheckCircle2 className="h-5 w-5 text-blood" />
-              <h2 className="text-2xl font-black uppercase tracking-wide">Hero Brief</h2>
+              <h2 className="text-2xl font-black uppercase tracking-wide">{tr.heroBrief}</h2>
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Identity</div>
-                <div className="mt-1 text-xl font-black">{char.name || 'Unnamed Hero'}</div>
-                <p className="text-sm">{char.race} {char.class} / {char.background}</p>
-                <p className="text-sm text-gray-600">Deity: {char.deity || 'None'}</p>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.identity}</div>
+                <div className="mt-1 text-xl font-black">{char.name || tr.unnamedHero}</div>
+                <p className="text-sm">{dispRace(char.race, language)} {dispClass(char.class, language)} / {char.background}</p>
+                <p className="text-sm text-gray-600">{tr.deityColon} {char.deity || tr.none}</p>
               </div>
               <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Mechanics</div>
-                <p className="mt-1 text-sm">HP {char.hp.current}/{char.hp.max} / AC {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
-                <p className="text-sm">Weapon: {char.weapon?.name || 'Unarmed'} ({char.weapon?.damage || '1d4'})</p>
-                <p className={pointsRemaining === 0 ? 'text-sm text-green-700' : 'text-sm text-blood'}>Point buy: {pointsRemaining === 0 ? 'complete' : `${pointsRemaining} remaining`}</p>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.mechanics}</div>
+                <p className="mt-1 text-sm">{language === 'fr' ? 'PV' : 'HP'} {char.hp.current}/{char.hp.max} / {language === 'fr' ? 'CA' : 'AC'} {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
+                <p className="text-sm">{tr.weapon} {char.weapon?.name || tr.unarmed} ({char.weapon?.damage || '1d4'})</p>
+                <p className={pointsRemaining === 0 ? 'text-sm text-green-700' : 'text-sm text-blood'}>{tr.pointBuy} {pointsRemaining === 0 ? tr.complete : `${pointsRemaining} ${tr.remaining}`}</p>
               </div>
               <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Cinematic</div>
+                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.cinematic}</div>
                 <p className="mt-1 text-sm">{profile.cinematicStyle || 'dark fantasy cinematic'}</p>
                 <p className={requiredNarrativeReady ? 'text-sm text-green-700' : 'text-sm text-blood'}>
-                  {requiredNarrativeReady ? 'Ready for personal intro' : 'Appearance and desire required'}
+                  {requiredNarrativeReady ? tr.readyForIntro : tr.appearanceDesireRequired}
                 </p>
               </div>
             </div>
@@ -1358,38 +1540,38 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
               {casterConfig && (
                 <div className="md:col-span-2">
-                  <h3 className="mb-1 text-sm font-black uppercase tracking-widest">Magic</h3>
+                  <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.magic}</h3>
                   <div className="grid grid-cols-1 gap-3 rounded border border-gray-200 bg-parchment/60 p-3 text-sm md:grid-cols-2">
                     <div>
-                      <div className="text-xs font-bold uppercase tracking-widest text-gray-500">Cantrips</div>
+                      <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.cantrips}</div>
                       <p className={(char.cantrips || []).length ? 'font-serif' : 'font-serif text-blood'}>
-                        {(char.cantrips || []).join(', ') || 'Choose cantrips before starting.'}
+                        {(char.cantrips || []).join(', ') || tr.chooseCantrips}
                       </p>
                     </div>
                     <div>
                       <div className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        {casterConfig.mode === 'prepared' ? 'Prepared Spells' : 'Known Spells'}
+                        {casterConfig.mode === 'prepared' ? tr.preparedSpells : tr.knownSpells}
                       </div>
                       <p className={selectedLevelOneSpells.length ? 'font-serif' : 'font-serif text-blood'}>
-                        {selectedLevelOneSpells.join(', ') || 'Choose level 1 spells before starting.'}
+                        {selectedLevelOneSpells.join(', ') || tr.chooseLvl1}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
               <div>
-                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">Appearance</h3>
-                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.appearance || 'Missing. The intro image will be generic until this is filled.'}</p>
+                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.appearance}</h3>
+                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.appearance || tr.appearanceMissing}</p>
               </div>
               <div>
-                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">Core Desire</h3>
-                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.desire || 'Missing. The campaign hook needs a personal goal.'}</p>
+                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.coreDesire}</h3>
+                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.desire || tr.desireMissing}</p>
               </div>
             </div>
 
             {(profile.dmHooks || []).length > 0 && (
               <div className="mt-4">
-                <h3 className="mb-2 text-sm font-black uppercase tracking-widest">DM Hooks</h3>
+                <h3 className="mb-2 text-sm font-black uppercase tracking-widest">{tr.dmHooks}</h3>
                 <div className="flex flex-wrap gap-2">
                   {(profile.dmHooks || []).map(hook => (
                     <span key={hook} className="rounded-full border border-blood/30 bg-blood/10 px-3 py-1 text-xs font-bold text-blood">{hook}</span>
@@ -1409,7 +1591,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             disabled={currentStepIndex <= 0}
             className="flex items-center justify-center gap-2 rounded-lg border-2 border-gray-700 bg-white px-4 py-3 font-bold text-gray-800 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ChevronLeft className="h-5 w-5" /> Back
+            <ChevronLeft className="h-5 w-5" /> {tr.back}
           </button>
           {activeStep !== 'review' ? (
             <button
@@ -1417,7 +1599,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               onClick={() => goToStep(1)}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-fantasy text-xl text-white shadow-lg transition-colors hover:bg-gray-800"
             >
-              Continue <ChevronRight className="h-5 w-5" />
+              {tr.continue} <ChevronRight className="h-5 w-5" />
             </button>
           ) : (
             <button
@@ -1426,17 +1608,17 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blood px-4 py-4 font-fantasy text-2xl text-white shadow-lg transition-colors hover:bg-red-900 disabled:cursor-not-allowed disabled:bg-gray-600"
             >
               {!char.name ? (
-                <>Nom requis</>
+                <>{tr.nameRequired}</>
               ) : pointsRemaining > 0 ? (
-                <>Dépense tes points restants ({pointsRemaining})</>
+                <>{tr.spendPoints(pointsRemaining)}</>
               ) : !subclassReady ? (
-                <>Choisis ton {SUBCLASS_DATA[char.class]?.label || 'archétype'}</>
+                <>{tr.chooseYour(SUBCLASS_DATA[char.class]?.label || tr.archetype)}</>
               ) : !requiredNarrativeReady ? (
-                <>Ajoute apparence + désir</>
+                <>{tr.addAppearanceDesire}</>
               ) : !casterReady ? (
-                <>Choisis tes sorts de départ</>
+                <>{tr.chooseStartingSpells}</>
               ) : (
-                <><Swords className="w-6 h-6" /> À l'aventure !</>
+                <><Swords className="w-6 h-6" /> {tr.toAdventure}</>
               )}
             </button>
           )}
@@ -1448,7 +1630,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-parchment text-black p-6 rounded-lg border-4 border-gray-800 max-w-lg max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4 border-b-2 border-gray-800 pb-2">
-              <h2 className="text-2xl font-bold">{char.class}</h2>
+              <h2 className="text-2xl font-bold">{dispClass(char.class, language)}</h2>
               <button onClick={() => setShowClassDetails(false)} className="text-2xl hover:text-blood">&times;</button>
             </div>
 
@@ -1457,33 +1639,33 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-gray-100 p-2 rounded">
-                <div className="text-xs text-gray-500 uppercase">Dé de Vie</div>
+                <div className="text-xs text-gray-500 uppercase">{tr.hitDiceLabel}</div>
                 <div className="text-xl font-bold text-blood">d{CLASS_DATA[char.class].hitDie}</div>
               </div>
               <div className="bg-gray-100 p-2 rounded">
-                <div className="text-xs text-gray-500 uppercase">Caractéristique Principale</div>
+                <div className="text-xs text-gray-500 uppercase">{tr.primaryAbility}</div>
                 <div className="text-lg font-bold">{CLASS_DATA[char.class].primaryAbility}</div>
               </div>
             </div>
 
             <div className="bg-gray-100 p-2 rounded mb-4">
-              <div className="text-xs text-gray-500 uppercase">Jets de Sauvegarde</div>
+              <div className="text-xs text-gray-500 uppercase">{tr.savingThrows}</div>
               <div className="font-bold">{CLASS_DATA[char.class].savingThrows.join(', ')}</div>
             </div>
 
             <div className="bg-gray-100 p-2 rounded mb-4">
-              <div className="text-xs text-gray-500 uppercase">Maîtrises</div>
+              <div className="text-xs text-gray-500 uppercase">{tr.proficiencies}</div>
               <div className="text-sm">{CLASS_DATA[char.class].profs.join(', ')}</div>
             </div>
 
             {/* Features */}
-            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">Capacités de Classe</h3>
+            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">{tr.classFeatures}</h3>
             <div className="space-y-2 mb-4">
               {CLASS_DATA[char.class].features.map((f, i) => (
                 <div key={i} className="bg-white p-2 rounded border border-gray-300">
                   <div className="flex justify-between">
                     <span className="font-bold">{f.name}</span>
-                    <span className="text-xs bg-blood text-white px-2 py-0.5 rounded">Niv. {f.level}</span>
+                    <span className="text-xs bg-blood text-white px-2 py-0.5 rounded">{tr.levelAbbr}. {f.level}</span>
                   </div>
                   <div className="text-sm text-gray-600">{f.desc}</div>
                 </div>
@@ -1491,11 +1673,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             </div>
 
             {/* XP Thresholds */}
-            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">XP par Niveau</h3>
+            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">{tr.xpPerLevel}</h3>
             <div className="grid grid-cols-4 gap-1 text-xs">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(lvl => (
                 <div key={lvl} className="bg-gray-100 p-1 rounded text-center">
-                  <span className="font-bold">Niv {lvl}:</span> {[0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000][lvl - 1]} XP
+                  <span className="font-bold">{tr.levelAbbr} {lvl}:</span> {[0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000][lvl - 1]} XP
                 </div>
               ))}
             </div>

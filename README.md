@@ -72,6 +72,8 @@ React 19 · Vite · Zustand · Tailwind · Firebase (auth/saves) ·
 Gemini (MJ + voix live) · FLUX.2-klein + Stable Audio 3 (génération locale, FastAPI) ·
 Electron (launcher) · Inno Setup + uv (installeur).
 
+🌍 **Interface entièrement bilingue (Français / English)**, basculable à tout moment.
+
 ## 📄 Licence
 
 [MIT](LICENSE) — © 2026 Salim Belghazi. Les **poids des modèles d'IA** ne sont pas

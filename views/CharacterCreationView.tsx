@@ -114,9 +114,55 @@ function buildInitialJournal(manifest: AdventureManifest, character: CharacterSh
     };
 }
 
+const TRANS = {
+    en: {
+        multiplayerDisabled: "Multiplayer is disabled until real-time state sync is implemented.",
+        personalizationError: "Error while personalizing the campaign.",
+        unknownGenError: "Unknown error while generating the adventure.",
+        manifestError: "Unable to generate the adventure manifest.",
+        enteringArena: "Entering the Arena...",
+        stepScars: "Reading your hero's scars...",
+        stepHooks: "Binding personal hooks to the world...",
+        stepVillain: "Mirroring the villain to your desire...",
+        stepAllies: "Choosing allies, secrets, and threats...",
+        stepCinematic: "Preparing the opening cinematic...",
+        stepInscribing: "Inscribing the saga...",
+        genErrorTitle: "⚠️ Generation Error",
+        back: "← Back",
+        adventureManifest: "Adventure Manifest",
+        initSeeds: "Initializing world seeds...",
+        checkingAlignment: "Checking alignment with",
+        preparingSave: "Preparing save state...",
+        readyingDice: "Readying the Dice of Fate...",
+        backLobby: "Back",
+    },
+    fr: {
+        multiplayerDisabled: "Le multijoueur est désactivé jusqu'à l'implémentation de la synchronisation d'état en temps réel.",
+        personalizationError: "Erreur lors de la personnalisation de la campagne.",
+        unknownGenError: "Erreur inconnue lors de la génération de l'aventure.",
+        manifestError: "Impossible de générer le manifeste d'aventure.",
+        enteringArena: "Entrée dans l'Arène...",
+        stepScars: "Lecture des cicatrices de votre héros...",
+        stepHooks: "Liaison de vos enjeux personnels au monde...",
+        stepVillain: "Reflet du vilain dans votre désir...",
+        stepAllies: "Choix des alliés, des secrets et des menaces...",
+        stepCinematic: "Préparation de la cinématique d'ouverture...",
+        stepInscribing: "Inscription de la saga...",
+        genErrorTitle: "⚠️ Erreur de Génération",
+        back: "← Retour",
+        adventureManifest: "Manifeste d'Aventure",
+        initSeeds: "Initialisation des graines du monde...",
+        checkingAlignment: "Vérification de l'alignement avec",
+        preparingSave: "Préparation de la sauvegarde...",
+        readyingDice: "Préparation des Dés du Destin...",
+        backLobby: "Retour",
+    },
+} as const;
+
 export function CharacterCreationView() {
     const navigate = useNavigate();
     const { character, setCharacter, selectedAdventure, setSelectedAdventure, language, gameMode, setAdventureManifest, setCampaignRuntime, setActiveSaveId, resetSessionState } = useGameStore();
+    const tr = TRANS[language];
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationStep, setGenerationStep] = useState('');
     const [generationError, setGenerationError] = useState<string | null>(null);
@@ -130,7 +176,7 @@ export function CharacterCreationView() {
         const mode = gameMode;
         if (mode === 'multiplayer') {
             setIsGenerating(true);
-            setGenerationError('Multiplayer is disabled until real-time state sync is implemented.');
+            setGenerationError(tr.multiplayerDisabled);
             return;
         }
         memoryManager.clear();
@@ -176,17 +222,17 @@ export function CharacterCreationView() {
             : getAuthoredCampaign(adventureId)
                 // AUTHORED template → fill-only personalization pass (no generation).
                 ? personalizeAuthoredManifest(getAuthoredCampaign(adventureId)!, readyCharacter, language as 'fr' | 'en').catch((err: Error) => {
-                    setGenerationError(err.message || 'Erreur lors de la personnalisation de la campagne.');
+                    setGenerationError(err.message || tr.personalizationError);
                     return null;
                 })
                 : adventureService.initializeAdventure(readyCharacter, adventurePrompt, language as 'fr' | 'en').catch((err: Error) => {
-                    setGenerationError(err.message || 'Erreur inconnue lors de la génération de l\'aventure.');
+                    setGenerationError(err.message || tr.unknownGenError);
                     return null;
                 });
 
-        const steps = adventureId === 'ARENA_MODE' ? ["Entering the Arena..."] : [
-            "Reading your hero's scars...", "Binding personal hooks to the world...", "Mirroring the villain to your desire...",
-            "Choosing allies, secrets, and threats...", "Preparing the opening cinematic..."
+        const steps = adventureId === 'ARENA_MODE' ? [tr.enteringArena] : [
+            tr.stepScars, tr.stepHooks, tr.stepVillain,
+            tr.stepAllies, tr.stepCinematic
         ];
 
         for (const step of steps) {
@@ -194,14 +240,14 @@ export function CharacterCreationView() {
             await new Promise(r => setTimeout(r, 1500));
         }
 
-        setGenerationStep("Inscribing the saga...");
+        setGenerationStep(tr.stepInscribing);
         const manifest = await manifestPromise;
         if (!manifest) {
             // Use the functional updater: the .catch handlers above may have already
             // set a SPECIFIC error, but the `generationError` closure here is the stale
             // render-time value (null). Reading it directly would overwrite the precise
             // message with this generic fallback. prev ?? keeps the specific one.
-            setGenerationError(prev => prev ?? 'Impossible de générer le manifeste d\'aventure.');
+            setGenerationError(prev => prev ?? tr.manifestError);
             return;
         }
         const lockedManifest = ensureLockedFirstScene(manifest as AdventureManifest);
@@ -239,13 +285,13 @@ export function CharacterCreationView() {
                 <div className="max-w-2xl w-full text-center space-y-8 z-10">
                     {generationError ? (
                         <div className="bg-red-900/80 border border-red-500 rounded-lg p-6 space-y-4">
-                            <h2 className="text-2xl font-fantasy text-red-300">⚠️ Erreur de Génération</h2>
+                            <h2 className="text-2xl font-fantasy text-red-300">{tr.genErrorTitle}</h2>
                             <p className="text-red-200 text-sm font-mono whitespace-pre-wrap">{generationError}</p>
                             <button
                                 onClick={() => { setIsGenerating(false); setGenerationError(null); }}
                                 className="px-6 py-2 bg-red-700 hover:bg-red-600 rounded text-white transition-colors"
                             >
-                                ← Retour
+                                {tr.back}
                             </button>
                         </div>
                     ) : (
@@ -255,11 +301,11 @@ export function CharacterCreationView() {
                             <div className="bg-gray-900/80 p-6 rounded border border-gray-700 h-64 overflow-hidden relative shadow-2xl">
                                 <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-gray-900 to-transparent z-10"></div>
                                 <div className="animate-[scroll_20s_linear_infinite] space-y-6 text-gray-300 opacity-90 font-mono text-sm leading-relaxed pb-32">
-                                    <p className="text-gold font-bold uppercase tracking-widest text-center border-b border-gray-700 pb-2 mb-4">Adventure Manifest</p>
-                                    <p>Initializing world seeds...</p>
-                                    <p>Checking alignment with {selectedAdventure}...</p>
-                                    <p>Preparing save state...</p>
-                                    <p>Readying the Dice of Fate...</p>
+                                    <p className="text-gold font-bold uppercase tracking-widest text-center border-b border-gray-700 pb-2 mb-4">{tr.adventureManifest}</p>
+                                    <p>{tr.initSeeds}</p>
+                                    <p>{tr.checkingAlignment} {selectedAdventure}...</p>
+                                    <p>{tr.preparingSave}</p>
+                                    <p>{tr.readyingDice}</p>
                                 </div>
                                 <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
                             </div>
@@ -277,7 +323,7 @@ export function CharacterCreationView() {
                 className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
             >
                 <ArrowRight className="w-4 h-4 rotate-180" />
-                <span>Retour / Back</span>
+                <span>{tr.backLobby}</span>
             </button>
             <CharacterSheetUI
                 // Remount when a genuinely different seed character loads — the sheet
