@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "pack": "electron-packager . \"DnD - The Far Realm\" --platform=win32 --arch=x64 --out=release --overwrite --prune=true"
+    "pack": "electron-packager . \"DnD - The Far Realm\" --platform=win32 --arch=x64 --out=release --overwrite --prune=true --icon=../assets/icon.ico"
   },
   "devDependencies": {
     "electron": "^33.0.0",

@@ -43,6 +43,8 @@ WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
+SetupIconFile=..\assets\icon.ico
+UninstallDisplayIcon={app}\app\{#AppExe}
 
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
