@@ -42,8 +42,6 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-; Models + libraries can be tens of GB; the payload itself is the app + engine.
-DiskSpaceWarning=no
 PrivilegesRequired=lowest
 
 [Languages]
