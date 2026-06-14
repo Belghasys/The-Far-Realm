@@ -57,20 +57,21 @@ Pop-Location
 $ClientDist = Join-Path $ProjectDir "dist"
 if (-not (Test-Path $ClientDist)) { Fail "Vite build produced no dist folder." }
 
-# --- 2. package the Electron launcher ---
-Step "Packaging Electron app (electron-builder --dir)"
+# --- 2. package the Electron launcher (electron-packager: no winCodeSign / no admin) ---
+Step "Packaging Electron app (electron-packager)"
 $LauncherClient = Join-Path $Launcher "client"
 if (Test-Path $LauncherClient) { Remove-Item -Recurse -Force $LauncherClient }
 New-Item -ItemType Directory -Force -Path $LauncherClient | Out-Null
 Copy-Item -Recurse -Force (Join-Path $ClientDist "*") $LauncherClient
 
 Push-Location $Launcher
-if (-not (Test-Path (Join-Path $Launcher "node_modules"))) { npm install; if ($LASTEXITCODE) { Fail "npm install (launcher)" } }
-npm run pack; if ($LASTEXITCODE) { Fail "electron-builder --dir" }
+npm install; if ($LASTEXITCODE) { Fail "npm install (launcher)" }
+npm run pack; if ($LASTEXITCODE) { Fail "electron-packager" }
 Pop-Location
 
-$Unpacked = Join-Path $Launcher "release\win-unpacked"
-if (-not (Test-Path $Unpacked)) { Fail "win-unpacked not found (electron-builder)." }
+$Unpacked = (Get-ChildItem (Join-Path $Launcher "release") -Directory -ErrorAction SilentlyContinue |
+  Where-Object { $_.Name -like "*-win32-x64" } | Select-Object -First 1).FullName
+if (-not $Unpacked) { Fail "packager output (*-win32-x64) not found." }
 
 # --- 3. stage the payload ---
 Step "Staging payload"

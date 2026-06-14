@@ -19,7 +19,10 @@ const ROOT = process.env.DND_ROOT || path.resolve(path.dirname(process.execPath)
 const CONFIG_DIR = path.join(ROOT, 'config');
 const SERVERS_DIR = path.join(ROOT, 'servers');
 const VENV_PY = path.join(ROOT, 'runtime', 'venv', 'Scripts', 'python.exe');
-const CLIENT_DIR = process.env.DND_CLIENT_DIR || path.join(process.resourcesPath || ROOT, 'client');
+// electron-packager copies the app into resources/app/, so the bundled client
+// sits next to this file (resources/app/client). __dirname resolves it in both
+// the packaged app and `npm start` dev. Override with DND_CLIENT_DIR if needed.
+const CLIENT_DIR = process.env.DND_CLIENT_DIR || path.join(__dirname, 'client');
 
 // VITE_* keys are forwarded to the renderer; everything else drives the servers.
 const VITE_PREFIX = 'VITE_';
