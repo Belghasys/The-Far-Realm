@@ -60,7 +60,9 @@ const STORAGE_KEY = 'dnd_short_term_memory';
 const SUMMARY_CACHE_KEY = 'dnd_summary_cache';
 const TOKEN_THRESHOLD = 60000; // 60K tokens
 const PURGE_KEEP_PERCENT = 0.20; // Keep last 20%
-const CHARS_PER_TOKEN = 4; // Approximate
+// French runs ~3.3 chars/token (vs ~4 for English); using 4 under-counted and
+// fired the purge too late on FR campaigns. 3.5 is a safe bilingual middle.
+const CHARS_PER_TOKEN = 3.5;
 const SUMMARY_REGEN_THRESHOLD = 50; // Regenerate summary after 50 new messages
 
 class MemoryManager {
@@ -233,18 +235,23 @@ class MemoryManager {
         const toArchive = history.slice(0, history.length - keepCount);
         const toKeep = history.slice(-keepCount);
 
-        // Generate summary of archived content
+        // Generate summary of archived content. Summarize FIRST and only purge
+        // on success: purging with a stub summary turned one API hiccup
+        // (offline, quota) into permanent campaign amnesia.
         const archiveText = toArchive.map(m => `${m.speaker}: ${m.text}`).join('\n');
         let summary = '';
 
         try {
             summary = await summarize(archiveText);
-            log.info('📝 Summary generated:', summary.substring(0, 100) + '...');
         } catch (e) {
-            log.error('Failed to generate summary:', e);
-            // Keep a simple fallback summary
-            summary = `[Archived ${toArchive.length} messages from conversation]`;
+            log.error('Failed to generate summary — purge skipped, will retry next autosave:', e);
+            return null;
         }
+        if (!summary || !summary.trim()) {
+            log.warn('Empty summary returned — purge skipped, will retry next autosave.');
+            return null;
+        }
+        log.info('📝 Summary generated:', summary.substring(0, 100) + '...');
 
         // Update memory
         this.memory.chatHistory = toKeep;

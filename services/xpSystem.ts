@@ -81,10 +81,13 @@ export function getEnemyXP(enemyName: string): number {
         return ENEMY_XP[enemyName];
     }
 
-    // Try partial match
+    // Whole-word containment only: the old loose substring test made a
+    // "Pirate" worth a Rat (10 XP) because "pirate".includes("rat").
     const lowerName = enemyName.toLowerCase();
     for (const [key, xp] of Object.entries(ENEMY_XP)) {
-        if (lowerName.includes(key.toLowerCase()) || key.toLowerCase().includes(lowerName)) {
+        if (key === 'default') continue;
+        const escaped = key.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`\\b${escaped}\\b`).test(lowerName)) {
             return xp;
         }
     }
@@ -96,4 +99,25 @@ export function getEnemyXP(enemyName: string): number {
 // Calculate total XP for multiple enemies
 export function calculateCombatXP(enemies: string[]): number {
     return enemies.reduce((total, enemy) => total + getEnemyXP(enemy), 0);
+}
+
+/**
+ * XP estimate from max HP for DM-invented enemies absent from the bestiary
+ * («Garde corrompu», boss custom…). Suit grossièrement la table CR→XP du SRD
+ * (HP moyens par CR) — bien mieux que le forfait de 25 XP qui sous-payait
+ * chaque ennemi custom.
+ */
+export function estimateXPFromHP(maxHP: number): number {
+    const hp = Math.max(1, Number(maxHP) || 1);
+    if (hp <= 7) return 25;      // CR 1/8
+    if (hp <= 15) return 50;     // CR 1/4
+    if (hp <= 25) return 100;    // CR 1/2
+    if (hp <= 40) return 200;    // CR 1
+    if (hp <= 60) return 450;    // CR 2
+    if (hp <= 85) return 700;    // CR 3
+    if (hp <= 110) return 1100;  // CR 4
+    if (hp <= 140) return 1800;  // CR 5
+    if (hp <= 180) return 2900;  // CR 6-7
+    if (hp <= 220) return 5000;  // CR 8-9
+    return 8400;                 // CR 10+
 }

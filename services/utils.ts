@@ -27,6 +27,30 @@ export function rollDice(formula: string): { total: number; rolls: number[]; mod
     return { total, rolls, modifier };
 }
 
+/**
+ * Valeur MAXIMALE d'une formule de dés (« 2d4+2 » → 10, « 8d4+8 » → 40).
+ * Mode histoire : les soins (potions, sorts) rendent ce maximum au lieu d'un
+ * jet. Gère plusieurs groupes de dés et les modificateurs plats signés.
+ */
+export function maxRollOfFormula(formula: string): number {
+    const text = String(formula ?? '');
+    let total = 0;
+    let hasDice = false;
+    for (const m of text.matchAll(/(\d+)\s*d\s*(\d+)/gi)) {
+        hasDice = true;
+        total += Number(m[1]) * Number(m[2]);
+    }
+    const flatText = text.replace(/(\d+)\s*d\s*(\d+)/gi, '');
+    for (const m of flatText.matchAll(/([+-]\s*\d+)/g)) {
+        total += Number(m[1].replace(/\s+/g, ''));
+    }
+    if (!hasDice && total === 0) {
+        const flat = parseInt(flatText.replace(/[^\d+-]/g, ''), 10);
+        if (Number.isFinite(flat)) total = flat;
+    }
+    return Math.max(0, total);
+}
+
 /** Roll a single d20. */
 export function rollD20(): number {
     return Math.floor(Math.random() * 20) + 1;

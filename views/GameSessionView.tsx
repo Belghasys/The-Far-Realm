@@ -55,11 +55,12 @@ export function GameSessionView() {
         setIntroSeen(true);
     };
 
-    if (!character) {
-        // Security redirect if accessed directly without char
-        navigate('/mode');
-        return null;
-    }
+    // Security redirect if accessed directly without a character — in an
+    // effect, not during render (React warns on render-phase navigation).
+    useEffect(() => {
+        if (!character) navigate('/mode');
+    }, [character, navigate]);
+    if (!character) return null;
 
     return (
         <ErrorBoundary fallbackTitle="The D&D Session encountered a magical anomaly (Crash)">

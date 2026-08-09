@@ -16,11 +16,17 @@ function getClient(): GoogleGenAI {
 
 /**
  * Summarizes conversation history with the fast text model.
+ *
+ * CUMULATIVE: pass the previous summary (if any) so the new one folds it in —
+ * the output is the FULL "story so far", not just the latest archived segment.
+ * This summary is re-injected into the DM system prompt and the director
+ * context, so it must stand alone across reloads and multiple purges.
  */
 export async function summarizeHistory(
     history: { speaker: 'user' | 'dm', text: string }[],
     characterName: string,
-    language: string = 'fr'
+    language: string = 'fr',
+    previousSummary: string = ''
 ): Promise<string> {
     const client = getClient();
 
@@ -28,24 +34,38 @@ export async function summarizeHistory(
     const langInstruction = language === 'fr' ? "Réponds en FRANÇAIS uniquement." : "Respond in ENGLISH only.";
 
     const prompt = `
-    Tu es un assistant qui résume des sessions de jeu de rôle D&D.
+    Tu es un assistant qui résume des campagnes de jeu de rôle D&D au long cours.
     ${langInstruction}
-    
-    ## HISTORIQUE DE CONVERSATION
+    ${previousSummary ? `
+    ## RÉSUMÉ EXISTANT DE LA CAMPAGNE (les événements plus anciens)
+    ${previousSummary}
+    ` : ''}
+    ## NOUVEAU SEGMENT DE CONVERSATION À INTÉGRER
     ${historyText}
-    
+
     ## INSTRUCTIONS
-    Crée un résumé NARRATIF en 3-5 phrases maximum qui capture :
-    1. Les événements clés (combats, découvertes, dialogues importants)
-    2. L'état actuel du personnage ${characterName}
-    3. Les objectifs ou quêtes en cours
-    4. Les PNJs ou lieux importants mentionnés
-    
+    Produis LE résumé complet de la campagne : fusionne le résumé existant (s'il y en a un)
+    avec le nouveau segment. Le résultat remplace tout — il doit se suffire à lui-même.
+    Capture, par ordre d'importance :
+    1. L'arc principal : la quête, le vilain/la menace, où en est le héros ${characterName}
+    2. Les événements marquants (combats décisifs, morts, révélations, trahisons)
+    3. Les promesses, dettes, serments et menaces en suspens (qui doit quoi à qui)
+    4. Les PNJ importants : nom, rôle, attitude envers le héros
+    5. Les lieux clés et les objets importants acquis ou perdus
+    Ne perds JAMAIS un élément du résumé existant qui n'a pas été résolu depuis.
+
+    ## CHRONOLOGIE (CRITIQUE)
+    Respecte STRICTEMENT l'ordre des événements : le résumé existant décrit le
+    passé, le nouveau segment vient APRÈS. Des marqueurs [J1], [J2]… indiquent
+    le jour en jeu — sers-t'en pour ordonner et n'inverse jamais deux journées.
+    Distingue clairement ce qui est ACCOMPLI (au passé, réglé) de ce qui est EN
+    COURS — une quête bouclée ne doit jamais redevenir active dans le résumé.
+
     ## FORMAT
-    - Style narratif, pas de bullet points
-    - Maximum 100 mots
+    - Style narratif compact, présent de narration, pas de bullet points
+    - Entre 250 et 450 mots
     - Commence directement par le résumé, pas de préambule
-    
+
     RÉSUMÉ :
     `;
 
@@ -61,6 +81,103 @@ export async function summarizeHistory(
     } catch (e) {
         log.error("Summary Generation Error (Gemini):", e);
         return "";
+    }
+}
+
+// ── Automatic fact extraction ─────────────────────────────────────────────
+// Ran on each memory purge: pulls durable campaign facts out of the archived
+// segment so continuity does not depend on the live DM remembering to call
+// update_campaign_runtime. Merged into campaignRuntime + journal by the caller.
+export interface ExtractedCampaignFacts {
+    canonFacts: string[];
+    npcUpdates: { name: string; note?: string; location?: string; dispositionDelta?: number }[];
+    promises: string[];
+    threats: string[];
+}
+
+export async function extractCampaignFacts(
+    history: { speaker: 'user' | 'dm', text: string }[],
+    knownFacts: string[],
+    language: string = 'fr'
+): Promise<ExtractedCampaignFacts | null> {
+    const client = getClient();
+    const historyText = history.map(h => `${h.speaker.toUpperCase()}: ${h.text}`).join('\n');
+    const langInstruction = language === 'fr' ? 'Écris les faits en FRANÇAIS.' : 'Write the facts in ENGLISH.';
+
+    const prompt = `
+    You extract DURABLE campaign facts from a D&D play session segment. ${langInstruction}
+
+    ## ALREADY KNOWN FACTS (do NOT repeat these)
+    ${knownFacts.slice(-40).map(f => `- ${f}`).join('\n') || '(none)'}
+
+    ## SESSION SEGMENT
+    ${historyText}
+
+    ## TASK
+    Return ONLY new, durable facts that will still matter in future sessions:
+    - canonFacts: established world/story truths (deaths, alliances, revealed secrets, acquired key items)
+    - npcUpdates: NPCs whose relationship with the hero changed. dispositionDelta: -2 (angered) to +2 (won over). note: one short sentence of what they now know/feel. location if they moved.
+    - promises: unresolved oaths, debts, deals ("X owes the hero", "the hero swore to...")
+    - threats: looming dangers set in motion and not yet resolved
+    Max 6 items per list, each under 140 characters. Empty arrays are fine — do not invent.
+    `;
+
+    try {
+        const result = await client.models.generateContent({
+            model: SUMMARY_MODEL,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                thinkingConfig: { thinkingLevel: 'LOW' },
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: 'OBJECT',
+                    properties: {
+                        canonFacts: { type: 'ARRAY', items: { type: 'STRING' } },
+                        npcUpdates: {
+                            type: 'ARRAY',
+                            items: {
+                                type: 'OBJECT',
+                                properties: {
+                                    name: { type: 'STRING' },
+                                    note: { type: 'STRING' },
+                                    location: { type: 'STRING' },
+                                    dispositionDelta: { type: 'NUMBER' },
+                                },
+                                required: ['name'],
+                            },
+                        },
+                        promises: { type: 'ARRAY', items: { type: 'STRING' } },
+                        threats: { type: 'ARRAY', items: { type: 'STRING' } },
+                    },
+                    required: ['canonFacts', 'npcUpdates', 'promises', 'threats'],
+                },
+            } as any
+        });
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        if (!text) return null;
+        const parsed = JSON.parse(text);
+        const strList = (v: unknown): string[] => Array.isArray(v)
+            ? v.map(item => String(item || '').trim()).filter(Boolean).slice(0, 6)
+            : [];
+        return {
+            canonFacts: strList(parsed.canonFacts),
+            promises: strList(parsed.promises),
+            threats: strList(parsed.threats),
+            npcUpdates: (Array.isArray(parsed.npcUpdates) ? parsed.npcUpdates : [])
+                .map((u: any) => ({
+                    name: String(u?.name || '').trim(),
+                    note: u?.note ? String(u.note).trim() : undefined,
+                    location: u?.location ? String(u.location).trim() : undefined,
+                    dispositionDelta: Number.isFinite(Number(u?.dispositionDelta))
+                        ? Math.max(-2, Math.min(2, Math.round(Number(u.dispositionDelta))))
+                        : undefined,
+                }))
+                .filter((u: any) => u.name)
+                .slice(0, 6),
+        };
+    } catch (e) {
+        log.error('Fact extraction error (Gemini):', e);
+        return null;
     }
 }
 
@@ -254,17 +371,28 @@ export async function personalizeAuthoredManifest(
     if (!tokens.length) return manifest;
 
     const profile = character.storyProfile || {};
-    const langInstruction = language === 'fr' ? 'Réponds en FRANÇAIS.' : 'Respond in ENGLISH.';
+    const isFr = language === 'fr';
+    const langInstruction = isFr ? 'Réponds en FRANÇAIS.' : 'Respond in ENGLISH.';
 
     // Deterministic fallbacks — used for any token the model omits/leaves blank.
-    const fallbacks: Record<string, string> = {
-        HERO_NAME: character.name || 'le héros',
+    // Bilingual so an English player never gets French tokens injected mid-narration.
+    const heroName = character.name || (isFr ? 'le héros' : 'the hero');
+    const fallbacks: Record<string, string> = isFr ? {
+        HERO_NAME: heroName,
         HERO_RACE_CLASS: `${character.race || ''} ${character.class || ''}`.trim() || 'aventurier',
         HERO_DESIRE: profile.desire || 'ce qu’il cherche au plus profond',
         HERO_WOUND: profile.wound || 'une vieille blessure jamais refermée',
         HERO_BOND: profile.bond || 'ce qui lui est le plus cher',
         HERO_HOOK: 'le destin l’a mené dans le Nord',
-        PERSONAL_LOSS: `un compagnon de route mort de froid dans le Nord, que ${character.name || 'le héros'} n’a pas su sauver`,
+        PERSONAL_LOSS: `un compagnon de route mort de froid dans le Nord, que ${heroName} n’a pas su sauver`,
+    } : {
+        HERO_NAME: heroName,
+        HERO_RACE_CLASS: `${character.race || ''} ${character.class || ''}`.trim() || 'adventurer',
+        HERO_DESIRE: profile.desire || 'what they seek most deeply',
+        HERO_WOUND: profile.wound || 'an old wound that never healed',
+        HERO_BOND: profile.bond || 'what they hold most dear',
+        HERO_HOOK: 'fate drew them into the North',
+        PERSONAL_LOSS: `a road companion who froze to death in the North, whom ${heroName} could not save`,
     };
 
     const prompt = `

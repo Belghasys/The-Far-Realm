@@ -1,8 +1,8 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt } from '../services/geminiImageService';
-import { Item, getEffectiveStat } from '../types';
-import { getCheckModifier } from '../services/skillSystem';
+import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC } from '../types';
+import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS } from '../services/skillSystem';
 import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/branchWriterService';
@@ -15,8 +15,10 @@ import {
     addAllyToEncounter,
     advanceTurn,
     castSpell,
+    combatantSide,
     applyConditionToCharacter,
     applyConditionToEncounter,
+    applyDamageToCharacter,
     applyDamageToEncounter,
     applyCharacterHP,
     applyLongRest,
@@ -31,6 +33,7 @@ import {
     resolveConcentrationAfterDamage,
     resolveMoraleCheck,
     resolveRollPrompt,
+    resolveSpellAgainstTargets,
     sanitizeXPGrant,
     startEncounter,
     updateEnemyHP
@@ -48,7 +51,14 @@ import {
 } from '../services/codexService';
 import { cooldownRemainingMs, MEDIA_GENERATION_COOLDOWN_MS } from '../services/mediaThrottle';
 import { getCreature } from '../data/bestiary';
+import { getMagicItemByName, magicItemToInventoryItem, pickMagicItem, rollLootTable, MagicItemRarity } from '../data/magicItems';
 import { rollDice } from '../services/utils';
+import { galleryService } from '../services/galleryService';
+import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
+import { getAppSettings } from '../store/settingsStore';
+import { syncCompanionsFromState, worldHourOf, ensureProgressionState } from '../services/rulesEngine';
+import { getMountType, MOUNT_TYPES, getBeastCompanion, BEAST_COMPANIONS, getFamiliarType, FAMILIAR_TYPES, FAMILIAR_CLASSES } from '../data/companionOptions';
+import type { CompanionSheet, TimeOfDay } from '../types';
 
 // Show the "local audio server unreachable" SFX warning at most once per session.
 // Without this, a down :8001 server spammed the transcript on every narrative SFX.
@@ -87,6 +97,42 @@ function numericArg(value: unknown, fallback: number): number {
     return Number.isFinite(number) ? number : fallback;
 }
 
+const ROLL_RESPONSE_TIMEOUT_MS = 90_000;
+
+/**
+ * BLOCKING two-step roll. Attach a resolver to the on-screen roll prompt and
+ * HOLD the tool response until the player rolls (or dismisses / times out).
+ * A Live model cannot continue past a function call whose response has not
+ * arrived — this is what mechanically stops Gemini from narrating an outcome
+ * it does not have (it used to receive an immediate "await the result" response
+ * and then invent the result anyway).
+ *
+ * GameSession delivers the outcome through prompt.resolveToolCall, which
+ * returns true when the held response was used; false means the hold already
+ * settled (timeout) and the caller must fall back to a [ROLL_RESULT] message.
+ */
+function holdForRollResolution(prompt: any, base: Record<string, unknown>): Promise<any> {
+    return new Promise((resolve) => {
+        let settled = false;
+        prompt.resolveToolCall = (payload: Record<string, unknown>): boolean => {
+            if (settled) return false;
+            settled = true;
+            resolve({ ...base, ...payload });
+            return true;
+        };
+        setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            resolve({
+                ...base,
+                await_roll: true,
+                timedOut: true,
+                instruction: 'The player has not rolled yet. Do NOT assume or narrate any outcome. Stay in the moment (you may add a short beat of tension); the official [ROLL_RESULT] message will arrive when the dice land.',
+            });
+        }, ROLL_RESPONSE_TIMEOUT_MS);
+    });
+}
+
 export function useToolProcessor(deps: {
     diceTrayRef: React.RefObject<any>;
     grantXP: (amount: number, reason: string) => void;
@@ -102,6 +148,8 @@ export function useToolProcessor(deps: {
     const depsRef = useRef(deps);
     const lastImageStartedAtRef = useRef(0);
     const imageInFlightRef = useRef(false);
+    // Dédup de scène : même prompt (première tranche) dans la minute → ignoré.
+    const lastScenePromptRef = useRef<{ key: string; at: number }>({ key: '', at: 0 });
     const pendingImageRef = useRef<{
         key: string;
         prompt: string;
@@ -151,6 +199,15 @@ export function useToolProcessor(deps: {
                         console.info('Scene image ignored because a newer visual request exists:', entry.request.id);
                         return;
                     }
+                    // Chronique illustrée : chaque image générée est archivée
+                    // localement (IndexedDB) pour la galerie + l'export HTML.
+                    void galleryService.addImage({
+                        saveId: useGameStore.getState().activeSaveId || 'dev',
+                        dataUrl: url,
+                        prompt: entry.prompt,
+                        summary: entry.meta.summary,
+                        phase: entry.meta.phase,
+                    });
                     campaignEventLog.append('ASSET_GENERATED', entry.meta.summary, {
                         kind: entry.meta.kind,
                         phase: entry.meta.phase,
@@ -193,11 +250,35 @@ export function useToolProcessor(deps: {
             startSceneImageGeneration(entry);
         }
 
+        // Heure du monde → indice de lumière ajouté aux prompts d'images, pour
+        // que l'aube/le crépuscule/la nuit se VOIENT dans les scènes.
+        const timeOfDayHint = (): string => {
+            const time = useGameStore.getState().campaignRuntime.timeOfDay;
+            switch (time) {
+                case 'dawn': return ' At dawn, low golden light.';
+                case 'dusk': return ' At dusk, warm fading light.';
+                case 'night': return ' At night, moonlit darkness.';
+                default: return '';
+            }
+        };
+
         const scheduleSceneImage = (
             prompt: string,
             meta: { kind: 'scene_image' | 'combat_image' | 'moment_image'; phase: string; summary: string }
         ) => {
+            // Mode sans GPU : images locales désactivées dans les Réglages.
+            if (!getAppSettings().localImages) {
+                campaignEventLog.append('ASSET_THROTTLED', 'Scene image skipped (local images disabled in settings)', { prompt: prompt.slice(0, 120) });
+                return;
+            }
             const key = `${meta.kind}:${prompt.toLowerCase().slice(0, 180)}`;
+            // Même scène redemandée dans la minute → on garde l'image en cours.
+            const now = Date.now();
+            if (lastScenePromptRef.current.key === key && now - lastScenePromptRef.current.at < 60_000) {
+                campaignEventLog.append('ASSET_THROTTLED', 'Scene image deduplicated (same prompt within 60s)', { key });
+                return;
+            }
+            lastScenePromptRef.current = { key, at: now };
             const request = useGameStore.getState().beginSceneVisualRequest({
                 key,
                 prompt,
@@ -236,7 +317,7 @@ export function useToolProcessor(deps: {
             // calls simply coalesce into the most recent request.
             const charInfo = store.character ? `${store.character.race} ${store.character.class}` : '';
             scheduleSceneImage(
-                buildCombatImagePrompt(enemy, location, charInfo),
+                buildCombatImagePrompt(enemy, location, charInfo) + timeOfDayHint(),
                 {
                     kind: 'combat_image',
                     phase: 'combat',
@@ -261,6 +342,11 @@ export function useToolProcessor(deps: {
         try {
             switch (name) {
                 case 'request_roll': {
+                    // One roll at a time: the same on-screen slot also carries
+                    // engine-initiated prompts (death saves, concentration).
+                    if (useGameStore.getState().activePrompt) {
+                        return { success: false, error: 'A roll is already pending on screen. Wait for its result before requesting another.' };
+                    }
                     const basePrompt = normalizeRollPrompt(args);
                     // Use the SHEET, not an LLM-typed number: when the DM names a skill or
                     // ability, compute the modifier from the character (ability mod +
@@ -289,7 +375,14 @@ export function useToolProcessor(deps: {
                             proficientSaves: classSaves,
                         });
                         basePrompt.formula = `1d20${check.modifier >= 0 ? '+' : ''}${check.modifier}`;
-                        basePrompt.dmBonus = 0;
+                        // Bonus plats d'effets (checkBonus/saveBonus) et
+                        // d'équipement (« +1 aux sauvegardes », « +2 Discrétion »)
+                        // — avant, seuls les story modifiers touchaient dmBonus.
+                        const canonical = skillArg ? canonicalSkillName(skillArg) : '';
+                        // SKILL_TRANSLATIONS est FR→EN ; on cherche le nom FR par valeur.
+                        const frName = canonical ? (Object.entries(SKILL_TRANSLATIONS).find(([, en]) => en === canonical)?.[0] || '') : '';
+                        basePrompt.dmBonus = getRollBonus(rollChar, isSave ? 'save' : 'check')
+                            + (skillArg && !isSave ? getGearSkillBonus(rollChar, [skillArg, canonical, frName]) : 0);
                         basePrompt.name = `${basePrompt.name}${check.proficient ? (check.expert ? ' (expertise)' : ' (maîtrisé)') : ''}`;
                     }
                     const modifierApplication = applyStoryModifiersToPrompt(basePrompt, store.character?.storyModifiers || []);
@@ -327,18 +420,23 @@ export function useToolProcessor(deps: {
                             remaining: modifierApplication.remaining,
                         });
                     }
-                    store.setActivePrompt(prompt);
-                    campaignEventLog.append('ROLL_REQUESTED', `Roll requested: ${prompt.name}`, prompt);
-                    // Tell the model to STOP and wait: it must not narrate the outcome
-                    // until the [ROLL_RESULT] arrives (prevents the "you jump… and you
-                    // failed" double narration where it pre-decides the result).
-                    return {
+                    // BLOCKING two-step roll: the tool response is HELD until the
+                    // player actually rolls, so the Live DM physically cannot
+                    // narrate an outcome it does not have (it used to get an
+                    // immediate "wait for the result" response and then invent
+                    // the result anyway). GameSession's ActionPrompt delivers
+                    // the real outcome through prompt.resolveToolCall.
+                    // No await_roll here: the resolved payload states the outcome
+                    // (rolled/cancelled) and the timeout payload sets its own flag.
+                    const responseBase = {
                         success: true,
-                        prompt,
+                        prompt: { ...prompt },
                         appliedStoryModifiers: modifierApplication.applied,
-                        await_roll: true,
-                        instruction: 'STOP. The dice are rolling. Do NOT narrate or imply success or failure yet. Describe only the attempt/build-up, then wait silently for the [ROLL_RESULT] message and narrate the real outcome then.',
                     };
+                    const held = holdForRollResolution(prompt, responseBase);
+                    store.setActivePrompt(prompt);
+                    campaignEventLog.append('ROLL_REQUESTED', `Roll requested: ${prompt.name}`, { ...prompt, resolveToolCall: undefined });
+                    return await held;
                 }
 
                 case 'add_inventory_item': {
@@ -365,23 +463,34 @@ export function useToolProcessor(deps: {
                         nextInventory[existingIndex].quantity += qty;
                         totalQty = nextInventory[existingIndex].quantity;
                     } else {
-                        const newItem: Item = {
-                            id: crypto.randomUUID(),
-                            name: itemName,
-                            quantity: qty,
-                            type: args.type as any,
-                            weight: 0,
-                            description: args.description || '',
-                            slot: 'none',
-                            equipped: false,
-                            effect: args.effect,
-                            properties: args.properties,
-                            damageDice: args.damageDice,
-                            damageType: args.damageType,
-                            acBonus: args.acBonus,
-                            baseAC: args.baseAC,
-                            armorType: args.armorType
-                        };
+                        // SRD catalog enrichment: when the DM grants a known magic item by
+                        // bare name ("Flame Tongue", "Épée longue +1") without structured
+                        // fields, pull the authoritative stats from data/magicItems so the
+                        // engine parses its bonuses correctly instead of storing dead text.
+                        const catalogDef = !isMagic ? getMagicItemByName(itemName) : undefined;
+                        const newItem: Item = catalogDef
+                            ? {
+                                ...magicItemToInventoryItem(catalogDef, useGameStore.getState().language === 'fr' ? 'fr' : 'en'),
+                                id: crypto.randomUUID(),
+                                quantity: qty,
+                            }
+                            : {
+                                id: crypto.randomUUID(),
+                                name: itemName,
+                                quantity: qty,
+                                type: args.type as any,
+                                weight: 0,
+                                description: args.description || '',
+                                slot: 'none',
+                                equipped: false,
+                                effect: args.effect,
+                                properties: args.properties,
+                                damageDice: args.damageDice,
+                                damageType: args.damageType,
+                                acBonus: args.acBonus,
+                                baseAC: args.baseAC,
+                                armorType: args.armorType
+                            };
                         nextInventory.push(newItem);
                     }
                     char.inventory = nextInventory;
@@ -435,51 +544,117 @@ export function useToolProcessor(deps: {
                     return { success: true, gold: after, delta };
                 }
 
+                case 'roll_loot': {
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const rarityHint = stringArg(args.rarityHint, 30).toLowerCase() as MagicItemRarity;
+                    const validRarities: MagicItemRarity[] = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
+                    // A rarityHint pins a single milestone reward of that rarity; otherwise
+                    // roll 1-3 items on the level-appropriate treasure table.
+                    let defs = validRarities.includes(rarityHint)
+                        ? [pickMagicItem(rarityHint, undefined, store.character.level + 2)].filter(Boolean) as NonNullable<ReturnType<typeof pickMagicItem>>[]
+                        : rollLootTable(store.character.level);
+                    if (!defs.length) defs = rollLootTable(store.character.level);
+                    if (!defs.length) return { success: false, error: 'No loot table entry available' };
+
+                    const lang = useGameStore.getState().language === 'fr' ? 'fr' : 'en';
+                    const char = { ...store.character };
+                    const nextInventory = (char.inventory || []).map(i => ({ ...i }));
+                    const awarded = defs.map(def => {
+                        const item = { ...magicItemToInventoryItem(def, lang), id: crypto.randomUUID() };
+                        nextInventory.push(item);
+                        return {
+                            name: item.name,
+                            rarity: def.rarity,
+                            description: lang === 'fr' ? def.descriptionFr : def.description,
+                            effects: def.effects,
+                            attunement: def.attunement || false,
+                        };
+                    });
+                    char.inventory = nextInventory;
+                    d.syncCharacterUpdate(char);
+                    campaignEventLog.append('ITEM_ADDED', `Loot rolled: ${awarded.map(a => a.name).join(', ')}`, { context: stringArg(args.context, 160), awarded });
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Loot — ${awarded.map(a => `${a.name} (${a.rarity})`).join(', ')} added to inventory]*` }]);
+                    return {
+                        success: true,
+                        loot: awarded,
+                        instruction: 'These EXACT items are now in the player inventory. Narrate their discovery vividly (appearance, aura, where they lie) using the descriptions provided. Do not rename them and do not add extra items.',
+                    };
+                }
+
                 case 'lookup_campaign': {
                     const m: any = store.adventureManifestData;
                     if (!m) return { found: false, error: 'Aucune campagne structurée chargée pour cette partie.' };
-                    const q = String(args.query || '').toLowerCase().trim();
+                    const q = String(args.query || '').trim();
                     if (!q) return { found: false, error: 'query requise' };
                     const kind = String(args.kind || '').toLowerCase().trim();
-                    const hit = (text: string) => text.toLowerCase().includes(q);
-                    const results: { type: string; title: string; text: string }[] = [];
+
+                    // Accent/inflection-tolerant scoring instead of raw substring: French
+                    // queries ("Cairn de Givre" vs "cairn givré", "Séraphine" vs
+                    // "Seraphine") kept missing authored content, so the DM invented it.
+                    const MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const norm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(MARKS, '');
+                    const STOPWORDS = new Set(['les', 'des', 'the', 'and', 'une', 'aux', 'qui', 'que', 'est', 'pour', 'dans', 'avec', 'sur']);
+                    const qNorm = norm(q);
+                    const qTokens = qNorm.split(/[^a-z0-9]+/)
+                        .filter(t => t.length >= 3 && !STOPWORDS.has(t))
+                        // Light stemming: drop the last char of longer tokens so
+                        // "givre"/"givré(e)" and singular/plural forms co-match.
+                        .map(t => t.length >= 5 ? t.slice(0, -1) : t);
+                    const scoreOf = (text: string): number => {
+                        const t = norm(text);
+                        if (qNorm.length >= 3 && t.includes(qNorm)) return 1;
+                        if (!qTokens.length) return 0;
+                        const hits = qTokens.filter(tok => t.includes(tok)).length;
+                        return hits / qTokens.length;
+                    };
+                    const results: { type: string; title: string; text: string; score: number }[] = [];
+                    const consider = (type: string, title: string, text: string, haystack: string) => {
+                        const score = scoreOf(haystack);
+                        if (score >= 0.5) results.push({ type, title, text, score });
+                    };
 
                     if (!kind || kind === 'npc') {
                         for (const c of (m.supportingCast || [])) {
-                            if (hit(`${c.name} ${c.role} ${c.description} ${c.personality || ''} ${c.location || ''}`)) {
-                                results.push({ type: 'npc', title: c.name, text: `${c.role} @ ${c.location || '?'} — ${c.description}${c.personality ? ` | Voix : ${c.personality}` : ''}` });
-                            }
+                            consider('npc', c.name,
+                                `${c.role} @ ${c.location || '?'} — ${c.description}${c.personality ? ` | Voix : ${c.personality}` : ''}`,
+                                `${c.name} ${c.role} ${c.description} ${c.personality || ''} ${c.location || ''}`);
                         }
                     }
                     for (const ch of (m.chapters || [])) {
-                        if ((!kind || kind === 'chapter') && hit(`${ch.id} ${ch.title} ${ch.objective || ''} ${ch.cliffhanger || ''}`)) {
-                            results.push({ type: 'chapter', title: `Ch${ch.id} — ${ch.title}`, text: `Objectif : ${ch.objective || '?'}${ch.cliffhanger ? ` | Tension : ${ch.cliffhanger}` : ''}` });
+                        if (!kind || kind === 'chapter') {
+                            consider('chapter', `Ch${ch.id} — ${ch.title}`,
+                                `Objectif : ${ch.objective || '?'}${ch.cliffhanger ? ` | Tension : ${ch.cliffhanger}` : ''}`,
+                                `${ch.id} ${ch.title} ${ch.objective || ''} ${ch.cliffhanger || ''}`);
                         }
                         if (!kind || kind === 'scene' || kind === 'location') {
                             for (const s of (ch.scenes || [])) {
-                                if (hit(`${s.id} ${s.title} ${s.description} ${s.location || ''}`)) {
-                                    results.push({ type: 'scene', title: `${s.title} (${s.location || '?'})`, text: s.description });
-                                }
+                                consider('scene', `${s.title} (${s.location || '?'})`, s.description,
+                                    `${s.id} ${s.title} ${s.description} ${s.location || ''}`);
                             }
                         }
                     }
                     if (!kind || kind === 'reward') {
                         for (const r of (m.rewardTable || [])) {
-                            if (hit(`${r.item} ${r.trigger} ${r.description || ''}`)) {
-                                results.push({ type: 'reward', title: r.item, text: `${r.trigger} — ${r.description || ''}` });
-                            }
+                            consider('reward', r.item, `${r.trigger} — ${r.description || ''}`,
+                                `${r.item} ${r.trigger} ${r.description || ''}`);
                         }
                     }
                     if ((!kind || kind === 'lore') && typeof m.fullManifesto === 'string') {
                         for (const sec of m.fullManifesto.split(/\n##\s+/)) {
-                            if (hit(sec)) {
-                                const title = sec.split('\n')[0].replace(/^#+\s*/, '').slice(0, 70);
-                                results.push({ type: 'lore', title, text: sec.slice(0, 700) });
-                            }
+                            const title = sec.split('\n')[0].replace(/^#+\s*/, '').slice(0, 70);
+                            consider('lore', title, sec.slice(0, 700), sec);
                         }
                     }
-                    const trimmed = results.slice(0, 6);
-                    return { found: trimmed.length > 0, count: trimmed.length, results: trimmed };
+                    const trimmed = results
+                        .sort((a, b) => b.score - a.score)
+                        .slice(0, 6)
+                        .map(({ score, ...rest }) => rest);
+                    return {
+                        found: trimmed.length > 0,
+                        count: trimmed.length,
+                        results: trimmed,
+                        ...(trimmed.length === 0 ? { hint: 'No authored content matched. Try fewer/other keywords (a single distinctive name works best). If nothing matches, improvise consistently with the director context and commit durable outcomes via update_campaign_runtime.' } : {}),
+                    };
                 }
 
                 case 'start_combat': {
@@ -518,19 +693,22 @@ export function useToolProcessor(deps: {
                         store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat déjà terminé]*` }]);
                         return { success: true, xpAwarded: 0 };
                     }
-                    const enemyNames = store.combatState.combatants.filter(c => !c.isPlayer).map(c => c.name);
+                    // ENEMIES only — allies (companion, rescued NPCs) are !isPlayer
+                    // too and must not inflate the XP clamp base.
+                    const enemyNames = store.combatState.combatants.filter(c => combatantSide(c) === 'enemy').map(c => c.name);
                     const xpAwarded = sanitizeXPGrant(Number(args.xpAwarded || args.xpAmount || 0), enemyNames);
-                    const companionAtEnd = store.combatState.combatants.find(c => c.id === 'companion');
+                    const rosterAtEnd = store.combatState.combatants;
                     store.setCombatState((prev: any) => ({ ...prev, isActive: false, combatants: [], currentTurn: '', enemyIntents: {} }));
                     if (xpAwarded) {
                         d.grantXP(xpAwarded, "Combat victory");
                     }
-                    // Persist the Beast Master companion's HP between fights (after the
-                    // XP grant so we build on the freshest character).
-                    if (companionAtEnd) {
+                    // Persist ALL persistent allies' HP (Beast Master wolf + recruited
+                    // companions) — after the XP grant so we build on the freshest char.
+                    {
                         const freshChar = useGameStore.getState().character;
-                        if (freshChar?.subclass === 'Beast Master') {
-                            d.syncCharacterUpdate({ ...freshChar, companionHP: { current: companionAtEnd.hp.current, max: companionAtEnd.hp.max } });
+                        if (freshChar) {
+                            const synced = syncCompanionsFromState(freshChar, rosterAtEnd);
+                            if (synced !== freshChar) d.syncCharacterUpdate(synced);
                         }
                     }
                     campaignEventLog.append('ENCOUNTER_ENDED', `Combat ended. Awarded ${xpAwarded} XP`, { xpAwarded, enemyNames });
@@ -698,19 +876,18 @@ export function useToolProcessor(deps: {
                 }
 
                 case 'resolve_attack': {
-                    // Anti double-resolution guard: during an enemy turn the local engine
-                    // (runNPCTurn) already resolves the enemy attack and only asks the DM
-                    // to NARRATE. If the model disobeys and calls resolve_attack for that
-                    // same enemy attack, re-running it would deduct HP twice. No-op when
-                    // it's an NPC turn and the attacker is an enemy (not the player/an ally).
-                    if (store.isNPCTurn) {
-                        const atkRef = resolveCombatantReference(store.combatState, String(args.attacker), { autoResolve: true });
-                        const atkSide = atkRef.combatant
-                            ? (atkRef.combatant.side ? atkRef.combatant.side : (atkRef.combatant.isPlayer ? 'player' : 'enemy'))
-                            : 'enemy';
-                        if (atkSide === 'enemy') {
-                            return { success: true, narrateOnly: true, note: 'Enemy turn already resolved by the engine — narrate only, do not re-resolve.' };
-                        }
+                    // Anti double-resolution guard: during a TRACKED combat the
+                    // engine itself resolves every ENEMY action (runNPCTurn) and
+                    // only asks the DM to NARRATE. The old guard checked
+                    // isNPCTurn — but the "narrate the enemy turn" report goes
+                    // out AFTER the engine advanced to the player's turn, so a
+                    // disobedient re-resolution slipped through exactly in the
+                    // common single-enemy case (double damage, and the player's
+                    // own Bless/inspiration boosting the attack that hit them).
+                    const atkRef = resolveCombatantReference(store.combatState, String(args.attacker), { autoResolve: true });
+                    const atkSide = atkRef.combatant ? combatantSide(atkRef.combatant) : 'enemy';
+                    if (store.combatState.isActive && atkSide === 'enemy') {
+                        return { success: true, narrateOnly: true, note: 'Enemy actions are resolved by the engine on their own turns — narrate only, never re-resolve. For scripted out-of-turn harm use environmental_damage or apply_damage.' };
                     }
                     const baseAttackBonus = Number.isFinite(Number(args.attackBonus)) ? Number(args.attackBonus) : undefined;
                     const attackPrompt = normalizeRollPrompt({
@@ -719,7 +896,12 @@ export function useToolProcessor(deps: {
                         dc: 10,
                         advantage: args.advantage,
                     });
-                    const modifierApplication = applyStoryModifiersToPrompt(attackPrompt, store.character?.storyModifiers || []);
+                    // Story modifiers are the PLAYER's boons — only their own
+                    // attacks may consume them (an ally's or scripted attack
+                    // must not eat the hero's inspiration).
+                    const modifierApplication = atkRef.combatant?.isPlayer
+                        ? applyStoryModifiersToPrompt(attackPrompt, store.character?.storyModifiers || [])
+                        : { prompt: attackPrompt, applied: [] as any[], remaining: store.character?.storyModifiers || [] };
                     if (store.character && modifierApplication.applied.length) {
                         d.syncCharacterCritical({
                             ...store.character,
@@ -729,6 +911,51 @@ export function useToolProcessor(deps: {
                             applied: modifierApplication.applied,
                             remaining: modifierApplication.remaining,
                         });
+                    }
+                    // Attaque VOCALE du joueur : consommer un PIP vert (comme un clic)
+                    // au lieu du booléen 'action' — sinon le HUD et l'Extra Attack se
+                    // désynchronisaient dès que le joueur attaquait à la voix.
+                    const isPlayerAttacker = Boolean(atkRef.combatant?.isPlayer);
+                    if (isPlayerAttacker && store.combatState.isActive) {
+                        const econ: any = store.combatState.actionEconomy?.['player'] || {};
+                        const attacksMax = econ.attacksMax ?? 1;
+                        const attacksUsed = econ.attacksUsed ?? 0;
+                        if (attacksUsed >= attacksMax) {
+                            return { success: false, error: 'No attack left this turn — the player already spent their action. They can end their turn with the on-screen button.' };
+                        }
+                    }
+                    // Attaque à la VOIX avec une arme NOMMÉE (« je tire à l'arc ») :
+                    // si le nom matche une arme ÉQUIPÉE (slot distance compris), le
+                    // moteur juge cette arme-là — sinon l'arc était traité comme
+                    // l'épée de la main directrice (mêlée, mauvais bonus, engage).
+                    let attackCharacter = store.character || undefined;
+                    if (isPlayerAttacker && store.character && args.attackName) {
+                        const AW_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                        const awNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(AW_MARKS, '');
+                        const wanted = awNorm(String(args.attackName));
+                        const match = (store.character.inventory || []).find(i =>
+                            i.type === 'weapon' && i.equipped
+                            && (awNorm(i.name).includes(wanted) || wanted.includes(awNorm(i.name))));
+                        if (match) {
+                            const structured = structureInventoryItem(match);
+                            const props = structured.properties || match.properties || [];
+                            const isRangedW = Boolean(structured.range || match.range)
+                                || /bow|crossbow|sling|\barc\b|arbal[eè]te|fronde/i.test(match.name);
+                            attackCharacter = {
+                                ...store.character,
+                                weapon: {
+                                    name: match.name,
+                                    damage: structured.damageDice || match.damageDice || '1d4',
+                                    damageType: String(structured.damageType || match.damageType || 'bludgeoning'),
+                                    abilityMod: isRangedW ? 'DEX' : 'STR',
+                                    attackBonus: 0,
+                                    magicBonus: 0,
+                                    properties: props,
+                                    range: structured.range || match.range,
+                                    reach: isRangedW ? 30 : 5,
+                                } as any,
+                            };
+                        }
                     }
                     const result = resolveAttackAction(store.combatState, {
                         attacker: String(args.attacker),
@@ -740,10 +967,47 @@ export function useToolProcessor(deps: {
                         advantage: modifierApplication.prompt.advantage,
                         targetCoverBonus: Number.isFinite(Number(args.targetCoverBonus ?? args.coverBonus)) ? Number(args.targetCoverBonus ?? args.coverBonus) : undefined,
                         isMeleeAttack: optionalBoolean(args.isMeleeAttack),
-                    }, store.character || undefined);
+                        consumeAction: !isPlayerAttacker,
+                    }, attackCharacter);
 
+                    if (result.success && (result as any).advanced) {
+                        // Trop loin pour la mêlée : l'attaque est devenue un
+                        // rapprochement (far → near). Pip/action déjà consommé.
+                        store.setCombatState(result.state);
+                        if (isPlayerAttacker) {
+                            const econ: any = result.state.actionEconomy?.['player'] || {};
+                            const nextUsed = (econ.attacksUsed ?? 0) + 1;
+                            store.setCombatState({
+                                ...result.state,
+                                actionEconomy: {
+                                    ...(result.state.actionEconomy || {}),
+                                    player: { ...econ, attacksUsed: nextUsed, actionUsed: nextUsed >= (econ.attacksMax ?? 1) },
+                                },
+                            });
+                        }
+                        const adv = (result as any).advanced;
+                        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${adv.name} se rapproche (loin → proche).]*` }]);
+                        return {
+                            success: true,
+                            advanced: adv,
+                            instruction: `${adv.name} was too far for melee and CLOSED THE DISTANCE instead (${adv.from} → ${adv.to}). No attack roll happened — narrate the advance; the strike can land next action.`,
+                        };
+                    }
                     if (!result.success || !result.resolution) {
                         return { success: false, error: result.error || 'Attack failed' };
+                    }
+                    if (isPlayerAttacker && store.combatState.isActive) {
+                        // Dépense le pip sur l'état FRAIS résolu (mêmes booléens dérivés
+                        // que patchPlayerEconomy côté UI).
+                        const econ: any = result.state.actionEconomy?.['player'] || {};
+                        const nextUsed = (econ.attacksUsed ?? 0) + 1;
+                        const nextEcon = {
+                            ...econ,
+                            attacksUsed: nextUsed,
+                            actionUsed: nextUsed >= (econ.attacksMax ?? 1),
+                            bonusActionUsed: (econ.bonusUsed ?? 0) >= (econ.bonusMax ?? 1),
+                        };
+                        result.state = { ...result.state, actionEconomy: { ...(result.state.actionEconomy || {}), player: nextEcon } };
                     }
 
                     const isPlayer = Boolean(result.state.combatants.find(c => c.name === result.resolution?.attacker || c.id === args.attacker)?.isPlayer);
@@ -891,34 +1155,31 @@ export function useToolProcessor(deps: {
                     );
                     
                     if (!store.combatState.isActive && isPlayerTarget) {
-                        const char = { ...store.character! };
-                        let tempHP = char.tempHP || 0;
-                        let finalDamage = amount;
-                        if (tempHP > 0) {
-                            if (finalDamage >= tempHP) {
-                                finalDamage -= tempHP;
-                                tempHP = 0;
-                            } else {
-                                tempHP -= finalDamage;
-                                finalDamage = 0;
-                            }
-                        }
-                        const nextHP = Math.max(0, Math.min(char.hp.max, char.hp.current - finalDamage));
-                        const updatedChar = {
-                            ...char,
-                            tempHP,
-                            hp: { ...char.hp, current: nextHP }
-                        };
+                        // Shared helper: racial/draconic/feat resistances + temp HP
+                        // now apply OUT of combat too (a Dwarf poisoned at the
+                        // tavern used to take it full).
+                        const outOfCombat = applyDamageToCharacter(store.character!, amount, args.damageType ? String(args.damageType) : undefined);
+                        const updatedChar = outOfCombat.character;
                         d.syncCharacterCritical(updatedChar, 'hp');
-                        logDamage(char.name);
-                        campaignEventLog.append('HP_CHANGED', `${char.name} took ${amount} damage (out of combat)`, {
-                            target: char.name,
+                        logDamage(updatedChar.name);
+                        campaignEventLog.append('HP_CHANGED', `${updatedChar.name} took ${outOfCombat.amountApplied} damage (out of combat${outOfCombat.mitigation !== 'normal' ? `, ${outOfCombat.mitigation}` : ''})`, {
+                            target: updatedChar.name,
                             amount,
-                            amountApplied: amount,
+                            amountApplied: outOfCombat.amountApplied,
+                            mitigation: outOfCombat.mitigation,
                             hp: updatedChar.hp,
                             tempHP: updatedChar.tempHP
                         });
-                        return { success: true, target: char.name, hp: updatedChar.hp, tempHP: updatedChar.tempHP, amountApplied: amount };
+                        // Concentration is at risk out of combat too.
+                        const oocConcentration = resolveConcentrationAfterDamage(updatedChar, outOfCombat.amountApplied);
+                        if (oocConcentration.broken) {
+                            d.syncCharacterCritical(oocConcentration.character, 'hp');
+                            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Concentration broken: ${oocConcentration.removedEffects.map(effect => effect.name).join(', ')}]*` }]);
+                        } else if (updatedChar.hp.current > 0 && oocConcentration.prompt) {
+                            store.setActivePrompt(oocConcentration.prompt);
+                            campaignEventLog.append('ROLL_REQUESTED', 'Concentration save requested after damage', oocConcentration.prompt);
+                        }
+                        return { success: true, target: updatedChar.name, hp: updatedChar.hp, tempHP: updatedChar.tempHP, amountApplied: outOfCombat.amountApplied, mitigation: outOfCombat.mitigation };
                     }
 
                     const applied = applyDamageToEncounter(store.combatState, target, amount, args.damageType);
@@ -1013,6 +1274,34 @@ export function useToolProcessor(deps: {
                     const damageFormula = String(args.damageFormula || args.formula || '').trim();
                     if (!damageFormula) return { success: false, error: 'environmental_damage requires damageFormula (e.g. "2d6")' };
                     const damageType = args.damageType ? String(args.damageType) : undefined;
+
+                    // ── Multi-cibles (éboulis, incendie de taverne…) : targets =
+                    // 'all_enemies' ou liste. Chaque cible repasse par CE MÊME outil
+                    // (jets de sauvegarde et dégâts indépendants, état relu frais).
+                    if (args.targets !== undefined) {
+                        const raw = args.targets;
+                        const list: string[] = Array.isArray(raw)
+                            ? raw.map((t: any) => String(t).trim()).filter(Boolean)
+                            : String(raw).trim().toLowerCase() === 'all_enemies'
+                                ? (store.combatState.isActive
+                                    ? store.combatState.combatants.filter(c => combatantSide(c) === 'enemy' && c.hp.current > 0).map(c => c.id)
+                                    : [])
+                                : String(raw).split(',').map(s => s.trim()).filter(Boolean);
+                        if (!list.length) return { success: false, error: "environmental_damage targets resolved to nobody (no active combat for 'all_enemies'?)" };
+                        if (list.length > 1) {
+                            const perTarget: any[] = [];
+                            for (const t of list) {
+                                const sub = await processToolCall({ name: 'environmental_damage', args: { ...args, targets: undefined, target: t } });
+                                perTarget.push({ target: t, ...(sub || {}) });
+                            }
+                            return {
+                                success: true,
+                                targets: perTarget,
+                                instruction: 'Narrate the hazard sweeping over all of them in ONE beat. HP changes are already applied — do not re-apply.',
+                            };
+                        }
+                        args.target = list[0];
+                    }
                     const targetRef = stringArg(args.target || 'player', 120) || 'player';
                     const isPlayerTarget = targetRef.toLowerCase() === 'player'
                         || targetRef.toLowerCase() === store.character.name.toLowerCase();
@@ -1076,6 +1365,54 @@ export function useToolProcessor(deps: {
                         await waitDice();
                     }
 
+                    // ── 1bis. Mode JET D'ATTAQUE scripté (piège à fléchettes,
+                    // archer d'ambuscade pré-combat…) : attackBonus fourni et pas
+                    // de sauvegarde → 1d20+bonus contre la CA EFFECTIVE. Un raté
+                    // n'inflige rien — avant, ces attaques narratives touchaient
+                    // toujours ou passaient par des dégâts secs sans jet.
+                    let attackSummary = '';
+                    const envAttackBonus = Number(args.attackBonus);
+                    if (!validSave && Number.isFinite(envAttackBonus)) {
+                        const rosterHit = store.combatState.isActive
+                            ? resolveCombatantReference(store.combatState, isPlayerTarget ? 'player' : targetRef, { autoResolve: true })
+                            : null;
+                        const targetACValue = isPlayerTarget
+                            ? getEffectiveAC(store.character)
+                            : (rosterHit?.combatant?.ac ?? (lookupMonster(targetRef) as any)?.ac ?? (getCreature(targetRef) as any)?.ac ?? 12);
+                        const atkOutcome = resolveRollPrompt(normalizeRollPrompt({
+                            reason: `${hazard} — jet d'attaque`,
+                            formula: `1d20${envAttackBonus >= 0 ? '+' : ''}${envAttackBonus}`,
+                            dc: targetACValue,
+                        }));
+                        attackSummary = ` Attack ${atkOutcome.total} vs AC ${targetACValue}: ${atkOutcome.success ? 'HIT' : 'MISS'}.`;
+                        store.setCurrentRoll({
+                            result: atkOutcome.total,
+                            reason: `${hazard} — ${atkOutcome.success ? 'touche' : 'manque'} ${isPlayerTarget ? store.character.name : targetRef}`,
+                            isDM: true,
+                            success: atkOutcome.success,
+                        });
+                        deps.diceTrayRef.current?.addLog({
+                            type: 'attack',
+                            name: hazard,
+                            total: atkOutcome.total,
+                            formula: `${atkOutcome.formulaLabel} vs CA ${targetACValue}`,
+                            isDM: true,
+                            success: atkOutcome.success,
+                        });
+                        await waitDice();
+                        if (!atkOutcome.success) {
+                            const missText = `${hazard}: ${isPlayerTarget ? store.character.name : targetRef} évite l'attaque (${atkOutcome.total} vs CA ${targetACValue}).`;
+                            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${missText}]*` }]);
+                            return {
+                                success: true,
+                                target: isPlayerTarget ? store.character.name : targetRef,
+                                amountApplied: 0,
+                                attackSummary,
+                                instruction: 'The scripted attack MISSED — narrate the near-miss. NO damage was dealt.',
+                            };
+                        }
+                    }
+
                     // ── 2. Roll the damage ──
                     const rolled = rollDice(damageFormula);
                     const amount = Math.max(0, Math.floor(rolled.total * multiplier));
@@ -1117,19 +1454,14 @@ export function useToolProcessor(deps: {
                                 }
                             }
                         } else if (isPlayerTarget) {
-                            // Out of combat (or player not in the encounter roster).
-                            const char = { ...store.character };
-                            let tempHP = char.tempHP || 0;
-                            let finalDamage = amount;
-                            if (tempHP > 0) {
-                                if (finalDamage >= tempHP) { finalDamage -= tempHP; tempHP = 0; }
-                                else { tempHP -= finalDamage; finalDamage = 0; }
-                            }
-                            const nextHP = Math.max(0, Math.min(char.hp.max, char.hp.current - finalDamage));
-                            const updatedChar = { ...char, tempHP, hp: { ...char.hp, current: nextHP } };
+                            // Out of combat (or player not in the encounter roster) —
+                            // racial/draconic/feat resistances + temp HP via the
+                            // shared helper (they were skipped outside encounters).
+                            const outOfCombat = applyDamageToCharacter(store.character, amount, damageType);
+                            const updatedChar = outOfCombat.character;
                             d.syncCharacterCritical(updatedChar, 'hp');
                             resultHP = updatedChar.hp;
-                            const concentration = resolveConcentrationAfterDamage(updatedChar, amount);
+                            const concentration = resolveConcentrationAfterDamage(updatedChar, outOfCombat.amountApplied);
                             if (concentration.broken) {
                                 d.syncCharacterCritical(concentration.character, 'hp');
                             } else if (updatedChar.hp.current > 0 && concentration.prompt) {
@@ -1165,8 +1497,8 @@ export function useToolProcessor(deps: {
                     }
 
                     const summaryText = `${hazard}: ${resolvedName} ${amount > 0 ? `subit ${amount} dégâts${damageType ? ` (${damageType})` : ''}` : 'ne subit aucun dégât'}${conditionApplied ? ` et est ${conditionApplied}` : ''}.`;
-                    campaignEventLog.append('HP_CHANGED', summaryText, { hazard, target: resolvedName, amount, damageType, saveSummary, conditionApplied });
-                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${summaryText}${saveSummary}]*` }]);
+                    campaignEventLog.append('HP_CHANGED', summaryText, { hazard, target: resolvedName, amount, damageType, saveSummary, attackSummary, conditionApplied });
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${summaryText}${saveSummary}${attackSummary}]*` }]);
                     return {
                         success: true,
                         target: resolvedName,
@@ -1261,6 +1593,10 @@ export function useToolProcessor(deps: {
                 }
 
                 case 'add_quest': {
+                    // Étapes optionnelles (checklist) fournies dès la création.
+                    const questSteps = stringListArg(args.steps).slice(0, 6).map(text => ({
+                        id: crypto.randomUUID(), text, done: false,
+                    }));
                     await syncJournal((prev: any) => ({
                         ...prev,
                         quests: [...(prev.quests || []), {
@@ -1268,12 +1604,45 @@ export function useToolProcessor(deps: {
                             title: args.title,
                             description: args.description,
                             status: 'active',
+                            ...(questSteps.length ? { steps: questSteps } : {}),
                             createdAt: new Date().toISOString()
                         }]
                     }), true);
                     campaignEventLog.append('JOURNAL_UPDATED', `Quest added: ${args.title}`, args);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Quest Added: ${args.title}]*` }]);
-                    return { success: true };
+                    return { success: true, steps: questSteps.map(s => s.text) };
+                }
+
+                case 'update_quest_step': {
+                    // Étapes de quête cochables : marque une étape faite (défaut),
+                    // ou en AJOUTE une nouvelle si elle n'existe pas encore.
+                    const questTitleArg = stringArg(args.questTitle || args.title, 160);
+                    const stepText = stringArg(args.step, 200);
+                    if (!questTitleArg || !stepText) return { success: false, error: 'update_quest_step requires questTitle and step' };
+                    const QS_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const qsNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(QS_MARKS, '');
+                    const quest = (useGameStore.getState().journal.quests || [])
+                        .find((q: any) => q.status === 'active' && (qsNorm(q.title) === qsNorm(questTitleArg) || qsNorm(q.title).includes(qsNorm(questTitleArg))));
+                    if (!quest) return { success: false, error: `Active quest "${questTitleArg}" not found. Use add_quest first.` };
+                    const doneArg = optionalBoolean(args.done);
+                    let resultingSteps: any[] = [];
+                    await syncJournal((prev: any) => ({
+                        ...prev,
+                        quests: (prev.quests || []).map((q: any) => {
+                            if (q.id !== quest.id) return q;
+                            const steps = [...(q.steps || [])];
+                            const idx = steps.findIndex((s: any) => qsNorm(s.text) === qsNorm(stepText) || qsNorm(s.text).includes(qsNorm(stepText)) || qsNorm(stepText).includes(qsNorm(s.text)));
+                            if (idx >= 0) {
+                                steps[idx] = { ...steps[idx], done: doneArg ?? true };
+                            } else {
+                                steps.push({ id: crypto.randomUUID(), text: stepText, done: doneArg ?? false });
+                            }
+                            resultingSteps = steps;
+                            return { ...q, steps };
+                        }),
+                    }), true);
+                    campaignEventLog.append('JOURNAL_UPDATED', `Quest step ${doneArg === false ? 'updated' : 'checked'}: ${quest.title} — ${stepText}`, args);
+                    return { success: true, quest: quest.title, steps: resultingSteps.map((s: any) => `${s.done ? '✓' : '○'} ${s.text}`) };
                 }
 
                 case 'complete_quest': {
@@ -1298,19 +1667,336 @@ export function useToolProcessor(deps: {
                 }
 
                 case 'add_npc': {
+                    // Idempotent: re-announcing a known NPC refreshes it instead of
+                    // creating a duplicate journal entry. Accent-insensitive like
+                    // update_npc — "Séraphine" vs "Seraphine" used to duplicate.
+                    const npcName = stringArg(args.name, 120);
+                    const NPC_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const npcNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(NPC_MARKS, '');
+                    const existing = (useGameStore.getState().journal.npcs || [])
+                        .find((n: any) => npcNorm(n.name) === npcNorm(npcName));
                     await syncJournal((prev: any) => ({
                         ...prev,
-                        npcs: [...(prev.npcs || []), {
-                            id: crypto.randomUUID(),
-                            name: args.name,
-                            description: args.description,
-                            location: args.location,
-                            createdAt: new Date().toISOString()
-                        }]
+                        npcs: existing
+                            ? (prev.npcs || []).map((n: any) => n.id === existing.id
+                                ? { ...n, description: args.description || n.description, location: args.location || n.location, lastSeenAt: Date.now() }
+                                : n)
+                            : [...(prev.npcs || []), {
+                                id: crypto.randomUUID(),
+                                name: npcName,
+                                description: args.description,
+                                location: args.location,
+                                disposition: 0,
+                                knownFacts: [],
+                                lastSeenAt: Date.now(),
+                                createdAt: new Date().toISOString()
+                            }]
                     }), true);
-                    campaignEventLog.append('JOURNAL_UPDATED', `NPC discovered: ${args.name}`, args);
-                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: NPC Discovered: ${args.name}]*` }]);
+                    campaignEventLog.append('JOURNAL_UPDATED', `NPC discovered: ${npcName}`, args);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: NPC Discovered: ${npcName}]*` }]);
+                    // Portrait généré en tâche de fond (cache IndexedDB, fail-quiet).
+                    portraitService.request(
+                        npcPortraitKey(npcName),
+                        portraitPrompt(npcName, stringArg(args.description, 180) || undefined)
+                    );
                     return { success: true };
+                }
+
+                case 'update_npc': {
+                    const npcName = stringArg(args.name, 120);
+                    if (!npcName) return { success: false, error: 'update_npc requires name' };
+                    // Strip combining diacritics (U+0300–U+036F) so "Séraphine" matches "Seraphine".
+                    const COMBINING_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(COMBINING_MARKS, '');
+                    const journal = useGameStore.getState().journal;
+                    const target = (journal.npcs || []).find((n: any) => normalize(n.name) === normalize(npcName));
+                    if (!target) {
+                        return {
+                            success: false,
+                            error: `NPC "${npcName}" not in the journal. Call add_npc(name, description, location) first, then update_npc.`,
+                        };
+                    }
+                    const delta = Math.max(-2, Math.min(2, Math.round(numericArg(args.dispositionDelta, 0))));
+                    const memory = stringArg(args.memory, 160);
+                    let updatedNpc: any = target;
+                    await syncJournal((prev: any) => ({
+                        ...prev,
+                        npcs: (prev.npcs || []).map((n: any) => {
+                            if (n.id !== target.id) return n;
+                            updatedNpc = {
+                                ...n,
+                                disposition: Math.max(-5, Math.min(5, (n.disposition || 0) + delta)),
+                                knownFacts: memory ? [...(n.knownFacts || []), memory].slice(-12) : (n.knownFacts || []),
+                                location: stringArg(args.location, 120) || n.location,
+                                description: stringArg(args.description, 300) || n.description,
+                                lastSeenAt: Date.now(),
+                            };
+                            return updatedNpc;
+                        })
+                    }));
+                    campaignEventLog.append('JOURNAL_UPDATED', `NPC updated: ${target.name}${delta ? ` (disposition ${delta > 0 ? '+' : ''}${delta} → ${updatedNpc.disposition})` : ''}${memory ? ` — remembers: ${memory}` : ''}`, args);
+                    return {
+                        success: true,
+                        npc: { name: updatedNpc.name, disposition: updatedNpc.disposition, knownFacts: updatedNpc.knownFacts, location: updatedNpc.location },
+                    };
+                }
+
+                case 'recruit_companion': {
+                    // Compagnon PERSISTANT : rejoint chaque combat comme allié,
+                    // ses PV suivent entre les combats, les repos le soignent.
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const compName = stringArg(args.name, 80);
+                    if (!compName) return { success: false, error: 'recruit_companion requires name' };
+                    const existingComps = store.character.companions || [];
+                    if (existingComps.length >= 2) {
+                        return { success: false, error: 'Party is full (max 2 companions). dismiss_companion first.' };
+                    }
+                    const CN_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const cnNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(CN_MARKS, '');
+                    if (existingComps.some(c => cnNorm(c.name) === cnNorm(compName))) {
+                        return { success: false, error: `${compName} is already in the party.` };
+                    }
+                    const creature = getCreature(compName);
+                    const creatureAttack = creature ? (creature.attacks || [])[0] : undefined;
+                    const compHP = Math.max(1, Math.trunc(numericArg(args.hp, creature?.hp.base ?? 11)));
+                    const companion: CompanionSheet = {
+                        id: `comp_${cnNorm(compName).replace(/[^a-z0-9]+/g, '_').slice(0, 40) || Date.now()}`,
+                        name: compName,
+                        description: stringArg(args.description, 200) || undefined,
+                        hp: { current: compHP, max: compHP },
+                        ac: Math.max(5, Math.min(22, Math.trunc(numericArg(args.ac, creature?.ac ?? 12)))),
+                        attack: {
+                            name: stringArg(args.attackName, 40) || creatureAttack?.name || (useGameStore.getState().language === 'fr' ? 'Attaque' : 'Attack'),
+                            attackBonus: Math.max(0, Math.min(10, Math.trunc(numericArg(args.attackBonus, creatureAttack?.attackBonus ?? 3)))),
+                            damage: stringArg(args.damageFormula, 20) || creatureAttack?.damage || '1d6+1',
+                            damageType: stringArg(args.damageType, 20) || creatureAttack?.damageType || 'bludgeoning',
+                        },
+                        recruitedAt: Date.now(),
+                    };
+                    d.syncCharacterUpdate({ ...store.character, companions: [...existingComps, companion] });
+                    // Le compagnon existe aussi comme PNJ du journal (mémoire, portrait).
+                    const journalNow = useGameStore.getState().journal;
+                    if (!(journalNow.npcs || []).some((n: any) => cnNorm(n.name) === cnNorm(compName))) {
+                        await syncJournal((prev: any) => ({
+                            ...prev,
+                            npcs: [...(prev.npcs || []), {
+                                id: crypto.randomUUID(), name: compName,
+                                description: companion.description || (useGameStore.getState().language === 'fr' ? 'Compagnon de route du héros.' : "The hero's traveling companion."),
+                                location: 'Avec le héros', disposition: 3, knownFacts: [], lastSeenAt: Date.now(),
+                            }],
+                        }), true);
+                    }
+                    portraitService.request(npcPortraitKey(compName), portraitPrompt(compName, companion.description));
+                    campaignEventLog.append('JOURNAL_UPDATED', `Companion recruited: ${compName} (HP ${compHP}, AC ${companion.ac})`, companion);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 ${compName} rejoint le groupe (PV ${compHP}, CA ${companion.ac}, ${companion.attack.name} +${companion.attack.attackBonus}, ${companion.attack.damage})]*` }]);
+                    return {
+                        success: true,
+                        companion,
+                        instruction: `${compName} is now a PERSISTENT party member: they auto-join every combat as an ally (you play their turn with resolve_attack attacker="${companion.id}", attackBonus ${companion.attack.attackBonus}, damageFormula "${companion.attack.damage}"). Narrate them as a living character with a voice.`,
+                    };
+                }
+
+                case 'set_mount': {
+                    // Monture persistante : vitesse de voyage narrée + CHARGE
+                    // MONTÉE en combat (mêlée sur cible lointaine en une action).
+                    // `kind` = type du catalogue (destrier, griffon, destrier_celeste…)
+                    // → vitesse/vol/description automatiques ; les montures de
+                    // classe sont VALIDÉES (destrier céleste = paladin niv 5+).
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const kindArg = stringArg(args.kind, 60);
+                    const mountType = kindArg ? getMountType(kindArg) : getMountType(stringArg(args.name, 80));
+                    if (kindArg && !mountType) {
+                        return { success: false, error: `Unknown mount kind "${kindArg}". Valid kinds: ${MOUNT_TYPES.map(m => m.id).join(', ')}.` };
+                    }
+                    if (mountType?.classOnly) {
+                        const cls = store.character.class;
+                        const lvl = store.character.level || 1;
+                        if (cls !== mountType.classOnly.class || lvl < mountType.classOnly.minLevel) {
+                            return {
+                                success: false,
+                                error: `${mountType.name} is reserved for ${mountType.classOnly.class} level ${mountType.classOnly.minLevel}+ (Find Steed). The hero is a ${cls} level ${lvl} — offer a mundane mount instead.`,
+                            };
+                        }
+                    }
+                    const mountName = stringArg(args.name, 80) || mountType?.name;
+                    if (!mountName) return { success: false, error: 'set_mount requires name or kind' };
+                    const mountCreature = getCreature(mountName);
+                    const speed = Math.max(20, Math.trunc(numericArg(args.speed, mountType?.speed ?? (mountCreature as any)?.speed ?? 60)));
+                    const mountMaxHP = Math.max(5, Math.trunc(numericArg(args.hp, mountType?.hp ?? 15)));
+                    const mount = {
+                        name: mountName,
+                        kind: mountType?.id,
+                        speed,
+                        flying: mountType?.flying || undefined,
+                        // La monture COMBAT (ligne alliée auto) : PV persistants.
+                        hp: { current: mountMaxHP, max: mountMaxHP },
+                        description: stringArg(args.description, 200) || mountType?.description || undefined,
+                        acquiredAt: Date.now(),
+                    };
+                    d.syncCharacterUpdate({ ...store.character, mount });
+                    portraitService.request(npcPortraitKey(mountName), portraitPrompt(mountName, mount.description || `${mountName}, loyal riding mount`));
+                    campaignEventLog.append('JOURNAL_UPDATED', `Mount acquired: ${mountName}${mountType ? ` [${mountType.id}]` : ''} (speed ${speed} ft${mount.flying ? ', FLYING' : ''})`, mount);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${mountName}${mountType && mountType.name !== mountName ? ` (${mountType.name})` : ''} devient la monture du héros (vitesse ${speed} ft${mount.flying ? ', volante' : ''})]*` }]);
+                    return {
+                        success: true,
+                        mount,
+                        instruction: `${mountName} is now the hero's mount${mount.flying ? ' — a FLYING one: narrate aerial travel and dramatic swoops' : ''}: overland travel is much faster, and in combat a MELEE attack against a FAR enemy becomes a mounted charge (closes to melee AND strikes in one action). Narrate the mount as a living companion.${mountType?.id === 'destrier_celeste' ? ' It is a CELESTIAL spirit: if it dies, the paladin can summon it again after a long rest.' : ''}`,
+                    };
+                }
+
+                case 'set_beast_companion': {
+                    // Rôdeur Beast Master : CHOIX de la bête liée (loup, ours,
+                    // panthère, faucon) — stats réelles de la ligne alliée.
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    if (store.character.subclass !== 'Beast Master') {
+                        return { success: false, error: 'Only a Beast Master ranger bonds a beast companion. Use recruit_companion for other allies.' };
+                    }
+                    const beast = getBeastCompanion(stringArg(args.kind || args.name, 60));
+                    if (!beast) {
+                        return { success: false, error: `Unknown beast. Valid kinds: ${BEAST_COMPANIONS.map(b => `${b.id} (${b.name})`).join(', ')}.` };
+                    }
+                    d.syncCharacterUpdate({ ...store.character, beastKind: beast.id });
+                    portraitService.request(npcPortraitKey(`Compagnon ${beast.name}`), portraitPrompt(beast.name, beast.description));
+                    campaignEventLog.append('JOURNAL_UPDATED', `Beast companion bonded: ${beast.name}`, beast);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 Le lien du Maître des bêtes est scellé : ${beast.name} (CA ${beast.ac}, ${beast.attack.name} +${beast.attack.attackBonus}, ${beast.attack.damage})]*` }]);
+                    return {
+                        success: true,
+                        beast,
+                        instruction: `${beast.name} is now the ranger's bonded beast: it auto-joins EVERY encounter as an ally (play its turn with resolve_attack attacker="companion", it uses ${beast.attack.name} +${beast.attack.attackBonus}, ${beast.attack.damage} ${beast.attack.damageType}). ${beast.description}`,
+                    };
+                }
+
+                case 'set_familiar': {
+                    // Familier (Find Familiar / pacte de la chaîne / esprit
+                    // animal du druide) : narratif + « Aide » 1×/repos court.
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    if (!FAMILIAR_CLASSES.includes(store.character.class)) {
+                        return { success: false, error: `Only ${FAMILIAR_CLASSES.join('/')} bond a familiar. A ${store.character.class} could get a pet NPC via recruit_companion instead.` };
+                    }
+                    const familiarType = getFamiliarType(stringArg(args.kind, 60));
+                    if (!familiarType) {
+                        return { success: false, error: `Unknown familiar kind. Valid kinds: ${FAMILIAR_TYPES.map(f => `${f.id} (${f.name})`).join(', ')}.` };
+                    }
+                    const famName = stringArg(args.name, 60) || familiarType.name;
+                    const familiar = {
+                        name: famName,
+                        kind: familiarType.name,
+                        description: stringArg(args.description, 200) || familiarType.knack,
+                        acquiredAt: Date.now(),
+                    };
+                    // ensureProgressionState matérialise tout de suite la
+                    // ressource « Aide du familier » (bouton visible en combat).
+                    d.syncCharacterUpdate(ensureProgressionState({ ...store.character, familiar }));
+                    portraitService.request(npcPortraitKey(famName), portraitPrompt(famName, `${familiarType.name} familiar. ${familiar.description}`));
+                    campaignEventLog.append('JOURNAL_UPDATED', `Familiar bonded: ${famName} (${familiarType.name})`, familiar);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🦉 ${famName} (${familiarType.name}) devient le familier du héros — Aide 1×/repos court]*` }]);
+                    return {
+                        success: true,
+                        familiar,
+                        instruction: `${famName} the ${familiarType.name} is now the hero's familiar. Knack: ${familiarType.knack} Play it as a living presence (scouting, comic relief, warnings). In combat the player has a "Familiar: Help" button (advantage on their next attack, once per short rest) — narrate the little creature's harassment when the [SYSTEM] report arrives.`,
+                    };
+                }
+
+                case 'dismiss_familiar': {
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const fam = store.character.familiar;
+                    if (!fam) return { success: false, error: 'The hero has no familiar.' };
+                    d.syncCharacterUpdate({ ...store.character, familiar: undefined });
+                    campaignEventLog.append('JOURNAL_UPDATED', `Familiar dismissed: ${fam.name}`, fam);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🦉 ${fam.name} disparaît dans un frisson d'éther]*` }]);
+                    return { success: true, dismissed: fam.name };
+                }
+
+                case 'dismiss_mount': {
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const currentMount = store.character.mount;
+                    if (!currentMount) return { success: false, error: 'The hero has no mount.' };
+                    d.syncCharacterUpdate({ ...store.character, mount: undefined });
+                    campaignEventLog.append('JOURNAL_UPDATED', `Mount dismissed: ${currentMount.name}`, currentMount);
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${currentMount.name} n'accompagne plus le héros]*` }]);
+                    return { success: true, dismissed: currentMount.name };
+                }
+
+                case 'dismiss_companion': {
+                    if (!store.character) return { success: false, error: 'No character loaded' };
+                    const compName = stringArg(args.name, 80);
+                    const DN_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const dnNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(DN_MARKS, '');
+                    const comps = store.character.companions || [];
+                    const target = comps.find(c => dnNorm(c.name) === dnNorm(compName) || dnNorm(c.name).includes(dnNorm(compName)));
+                    if (!target) return { success: false, error: `No companion named "${compName}" in the party.` };
+                    d.syncCharacterUpdate({ ...store.character, companions: comps.filter(c => c.id !== target.id) });
+                    // Retire-le aussi du combat en cours le cas échéant.
+                    if (store.combatState.isActive) {
+                        store.setCombatState((prev: any) => ({
+                            ...prev,
+                            combatants: prev.combatants.filter((c: any) => c.id !== target.id),
+                        }));
+                    }
+                    campaignEventLog.append('JOURNAL_UPDATED', `Companion dismissed: ${target.name}`, { name: target.name });
+                    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${target.name} quitte le groupe]*` }]);
+                    return { success: true, dismissed: target.name };
+                }
+
+                case 'set_time_of_day': {
+                    // Le MJ fait avancer l'horloge du monde quand la fiction le dit
+                    // (le soir tombe, la nuit passe hors repos…).
+                    const rawTime = stringArg(args.timeOfDay || args.time, 20).toLowerCase();
+                    const timeMap: Record<string, TimeOfDay> = {
+                        dawn: 'dawn', aube: 'dawn', matin: 'dawn', morning: 'dawn',
+                        day: 'day', jour: 'day', journee: 'day', 'journée': 'day', midi: 'day', noon: 'day', afternoon: 'day',
+                        dusk: 'dusk', crepuscule: 'dusk', 'crépuscule': 'dusk', soir: 'dusk', evening: 'dusk', sunset: 'dusk',
+                        night: 'night', nuit: 'night', midnight: 'night', minuit: 'night',
+                    };
+                    const nextTime = timeMap[rawTime];
+                    if (!nextTime) return { success: false, error: `Unknown timeOfDay "${rawTime}". Use dawn|day|dusk|night.` };
+                    const addDays = Math.max(0, Math.min(30, Math.trunc(numericArg(args.advanceDays, 0))));
+                    useGameStore.getState().setCampaignRuntime(prev => ({
+                        ...prev,
+                        timeOfDay: nextTime,
+                        dayCount: (prev.dayCount || 1) + addDays,
+                        updatedAt: Date.now(),
+                    }));
+                    await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+                    const runtimeNow = useGameStore.getState().campaignRuntime;
+                    campaignEventLog.append('CAMPAIGN_RUNTIME_UPDATED', `World time: day ${runtimeNow.dayCount}, ${nextTime}`, { timeOfDay: nextTime, dayCount: runtimeNow.dayCount });
+                    return { success: true, dayCount: runtimeNow.dayCount, timeOfDay: nextTime };
+                }
+
+                case 'lookup_npc': {
+                    // Recall a KNOWN NPC (journal + authored cast). The director
+                    // context only carries the 8 most recent journal NPCs, so an
+                    // old contact returning after a long arc had no way back into
+                    // the DM's head — dispositions and memories went incoherent.
+                    const query = stringArg(args.name, 120);
+                    if (!query) return { found: false, error: 'lookup_npc requires name' };
+                    const LN_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+                    const lnNorm = (s: string) => String(s || '').toLowerCase().normalize('NFD').replace(LN_MARKS, '');
+                    const nq = lnNorm(query);
+                    const journalNpcs = (useGameStore.getState().journal.npcs || [])
+                        .filter((n: any) => { const nn = lnNorm(n.name); return nn.includes(nq) || nq.includes(nn); })
+                        .slice(0, 4)
+                        .map((n: any) => ({
+                            name: n.name,
+                            description: n.description,
+                            location: n.location,
+                            disposition: n.disposition ?? 0,
+                            memories: n.knownFacts || [],
+                            lastSeenAt: n.lastSeenAt,
+                        }));
+                    const authoredCast = ((store.adventureManifestData?.supportingCast || []) as any[])
+                        .filter(c => { const cn = lnNorm(c.name); return cn.includes(nq) || nq.includes(cn); })
+                        .slice(0, 2)
+                        .map(c => ({ name: c.name, role: c.role, description: c.description, location: c.location, personality: c.personality }));
+                    if (!journalNpcs.length && !authoredCast.length) {
+                        return { found: false, hint: `No NPC matching "${query}" in the journal or authored cast. If they are genuinely new, introduce them with add_npc.` };
+                    }
+                    return {
+                        found: true,
+                        npcs: journalNpcs,
+                        authoredCast,
+                        instruction: 'Play this NPC consistently with their disposition and memories. Commit any relationship change with update_npc.',
+                    };
                 }
 
                 case 'add_location': {
@@ -1329,11 +2015,14 @@ export function useToolProcessor(deps: {
                 }
 
                 case 'add_story_moment': {
+                    // [Jn] : chaque moment est daté du jour-monde — la chronique
+                    // (et les résumés qui la relisent) gardent l'ordre des faits.
+                    const dayTag = `[J${useGameStore.getState().campaignRuntime.dayCount || 1}]`;
                     await syncJournal((prev: any) => ({
                         ...prev,
                         chronicle: [...(prev.chronicle || []), {
                             id: crypto.randomUUID(),
-                            title: args.title,
+                            title: String(args.title || '').startsWith('[J') ? args.title : `${dayTag} ${args.title}`,
                             description: args.description,
                             timestamp: Date.now()
                         }]
@@ -1345,7 +2034,9 @@ export function useToolProcessor(deps: {
                 case 'grant_xp': {
                     if (!store.character) return { success: false, error: 'No character loaded' };
                     const xpBefore = store.character.xp;
-                    const enemyNames = store.combatState.combatants.filter(c => !c.isPlayer).map(c => c.name);
+                    // ENEMIES only — allies (companion, rescued NPCs) are !isPlayer
+                    // too and must not inflate the XP clamp base.
+                    const enemyNames = store.combatState.combatants.filter(c => combatantSide(c) === 'enemy').map(c => c.name);
                     const amount = sanitizeXPGrant(Number(args.amount), enemyNames);
                     d.grantXP(amount, args.reason);
                     campaignEventLog.append('XP_GRANTED', `Awarded ${amount} XP for ${args.reason}`, { amount, reason: args.reason });
@@ -1390,7 +2081,15 @@ export function useToolProcessor(deps: {
                     if (!store.character) return { success: false, error: 'No character loaded' };
                     const spellName = String(args.spellName || args.name || '').trim();
                     if (!spellName) return { success: false, error: 'cast_spell requires spellName' };
-                    const targetRef = String(args.target || '');
+                    // Sort de ZONE à la voix : target='all_enemies' → sauvegarde
+                    // par ennemi via le résolveur moteur (pas de prompt bloquant).
+                    const aoeRequested = String(args.target || args.targets || '').trim().toLowerCase() === 'all_enemies';
+                    const aoeEnemyIds = aoeRequested && store.combatState.isActive
+                        ? store.combatState.combatants.filter(c => combatantSide(c) === 'enemy' && c.hp.current > 0).map(c => c.id)
+                        : [];
+                    const targetRef = aoeRequested
+                        ? (aoeEnemyIds[0] || '')
+                        : String(args.target || '');
                     const targetLookup = targetRef && store.combatState.isActive
                         ? resolveCombatantReference(store.combatState, targetRef)
                         : null;
@@ -1407,11 +2106,38 @@ export function useToolProcessor(deps: {
                         spellSaveDC: Number.isFinite(Number(args.spellSaveDC || args.saveDC)) ? Number(args.spellSaveDC || args.saveDC) : undefined,
                         targetAC: Number.isFinite(Number(args.targetAC)) ? Number(args.targetAC) : targetLookup?.combatant?.ac,
                         targetSaveBonus: Number.isFinite(Number(args.targetSaveBonus)) ? Number(args.targetSaveBonus) : undefined,
+                        worldHour: worldHourOf(store.campaignRuntime.dayCount || 1, store.campaignRuntime.timeOfDay),
+                        maximizeHealing: !!store.character.storyMode,
                     });
 
                     if (!result.success) return result;
 
                     d.syncCharacterCritical(result.character, 'hp');
+
+                    if (aoeRequested && aoeEnemyIds.length && result.prompt?.type === 'SAVE' && result.prompt.pendingSpell) {
+                        const aoe = resolveSpellAgainstTargets(useGameStore.getState().combatState, result.prompt, aoeEnemyIds);
+                        if (aoe) {
+                            store.setCombatState(aoe.state);
+                            if (aoe.sharedDamageRoll > 0) {
+                                store.setCurrentRoll({ result: aoe.sharedDamageRoll, reason: `${spellName} — dégâts de zone`, isDM: false });
+                                await waitDice();
+                            }
+                            for (const r of aoe.results) {
+                                store.pushCombatRoll({ name: `${spellName} → ${r.name}`, total: r.damage, formula: `save ${r.saveTotal} vs DC ${result.prompt.dc}${r.saveSuccess ? ' (réussie)' : ''}`, isDM: true });
+                            }
+                            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} (zone) — ${aoe.summary}]*` }]);
+                            campaignEventLog.append('EFFECT_ADDED', `AoE spell resolved: ${spellName}`, { results: aoe.results });
+                            return {
+                                success: true,
+                                spell: result.spell,
+                                consumedSlot: (result as any).consumedSlot,
+                                areaResults: aoe.results,
+                                summary: aoe.summary,
+                                instruction: 'All saves and damage are RESOLVED (listed above). Narrate the blast in ONE beat — never re-roll or re-apply.',
+                            };
+                        }
+                    }
+
                     if (result.prompt) {
                         if (targetLookup?.combatant && result.prompt.pendingSpell) {
                             result.prompt.pendingSpell.targetId = targetLookup.combatant.id;
@@ -1419,10 +2145,16 @@ export function useToolProcessor(deps: {
                             if (result.prompt.type === 'ATTACK') result.prompt.dc = targetLookup.combatant.ac;
                         }
                         store.setActivePrompt(result.prompt);
-                        campaignEventLog.append('ROLL_REQUESTED', `Spell roll requested: ${result.prompt.name}`, result.prompt);
+                        campaignEventLog.append('ROLL_REQUESTED', `Spell roll requested: ${result.prompt.name}`, { ...result.prompt, resolveToolCall: undefined });
                     }
                     campaignEventLog.append('EFFECT_ADDED', `Spell cast through SRD Codex: ${result.spell?.name}`, result);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${result.summary}]*` }]);
+                    if (result.prompt) {
+                        // Same blocking contract as request_roll: hold the tool
+                        // response until the spell's attack/save roll lands so the
+                        // DM cannot pre-narrate the hit or the save.
+                        return await holdForRollResolution(result.prompt, { ...result, prompt: { ...result.prompt } });
+                    }
                     return result;
                 }
 
@@ -1573,7 +2305,7 @@ export function useToolProcessor(deps: {
                             canonFacts: uniqueAppend(prev.canonFacts || [], [
                                 ...stringListArg(args.canonFact),
                                 ...stringListArg(args.canonFacts),
-                            ]),
+                            ].map(fact => fact.startsWith('[J') ? fact : `[J${prev.dayCount || 1}] ${fact}`)),
                             protectedSecrets: uniqueAppend(prev.protectedSecrets || [], [
                                 ...stringListArg(args.protectedSecret),
                                 ...stringListArg(args.protectedSecrets),
@@ -1616,7 +2348,7 @@ export function useToolProcessor(deps: {
 
                 case 'trigger_scene_image': {
                     const charInfo = store.character ? `${store.character.race} ${store.character.class}` : '';
-                    scheduleSceneImage(buildSceneImagePrompt(args.description, charInfo), {
+                    scheduleSceneImage(buildSceneImagePrompt(args.description, charInfo) + timeOfDayHint(), {
                         kind: 'scene_image',
                         phase: args.phase || 'exploration',
                         summary: 'Scene image generated',
@@ -1634,7 +2366,7 @@ export function useToolProcessor(deps: {
 
                 case 'trigger_visual': {
                     const charInfo = store.character ? `${store.character.race} ${store.character.class}` : '';
-                    scheduleSceneImage(buildSceneImagePrompt(args.description, charInfo), {
+                    scheduleSceneImage(buildSceneImagePrompt(args.description, charInfo) + timeOfDayHint(), {
                         kind: 'moment_image',
                         phase: args.phase || (store.combatState.isActive ? 'combat' : 'story'),
                         summary: 'Story moment image generated',
@@ -1683,6 +2415,13 @@ export function useToolProcessor(deps: {
                     }
                     const char = applyShortRest(c0, spend);
                     d.syncCharacterCritical(char, 'hp');
+                    // Un repos court fait avancer le moment de la journée.
+                    useGameStore.getState().setCampaignRuntime(prev => {
+                        const steps: TimeOfDay[] = ['dawn', 'day', 'dusk', 'night'];
+                        const idx = steps.indexOf(prev.timeOfDay || 'day');
+                        return { ...prev, timeOfDay: steps[Math.min(steps.length - 1, idx + 1)], updatedAt: Date.now() };
+                    });
+                    void saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
                     campaignEventLog.append('JOURNAL_UPDATED', 'Short rest completed', {
                         hp: char.hp,
                         resources: char.resources,
@@ -1690,13 +2429,20 @@ export function useToolProcessor(deps: {
                     });
                     if (d.musicDirector) d.musicDirector.handleRestMusic(false);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Short rest completed]*` }]);
-                    return { success: true, hp: char.hp, resources: char.resources, hitDice: char.hitDice };
+                    return { success: true, hp: char.hp, resources: char.resources, hitDice: char.hitDice, timeOfDay: useGameStore.getState().campaignRuntime.timeOfDay };
                 }
 
                 case 'long_rest': {
                     if (!store.character) return { success: false, error: 'No character loaded' };
                     const char = applyLongRest(store.character);
                     d.syncCharacterCritical(char, 'hp');
+                    // Une nuit passe : jour +1, réveil à l'aube (le calendrier suit).
+                    useGameStore.getState().setCampaignRuntime(prev => ({
+                        ...prev,
+                        dayCount: (prev.dayCount || 1) + 1,
+                        timeOfDay: 'dawn',
+                        updatedAt: Date.now(),
+                    }));
                     campaignEventLog.append('JOURNAL_UPDATED', 'Long rest completed', {
                         hp: char.hp,
                         resources: char.resources,
@@ -1705,11 +2451,78 @@ export function useToolProcessor(deps: {
                     });
                     if (d.musicDirector) d.musicDirector.handleRestMusic(true);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Long rest completed]*` }]);
-                    return { success: true, hp: char.hp, resources: char.resources, spellSlots: char.spellSlots, hitDice: char.hitDice };
+
+                    // AUTONOMOUS WORLD CLOCKS: a long rest means a night passes — every
+                    // active clock ticks +1 mechanically. Without this, a clock the DM
+                    // forgets to advance by hand is a dead clock and the world stops
+                    // feeling like it moves on its own.
+                    const clocksAdvanced: { name: string; stage: number; maxStage: number; reachedMax: boolean }[] = [];
+                    const activeClocks = (useGameStore.getState().campaignRuntime.worldClocks || [])
+                        .filter(clock => clock.status === 'active');
+                    if (activeClocks.length) {
+                        useGameStore.getState().setCampaignRuntime(prev => ({
+                            ...prev,
+                            worldClocks: (prev.worldClocks || []).map(clock => {
+                                if (clock.status !== 'active') return clock;
+                                const stage = Math.min(clock.maxStage, clock.stage + 1);
+                                clocksAdvanced.push({ name: clock.name, stage, maxStage: clock.maxStage, reachedMax: stage >= clock.maxStage });
+                                return { ...clock, stage, updatedAt: Date.now() };
+                            }),
+                            updatedAt: Date.now(),
+                        }));
+                        await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+                        campaignEventLog.append('CAMPAIGN_RUNTIME_UPDATED', `World clocks advanced by long rest: ${clocksAdvanced.map(c => `${c.name} ${c.stage}/${c.maxStage}`).join(', ')}`, { clocksAdvanced });
+                    }
+
+                    return {
+                        success: true, hp: char.hp, resources: char.resources, spellSlots: char.spellSlots, hitDice: char.hitDice,
+                        ...(clocksAdvanced.length ? {
+                            worldClocksAdvanced: clocksAdvanced,
+                            clockInstruction: `A night has passed: ${clocksAdvanced.map(c => `"${c.name}" is now ${c.stage}/${c.maxStage}${c.reachedMax ? ' (FINAL STAGE REACHED — trigger its consequence now)' : ''}`).join('; ')}. Weave visible signs of this progression into the morning's narration.`,
+                        } : {}),
+                    };
                 }
 
                 case 'add_effect': {
                     if (!store.character) return { success: false, error: 'No character loaded' };
+                    // Cible optionnelle : un buff/debuff chiffré peut viser un
+                    // ALLIÉ ou un ENNEMI du combat (bénédiction +2 CA sur le
+                    // compagnon, malédiction -2 attaque sur le chef…). Le moteur
+                    // lit ces modificateurs via combatantEffectBonus, et les
+                    // durées en rounds tickent au fil des tours.
+                    const effectTargetRef = stringArg(args.target, 120);
+                    const targetsSelf = !effectTargetRef
+                        || effectTargetRef.toLowerCase() === 'player'
+                        || effectTargetRef.toLowerCase() === store.character.name.toLowerCase();
+                    if (!targetsSelf && store.combatState.isActive) {
+                        const lookup = resolveCombatantReference(store.combatState, effectTargetRef, { autoResolve: true });
+                        if (!lookup.combatant) return { success: false, error: `Effect target "${effectTargetRef}" not found in combat.` };
+                        if (lookup.combatant.isPlayer) {
+                            const char = applyEffectArgs(store.character, args);
+                            d.syncCharacterUpdate(char);
+                        } else {
+                            const [statRaw, bonusRaw] = String(args?.stat || 'AC=0').split('=');
+                            const rounds = Math.max(1, Math.trunc(Number(args.rounds) || 10));
+                            const effect = {
+                                id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                                name: String(args.name || 'Effect'),
+                                source: 'spell' as const,
+                                duration: 'rounds' as const,
+                                roundsRemaining: rounds,
+                                description: String(args.description || `${statRaw} ${bonusRaw}`),
+                                modifiers: [{ stat: (statRaw || 'AC').trim() as any, bonus: Number.parseInt((bonusRaw || '0').trim(), 10) || 0 }],
+                            };
+                            store.setCombatState({
+                                ...store.combatState,
+                                combatants: store.combatState.combatants.map(c => c.id === lookup.combatant!.id
+                                    ? { ...c, activeEffects: [...(c.activeEffects || []).filter(e => e.name !== effect.name), effect] }
+                                    : c),
+                            });
+                        }
+                        campaignEventLog.append('EFFECT_ADDED', `Effect added on ${lookup.combatant.name}: ${args.name}`, args);
+                        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effect Added on ${lookup.combatant!.name}: ${args.name} (${args.stat})]*` }]);
+                        return { success: true, target: lookup.combatant.name };
+                    }
                     const char = applyEffectArgs(store.character, args);
                     d.syncCharacterUpdate(char);
                     campaignEventLog.append('EFFECT_ADDED', `Effect added: ${args.name}`, args);

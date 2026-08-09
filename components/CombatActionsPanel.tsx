@@ -2,7 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { getPlayerAttackModifier } from '../types';
 import { combatantSide } from './CombatTracker';
-import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield } from 'lucide-react';
+import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield, Flame, Wind, HandHeart, Music2, Zap, Dices, EyeOff, Footprints, Cross, Crosshair, Wand2, PawPrint } from 'lucide-react';
+import { getFeatById } from '../data/feats';
 
 const TRANS = {
     en: {
@@ -51,6 +52,46 @@ const TRANS = {
         useItem: "Use the Item 🧪",
         dodgeDescription: 'Taking the Dodge action lets you focus on defense. Until the start of your next turn, any attack roll against you has Disadvantage, and you gain a defensive bonus.',
         activateDodge: 'Activate Dodge 🛡️',
+        abilities: 'Class abilities',
+        abilityRage: 'Rage',
+        abilityRageHint: 'Bonus action — +2 damage, resistance to physical damage (10 rounds).',
+        abilitySecondWind: 'Second Wind',
+        abilitySecondWindHint: 'Bonus action — regain 1d10 + level HP.',
+        abilityActionSurge: 'Action Surge',
+        abilityActionSurgeHint: 'Free — one extra full Attack action this turn.',
+        abilityLayOnHands: 'Lay on Hands',
+        abilityLayOnHandsHint: 'Action — heal your missing HP from the pool.',
+        abilityBardic: 'Bardic Inspiration',
+        abilityBardicHint: 'Bonus action — bank an inspiration die for your next rolls.',
+        abilityFlurry: 'Flurry of Blows',
+        abilityFlurryHint: 'Bonus action, 1 ki — two unarmed strikes (after your Attack).',
+        abilityPatient: 'Patient Defense',
+        abilityPatientHint: 'Bonus action, 1 ki — Dodge as a bonus action.',
+        abilityLucky: 'Lucky',
+        abilityLuckyHint: '1 luck point — advantage on your next roll.',
+        abilityCunningHide: 'Cunning: Hide',
+        abilityCunningHideHint: 'Bonus action — slip out of sight: advantage on your next attack.',
+        abilityCunningDash: 'Cunning: Dash/Disengage',
+        abilityCunningDashHint: 'Bonus action — reposition without provoking attacks.',
+        abilityPreserveLife: 'Channel: Preserve Life',
+        abilityPreserveLifeHint: 'Action, 1 Channel Divinity — heal up to 5 × level HP (max half your HP).',
+        abilityGuidedStrike: 'Channel: Guided Strike',
+        abilityGuidedStrikeHint: '1 Channel Divinity — +10 on your next attack roll.',
+        abilityCreateSlot: 'Font of Magic',
+        abilityCreateSlotHint: '2 sorcery points — create a level-1 spell slot.',
+        abilitySuperiority: 'Maneuver',
+        abilitySuperiorityHint: '1 superiority die — your next weapon hit this round deals bonus damage.',
+        abilityWildShape: 'Wild Shape',
+        abilityWildShapeHint: 'Action — beast form: gain 2 × level temporary HP (10 rounds).',
+        abilityFamiliar: 'Familiar: Help',
+        abilityFamiliarHint: 'Bonus action, 1/short rest — your familiar harries the foe: advantage on your next attack.',
+        allEnemies: 'All enemies (area spell)',
+        powerAttackGWM: 'Great Weapon Master: -5 to hit / +10 damage',
+        powerAttackSharp: 'Sharpshooter: -5 to hit / +10 damage',
+        needsAttackFirst: 'Attack first with your main action.',
+        combatOnlyShort: 'Combat only.',
+        bonusUsedShort: 'Bonus action already used.',
+        actionUsedShort: 'Main action already used.',
     },
     fr: {
         offhand: (name: string) => `Off-hand : ${name}`,
@@ -98,18 +139,208 @@ const TRANS = {
         useItem: "Utiliser l'Objet 🧪",
         dodgeDescription: "Prendre l'action d'esquive (Dodge) vous permet de vous concentrer sur la défense. Jusqu'au début de votre prochain tour, tout jet d'attaque contre vous aura un Désavantage, et vous gagnez un bonus défensif.",
         activateDodge: "Activer l'Esquive 🛡️",
+        abilities: 'Capacités de classe',
+        abilityRage: 'Rage',
+        abilityRageHint: 'Action bonus — +2 dégâts, résistance aux dégâts physiques (10 rounds).',
+        abilitySecondWind: 'Second souffle',
+        abilitySecondWindHint: 'Action bonus — regagne 1d10 + niveau PV.',
+        abilityActionSurge: "Sursaut d'action",
+        abilityActionSurgeHint: 'Gratuit — une action Attaquer complète en plus ce tour.',
+        abilityLayOnHands: 'Imposition des mains',
+        abilityLayOnHandsHint: 'Action — soigne tes PV manquants depuis la réserve.',
+        abilityBardic: 'Inspiration bardique',
+        abilityBardicHint: 'Action bonus — mets en réserve un dé d\'inspiration pour tes prochains jets.',
+        abilityFlurry: 'Déluge de coups',
+        abilityFlurryHint: 'Action bonus, 1 ki — deux frappes à mains nues (après ton Attaque).',
+        abilityPatient: 'Défense patiente',
+        abilityPatientHint: 'Action bonus, 1 ki — Esquive en action bonus.',
+        abilityLucky: 'Chanceux',
+        abilityLuckyHint: '1 point de chance — avantage sur ton prochain jet.',
+        abilityCunningHide: 'Ruse : Se cacher',
+        abilityCunningHideHint: 'Action bonus — disparais des regards : avantage sur ta prochaine attaque.',
+        abilityCunningDash: 'Ruse : Repli/Sprint',
+        abilityCunningDashHint: 'Action bonus — repositionne-toi sans provoquer d\'attaques.',
+        abilityPreserveLife: 'Canalisation : Préserver la vie',
+        abilityPreserveLifeHint: 'Action, 1 Canalisation — soigne jusqu\'à 5 × niveau PV (max moitié de tes PV).',
+        abilityGuidedStrike: 'Canalisation : Frappe guidée',
+        abilityGuidedStrikeHint: '1 Canalisation — +10 sur ton prochain jet d\'attaque.',
+        abilityCreateSlot: 'Source de magie',
+        abilityCreateSlotHint: '2 points de sorcellerie — crée un emplacement de niveau 1.',
+        abilitySuperiority: 'Manœuvre',
+        abilitySuperiorityHint: '1 dé de supériorité — ta prochaine attaque d\'arme réussie ce round inflige des dégâts bonus.',
+        abilityWildShape: 'Forme sauvage',
+        abilityWildShapeHint: 'Action — forme animale : 2 × niveau PV temporaires (10 rounds).',
+        abilityFamiliar: 'Familier : Aide',
+        abilityFamiliarHint: 'Action bonus, 1/repos court — ton familier harcèle la cible : avantage sur ta prochaine attaque.',
+        allEnemies: 'Tous les ennemis (sort de zone)',
+        powerAttackGWM: 'Maître des armes de guerre : -5 au jet / +10 dégâts',
+        powerAttackSharp: 'Tireur d\'élite : -5 au jet / +10 dégâts',
+        needsAttackFirst: "Attaque d'abord avec ton action principale.",
+        combatOnlyShort: 'En combat uniquement.',
+        bonusUsedShort: 'Action bonus déjà utilisée.',
+        actionUsedShort: 'Action principale déjà utilisée.',
     },
 } as const;
+
+export type ClassAbilityId = 'rage' | 'secondWind' | 'actionSurge' | 'layOnHands' | 'bardicInspiration' | 'kiFlurry' | 'kiPatientDefense'
+    | 'lucky' | 'cunningHide' | 'cunningDash' | 'channelPreserveLife' | 'channelGuidedStrike' | 'sorceryCreateSlot' | 'superiorityStrike' | 'wildShape'
+    | 'familiarHelp';
+
+export interface ClassAbilityEntry {
+    id: ClassAbilityId; label: string; hint: string; uses: string;
+    icon: React.ReactNode; disabled: boolean; disabledReason?: string; needsTarget?: boolean;
+    /** Utilisable uniquement en combat (économie de tour requise). */
+    combatOnly?: boolean;
+}
+
+/**
+ * Construit la liste des capacités de classe activables — partagée entre le
+ * panneau de combat (econ = économie de pips du tour) et la HOTBAR permanente
+ * type BG3 (econ = null hors combat : pas de contrainte de pips, seules les
+ * ressources comptent et les capacités combatOnly sont grisées).
+ */
+export function buildClassAbilityEntries(character: any, econ: any | null, language: 'en' | 'fr'): ClassAbilityEntry[] {
+    const tr = TRANS[language];
+    if (!character) return [];
+    const inCombat = !!econ;
+    const res: any = character.resources || {};
+    const bonusLeft = inCombat ? (econ.bonusMax ?? 1) - (econ.bonusUsed ?? 0) : 1;
+    const attacksLeft = inCombat ? (econ.attacksMax ?? 1) - (econ.attacksUsed ?? 0) : 1;
+    const attacksUsed = inCombat ? (econ.attacksUsed ?? 0) : 1;
+    const raging = (character.activeEffects || []).some(e => e.name === 'Rage');
+const out: any[] = [];
+
+        if (character.class === 'Barbarian' && (res.rage?.current ?? 0) > 0 && !raging) {
+            out.push({
+                id: 'rage', label: tr.abilityRage, hint: tr.abilityRageHint, icon: <Flame className="h-3.5 w-3.5" />,
+                uses: `${res.rage.current}/${res.rage.max}`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if (character.class === 'Fighter' && (res.secondWind?.current ?? 0) > 0) {
+            out.push({
+                id: 'secondWind', label: tr.abilitySecondWind, hint: tr.abilitySecondWindHint, icon: <Wind className="h-3.5 w-3.5" />,
+                uses: `${res.secondWind.current}/${res.secondWind.max}`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if (character.class === 'Fighter' && (res.actionSurge?.current ?? 0) > 0) {
+            out.push({
+                id: 'actionSurge', label: tr.abilityActionSurge, hint: tr.abilityActionSurgeHint, icon: <Zap className="h-3.5 w-3.5" />,
+                uses: `${res.actionSurge.current}/${res.actionSurge.max}`,
+                disabled: false,
+            });
+        }
+        if (character.class === 'Paladin' && (res.layOnHands?.current ?? 0) > 0) {
+            out.push({
+                id: 'layOnHands', label: tr.abilityLayOnHands, hint: tr.abilityLayOnHandsHint, icon: <HandHeart className="h-3.5 w-3.5" />,
+                uses: `${res.layOnHands.current} PV`,
+                disabled: attacksLeft <= 0 || character.hp.current >= character.hp.max,
+                disabledReason: attacksLeft <= 0 ? tr.actionUsedShort : undefined,
+            });
+        }
+        if (character.class === 'Bard' && (res.bardicInspiration?.current ?? 0) > 0) {
+            out.push({
+                id: 'bardicInspiration', label: tr.abilityBardic, hint: tr.abilityBardicHint, icon: <Music2 className="h-3.5 w-3.5" />,
+                uses: `${res.bardicInspiration.current}/${res.bardicInspiration.max}`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if (character.class === 'Monk' && (res.ki?.current ?? 0) > 0) {
+            out.push({
+                id: 'kiFlurry', label: tr.abilityFlurry, hint: tr.abilityFlurryHint, icon: <Sword className="h-3.5 w-3.5" />,
+                uses: `${res.ki.current} ki`, needsTarget: true,
+                disabled: bonusLeft <= 0 || attacksUsed === 0,
+                disabledReason: attacksUsed === 0 ? tr.needsAttackFirst : tr.bonusUsedShort,
+            });
+            out.push({
+                id: 'kiPatientDefense', label: tr.abilityPatient, hint: tr.abilityPatientHint, icon: <Shield className="h-3.5 w-3.5" />,
+                uses: `${res.ki.current} ki`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if (character.class === 'Rogue' && (character.level || 1) >= 2) {
+            out.push({
+                id: 'cunningHide', label: tr.abilityCunningHide, hint: tr.abilityCunningHideHint, icon: <EyeOff className="h-3.5 w-3.5" />,
+                uses: '∞',
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+            out.push({
+                id: 'cunningDash', label: tr.abilityCunningDash, hint: tr.abilityCunningDashHint, icon: <Footprints className="h-3.5 w-3.5" />,
+                uses: '∞',
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if (character.class === 'Cleric' && (res.channelDivinity?.current ?? 0) > 0) {
+            out.push({
+                id: 'channelPreserveLife', label: tr.abilityPreserveLife, hint: tr.abilityPreserveLifeHint, icon: <Cross className="h-3.5 w-3.5" />,
+                uses: `${res.channelDivinity.current}/${res.channelDivinity.max}`,
+                disabled: attacksLeft <= 0 || character.hp.current >= character.hp.max,
+                disabledReason: attacksLeft <= 0 ? tr.actionUsedShort : undefined,
+            });
+            out.push({
+                id: 'channelGuidedStrike', label: tr.abilityGuidedStrike, hint: tr.abilityGuidedStrikeHint, icon: <Crosshair className="h-3.5 w-3.5" />,
+                uses: `${res.channelDivinity.current}/${res.channelDivinity.max}`,
+                disabled: false,
+            });
+        }
+        if (character.class === 'Sorcerer' && (res.sorceryPoints?.current ?? 0) >= 2) {
+            out.push({
+                id: 'sorceryCreateSlot', label: tr.abilityCreateSlot, hint: tr.abilityCreateSlotHint, icon: <Wand2 className="h-3.5 w-3.5" />,
+                uses: `${res.sorceryPoints.current} pts`,
+                disabled: false,
+            });
+        }
+        if (character.subclass === 'Battle Master' && (res.superiorityDice?.current ?? 0) > 0) {
+            out.push({
+                id: 'superiorityStrike', label: tr.abilitySuperiority, hint: tr.abilitySuperiorityHint, icon: <Dices className="h-3.5 w-3.5" />,
+                uses: `${res.superiorityDice.current}/${res.superiorityDice.max}`,
+                disabled: false,
+            });
+        }
+        if (character.class === 'Druid' && (res.wildShape?.current ?? 0) > 0) {
+            out.push({
+                id: 'wildShape', label: tr.abilityWildShape, hint: tr.abilityWildShapeHint, icon: <PawPrint className="h-3.5 w-3.5" />,
+                uses: `${res.wildShape.current}/${res.wildShape.max}`,
+                disabled: attacksLeft <= 0, disabledReason: tr.actionUsedShort,
+            });
+        }
+        if (character.familiar && (res.familiarHelp?.current ?? 0) > 0) {
+            out.push({
+                id: 'familiarHelp', label: `${tr.abilityFamiliar} (${character.familiar.name})`, hint: tr.abilityFamiliarHint, icon: <Sparkles className="h-3.5 w-3.5" />,
+                uses: `${res.familiarHelp.current}/${res.familiarHelp.max}`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        if ((res.luckyPoints?.current ?? 0) > 0) {
+            out.push({
+                id: 'lucky', label: tr.abilityLucky, hint: tr.abilityLuckyHint, icon: <Dices className="h-3.5 w-3.5" />,
+                uses: `${res.luckyPoints.current}/${res.luckyPoints.max}`,
+                disabled: false,
+            });
+        }
+        const COMBAT_ONLY = new Set(['actionSurge', 'kiFlurry', 'kiPatientDefense', 'cunningDash', 'superiorityStrike']);
+        for (const entry of out) {
+            entry.combatOnly = COMBAT_ONLY.has(entry.id);
+            if (!inCombat && entry.combatOnly) {
+                entry.disabled = true;
+                entry.disabledReason = tr.combatOnlyShort;
+            }
+        }
+        return out;
+}
 
 interface CombatActionsPanelProps {
     selectedTargetId: string;
     onSelectTarget: (id: string) => void;
-    onAttack: (weaponItem: any, targetId: string) => void;
+    onAttack: (weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) => void;
     /** Bonus-action attack: off-hand weapon, Berserker Frenzy, or War Priest. */
     onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest') => void;
     onCastSpell: (spellName: string, slotLevel: string | null, targetId: string) => void;
     onDodge: () => void;
     onUsePotion: (potionItem: any) => void;
+    /** Class-resource abilities (Rage, Second Wind, Action Surge, Ki…). */
+    onUseAbility?: (abilityId: ClassAbilityId, targetId?: string) => void;
     /** True while a player action is mid-resolution (dice animating). Disables
      *  the action buttons so a second click can't start a parallel resolution. */
     disabled?: boolean;
@@ -123,6 +354,7 @@ export function CombatActionsPanel({
     onCastSpell,
     onDodge,
     onUsePotion,
+    onUseAbility,
     disabled = false
 }: CombatActionsPanelProps) {
     const character = useGameStore(s => s.character);
@@ -211,7 +443,32 @@ export function CombatActionsPanel({
                 current: value.current,
                 max: value.max
             }));
-    }, [character.spellSlots]);
+    // character peut être null (early-return APRÈS les hooks) — l'accès non-optionnel
+    // dans le tableau de deps crashait au démontage de session.
+    }, [character?.spellSlots]);
+
+    // ── Capacités de classe (Rage, Second souffle, Sursaut, Ki, Imposition,
+    //    Inspiration bardique) — pilotées par character.resources. Chaque
+    //    entrée sait son coût (pip) et ses conditions d'activation.
+    const classAbilities = useMemo(
+        () => (!character || !onUseAbility) ? [] : buildClassAbilityEntries(character, (combatState.actionEconomy as any)?.['player'] || {}, language),
+        [character, combatState.actionEconomy, onUseAbility, language]
+    );
+
+    // ── -5/+10 (Maître des armes de guerre / Tireur d'élite) : proposé quand le
+    //    feat correspond à l'arme sélectionnée. Revalidé côté moteur de toute façon.
+    const [powerAttack, setPowerAttack] = useState(false);
+    const powerAttackOption = useMemo(() => {
+        if (!character) return null;
+        const specials = (character.feats || []).map(id => getFeatById(id)?.mechanical?.special).filter(Boolean);
+        if (!specials.length) return null;
+        const w: any = equippedWeapons.find(x => x.id === selectedWeaponId) || mainHandWeapon;
+        const props = ((w?.properties || character.weapon?.properties || []) as any[]).map(p => String(p).toLowerCase());
+        const isRanged = props.some(p => /ammunition|ranged/.test(p)) || (!!(w?.range || character.weapon?.range) && !props.some(p => /thrown/.test(p)));
+        if (isRanged && specials.includes('ranged_power_attack')) return { label: tr.powerAttackSharp };
+        if (!isRanged && specials.includes('heavy_weapon_power_attack') && props.some(p => /heavy|two-handed|lourde/.test(p))) return { label: tr.powerAttackGWM };
+        return null;
+    }, [character, equippedWeapons, selectedWeaponId, mainHandWeapon, tr]);
 
     // Auto select first target, weapon, or spell if not set
     useEffect(() => {
@@ -268,7 +525,7 @@ export function CombatActionsPanel({
         e.preventDefault();
         const weapon = equippedWeapons.find(w => w.id === selectedWeaponId);
         if (!weapon || !selectedTargetId) return;
-        onAttack(weapon, selectedTargetId);
+        onAttack(weapon, selectedTargetId, powerAttackOption && powerAttack ? { powerAttack: true } : undefined);
     };
 
     const handleSpellSubmit = (e: React.FormEvent) => {
@@ -294,6 +551,33 @@ export function CombatActionsPanel({
                     <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase border border-emerald-500/30 text-emerald-400">{tr.actionAvailable}</span>
                 </div>
             </div>
+
+            {/* Capacités de classe — Rage, Second souffle, Sursaut, Ki… */}
+            {classAbilities.length > 0 && (
+                <div className="mb-3">
+                    <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-300/80">{tr.abilities}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                        {classAbilities.map(ability => (
+                            <button
+                                key={ability.id}
+                                type="button"
+                                disabled={disabled || ability.disabled}
+                                title={ability.disabled && ability.disabledReason ? ability.disabledReason : ability.hint}
+                                onClick={() => onUseAbility?.(ability.id, ability.needsTarget ? selectedTargetId : undefined)}
+                                className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-bold transition ${
+                                    disabled || ability.disabled
+                                        ? 'border-gray-700 bg-gray-800/40 text-gray-500 cursor-not-allowed'
+                                        : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/25'
+                                }`}
+                            >
+                                {ability.icon}
+                                {ability.label}
+                                <span className="rounded bg-black/40 px-1.5 py-0.5 text-[9px] font-mono text-white/50">{ability.uses}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Tabs */}
             <div className="flex gap-1 mb-4 bg-black/50 p-1 rounded border border-gray-800">
@@ -380,6 +664,18 @@ export function CombatActionsPanel({
                             )}
                         </div>
                     </div>
+
+                    {powerAttackOption && (
+                        <label className="flex items-center gap-2 rounded border border-red-500/25 bg-red-950/20 px-2.5 py-1.5 text-xs text-red-200/90 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={powerAttack}
+                                onChange={e => setPowerAttack(e.target.checked)}
+                                className="accent-red-500"
+                            />
+                            {powerAttackOption.label}
+                        </label>
+                    )}
 
                     {(() => {
                         // Player action economy (pips): the bonus attack needs a free
@@ -496,6 +792,9 @@ export function CombatActionsPanel({
                                 onChange={(e) => onSelectTarget(e.target.value)}
                                 className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
                             >
+                                {enemies.length > 1 && (
+                                    <option value="all_enemies">🌐 {tr.allEnemies}</option>
+                                )}
                                 {targets.map(t => (
                                     <option key={t.id} value={t.id}>
                                         {t.name} ({t.isPlayer ? tr.player : tr.enemyHp(t.hp.current, t.hp.max)})

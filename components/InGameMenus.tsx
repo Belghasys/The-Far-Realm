@@ -18,7 +18,8 @@ import {
 import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Star, Sword, User, Zap } from 'lucide-react';
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { structureInventoryItem } from '../services/codexService';
-import { ensureProgressionState } from '../services/rulesEngine';
+import { ensureProgressionState, featNumericBonus } from '../services/rulesEngine';
+import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
 
@@ -26,7 +27,7 @@ const TRANS = {
     en: {
         // Equipment slot labels
         head: 'Head', neck: 'Neck', back: 'Back', chest: 'Chest', waist: 'Waist',
-        hands: 'Hands', mainHand: 'Main hand', offHand: 'Off hand', ring: 'Ring',
+        hands: 'Hands', mainHand: 'Main hand', offHand: 'Off hand', ranged: 'Ranged weapon', ring: 'Ring',
         legs: 'Legs', feet: 'Feet',
         // Inventory panel
         inventory: 'Inventory',
@@ -108,7 +109,7 @@ const TRANS = {
     },
     fr: {
         head: 'Tête', neck: 'Cou', back: 'Dos', chest: 'Torse', waist: 'Taille',
-        hands: 'Mains', mainHand: 'Main directrice', offHand: 'Main gauche', ring: 'Anneau',
+        hands: 'Mains', mainHand: 'Main directrice', offHand: 'Main gauche', ranged: 'Arme à distance', ring: 'Anneau',
         legs: 'Jambes', feet: 'Pieds',
         inventory: 'Inventaire',
         visibleItems: 'objets visibles',
@@ -236,6 +237,7 @@ const EQUIPMENT_SLOTS = [
     { id: 'hands', labelKey: 'hands' },
     { id: 'mainHand', labelKey: 'mainHand' },
     { id: 'offHand', labelKey: 'offHand' },
+    { id: 'ranged', labelKey: 'ranged' },
     { id: 'ring', labelKey: 'ring' },
     { id: 'legs', labelKey: 'legs' },
     { id: 'feet', labelKey: 'feet' },
@@ -288,7 +290,10 @@ function itemTags(item: InventoryItem): string[] {
     ].filter(Boolean);
 }
 
-function toWeaponOverride(item: InventoryItem): Weapon {
+// Exporté : GameSession fabrique la MÊME forme d'arme pour le moteur au moment
+// d'attaquer — sinon l'arc équipé en slot distance était jugé sur
+// character.weapon (l'épée) et le système de distance le traitait en mêlée.
+export function toWeaponOverride(item: InventoryItem): Weapon {
     const structured = structureInventoryItem(item);
     const properties = structured.properties || item.properties || [];
     const isRanged = Boolean(structured.range || item.range || /bow|crossbow|sling|dart/i.test(item.name));
@@ -315,9 +320,15 @@ function attackStats(character: CharacterSheet, item: InventoryItem) {
     return { attack, damage, properties: weapon.properties || [] };
 }
 
-function rollHealing(item: InventoryItem): { total: number; formula: string } {
-    const text = `${item.effect || ''} ${item.description || ''}`.trim();
-    const match = text.match(/(\d+)d(\d+)\s*([+-]\s*\d+)?\s*(?:healing|heal|hp|pv)/i);
+function rollHealing(item: InventoryItem, maximize = false): { total: number; formula: string } {
+    const text = `${item.name || ''} ${item.effect || ''} ${item.description || ''}`.trim();
+    // L'ancien pattern exigeait heal|hp|pv COLLÉ aux dés : « restaure 2d4+2
+    // points de vie » ou « soigne 2d4+2 PV » échouaient → potion muette. On
+    // accepte maintenant des dés N'IMPORTE OÙ dès que le texte parle de soin
+    // (FR ou EN), y compris « points de vie » en toutes lettres.
+    const HEAL_WORDS = /(healing|heal|hit\s*point|hp|pv|points?\s+de\s+vie|vie|soins?|soigne|gu[ée]ri|restaure|regagne|cure)/i;
+    if (!HEAL_WORDS.test(text)) return { total: 0, formula: '' };
+    const match = text.match(/(\d+)d(\d+)\s*([+-]\s*\d+)?/i);
     if (!match) return { total: 0, formula: '' };
 
     const count = Number(match[1]);
@@ -325,13 +336,16 @@ function rollHealing(item: InventoryItem): { total: number; formula: string } {
     const flat = match[3] ? Number(match[3].replace(/\s+/g, '')) : 0;
     if (!Number.isFinite(count) || !Number.isFinite(sides)) return { total: 0, formula: '' };
 
-    let total = flat;
-    for (let i = 0; i < count; i += 1) {
-        total += Math.floor(Math.random() * sides) + 1;
+    // Mode histoire : toujours le maximum des dés.
+    let total = flat + (maximize ? count * sides : 0);
+    if (!maximize) {
+        for (let i = 0; i < count; i += 1) {
+            total += Math.floor(Math.random() * sides) + 1;
+        }
     }
     return {
         total: Math.max(0, total),
-        formula: `${count}d${sides}${flat ? `${flat >= 0 ? '+' : ''}${flat}` : ''}`,
+        formula: `${count}d${sides}${flat ? `${flat >= 0 ? '+' : ''}${flat}` : ''}${maximize ? ' (max)' : ''}`,
     };
 }
 
@@ -350,7 +364,15 @@ function inferItemSlot(item: InventoryItem): ItemSlot {
     // Consumables are never equippable.
     if (item.type === 'consumable') return 'none';
     // Weapons first (a "war hammer" must not be mistaken for a "hammer belt").
-    if (item.type === 'weapon') return 'mainHand';
+    // Les armes À DISTANCE ont leur propre emplacement : arc + épée restent
+    // équipés ensemble (les armes de jet type dague restent en main directrice).
+    if (item.type === 'weapon') {
+        const structured = structureInventoryItem(item);
+        const props = (structured.properties || item.properties || []).map(p => String(p).toLowerCase());
+        const isRanged = (Boolean(structured.range || item.range) && !props.some(p => /thrown|jet/.test(p)))
+            || /bow|crossbow|sling|\barc\b|arbal[eè]te|fronde/i.test(item.name);
+        return isRanged ? 'ranged' : 'mainHand';
+    }
 
     // Slot-by-NAME — works for ANY type (armor, misc, wondrous) so a misc Belt of
     // Giant Strength / boots / gloves equip correctly (was armor-only before → bug).
@@ -390,7 +412,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
         return getBaseACFromArmor({ ...character, inventory, ac: 10 + dexMod });
     };
 
-    const handleEquipToggle = (item: InventoryItem, targetSlot?: 'mainHand' | 'offHand') => {
+    const handleEquipToggle = (item: InventoryItem, targetSlot?: 'mainHand' | 'offHand' | 'ranged') => {
         if (!onUpdateCharacter) return;
 
         let nextInventory = (character.inventory || []).map(normalizeInventoryItem);
@@ -479,7 +501,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
         const targetIndex = nextInventory.findIndex(inventoryItem => inventoryItem.id === item.id);
         if (targetIndex === -1) return;
 
-        const healing = rollHealing(nextInventory[targetIndex]);
+        const healing = rollHealing(nextInventory[targetIndex], !!character.storyMode);
         const nextHP = healing.total > 0
             ? Math.min(character.hp.max, character.hp.current + healing.total)
             : character.hp.current;
@@ -547,7 +569,7 @@ function EquipmentView({
 }: {
     character: CharacterSheet;
     inventory: InventoryItem[];
-    onToggle: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
+    onToggle: (item: InventoryItem, slot?: 'mainHand' | 'offHand' | 'ranged') => void;
     tr: Tr;
 }) {
     const getEquipped = (slot: string) => inventory.find(item => item.equipped && item.slot === slot);
@@ -578,6 +600,16 @@ function EquipmentView({
                         <Metric label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
                         <Metric label={tr.hp} value={`${character.hp.current}/${character.hp.max}`} />
                     </div>
+                    {character.mount && (
+                        <div className="mt-2 rounded border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-center text-[11px] text-amber-200/90" title={character.mount.description || character.mount.name}>
+                            🐴 {character.mount.name} — {character.mount.speed} ft{character.mount.flying ? ' ✈' : ''}
+                        </div>
+                    )}
+                    {character.familiar && (
+                        <div className="mt-2 rounded border border-sky-500/20 bg-sky-500/5 px-2.5 py-1.5 text-center text-[11px] text-sky-200/90" title={character.familiar.description || character.familiar.kind}>
+                            🦉 {character.familiar.name} ({character.familiar.kind})
+                        </div>
+                    )}
                 </div>
 
                 <div className="rounded-md border border-white/10 bg-black/30 p-4">
@@ -646,7 +678,7 @@ function ItemList({
 }: {
     list: InventoryItem[];
     character: CharacterSheet;
-    onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
+    onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand' | 'ranged') => void;
     onUse: (item: InventoryItem) => void;
     empty: string;
     tr: Tr;
@@ -674,7 +706,7 @@ function InventoryRow({
     key?: React.Key;
     item: InventoryItem;
     character: CharacterSheet;
-    onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand') => void;
+    onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand' | 'ranged') => void;
     onUse: (item: InventoryItem) => void;
     tr: Tr;
 }) {
@@ -828,7 +860,15 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                 <section className="space-y-4">
                     <div className="grid grid-cols-3 gap-3">
                         <PaperMetric icon={<Shield className="h-4 w-4" />} label={tr.armorClass} value={String(getEffectiveAC(character))} hint={`${tr.base} ${character.ac}`} />
-                        <PaperMetric icon={<Zap className="h-4 w-4" />} label={tr.initiative} value={formatMod(getEffectiveStat(character, 'DEX'))} />
+                        {/* Initiative = mod DEX + bonus de don (Vigilant +5), comme au startEncounter. */}
+                        <PaperMetric
+                            icon={<Zap className="h-4 w-4" />}
+                            label={tr.initiative}
+                            value={(() => {
+                                const init = abilityModifier(getEffectiveStat(character, 'DEX')) + featNumericBonus(character, 'initiativeBonus');
+                                return `${init >= 0 ? '+' : ''}${init}`;
+                            })()}
+                        />
                         <PaperMetric icon={<HeartPulse className="h-4 w-4" />} label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
                     </div>
 
@@ -1003,6 +1043,83 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                 </section>
 
                 <aside className="space-y-4">
+                    {/* ── Compagnons & créatures liées : mini-fiches ── */}
+                    {(((character.companions || []).length > 0) || character.subclass === 'Beast Master' || character.mount || character.familiar) && (
+                        <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-emerald-800">
+                                🐾 Compagnons & créatures liées
+                            </h3>
+                            <div className="space-y-2.5">
+                                {(character.companions || []).map(comp => (
+                                    <div key={comp.id} className="rounded border border-stone-300 bg-stone-50 p-2.5">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="font-bold text-stone-800">{comp.name}</span>
+                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">niv {comp.level ?? 1}</span>
+                                        </div>
+                                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
+                                            <span>PV {comp.hp.current}/{comp.hp.max}</span>
+                                            <span>CA {comp.ac}</span>
+                                            <span>{comp.attack.name} +{comp.attack.attackBonus}, {comp.attack.damage}</span>
+                                        </div>
+                                        <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
+                                            <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, Math.min(100, (comp.hp.current / comp.hp.max) * 100))}%` }} />
+                                        </div>
+                                        {comp.description && <p className="mt-1 text-[11px] italic text-stone-500">{comp.description}</p>}
+                                    </div>
+                                ))}
+                                {character.subclass === 'Beast Master' && (() => {
+                                    const beast = getBeastCompanion(character.beastKind || DEFAULT_BEAST_ID);
+                                    const beastMax = Math.max(11, 4 * (character.level || 1));
+                                    const beastCur = Math.min(character.companionHP?.current ?? beastMax, beastMax);
+                                    return beast ? (
+                                        <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-bold text-stone-800">🐺 {beast.name} (lié)</span>
+                                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">4×niv</span>
+                                            </div>
+                                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
+                                                <span>PV {beastCur}/{beastMax}</span>
+                                                <span>CA {beast.ac}</span>
+                                                <span>{beast.attack.name} +{beast.attack.attackBonus}, {beast.attack.damage}</span>
+                                            </div>
+                                            <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
+                                                <div className="h-full bg-emerald-500" style={{ width: `${Math.max(0, Math.min(100, (beastCur / beastMax) * 100))}%` }} />
+                                            </div>
+                                        </div>
+                                    ) : null;
+                                })()}
+                                {character.mount && (() => {
+                                    const mt = getMountType(character.mount.kind || character.mount.name);
+                                    const mMax = character.mount.hp?.max ?? mt?.hp ?? 15;
+                                    const mCur = character.mount.hp?.current ?? mMax;
+                                    return (
+                                        <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="font-bold text-stone-800">🐴 {character.mount.name}</span>
+                                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{character.mount.speed} ft{character.mount.flying ? ' ✈' : ''}</span>
+                                            </div>
+                                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
+                                                <span>PV {mCur}/{mMax}</span>
+                                                {mt && <span>CA {mt.ac}</span>}
+                                                {mt && <span>{mt.attack.name} +{mt.attack.attackBonus}, {mt.attack.damage}</span>}
+                                            </div>
+                                            <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
+                                                <div className="h-full bg-amber-500" style={{ width: `${Math.max(0, Math.min(100, (mCur / mMax) * 100))}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                                {character.familiar && (
+                                    <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
+                                        <span className="font-bold text-stone-800">🦉 {character.familiar.name} <span className="font-normal text-stone-500">({character.familiar.kind})</span></span>
+                                        {character.familiar.description && <p className="mt-1 text-[11px] italic text-stone-500">{character.familiar.description}</p>}
+                                        <p className="mt-0.5 text-[11px] text-stone-600">Aide : avantage sur la prochaine attaque (1/repos court)</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
                         <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.resources}</h3>
                         <div className="space-y-2">

@@ -242,6 +242,8 @@ function Detail({ entry, onOpenExternalReference, tr }: { entry: CodexEntry; onO
                     <img
                         src={entry.portrait}
                         alt={entry.name}
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
                         className="h-20 w-20 rounded-md border border-white/15 object-cover"
                     />
                 )}

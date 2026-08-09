@@ -77,18 +77,24 @@ export function getMonsterPortrait(imageUrl: string | undefined): string | undef
 /**
  * Build a combat SCENE background prompt.
  * enemyDesc is used for atmosphere only, NOT for the portrait.
+ *
+ * FLUX.2-klein reads NATURAL LANGUAGE (LLM text encoder) and runs with
+ * guidance_scale=0 → there is NO negative prompt. The old wrapper buried the
+ * DM's description under 9 quality clichés + 5 pseudo-negations ("no text,
+ * no watermark") whose nouns could literally summon text/watermarks. New
+ * contract: the DM's description FIRST (attention peaks early), then ONE short
+ * style sentence. Nothing else.
  */
-const QUALITY_TAGS = 'highly detailed, intricate, volumetric lighting, atmospheric depth, rich color grading, sharp focus, professional concept art, ArtStation trending, dramatic cinematic composition';
-const NEGATIVE_TAGS = 'no UI, no text, no watermark, no logo, no signature';
+const STYLE_TAGS = 'painted dark-fantasy concept art, dramatic cinematic lighting';
 
 export function buildCombatImagePrompt(enemyDesc: string, locationDesc: string, characterInfo?: string): string {
-    const charPart = characterInfo ? `, from the perspective of a ${characterInfo} adventurer` : '';
-    return `Epic D&D dark-fantasy battle illustration, cinematic wide shot of the battlefield, enemies suggested in the environment: ${enemyDesc}, location: ${locationDesc}${charPart}, dynamic action composition, dramatic ominous light, readable terrain, painted digital art, ${QUALITY_TAGS}, ${NEGATIVE_TAGS}`;
+    const charPart = characterInfo ? ` A ${characterInfo} adventurer stands ready in the foreground.` : '';
+    return `Battle scene: ${enemyDesc}, at ${locationDesc}.${charPart} Wide cinematic shot, ${STYLE_TAGS}.`;
 }
 
 export function buildSceneImagePrompt(description: string, characterInfo?: string): string {
-    const charPart = characterInfo ? `, mood fitting a ${characterInfo} explorer` : '';
-    return `Cinematic D&D fantasy environment illustration, ${description}${charPart}, wide establishing shot, rich evocative atmosphere, detailed terrain and textures, painted digital art, ${QUALITY_TAGS}, ${NEGATIVE_TAGS}`;
+    const charPart = characterInfo ? ` Seen from the perspective of a ${characterInfo} adventurer.` : '';
+    return `${description}${charPart} Wide establishing shot, ${STYLE_TAGS}.`;
 }
 
 export function buildPortraitPrompt(creatureName: string, creatureType: string): string {

@@ -7,12 +7,14 @@
 // - Archetype/subclass choice at the class's subclass level (or any later
 //   level-up while still unchosen).
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CharacterSheet, Ability } from '../types';
 import { getNewFeaturesAtLevel, asiLevelsBetween, getFeaturesForLevel, CLASS_FEATURES } from '../data/classFeatures';
 import { getSubclassConfig, getSubclassFeaturesForLevel, getNewSubclassFeaturesAtLevel, SUBCLASS_DATA } from '../data/subclasses';
-import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus } from 'lucide-react';
+import { FEATS, getFeatById } from '../data/feats';
+import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus, Award, BookOpen } from 'lucide-react';
 import { ensureProgressionState } from '../services/rulesEngine';
+import { maxSpellLevelForClass, spellsForClass } from '../services/codexService';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {
@@ -29,6 +31,15 @@ const TRANS = {
         later: 'Later',
         laterTitle: 'Your abilities are applied; the ability points stay available on the character sheet.',
         confirm: '✓ Confirm',
+        featTitle: 'Or take a Feat',
+        featHint: 'A feat costs 2 ability points and grants a unique permanent capability. Passive numbers apply automatically; the DM honors the rest.',
+        featCost: '(2 points)',
+        featSelected: 'Feat selected — remaining points can go to abilities.',
+        spellsTitle: 'New spells',
+        spellsHint: (n: number) => `Pick up to ${n} new spell${n > 1 ? 's' : ''} (cantrips included). You can always learn more later from the Spellbook.`,
+        spellsPicked: (n: number, max: number) => `${n}/${max} picked`,
+        cantripsGroup: 'Cantrips',
+        levelGroup: (n: number) => `Level ${n}`,
     },
     fr: {
         levelUp: '🎊 NIVEAU SUPÉRIEUR ! 🎊',
@@ -43,6 +54,15 @@ const TRANS = {
         later: 'Plus tard',
         laterTitle: 'Tes capacités sont appliquées ; les points de caractéristique restent disponibles dans la fiche personnage.',
         confirm: '✓ Confirmer',
+        featTitle: 'Ou prends un Don',
+        featHint: 'Un don coûte 2 points de caractéristique et accorde une capacité permanente unique. Les bonus passifs s\'appliquent automatiquement ; le MJ honore le reste.',
+        featCost: '(2 points)',
+        featSelected: 'Don sélectionné — les points restants vont aux caractéristiques.',
+        spellsTitle: 'Nouveaux sorts',
+        spellsHint: (n: number) => `Choisis jusqu'à ${n} nouveau${n > 1 ? 'x' : ''} sort${n > 1 ? 's' : ''} (tours de magie inclus). Tu pourras toujours en apprendre plus tard via le Grimoire.`,
+        spellsPicked: (n: number, max: number) => `${n}/${max} choisi${n > 1 ? 's' : ''}`,
+        cantripsGroup: 'Tours de magie',
+        levelGroup: (n: number) => `Niveau ${n}`,
     },
 } as const;
 
@@ -65,8 +85,37 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     const asiBudget = asiLevelsBetween(previousLevel, newLevel).length * 2 + (character.pendingASIPoints || 0);
     const [alloc, setAlloc] = useState<Partial<Record<Ability, number>>>({});
     const [selectedSubclass, setSelectedSubclass] = useState<string | null>(null);
+    // A feat trades 2 ASI points for a permanent capability (5e's ASI-or-feat choice).
+    const FEAT_COST = 2;
+    const [selectedFeat, setSelectedFeat] = useState<string | null>(null);
+    const takenFeatIds = new Set(character.feats || []);
+    const availableFeats = FEATS.filter(f => !takenFeatIds.has(f.id));
 
-    const spent = ABILITIES.reduce((sum, a) => sum + (alloc[a] || 0), 0);
+    // ── Nouveaux sorts au passage de niveau (lanceurs) ──────────────────────
+    // Budget généreux : 2 choix par niveau gagné pour les full casters/Warlock,
+    // 1 pour les demi-casters. Les sorts déjà connus sont exclus ; le Grimoire
+    // (onglet Apprendre) reste disponible pour compléter plus tard.
+    const maxSpellLvl = maxSpellLevelForClass(character.class, newLevel);
+    const fullCaster = ['Bard', 'Cleric', 'Druid', 'Mage', 'Sorcerer', 'Warlock'].includes(character.class);
+    const spellBudget = maxSpellLvl > 0 ? Math.max(1, (fullCaster ? 2 : 1) * Math.max(1, newLevel - previousLevel)) : 0;
+    const [selectedSpells, setSelectedSpells] = useState<string[]>([]);
+    const knownSpellNames = useMemo(() => new Set([
+        ...(character.cantrips || []),
+        ...(character.knownSpells || []),
+    ].map(name => name.toLowerCase())), [character.cantrips, character.knownSpells]);
+    const learnableSpells = useMemo(
+        () => spellBudget > 0
+            ? spellsForClass(character.class, maxSpellLvl).filter(sp => !knownSpellNames.has(sp.name.toLowerCase()))
+            : [],
+        [character.class, maxSpellLvl, spellBudget, knownSpellNames]
+    );
+    const toggleSpell = (name: string) => {
+        setSelectedSpells(prev => prev.includes(name)
+            ? prev.filter(n => n !== name)
+            : (prev.length < spellBudget ? [...prev, name] : prev));
+    };
+
+    const spent = ABILITIES.reduce((sum, a) => sum + (alloc[a] || 0), 0) + (selectedFeat ? FEAT_COST : 0);
     const remaining = asiBudget - spent;
 
     const newFeatures = getNewFeaturesAtLevel(character.class, newLevel);
@@ -93,6 +142,31 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
         }
     };
 
+    // Level-up must not hand out a free long rest: ensureProgressionState
+    // rebuilds spellSlots/hitDice from scratch (full), so we re-apply what was
+    // already SPENT. New slot levels and max increases arrive available.
+    const preserveSpentProgression = (prev: CharacterSheet, next: CharacterSheet): CharacterSheet => {
+        const spellSlots = next.spellSlots
+            ? Object.fromEntries(Object.entries(next.spellSlots).map(([lvl, slot]) => {
+                const before = prev.spellSlots?.[lvl];
+                const gained = Math.max(0, slot.max - (before?.max ?? 0));
+                const current = before ? Math.min(slot.max, Math.max(0, before.current) + gained) : slot.max;
+                return [lvl, { ...slot, current }];
+            }))
+            : next.spellSlots;
+        const hitDice = next.hitDice
+            ? {
+                ...next.hitDice,
+                remaining: Math.min(
+                    next.hitDice.total,
+                    (prev.hitDice?.remaining ?? next.hitDice.total)
+                    + Math.max(0, next.hitDice.total - (prev.hitDice?.total ?? next.hitDice.total))
+                ),
+            }
+            : next.hitDice;
+        return { ...next, spellSlots, hitDice };
+    };
+
     // Shared feature merge: racial/background features kept, class + subclass
     // features recomputed up to newLevel (names are stable keys for dedup).
     const mergeFeatures = (subclassName?: string) => {
@@ -117,19 +191,54 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
 
         const finalSubclass = showSubclassChoice ? (selectedSubclass || undefined) : character.subclass;
 
+        // Feat application: stat bonuses respect the 20 cap; Tough-style hpPerLevel
+        // is granted retroactively for all current levels (future levels are
+        // handled by grantXP's perLevelGain).
+        const featDef = selectedFeat ? getFeatById(selectedFeat) : undefined;
+        let hp = character.hp;
+        const features = mergeFeatures(finalSubclass);
+        if (featDef) {
+            for (const [stat, bonus] of Object.entries(featDef.mechanical.statBonus || {})) {
+                updatedStats[stat as Ability] = Math.min(20, updatedStats[stat as Ability] + (bonus || 0));
+            }
+            if (featDef.mechanical.hpPerLevel) {
+                const bonusHP = featDef.mechanical.hpPerLevel * newLevel;
+                hp = { current: character.hp.current + bonusHP, max: character.hp.max + bonusHP };
+            }
+            // Surface the feat on the sheet as a feature (survives mergeFeatures:
+            // it is neither a class nor a subclass feature name).
+            features.push({ name: `${featDef.name} (Feat)`, description: featDef.description });
+        }
+
+        // Nouveaux sorts choisis : tours de magie → cantrips ; sorts → connus
+        // (+ préparés pour les lanceurs « spontanés » qui lancent ce qu'ils
+        // connaissent, comme dans le Grimoire).
+        const KNOWN_CASTERS = new Set(['Bard', 'Sorcerer', 'Warlock']);
+        const pickedCantrips = selectedSpells.filter(name => learnableSpells.find(sp => sp.name === name)?.level === 0);
+        const pickedSpells = selectedSpells.filter(name => !pickedCantrips.includes(name));
+        const nextCantrips = pickedCantrips.length ? [...(character.cantrips || []), ...pickedCantrips] : character.cantrips;
+        const nextKnown = pickedSpells.length ? [...(character.knownSpells || []), ...pickedSpells] : character.knownSpells;
+        const nextPrepared = pickedSpells.length && KNOWN_CASTERS.has(character.class)
+            ? [...(character.preparedSpells || []), ...pickedSpells]
+            : character.preparedSpells;
+
         // HP is ALREADY applied by grantXP when the level-up fires (single source of
         // truth). Do NOT add it again here — that double-bumped max HP (~2× per level).
-        const updatedCharacter: CharacterSheet = ensureProgressionState({
+        const updatedCharacter: CharacterSheet = preserveSpentProgression(character, ensureProgressionState({
             ...character,
             level: newLevel,
             subclass: finalSubclass,
             stats: updatedStats,
             pendingASIPoints: 0,
-            features: mergeFeatures(finalSubclass),
-            hp: character.hp,
+            feats: featDef ? [...(character.feats || []), featDef.id] : character.feats,
+            features,
+            hp,
+            cantrips: nextCantrips,
+            knownSpells: nextKnown,
+            preparedSpells: nextPrepared,
             spellSlots: undefined,
             hitDice: undefined,
-        });
+        }));
 
         onConfirm(updatedCharacter);
     };
@@ -139,7 +248,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     // level-up). Before this, dismissing left the character at level N with the
     // features of N-1 and silently dropped crossed ASIs.
     const handleDismiss = () => {
-        const updatedCharacter: CharacterSheet = ensureProgressionState({
+        const updatedCharacter: CharacterSheet = preserveSpentProgression(character, ensureProgressionState({
             ...character,
             level: newLevel,
             pendingASIPoints: asiBudget,
@@ -147,7 +256,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
             hp: character.hp,
             spellSlots: undefined,
             hitDice: undefined,
-        });
+        }));
         onConfirm(updatedCharacter);
         onClose();
     };
@@ -287,6 +396,103 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                                             >
                                                 <Plus className="w-3 h-3 text-white" />
                                             </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Feat picker — 5e's "ASI or feat" choice, priced at 2 points so a
+                    multi-level jump can take both a feat AND stat points. */}
+                {asiBudget >= FEAT_COST && availableFeats.length > 0 && (
+                    <div className="bg-black/40 rounded-lg p-4 mb-4 border border-emerald-700/50">
+                        <h3 className="text-emerald-300 font-bold mb-1 flex items-center gap-2">
+                            <Award className="w-4 h-4" /> {tr.featTitle} <span className="text-emerald-500/80 text-xs font-normal">{tr.featCost}</span>
+                        </h3>
+                        <p className="text-gray-400 text-xs mb-3">
+                            {selectedFeat ? tr.featSelected : tr.featHint}
+                        </p>
+                        <div className="space-y-2 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                            {availableFeats.map(feat => {
+                                const isSelected = selectedFeat === feat.id;
+                                const affordable = isSelected || remaining >= FEAT_COST;
+                                const name = language === 'fr' ? feat.nameFr : feat.name;
+                                const description = language === 'fr' ? feat.descriptionFr : feat.description;
+                                const benefits = language === 'fr' ? feat.benefitsFr : feat.benefits;
+                                return (
+                                    <button
+                                        key={feat.id}
+                                        onClick={() => setSelectedFeat(isSelected ? null : feat.id)}
+                                        disabled={!affordable}
+                                        className={`w-full text-left p-3 rounded-lg border-2 transition-all ${isSelected
+                                            ? 'border-emerald-400 bg-emerald-900/50'
+                                            : affordable
+                                                ? 'border-gray-600 bg-gray-800/50 hover:border-emerald-500/60'
+                                                : 'border-gray-700 bg-gray-800/30 opacity-50 cursor-not-allowed'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className={`font-bold ${isSelected ? 'text-emerald-200' : 'text-gray-200'}`}>{name}</span>
+                                            {isSelected && <Check className="w-4 h-4 text-emerald-300 shrink-0" />}
+                                        </div>
+                                        <p className="text-gray-400 text-xs mt-1 leading-snug">{description}</p>
+                                        {isSelected && (
+                                            <ul className="mt-2 space-y-1 border-t border-emerald-500/30 pt-2">
+                                                {benefits.map((b, i) => (
+                                                    <li key={i} className="text-xs text-emerald-100/80">• {b}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* Nouveaux sorts (lanceurs) — choix guidé, complétable plus tard
+                    via l'onglet « Apprendre » du Grimoire. */}
+                {spellBudget > 0 && learnableSpells.length > 0 && (
+                    <div className="bg-black/40 rounded-lg p-4 mb-4 border border-sky-700/50">
+                        <h3 className="text-sky-300 font-bold mb-1 flex items-center gap-2">
+                            <BookOpen className="w-4 h-4" /> {tr.spellsTitle}
+                            <span className="ml-auto text-xs font-normal text-sky-400/80">{tr.spellsPicked(selectedSpells.length, spellBudget)}</span>
+                        </h3>
+                        <p className="text-gray-400 text-xs mb-3">{tr.spellsHint(spellBudget)}</p>
+                        <div className="space-y-3 max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(level => {
+                                const group = learnableSpells.filter(sp => sp.level === level);
+                                if (!group.length) return null;
+                                return (
+                                    <div key={level}>
+                                        <div className="text-[10px] font-bold uppercase tracking-wide text-sky-400/70 mb-1">
+                                            {level === 0 ? tr.cantripsGroup : tr.levelGroup(level)}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                            {group.map(sp => {
+                                                const isPicked = selectedSpells.includes(sp.name);
+                                                const full = !isPicked && selectedSpells.length >= spellBudget;
+                                                return (
+                                                    <button
+                                                        key={sp.id}
+                                                        type="button"
+                                                        onClick={() => toggleSpell(sp.name)}
+                                                        disabled={full}
+                                                        title={sp.effectSummary}
+                                                        className={`flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5 text-left text-xs transition ${isPicked
+                                                            ? 'border-sky-400 bg-sky-900/50 text-sky-100'
+                                                            : full
+                                                                ? 'border-gray-700 bg-gray-800/30 text-gray-500 opacity-50 cursor-not-allowed'
+                                                                : 'border-gray-600 bg-gray-800/50 text-gray-200 hover:border-sky-500/60'
+                                                            }`}
+                                                    >
+                                                        <span className="truncate">{sp.name}</span>
+                                                        {isPicked && <Check className="w-3.5 h-3.5 shrink-0 text-sky-300" />}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 );

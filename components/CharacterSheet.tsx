@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat, getRacialBonus } from '../types';
+import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat, getRacialBonus, DRACONIC_ANCESTRIES } from '../types';
 import { Shield, Heart, Swords, Backpack, Plus, Minus, RefreshCw, UserRound, ScrollText, Sparkles, ChevronLeft, ChevronRight, Eye, Target, CheckCircle2, WandSparkles, Coins, ShoppingCart, Trash2 } from 'lucide-react';
 
 interface Props {
@@ -30,6 +30,8 @@ const TRANS = {
     startingAbilities: '— starting abilities',
     raceHint: '— ability bonuses and traits',
     subraceOf: (r: string) => `Subrace of ${r}`, mandatory: '— mandatory',
+    draconicAncestry: 'Draconic Ancestry', ancestryHint: '— sets your breath weapon & damage resistance',
+    dmgType: { fire: 'fire', cold: 'cold', lightning: 'lightning', acid: 'acid', poison: 'poison' } as Record<string, string>,
     traits: '— traits', proficienciesLabel: 'Proficiencies:', resistancesLabel: 'Resistances:', darkvision: 'Darkvision',
     bgHint: '— skills and social trait', skillsAbbr: 'Skills:',
     fightingStyle: 'Fighting Style', deityHint: '— optional',
@@ -53,6 +55,8 @@ const TRANS = {
     ideal: 'Ideal', idealPh: 'Justice, freedom...', flaw: 'Flaw', flawPh: 'Pride, mercy, rage...',
     cinematicTone: 'Cinematic Tone',
     abilityScores: 'Ability Scores', pointsRemaining: 'Points Remaining', base: 'base',
+    pointMode: 'Difficulty', modeNormal: 'Normal', modeStory: 'Story',
+    modeNormalHint: 'Standard 27 points', modeStoryHint: 'Generous 37 points',
     armorClass: 'Armor Class', acTooltip: '10 + DEX Mod', hitPoints: 'Hit Points', hitDie: 'Hit Die',
     startingEquipment: 'Starting Equipment', resetKit: 'Reset Kit',
     item: 'Item', qty: 'Qty', wgt: 'Wgt', noEquipment: 'No equipment selected',
@@ -100,6 +104,8 @@ const TRANS = {
     startingAbilities: '— aptitudes de départ',
     raceHint: '— bonus de caractéristiques et traits',
     subraceOf: (r: string) => `Sous-race de ${r}`, mandatory: '— obligatoire',
+    draconicAncestry: 'Ascendance draconique', ancestryHint: '— définit ton souffle et ta résistance',
+    dmgType: { fire: 'feu', cold: 'froid', lightning: 'foudre', acid: 'acide', poison: 'poison' } as Record<string, string>,
     traits: '— traits', proficienciesLabel: 'Maîtrises :', resistancesLabel: 'Résistances :', darkvision: 'Vision dans le noir',
     bgHint: '— compétences et trait social', skillsAbbr: 'Comp. :',
     fightingStyle: 'Style de combat', deityHint: '— optionnel',
@@ -123,6 +129,8 @@ const TRANS = {
     ideal: 'Idéal', idealPh: 'Justice, liberté...', flaw: 'Défaut', flawPh: 'Orgueil, pitié, rage...',
     cinematicTone: 'Ton cinématique',
     abilityScores: 'Caractéristiques', pointsRemaining: 'Points restants', base: 'base',
+    pointMode: 'Difficulté', modeNormal: 'Normal', modeStory: 'Histoire',
+    modeNormalHint: '27 points standard', modeStoryHint: '37 points généreux',
     armorClass: 'Classe d\'armure', acTooltip: '10 + mod. DEX', hitPoints: 'Points de vie', hitDie: 'Dé de vie',
     startingEquipment: 'Équipement de départ', resetKit: 'Réinit. kit',
     item: 'Objet', qty: 'Qté', wgt: 'Poids', noEquipment: 'Aucun équipement sélectionné',
@@ -301,6 +309,12 @@ const POINT_BUY_COST: Record<number, number> = {
   15: 9,
 };
 
+// Point-buy budget by creation difficulty. Normal = the standard 5e 27-point
+// buy (MAX_POINTS); Story = a more generous 37 for a lower-stakes power fantasy.
+// The per-stat ceiling stays 15 either way, so Story just allows more well-
+// rounded heroes, never scores above the point-buy table.
+const STORY_MAX_POINTS = 54;
+
 function pointBuyCost(score: number): number {
   return POINT_BUY_COST[score] ?? Number.POSITIVE_INFINITY;
 }
@@ -361,6 +375,9 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
   const tr = TRANS[language];
   const [char, setChar] = useState<CharacterSheet>(initialChar || DEFAULT_CHAR);
   const [pointsSpent, setPointsSpent] = useState(0);
+  // Creation difficulty: 'normal' = standard 27-point buy, 'story' = generous 37.
+  const [pointMode, setPointMode] = useState<'normal' | 'story'>('normal');
+  const maxPoints = pointMode === 'story' ? STORY_MAX_POINTS : MAX_POINTS;
   const [activeStep, setActiveStep] = useState<CreationStep>(readOnly ? 'review' : 'identity');
 
   // Modal and tooltip states
@@ -427,7 +444,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     const newVal = currentVal + delta;
     if (newVal < BASE_STAT || newVal > 15) return;
     const nextSpent = pointsSpent - pointBuyCost(currentVal) + pointBuyCost(newVal);
-    if (nextSpent > MAX_POINTS) return;
+    if (nextSpent > maxPoints) return;
 
     setChar(prev => ({ ...prev, stats: { ...prev.stats, [stat]: newVal } }));
   };
@@ -535,10 +552,16 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     setChar(prev => ({
       ...prev,
       race: newRace,
+      // Dragonborn keep/gain an ancestry (default Red→fire); other races drop it.
+      draconicAncestry: newRace === 'Dragonborn' ? (prev.draconicAncestry || 'Red') : undefined,
       proficiencies: newProfs,
       expertise: (prev.expertise || []).filter(e => profSet.has(e.toLowerCase())),
       features,
     }));
+  };
+
+  const handleAncestryPick = (ancestry: string) => {
+    setChar(prev => ({ ...prev, draconicAncestry: ancestry }));
   };
 
   const handleFightingStyleChange = (newStyle: string) => {
@@ -668,7 +691,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     }));
   };
 
-  const pointsRemaining = MAX_POINTS - pointsSpent;
+  const pointsRemaining = maxPoints - pointsSpent;
   const currentStepIndex = CREATION_STEPS.findIndex(step => step.id === activeStep);
   const goToStep = (direction: 1 | -1) => {
     const next = CREATION_STEPS[Math.max(0, Math.min(CREATION_STEPS.length - 1, currentStepIndex + direction))];
@@ -853,6 +876,23 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                         </button>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+
+              {/* Draconic ancestry — Dragonborn only. Sets breath-weapon type + resistance. */}
+              {char.race === 'Dragonborn' && (
+                <div className="mt-3 rounded-lg border-2 border-dashed border-amber-500/50 bg-amber-500/5 p-3">
+                  <div className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-700">
+                    {tr.draconicAncestry} <span className="font-normal normal-case text-gray-500">{tr.mandatory} {tr.ancestryHint}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                    {DRACONIC_ANCESTRIES.map(a => (
+                      <button key={a.id} type="button" onClick={() => handleAncestryPick(a.id)} className={cardCls(char.draconicAncestry === a.id)}>
+                        <div className="font-bold">{language === 'fr' ? a.fr : a.en}</div>
+                        <div className="text-[11px] capitalize text-gray-600 mt-0.5">{tr.dmgType[a.type] || a.type}</div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1096,12 +1136,41 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           <h2 className="text-center font-bold text-xl border-b-2 border-gray-800 mb-4">{tr.abilityScores}</h2>
 
           {!readOnly && (
-            <div className="mb-4 bg-gray-800 text-parchment p-2 rounded text-center">
-              <div className="text-xs uppercase tracking-widest text-gray-400">{tr.pointsRemaining}</div>
-              <div className={`text-2xl font-bold ${pointsRemaining === 0 ? 'text-green-400' : 'text-gold'}`}>
-                {pointsRemaining} / {MAX_POINTS}
+            <>
+              {/* Difficulty toggle: Normal (27, standard 5e) vs Story (37, generous). */}
+              <div className="mb-3">
+                <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 text-center">{tr.pointMode}</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { id: 'normal' as const, label: tr.modeNormal, hint: tr.modeNormalHint },
+                    { id: 'story' as const, label: tr.modeStory, hint: tr.modeStoryHint },
+                  ]).map(m => {
+                    const active = pointMode === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setPointMode(m.id)}
+                        className={`rounded border-2 p-2 text-center transition-colors ${active
+                          ? 'border-blood bg-blood/10'
+                          : 'border-gray-300 bg-white hover:border-gray-400'}`}
+                        title={m.hint}
+                      >
+                        <div className={`text-sm font-bold ${active ? 'text-blood' : 'text-gray-700'}`}>{m.label}</div>
+                        <div className="text-[10px] text-gray-500">{m.hint}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+
+              <div className="mb-4 bg-gray-800 text-parchment p-2 rounded text-center">
+                <div className="text-xs uppercase tracking-widest text-gray-400">{tr.pointsRemaining}</div>
+                <div className={`text-2xl font-bold ${pointsRemaining === 0 ? 'text-green-400' : pointsRemaining < 0 ? 'text-red-400' : 'text-gold'}`}>
+                  {pointsRemaining} / {maxPoints}
+                </div>
+              </div>
+            </>
           )}
 
           <div className="space-y-4">
@@ -1603,7 +1672,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             </button>
           ) : (
             <button
-              onClick={() => onSave(char)}
+              onClick={() => onSave({ ...char, storyMode: pointMode === 'story' })}
               disabled={!canVenture}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blood px-4 py-4 font-fantasy text-2xl text-white shadow-lg transition-colors hover:bg-red-900 disabled:cursor-not-allowed disabled:bg-gray-600"
             >

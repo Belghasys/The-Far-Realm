@@ -1,0 +1,94 @@
+/**
+ * Narration auditor — the "light verifier agent".
+ *
+ * An asynchronous, throttled Flash pass that compares the DM's latest narration
+ * against the REAL engine state (HP, gold, inventory, combat) and returns a
+ * short corrective note when they clearly contradict each other. The caller
+ * forwards that note to the live DM as a private system message so it can
+ * self-correct in the next beat — the player never sees the machinery.
+ *
+ * Deliberately conservative: it only flags UNAMBIGUOUS numeric/state
+ * contradictions. A false positive (nagging the DM wrongly) costs more
+ * immersion than a missed minor slip.
+ */
+import { GoogleGenAI } from '@google/genai';
+import { log } from './logger';
+import { requireViteEnv } from './modelConfig';
+
+const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
+const AUDIT_MODEL = requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL);
+
+let ai: GoogleGenAI | null = null;
+function getClient(): GoogleGenAI {
+    if (!ai) ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+    return ai;
+}
+
+export interface NarrationAuditInput {
+    /** The DM's most recent narration block (already merged/complete). */
+    narration: string;
+    /** Compact, factual engine-state lines ("Player HP: 14/27", "Gold: 35"...). */
+    stateFacts: string[];
+    language: string;
+}
+
+export interface NarrationAuditResult {
+    consistent: boolean;
+    /** One short corrective instruction for the DM when inconsistent. */
+    note?: string;
+}
+
+export async function auditNarration(input: NarrationAuditInput): Promise<NarrationAuditResult | null> {
+    const narration = String(input.narration || '').trim().slice(0, 2400);
+    if (!narration || !input.stateFacts.length) return null;
+
+    const prompt = `
+You audit a D&D game narration for CLEAR contradictions with the authoritative engine state.
+
+## ENGINE STATE (authoritative — the single source of truth)
+${input.stateFacts.map(f => `- ${f}`).join('\n')}
+
+## DM NARRATION (most recent)
+${narration}
+
+## TASK
+Flag ONLY unambiguous, material contradictions:
+- narrated HP/damage/healing numbers that contradict the state (e.g. "you are at full health" while HP is 5/27)
+- narrated gold amounts contradicting the purse
+- the narration says an item was given/used but it is absent/present in the inventory list
+- a narrated death/defeat of a combatant whose HP is > 0 (or vice versa)
+- STORY DRIFT: the narration has abandoned the stated campaign objective/active quests for an unrelated storyline with NO transition (a side scene or player detour is fine; a silent replacement of the plot is not)
+- narrated time of day flatly contradicting the in-world clock (e.g. "midday sun" during Night) — only when stated explicitly
+Everything stylistic, atmospheric, or merely unstated is CONSISTENT. When in doubt, consistent=true.
+If inconsistent, write ONE short corrective instruction for the DM (max 160 chars, in ${input.language === 'fr' ? 'French' : 'English'}) that states the true value to honor going forward — never ask the DM to retcon aloud.
+`;
+
+    try {
+        const result = await getClient().models.generateContent({
+            model: AUDIT_MODEL,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: {
+                thinkingConfig: { thinkingLevel: 'LOW' },
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: 'OBJECT',
+                    properties: {
+                        consistent: { type: 'BOOLEAN' },
+                        note: { type: 'STRING' },
+                    },
+                    required: ['consistent'],
+                },
+            } as any,
+        });
+        const text = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        if (!text) return null;
+        const parsed = JSON.parse(text);
+        return {
+            consistent: parsed.consistent !== false,
+            note: typeof parsed.note === 'string' ? parsed.note.slice(0, 200) : undefined,
+        };
+    } catch (e) {
+        log.debug('Narration audit failed (non-fatal):', e);
+        return null;
+    }
+}

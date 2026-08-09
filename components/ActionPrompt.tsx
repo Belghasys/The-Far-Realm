@@ -41,6 +41,10 @@ interface Props {
     advantage?: 'normal' | 'advantage' | 'disadvantage';
     dmBonus?: number;
     contextReasons?: string[];
+    /** False for MANDATORY rolls (death saves, concentration): cancelling a
+     *  death save left the hero stuck at 0 HP forever (the prompt key is
+     *  memoized and never re-fires). Default true. */
+    canDismiss?: boolean;
     onRoll: () => void;
     onDismiss: () => void;
 }
@@ -56,7 +60,7 @@ const parseFormula = (formula: string) => {
     };
 };
 
-export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'normal', dmBonus = 0, contextReasons = [], onRoll, onDismiss }: Props) {
+export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'normal', dmBonus = 0, contextReasons = [], canDismiss = true, onRoll, onDismiss }: Props) {
     const language = useGameStore(s => s.language);
     const tr = TRANS[language];
     if (!checkType) return null;
@@ -171,10 +175,12 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                     <Sparkles className="w-6 h-6 animate-spin-slow" />
                 </button>
 
-                {/* Dismiss */}
-                <button onClick={onDismiss} className="text-xs text-gray-500 hover:text-white underline opacity-50">
-                    {tr.cancel}
-                </button>
+                {/* Dismiss — hidden for mandatory rolls (death save, concentration). */}
+                {canDismiss && (
+                    <button onClick={onDismiss} className="text-xs text-gray-500 hover:text-white underline opacity-50">
+                        {tr.cancel}
+                    </button>
+                )}
             </div>
         </div>
     );

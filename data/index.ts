@@ -7,3 +7,5 @@ export * from './character';
 export * from './adventures';
 export * from './bestiary';
 export * from './classFeatures';
+export * from './magicItems';
+export * from './feats';

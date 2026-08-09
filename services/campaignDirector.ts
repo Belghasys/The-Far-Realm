@@ -1,5 +1,5 @@
 import { Combatant } from '../components/CombatTracker';
-import { AdventureManifest, CampaignRuntimeState, JournalState, CharacterSheet } from '../types';
+import { AdventureManifest, CampaignRuntimeState, JournalState, CharacterSheet, getEffectiveAC } from '../types';
 import { CampaignEvent } from './campaignEventLog';
 
 interface DirectorContextInput {
@@ -17,6 +17,8 @@ interface DirectorContextInput {
         actionEconomy?: Record<string, any>;
     };
     events: CampaignEvent[];
+    /** Cumulative long-term memory summary (memoryManager) — "the story so far". */
+    storySummary?: string;
 }
 
 function compactList(items: string[], fallback = 'none'): string {
@@ -99,7 +101,7 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
 }
 
 export function buildCampaignDirectorContext(input: DirectorContextInput): string {
-    const { character, adventure, adventureManifest, manifestoText, campaignRuntime, journal, combatState, events } = input;
+    const { character, adventure, adventureManifest, manifestoText, campaignRuntime, journal, combatState, events, storySummary } = input;
     const profile = character.storyProfile || {};
     const recentEvents = events.slice(-12).map(event => `${event.type}: ${event.summary}`);
     const recentMedia = events
@@ -108,8 +110,32 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
         .map(event => `${event.type}: ${event.summary}`);
     const activeQuests = (journal.quests || [])
         .filter(q => q.status === 'active')
-        .map(q => `${q.title} (${q.description.slice(0, 90)})`);
-    const npcs = (journal.npcs || []).slice(-8).map(n => `${n.name} @ ${n.location}`);
+        .map(q => {
+            const nextStep = (q.steps || []).find(step => !step.done);
+            const done = (q.steps || []).filter(step => step.done).length;
+            const stepPart = q.steps?.length
+                ? `; steps ${done}/${q.steps.length}${nextStep ? `, next: ${trimText(nextStep.text, 90)}` : ' (all done — consider complete_quest)'}`
+                : '';
+            return `${q.title} (${q.description.slice(0, 90)}${stepPart})`;
+        });
+    // Chronologie : le passé RESTE le passé. Sans cette ligne, le MJ rouvrait
+    // des quêtes bouclées des jours (de jeu) plus tôt comme si elles étaient
+    // en cours.
+    const completedQuests = (journal.quests || [])
+        .filter(q => q.status === 'completed')
+        .slice(-6)
+        .map(q => q.title);
+    // Rich NPC lines: disposition + what each NPC remembers, so the DM plays
+    // them as people with continuity, not name tags.
+    const npcs = (journal.npcs || []).slice(-8).map(n => {
+        const parts = [`${n.name} @ ${n.location}`];
+        if (typeof n.disposition === 'number' && n.disposition !== 0) {
+            parts.push(`disposition ${n.disposition > 0 ? '+' : ''}${n.disposition}`);
+        }
+        const facts = (n.knownFacts || []).slice(-3).map(fact => trimText(fact, 90));
+        if (facts.length) parts.push(`remembers: ${facts.join(' | ')}`);
+        return parts.join('; ');
+    });
     const locations = (journal.locations || []).slice(-8).map(l => l.name);
     const resources = Object.entries(character.resources || {})
         .map(([key, value]) => `${value.label || key}: ${value.current}/${value.max}`);
@@ -132,16 +158,23 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
     return [
         '[CAMPAIGN_DIRECTOR_CONTEXT]',
         `Adventure: ${adventure || 'unknown'}`,
-        `Hero: ${character.name}, level ${character.level} ${character.race} ${character.class}, HP ${character.hp.current}/${character.hp.max}, AC ${character.ac}, XP ${character.xp}`,
+        `Hero: ${character.name}, level ${character.level} ${character.race} ${character.class}, HP ${character.hp.current}/${character.hp.max}, AC ${getEffectiveAC(character)}, XP ${character.xp}`,
         `Hero appearance: ${trimText(profile.appearance || character.portrait || 'not specified', 220)}`,
         `Hero personal engine: desire ${trimText(profile.desire, 180) || 'none'}; fear ${trimText(profile.fear, 150) || 'none'}; wound ${trimText(profile.wound, 150) || 'none'}; bond ${trimText(profile.bond, 150) || 'none'}`,
         `Hero roleplay: personality ${trimText(profile.personality, 180) || 'none'}; ideal ${trimText(profile.ideal, 120) || 'none'}; flaw ${trimText(profile.flaw, 120) || 'none'}; hooks ${compactList((profile.dmHooks || []).map(hook => trimText(hook, 120)))}`,
         `Death saves: ${character.deathSaves ? `${character.deathSaves.successes} success / ${character.deathSaves.failures} failure / stable=${character.deathSaves.isStable} / dead=${character.deathSaves.isDead}` : 'none'}`,
+        `Party companions: ${compactList((character.companions || []).map(comp => `${comp.name} (HP ${comp.hp.current}/${comp.hp.max}, AC ${comp.ac}, ${comp.attack.name} +${comp.attack.attackBonus} ${comp.attack.damage})`))}`,
+        `Mount: ${character.mount ? `${character.mount.name}${character.mount.kind ? ` [${character.mount.kind}]` : ''} (speed ${character.mount.speed} ft${character.mount.flying ? ', FLYING' : ''}${character.mount.description ? `, ${trimText(character.mount.description, 80)}` : ''})` : 'none'}`,
+        `Familiar: ${character.familiar ? `${character.familiar.name} (${character.familiar.kind}${character.familiar.description ? ` — ${trimText(character.familiar.description, 80)}` : ''})` : 'none'}`,
+        ...(character.subclass === 'Beast Master' ? [`Bonded beast kind: ${character.beastKind || 'loup'}`] : []),
+        `In-world time: Day ${campaignRuntime?.dayCount || 1}, ${campaignRuntime?.timeOfDay || 'day'}`,
         `Resources: ${compactList(resources)}`,
         `Spell slots: ${compactList(spellSlots)}`,
         `Story modifiers: ${compactList(storyModifiers)}`,
+        ...(storySummary ? [`Story so far (long-term memory — established canon): ${trimText(storySummary, 900)}`] : []),
         ...campaignSpineContext(adventureManifest, manifestoText, campaignRuntime),
         `Active quests: ${compactList(activeQuests)}`,
+        `Recently COMPLETED quests (settled PAST — never reopen or replay them; only reference them as memories): ${compactList(completedQuests)}`,
         `Known NPCs: ${compactList(npcs)}`,
         `Known locations: ${compactList(locations)}`,
         combat,

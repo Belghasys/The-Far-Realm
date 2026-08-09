@@ -1,6 +1,7 @@
 import { log } from './logger';
 import { withImageSfxGpu } from './gpuLock';
 import { auditBus } from './auditBus';
+import { getAppSettings } from '../store/settingsStore';
 
 const DB_NAME = 'dungeonai_sfx_cache';
 const DB_VERSION = 1;
@@ -99,11 +100,16 @@ class LocalSfxService {
      */
     async playSfxFromPrompt(description: string): Promise<boolean> {
         if (typeof Audio === 'undefined') return false;
-        const desc = (description || '').trim();
+        if (!getAppSettings().localSfx) return false; // désactivé dans les Réglages
+        // Stable Audio 3 reads SHORT caption-style prompts. Collapse whitespace
+        // and hard-cap the length so an over-verbose DM description can't turn
+        // into mush; the wrapper adds two positive tags only — the old
+        // negations ("no music, no speech, no narration") could summon exactly
+        // what they named, since there is no negative prompt.
+        const desc = (description || '').replace(/\s+/g, ' ').trim().slice(0, 120);
         if (!desc) return false;
 
-        // Shape a clean AudioLDM prompt: a single diegetic effect, no music/voice.
-        const prompt = `${desc}, realistic diegetic sound effect, clear and close, no music, no speech, no narration`;
+        const prompt = `${desc}, close-up sound effect, foley`;
         auditBus.publish('sfx', `narrative: ${desc.slice(0, 80)}`, prompt);
         const cacheKey = `sfx_${hashText(prompt)}`;
 
@@ -221,6 +227,7 @@ class LocalSfxService {
      */
     async playSfxForLog(entry: LogEntry): Promise<void> {
         if (typeof Audio === 'undefined') return;
+        if (!getAppSettings().localSfx) return; // désactivé dans les Réglages
 
         // Dice clatter for pure rolls only. ATTACKS now fall through to the rich
         // AudioLDM prompts (sword clash, bowstring, claw, spell whoosh) below —
@@ -288,7 +295,7 @@ class LocalSfxService {
     private playAudio(dataUrl: string): void {
         try {
             const audio = new Audio(dataUrl);
-            audio.volume = 0.75; // Louder than the background music volume (0.315)
+            audio.volume = getAppSettings().sfxVolume; // Réglages (défaut 0.75)
             audio.preload = 'auto';
 
             // Clean up reference on end

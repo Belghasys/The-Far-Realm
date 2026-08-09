@@ -11,6 +11,7 @@ import { buildSystemPrompt } from './systemPrompt';
 import { campaignEventLog } from './campaignEventLog';
 import { requireViteEnv } from './modelConfig';
 import { auditBus } from './auditBus';
+import { getAppSettings } from '../store/settingsStore';
 
 // --- Audio Utilities ---
 
@@ -154,7 +155,7 @@ const GAME_TOOL_DECLARATIONS = [
             properties: {
                 spellName: { type: "STRING" as any },
                 slotLevel: { type: "INTEGER" as any },
-                target: { type: "STRING" as any },
+                target: { type: "STRING" as any, description: "Combatant id/name — or 'all_enemies' for an AREA spell (Fireball, Burning Hands): every enemy then rolls its OWN save and shares one damage roll." },
                 casterAbility: { type: "STRING" as any, description: "STR, DEX, CON, INT, WIS, or CHA" },
                 casterAbilityMod: { type: "INTEGER" as any },
                 spellAttackBonus: { type: "INTEGER" as any },
@@ -319,7 +320,9 @@ const GAME_TOOL_DECLARATIONS = [
                 hp: { type: "INTEGER" as any, description: "Fallback HP for homebrew enemies only." },
                 ac: { type: "INTEGER" as any, description: "Fallback AC for homebrew enemies only." },
                 strMod: { type: "INTEGER" as any, description: "Fallback STR modifier for homebrew enemies only." },
-                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for homebrew enemies only." }
+                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for homebrew enemies only." },
+                xp: { type: "INTEGER" as any, description: "XP award for defeating this HOMEBREW enemy (SRD CR table). Omit for bestiary monsters." },
+                range: { type: "STRING" as any, description: "Starting distance from the player: 'melee' (adjacent), 'near' (a few strides), 'far' (needs a full move or ranged attack). Default: near." }
             },
             required: ["name"]
         }
@@ -459,6 +462,8 @@ const GAME_TOOL_DECLARATIONS = [
                 damageFormula: { type: "STRING" as any, description: "Damage dice, e.g. '2d6', '1d4', '6d6'." },
                 damageType: { type: "STRING" as any, description: "fire, cold, poison, acid, lightning, bludgeoning (falls), necrotic..." },
                 target: { type: "STRING" as any, description: "Combatant id/name, or 'player' (default)." },
+                targets: { type: "STRING" as any, description: "MULTI-target hazard: 'all_enemies' (rockslide over the whole pack) or a comma-separated list of ids/names. Each target rolls its own save/damage. Overrides 'target'." },
+                attackBonus: { type: "INTEGER" as any, description: "Scripted ATTACK mode (ambush arrow, dart trap): 1d20+bonus is rolled vs the target's AC — a miss deals NOTHING. Use INSTEAD of saveAbility/saveDC." },
                 saveAbility: { type: "STRING" as any, description: "Optional saving throw first: STR/DEX/CON/INT/WIS/CHA (CON for poison/cold, DEX for flames/falling debris)." },
                 saveDC: { type: "INTEGER" as any, description: "DC of the saving throw (10 easy, 12-13 standard, 15+ harsh)." },
                 halfOnSave: { type: "BOOLEAN" as any, description: "true (default): success halves the damage. false: success negates it." },
@@ -482,8 +487,13 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_quest",
-        description: "Add a quest to the player's journal.",
-        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any } }, required: ["title", "description"] }
+        description: "Add a quest to the player's journal. Optionally seed 2-4 checkable steps (sub-objectives) so the player sees their progress.",
+        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any }, steps: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Optional 2-4 short sub-objectives shown as a checklist." } }, required: ["title", "description"] }
+    },
+    {
+        name: "update_quest_step",
+        description: "Check off (or add) a sub-objective of an ACTIVE quest. Call whenever the player completes a meaningful stage of a quest — the checklist is what makes the journal feel alive. done defaults to true for an existing step; a new step is added unchecked unless done=true.",
+        parameters: { type: "OBJECT" as any, properties: { questTitle: { type: "STRING" as any, description: "Title of the active quest (fuzzy matched)." }, step: { type: "STRING" as any, description: "The sub-objective text (fuzzy matched; added if new)." }, done: { type: "BOOLEAN" as any } }, required: ["questTitle", "step"] }
     },
     {
         name: "complete_quest",
@@ -491,9 +501,96 @@ const GAME_TOOL_DECLARATIONS = [
         parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any } }, required: ["title"] }
     },
     {
+        name: "recruit_companion",
+        description: "An NPC durably JOINS the hero's party (max 2). Unlike add_ally_init (one fight), a companion PERSISTS: auto-joins every combat as an ally, HP carries between fights, rests heal them. Bestiary stats are used when the name matches; otherwise pass hp/ac/attack numbers. Use when the fiction makes an NPC a real traveling companion.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                name: { type: "STRING" as any },
+                description: { type: "STRING" as any, description: "One line: who they are." },
+                hp: { type: "INTEGER" as any }, ac: { type: "INTEGER" as any },
+                attackName: { type: "STRING" as any }, attackBonus: { type: "INTEGER" as any },
+                damageFormula: { type: "STRING" as any, description: "e.g. '1d8+2'" }, damageType: { type: "STRING" as any }
+            },
+            required: ["name"]
+        }
+    },
+    {
+        name: "dismiss_companion",
+        description: "A companion leaves the party (death, betrayal, farewell). Removes them from future combats.",
+        parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any } }, required: ["name"] }
+    },
+    {
+        name: "set_mount",
+        description: "The hero acquires a MOUNT: bought, gifted, tamed — or SUMMONED (Paladin level 5+ gets their Celestial Steed for free via Find Steed, kind='destrier_celeste'). Overland travel speeds up, and in combat a melee attack on a FAR enemy becomes a mounted CHARGE (close + strike in one action). One mount at a time — calling again replaces it.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                name: { type: "STRING" as any, description: "The mount's given name (e.g. 'Tempête'). Optional if kind is set." },
+                kind: { type: "STRING" as any, description: "Typed mount from the catalog: poney, cheval_selle, destrier, chameau, elan, loup_geant, sanglier_geant, griffon (flying), pegase (flying), destrier_celeste (PALADIN 5+ ONLY — free summon, returns after a long rest if slain). Sets speed/flying automatically." },
+                speed: { type: "INTEGER" as any, description: "Override speed in feet. Usually omit — the kind sets it." },
+                description: { type: "STRING" as any, description: "Short flavor: color, temperament, name origin." }
+            }
+        }
+    },
+    {
+        name: "dismiss_mount",
+        description: "The hero loses their mount (sold, dead, fled, left at the stable for a dungeon).",
+        parameters: { type: "OBJECT" as any, properties: {}, }
+    },
+    {
+        name: "set_beast_companion",
+        description: "BEAST MASTER ranger only: bond (or change) the animal companion type. It auto-joins every fight as an ally with REAL stats. Ask the ranger which beast when they take the archetype.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                kind: { type: "STRING" as any, description: "loup (wolf, balanced), ours (bear, hits hard), panthere (panther, fast AC 14), faucon (giant hawk, AC 15 skirmisher)." }
+            },
+            required: ["kind"]
+        }
+    },
+    {
+        name: "set_familiar",
+        description: "Bond a FAMILIAR to a caster (Mage/Wizard/Sorcerer via Find Familiar, Warlock via Pact of the Chain, Druid via animal spirit). Narrative scout + the player gains a 'Familiar: Help' combat button (advantage on next attack, 1/short rest). Offer it when the caster learns Find Familiar, meets a mystical creature, or at character introduction.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                kind: { type: "STRING" as any, description: "chat, hibou, corbeau, rat, araignee, belette, serpent, crapaud, chauve_souris, renard (druidic)." },
+                name: { type: "STRING" as any, description: "The familiar's given name (e.g. 'Plume')." },
+                description: { type: "STRING" as any, description: "Short flavor (coat, quirk, origin)." }
+            },
+            required: ["kind"]
+        }
+    },
+    {
+        name: "dismiss_familiar",
+        description: "The familiar is dismissed or destroyed (it can be re-bonded later with set_familiar).",
+        parameters: { type: "OBJECT" as any, properties: {}, }
+    },
+    {
+        name: "set_time_of_day",
+        description: "Advance the in-world clock when the fiction moves time OUTSIDE rests (evening falls, you travel until nightfall, dawn breaks). Rests already move time automatically (short rest = next moment, long rest = next day at dawn). The current day/moment shows in the player HUD and tints scene images.",
+        parameters: { type: "OBJECT" as any, properties: { timeOfDay: { type: "STRING" as any, description: "dawn | day | dusk | night" }, advanceDays: { type: "INTEGER" as any, description: "Optional: full days that pass (journeys, imprisonment)." } }, required: ["timeOfDay"] }
+    },
+    {
         name: "add_npc",
         description: "Log a newly met NPC in the journal.",
         parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any }, description: { type: "STRING" as any }, location: { type: "STRING" as any } }, required: ["name", "description", "location"] }
+    },
+    {
+        name: "update_npc",
+        description: "Update a known NPC's persistent memory of the hero. Call whenever an interaction meaningfully changes the relationship: dispositionDelta -2..+2 (angered..won over), memory = one short sentence the NPC will remember ('the hero saved my son'), location if they moved. The engine injects this back into your context so the NPC stays coherent across sessions.",
+        parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any }, dispositionDelta: { type: "NUMBER" as any }, memory: { type: "STRING" as any }, location: { type: "STRING" as any }, description: { type: "STRING" as any } }, required: ["name"] }
+    },
+    {
+        name: "lookup_npc",
+        description: "Recall a KNOWN NPC before playing them again: their journal record (disposition, persistent memories of the hero, last known location) plus any authored-cast entry. The live context only shows the 8 most recent NPCs — use this for anyone met earlier so their attitude stays coherent.",
+        parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any, description: "NPC name (accents/partial spelling tolerated)." } }, required: ["name"] }
+    },
+    {
+        name: "roll_loot",
+        description: "Roll on the level-appropriate SRD treasure table. Use it when the player finds a hoard/chest or defeats a notable foe: the engine picks 1-3 magic items suited to the hero's level, adds them to the inventory, and returns them for you to narrate. Pass rarityHint ('common'|'uncommon'|'rare'|'very rare'|'legendary') to force ONE item of that rarity for a milestone reward (boss, quest completion).",
+        parameters: { type: "OBJECT" as any, properties: { context: { type: "STRING" as any }, rarityHint: { type: "STRING" as any } }, required: [] }
     },
     {
         name: "add_location",
@@ -561,7 +658,7 @@ const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                description: { type: "STRING" as any },
+                description: { type: "STRING" as any, description: "2-3 concrete sentences IN ENGLISH (subject, environment, lighting, atmosphere, colors, mood). No negations. Proper nouns may stay French." },
                 phase: { type: "STRING" as any, description: "exploration, quest, dungeon, town, tavern, dramatic, stealth, rest" }
             },
             required: ["description"]
@@ -570,7 +667,7 @@ const GAME_TOOL_DECLARATIONS = [
     {
         name: "trigger_combat_image",
         description: "Generate a 16:9 combat illustration when a fight starts or a major foe enters. One image renders at a time, latest request wins.",
-        parameters: { type: "OBJECT" as any, properties: { enemy: { type: "STRING" as any }, location: { type: "STRING" as any } }, required: ["enemy", "location"] }
+        parameters: { type: "OBJECT" as any, properties: { enemy: { type: "STRING" as any, description: "Enemy/forces described IN ENGLISH." }, location: { type: "STRING" as any, description: "Battlefield described IN ENGLISH." } }, required: ["enemy", "location"] }
     },
     {
         name: "trigger_visual",
@@ -578,7 +675,7 @@ const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                description: { type: "STRING" as any },
+                description: { type: "STRING" as any, description: "2-3 concrete sentences IN ENGLISH (subject, environment, lighting, atmosphere, colors, mood). No negations." },
                 phase: { type: "STRING" as any }
             },
             required: ["description"]
@@ -586,30 +683,32 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "set_music_mood",
-        description: "Set generated background music. Use combat/combat_boss for fights; exploration/quest/dungeon/town/tavern/rest for campaign ambience. Call it when the ATMOSPHERE changes (new area, fight starts/ends, rest), not every line. Tracks are cached and crossfade automatically.",
-        parameters: { type: "OBJECT" as any, properties: { mood: { type: "STRING" as any, description: "exploration, quest, combat, combat_boss, victory, tension, rest, tavern, dungeon, town, dramatic, stealth" } }, required: ["mood"] }
+        description: "Set generated background music. Use combat/combat_boss for fights; exploration/quest/dungeon/town/tavern/rest for campaign ambience. Call it when the ATMOSPHERE changes (new area, fight starts/ends, rest), not every line. Tracks are cached and crossfade automatically. If no preset fits, you may pass a SHORT English style caption instead (e.g. 'ritual drums, eerie choir') — never a full sentence.",
+        parameters: { type: "OBJECT" as any, properties: { mood: { type: "STRING" as any, description: "exploration, quest, combat, combat_boss, victory, tension, rest, tavern, dungeon, town, dramatic, stealth — or a short English style caption." } }, required: ["mood"] }
     },
     {
         name: "trigger_sfx",
-        description: "Play a short DIEGETIC sound effect to punctuate your narration — a sound the characters would actually hear in the world. Examples: a heavy door creaking open, distant thunder, a wolf howl, a sword being unsheathed, a crowd murmuring in a tavern, chains rattling, a body hitting the floor, a bowstring twang, a spell crackling. Generation is LOCAL and UNLIMITED — call it as often as the fiction deserves; previously heard sounds replay instantly from cache. The description should name ONE concrete sound; keep it vivid and specific.",
+        description: "Play a short DIEGETIC sound effect to punctuate your narration — a sound the characters would actually hear in the world. Examples: heavy door creaking open, distant thunder, wolf howl, sword unsheathed, tavern crowd murmur, chains rattling, a body hitting the floor, bowstring twang, spell crackling. Generation is LOCAL and UNLIMITED — call it as often as the fiction deserves; previously heard sounds replay instantly from cache.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                description: { type: "STRING" as any, description: "One concrete diegetic sound to render, e.g. 'a massive iron portcullis grinding open', 'distant rolling thunder', 'a goblin's dying shriek'." }
+                description: { type: "STRING" as any, description: "ONE concrete sound, IN ENGLISH, 3-8 words, no sentence, no negations. GOOD: 'massive iron portcullis grinding open', 'distant rolling thunder', 'goblin dying shriek'." }
             },
             required: ["description"]
         }
     },
     {
         name: "add_effect",
-        description: "Add a temporary buff or debuff effect to the character.",
+        description: "Add a temporary NUMERIC buff or debuff (AC / attackBonus / damageBonus / a stat) to the player — or, with `target`, to ANY combatant (ally or enemy). The engine actually applies it to their rolls; round-based effects tick down each turn.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any },
                 source: { type: "STRING" as any },
                 duration: { type: "STRING" as any },
-                stat: { type: "STRING" as any, description: "Stat affected, e.g., 'AC=+1'" }
+                stat: { type: "STRING" as any, description: "Stat affected, e.g., 'AC=+1', 'attackBonus=-2', 'damageBonus=+2'" },
+                target: { type: "STRING" as any, description: "Optional combatant id/name (ally or enemy). Omit = the player." },
+                rounds: { type: "INTEGER" as any, description: "Duration in rounds for combatant-targeted effects (default 10)." }
             },
             required: ["name", "source", "duration", "stat"]
         }
@@ -736,6 +835,12 @@ export class LiveDungeonMaster {
         this._sendGate = false;
         this.restoredThisConnection = false;
 
+        // A FRESH session (no resumption handle) has no memory of the previous
+        // connection's tool-call ids — replaying queued tool responses into it
+        // errors the brand-new connection and could loop the reconnect. Only a
+        // RESUMED session may flush held responses.
+        if (!this.sessionResumptionHandle) this.pendingToolResponses = [];
+
         const systemPrompt = buildSystemPrompt({
             character: this.character,
             adventure: this.adventure,
@@ -763,7 +868,9 @@ export class LiveDungeonMaster {
                     speechConfig: {
                         voiceConfig: {
                             prebuiltVoiceConfig: {
-                                voiceName: 'Charon'
+                                // Voix choisie dans les Réglages (défaut Charon) —
+                                // appliquée à chaque (re)connexion.
+                                voiceName: getAppSettings().dmVoice || 'Charon'
                             }
                         }
                     },
@@ -1017,6 +1124,33 @@ export class LiveDungeonMaster {
         this.pendingPrivateContext = next;
     }
 
+    /**
+     * Push the pending director context to the DM as a private system note.
+     * In pure-voice play the player never types, so consumePrivateContext (which
+     * only piggybacks on TEXT messages) never fires and the DM's view of HP,
+     * clocks, and canon facts silently drifts. GameSession calls this on
+     * significant state changes; a min-interval guard keeps the cost bounded.
+     */
+    public flushDirectorContext(minIntervalMs: number = 30000): boolean {
+        const context = this.directorContext.trim();
+        if (!context || !this.canSendRealtime()) return false;
+        const now = Date.now();
+        if (context === this.lastDirectorContextSent) return false;
+        if (now - this.lastDirectorContextSentAt < minIntervalMs) return false;
+
+        const sent = this.sendRealtimeTextNow([
+            '[PRIVATE_DM_CONTEXT - do not narrate, do not answer this block, do not roll from this block alone]',
+            context,
+            '[/PRIVATE_DM_CONTEXT]',
+        ].join('\n'));
+        if (sent) {
+            this.lastDirectorContextSent = context;
+            this.lastDirectorContextSentAt = now;
+            this.pendingPrivateContext = '';
+        }
+        return sent;
+    }
+
     private consumePrivateContext(userText: string): string {
         const context = this.directorContext.trim();
         if (!context) return userText;
@@ -1190,9 +1324,17 @@ export class LiveDungeonMaster {
     }
 
     private async handleToolCalls(calls: any[]) {
-        const responses: any[] = [];
+        // request_roll (and cast_spell with a roll) BLOCKS until the player
+        // actually rolls — its tool response carries the real outcome, which is
+        // what mechanically stops the Live model from narrating a result it
+        // does not have. Process roll calls LAST and send every response as
+        // soon as it is ready, so music/image/journal responses are never held
+        // hostage by the dice.
+        const ordered = [...calls].sort((a, b) =>
+            Number(a?.name === 'request_roll' || a?.name === 'cast_spell')
+            - Number(b?.name === 'request_roll' || b?.name === 'cast_spell'));
 
-        for (const call of calls) {
+        for (const call of ordered) {
             const { name, args, id } = call;
             log.info(`🛠️ Tool Call: ${name}`, JSON.stringify(args));
 
@@ -1252,15 +1394,10 @@ export class LiveDungeonMaster {
 
             auditBus.publish('gemini-tool', name, { args, result });
 
-            responses.push({
-                id: id,
-                name: name,
-                response: result
-            });
+            // Send each response the moment it is ready (a held roll response
+            // must not delay the other tools' responses in the same batch).
+            this.queueToolResponses([{ id, name, response: result }]);
         }
-
-        // Send all tool responses at once — with WebSocket state check
-        this.queueToolResponses(responses);
     }
 
     private queueToolResponses(responses: any[]) {
@@ -1330,6 +1467,18 @@ export class LiveDungeonMaster {
 
     async sendUserMessage(text: string) {
         auditBus.publish('gemini-out', `User → DM: ${text.slice(0, 90)}`, text);
+        // TYPED player messages must reach long-term memory too. Voice input is
+        // recorded via inputTranscription, but typed text never came back
+        // through that channel — so the 60K summaries and the reconnect history
+        // were DM-narration-only for keyboard players (their promises and
+        // decisions vanished from "the story so far"). Engine/control payloads
+        // (lines starting with '[' — [SYSTEM], [ROLL_RESULT:, [PRIVATE_DM_CONTEXT)
+        // stay out of memory: they are mechanics, not story.
+        const spoken = String(text || '').trim();
+        if (spoken && !spoken.startsWith('[')) {
+            this.recordHistory('user', spoken);
+            memoryManager.addMessage({ speaker: 'user', text: spoken });
+        }
         return this.sendOrQueueText(this.consumePrivateContext(text));
     }
 

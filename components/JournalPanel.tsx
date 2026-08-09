@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { BookOpen, Clock, MapPin, Scroll, Users, ScrollText, Target, Skull, Compass } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BookOpen, Clock, MapPin, Scroll, Users, ScrollText, Target, Skull, Compass, Images, Download, CheckCircle2, Circle } from 'lucide-react';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
+import { usePortrait, npcPortraitKey, portraitPrompt } from '../services/portraitService';
+import { galleryService, buildChronicleHtml, GalleryImage } from '../services/galleryService';
 
 const TRANS = {
     en: {
@@ -26,6 +28,10 @@ const TRANS = {
         noLocation: 'No discovered location yet.',
         chronicleEmpty: 'The chronicle will fill as the campaign unfolds.',
         new: 'New',
+        tabGallery: 'Gallery',
+        galleryEmpty: 'Generated scene images will collect here.',
+        exportChronicle: 'Export the illustrated chronicle (HTML)',
+        dayWord: 'Day',
     },
     fr: {
         windowTitle: 'Journal d’aventure',
@@ -49,6 +55,10 @@ const TRANS = {
         noLocation: 'Aucun lieu découvert pour l’instant.',
         chronicleEmpty: 'La chronique se remplira au fil de la campagne.',
         new: 'Nouveau',
+        tabGallery: 'Galerie',
+        galleryEmpty: 'Les images de scène générées se rassembleront ici.',
+        exportChronicle: 'Exporter la chronique illustrée (HTML)',
+        dayWord: 'Jour',
     },
 } as const;
 
@@ -61,11 +71,18 @@ export interface CampaignBriefing {
     location?: string;
 }
 
+export interface QuestStep {
+    id: string;
+    text: string;
+    done: boolean;
+}
+
 export interface Quest {
     id: string;
     title: string;
     description: string;
     status: 'active' | 'completed' | 'failed';
+    steps?: QuestStep[];
 }
 
 export interface NPC {
@@ -97,7 +114,7 @@ interface Props {
     onClose: () => void;
 }
 
-type JournalTab = 'briefing' | 'quests' | 'people' | 'places' | 'chronicle';
+type JournalTab = 'briefing' | 'quests' | 'people' | 'places' | 'chronicle' | 'gallery';
 
 export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle = [], onClose }: Props) {
     const language = useGameStore(s => s.language);
@@ -108,13 +125,47 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
     const [activeTab, setActiveTab] = useState<JournalTab>(hasBriefing ? 'briefing' : 'quests');
     const activeQuests = quests.filter(quest => quest.status === 'active');
 
+    // Chronique illustrée : images de scène archivées localement.
+    const activeSaveId = useGameStore(s => s.activeSaveId);
+    const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+    useEffect(() => {
+        if (activeTab !== 'gallery') return;
+        let active = true;
+        void galleryService.listImages(activeSaveId || 'dev').then(images => { if (active) setGalleryImages(images); });
+        return () => { active = false; };
+    }, [activeTab, activeSaveId]);
+
     const tabs = [
         ...(hasBriefing ? [{ id: 'briefing' as const, label: tr.tabPrologue, count: 0 }] : []),
         { id: 'quests' as const, label: tr.tabQuests, count: activeQuests.length },
         { id: 'people' as const, label: tr.tabPeople, count: npcs.length },
         { id: 'places' as const, label: tr.tabPlaces, count: locations.length },
         { id: 'chronicle' as const, label: tr.tabChronicle, count: chronicle.length },
+        { id: 'gallery' as const, label: tr.tabGallery, count: undefined as unknown as number },
     ];
+
+    const handleExportChronicle = () => {
+        const store = useGameStore.getState();
+        const heroLine = store.character
+            ? `${store.character.name} — ${store.character.race} ${store.character.class}, ${language === 'fr' ? 'niveau' : 'level'} ${store.character.level}`
+            : '';
+        const html = buildChronicleHtml({
+            title: store.selectedAdventure || 'The Far Realm',
+            heroLine,
+            dayLine: `${tr.dayWord} ${store.campaignRuntime.dayCount || 1}`,
+            prologue: briefing?.prologue,
+            chronicle,
+            images: galleryImages,
+            language,
+        });
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `chronique-${(store.character?.name || 'hero').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+    };
 
     return (
         <GameWindow
@@ -132,6 +183,9 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
                 {activeTab === 'people' && <PeopleList npcs={npcs} tr={tr} />}
                 {activeTab === 'places' && <PlaceList locations={locations} tr={tr} />}
                 {activeTab === 'chronicle' && <ChronicleList entries={chronicle} tr={tr} />}
+                {activeTab === 'gallery' && (
+                    <GalleryView images={galleryImages} tr={tr} onExport={handleExportChronicle} />
+                )}
             </div>
         </GameWindow>
     );
@@ -203,6 +257,19 @@ function QuestList({ quests, tr }: { quests: Quest[]; tr: Tr }) {
                         <QuestBadge status={quest.status} tr={tr} />
                     </div>
                     <p className="text-sm leading-relaxed text-white/60">{quest.description}</p>
+                    {/* Étapes cochables (update_quest_step) */}
+                    {Boolean(quest.steps?.length) && (
+                        <ul className="mt-3 space-y-1 border-t border-white/10 pt-2">
+                            {quest.steps!.map(step => (
+                                <li key={step.id} className={`flex items-start gap-2 text-xs ${step.done ? 'text-emerald-300/80' : 'text-white/60'}`}>
+                                    {step.done
+                                        ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                                        : <Circle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/30" />}
+                                    <span className={step.done ? 'line-through' : ''}>{step.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             ))}
         </div>
@@ -230,23 +297,80 @@ function PeopleList({ npcs, tr }: { npcs: NPC[]; tr: Tr }) {
 
     return (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {npcs.map(npc => (
-                <div key={npc.id} className="rounded-md border border-white/10 bg-white/[0.03] p-4">
-                    <div className="mb-2 flex items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-400/20 bg-blue-500/10 text-blue-300">
-                            <Users className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                            <h4 className="truncate font-bold text-blue-200">{npc.name}</h4>
-                            <p className="mt-0.5 flex items-center gap-1 text-xs uppercase tracking-wide text-white/35">
-                                <MapPin className="h-3 w-3" />
-                                {npc.location || tr.unknown}
-                            </p>
-                        </div>
+            {npcs.map(npc => <NpcCard key={npc.id} npc={npc} tr={tr} />)}
+        </div>
+    );
+}
+
+// Carte PNJ avec portrait généré (FLUX local, cache IndexedDB) — l'icône reste
+// le fallback tant que le portrait n'existe pas / si les images sont coupées.
+// Typé React.FC pour que JSX accepte l'attribut `key` (cf. CombatantRow).
+const NpcCard: React.FC<{ npc: NPC; tr: Tr }> = ({ npc, tr }) => {
+    const portraitUrl = usePortrait(npcPortraitKey(npc.name), portraitPrompt(npc.name, npc.description));
+    return (
+        <div className="rounded-md border border-white/10 bg-white/[0.03] p-4">
+            <div className="mb-2 flex items-start gap-3">
+                {portraitUrl ? (
+                    <img
+                        src={portraitUrl}
+                        alt={npc.name}
+                        className="h-14 w-14 shrink-0 rounded-md border border-blue-400/25 object-cover shadow-lg"
+                    />
+                ) : (
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-md border border-blue-400/20 bg-blue-500/10 text-blue-300">
+                        <Users className="h-6 w-6" />
                     </div>
-                    <p className="text-sm leading-relaxed text-white/60">{npc.description}</p>
+                )}
+                <div className="min-w-0">
+                    <h4 className="truncate font-bold text-blue-200">{npc.name}</h4>
+                    <p className="mt-0.5 flex items-center gap-1 text-xs uppercase tracking-wide text-white/35">
+                        <MapPin className="h-3 w-3" />
+                        {npc.location || tr.unknown}
+                    </p>
                 </div>
-            ))}
+            </div>
+            <p className="text-sm leading-relaxed text-white/60">{npc.description}</p>
+        </div>
+    );
+};
+
+// Galerie de la chronique illustrée + export HTML autonome.
+function GalleryView({ images, tr, onExport }: { images: GalleryImage[]; tr: Tr; onExport: () => void }) {
+    const [zoomed, setZoomed] = useState<GalleryImage | null>(null);
+    return (
+        <div className="space-y-3">
+            <button
+                type="button"
+                onClick={onExport}
+                className="inline-flex items-center gap-2 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-amber-200 hover:bg-amber-400/20"
+            >
+                <Download className="h-4 w-4" /> {tr.exportChronicle}
+            </button>
+            {!images.length ? (
+                <EmptyState icon={<Images className="h-8 w-8" />} text={tr.galleryEmpty} />
+            ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {images.map(image => (
+                        <button
+                            key={image.id}
+                            type="button"
+                            onClick={() => setZoomed(image)}
+                            className="group overflow-hidden rounded-md border border-white/10 bg-black/30 text-left transition hover:border-amber-400/40"
+                        >
+                            <img src={image.dataUrl} alt={image.summary} loading="lazy" className="aspect-video w-full object-cover transition group-hover:scale-105" />
+                            <div className="truncate px-2 py-1.5 text-[10px] text-white/45">{image.summary || image.phase}</div>
+                        </button>
+                    ))}
+                </div>
+            )}
+            {zoomed && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4" onClick={() => setZoomed(null)}>
+                    <div className="max-h-full max-w-4xl">
+                        <img src={zoomed.dataUrl} alt={zoomed.summary} className="max-h-[80vh] w-auto rounded-md shadow-2xl" />
+                        <p className="mt-2 text-center text-xs text-white/55">{zoomed.summary}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

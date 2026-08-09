@@ -7,6 +7,7 @@ import { campaignEventLog } from './campaignEventLog';
 import { log } from './logger';
 import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from './mediaThrottle';
 import { withMusicGpu } from './gpuLock';
+import { getAppSettings } from '../store/settingsStore';
 
 const DB_NAME = 'dungeonai_media_cache';
 const DB_VERSION = 1;
@@ -220,32 +221,33 @@ function hashText(value: string): string {
     return Math.abs(hash).toString(36);
 }
 
-function promptList(prompts: WeightedPrompt[]): string {
-    return prompts
-        .map(prompt => `${prompt.text} (weight ${prompt.weight})`)
-        .join('; ');
-}
-
 export function buildMusicPromptForMood(
     mood: MusicMood,
     prompts: WeightedPrompt[],
     durationSeconds: number,
     loop: boolean
 ): string {
-    const durationText = durationSeconds <= 30 ? '30-second' : '3-minute';
-    const phase = mood.replace(/_/g, ' ');
-    const loopInstruction = loop
-        ? 'Make the final bars loop cleanly back into the opening without a hard ending.'
-        : 'End naturally with a short resolution.';
+    // Stable Audio 3 is trained on SHORT caption-style prompts (genre,
+    // instruments, mood). The old builder emitted a paragraph of instructions
+    // ("Create a 3-minute…", "(weight 1.5)", "Leave space for narration…") that
+    // the model cannot follow — and negations ("No vocals") can summon the very
+    // thing they name, since there is no negative prompt. New contract: a
+    // compact comma list — "Instrumental" as a POSITIVE tag, descriptors sorted
+    // by weight (strongest first = most attention), one form tag.
+    const descriptors = [...prompts]
+        .sort((a, b) => b.weight - a.weight)
+        .map(prompt => prompt.text);
+    const phase = mood === 'custom' ? 'fantasy' : mood.replace(/_/g, ' ');
+    const form = durationSeconds <= 30
+        ? (loop ? 'seamless short loop' : 'short cue')
+        : 'ambient background track';
 
     return [
-        `Create a ${durationText} instrumental background track for a D&D campaign ${phase} phase.`,
-        'No vocals, no sung lyrics, no spoken words, no recognizable copyrighted melody.',
-        'Leave space for live dungeon master narration and player dialogue.',
-        loopInstruction,
-        `Musical direction: ${promptList(prompts)}.`,
-        'Style: cinematic fantasy game soundtrack, coherent structure, immersive but not distracting.',
-    ].join(' ');
+        'Instrumental cinematic fantasy game soundtrack',
+        `${phase} theme`,
+        ...descriptors,
+        form,
+    ].join(', ');
 }
 
 async function openMediaDb(): Promise<IDBDatabase | null> {
@@ -311,7 +313,7 @@ class LyriaMusicService {
     private fadingAudio: HTMLAudioElement | null = null;
     private currentMood: MusicMood | null = null;
     private currentTrackKey: string | null = null;
-    private _targetVolume = 0.315;
+    private _targetVolume = getAppSettings().musicVolume;
     private _isDucking = false;
     private _isConnected = false;
     private generationToken = 0;
@@ -349,6 +351,7 @@ class LyriaMusicService {
     }
 
     async setMood(mood: MusicMood, customPrompts?: WeightedPrompt[], customConfig?: MusicConfig): Promise<void> {
+        if (!getAppSettings().localMusic) return; // musique locale désactivée (Réglages)
         await this.connect();
         const plan = this.buildPlan(mood, customPrompts, customConfig);
         const combatLoopPlan = this.isCombatLoopPlan(plan);

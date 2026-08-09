@@ -11,6 +11,10 @@ const TRANS = {
         bonusActionTitle: 'Bonus Action (Yellow = Available, Gray = Used)',
         reactionTitle: 'Reaction (Purple = Available, Gray = Used)',
         extraAttackTitle: 'Extra Attack (Blue = Available, Gray = Used)',
+        rangeNear: '↔ near',
+        rangeFar: '🏹 far',
+        rangeNearTitle: 'A few strides away — a melee attack closes in for free.',
+        rangeFarTitle: 'Far away — closing in takes your attack, or use a ranged/thrown weapon.',
         target: '🎯 TARGET',
         init: 'Init',
         usesRemaining: (n: number) => `${n} uses remaining`,
@@ -36,6 +40,10 @@ const TRANS = {
         bonusActionTitle: 'Action Bonus (Jaune = Disponible, Gris = Utilisé)',
         reactionTitle: 'Réaction (Violet = Disponible, Gris = Utilisé)',
         extraAttackTitle: 'Attaque Supplémentaire (Bleu = Disponible, Gris = Utilisé)',
+        rangeNear: '↔ proche',
+        rangeFar: '🏹 loin',
+        rangeNearTitle: 'À quelques pas — une attaque de mêlée engage gratuitement.',
+        rangeFarTitle: 'Loin — se rapprocher coûte ton attaque, ou utilise une arme à distance/de jet.',
         target: '🎯 CIBLE',
         init: 'Init',
         usesRemaining: (n: number) => `${n} utilisations restantes`,
@@ -76,6 +84,10 @@ export interface Combatant {
     dexMod?: number;
     /** Damage types this combatant resists (halved). The player carries racial resistances. */
     resistances?: string[];
+    /** Explicit XP award (DM-provided via add_enemy_init). Falls back to bestiary → HP estimate. */
+    xpValue?: number;
+    /** Distance band relative to the player: melee = au contact, near = quelques mètres, far = loin. */
+    range?: 'melee' | 'near' | 'far';
 }
 
 /** Faction of a combatant, back-compatible with the old isPlayer-only model. */
@@ -101,12 +113,14 @@ interface Props {
     playerStoryModifiers?: any[];
     selectedTargetId?: string;
     onSelectTarget?: (id: string) => void;
-    onAttack?: (weaponItem: any, targetId: string) => void;
+    onAttack?: (weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) => void;
     /** Bonus-action attack: off-hand weapon, Berserker Frenzy, or War Priest. */
     onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest') => void;
     onCastSpell?: (spellName: string, slotLevel: string | null, targetId: string) => void;
     onDodge?: () => void;
     onUsePotion?: (potionItem: any) => void;
+    /** Class-resource abilities (Rage, Second Wind, Action Surge, Ki…). */
+    onUseAbility?: (abilityId: any, targetId?: string) => void;
     /** True while a player action is mid-resolution — disables the action panel. */
     isResolvingAction?: boolean;
 }
@@ -182,6 +196,11 @@ function CombatantPortrait({
                 src={combatant.portrait}
                 alt={combatant.name}
                 onClick={onClick}
+                // AideDD bloque le hotlinking sur le Referer : sans no-referrer,
+                // tous les portraits SRD (aidedd.org/dnd/images/*.jpg) tombaient
+                // en 403 et l'onError les cachait — d'où « pas de portraits ».
+                referrerPolicy="no-referrer"
+                loading="lazy"
                 className={`h-12 w-12 rounded-md border object-cover shadow-lg ${isTurn ? 'border-amber-300' : 'border-white/15'} ${clickableClass}`}
                 onError={(event) => { (event.target as HTMLImageElement).style.display = 'none'; }}
             />
@@ -320,6 +339,18 @@ const CombatantRow: React.FC<{
                                 <span>{tr.init} {combatant.initiative}</span>
                                 {creature && <span>CR {creature.cr}</span>}
                                 {primaryAttack && <span className="truncate">{primaryAttack.damage} {primaryAttack.damageType}</span>}
+                                {combatantSide(combatant) === 'enemy' && combatant.range && combatant.range !== 'melee' && (
+                                    <span
+                                        title={combatant.range === 'far' ? tr.rangeFarTitle : tr.rangeNearTitle}
+                                        className={`inline-flex items-center rounded border px-1 py-0.5 text-[9px] font-bold uppercase ${
+                                            combatant.range === 'far'
+                                                ? 'border-sky-500/40 bg-sky-500/10 text-sky-300'
+                                                : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+                                        }`}
+                                    >
+                                        {combatant.range === 'far' ? tr.rangeFar : tr.rangeNear}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
@@ -433,6 +464,7 @@ export function CombatTracker({
     onCastSpell,
     onDodge,
     onUsePotion,
+    onUseAbility,
     isResolvingAction,
 }: Props) {
     // Rules of Hooks: every hook must run before any early return. (This
@@ -447,7 +479,8 @@ export function CombatTracker({
     const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
     const displayNames = buildDisplayNames(sorted);
     const living = sorted.filter(combatant => combatant.hp.current > 0);
-    const enemiesAlive = living.filter(combatant => !combatant.isPlayer).length;
+    // Faction-aware: allies must NOT count as enemies in the header tally.
+    const enemiesAlive = living.filter(combatant => combatantSide(combatant) === 'enemy').length;
     const currentIndex = sorted.findIndex(combatant => normalizeTurn(combatant.name) === normalizeTurn(currentTurn) || combatant.id === currentTurn);
     const current = currentIndex >= 0 ? sorted[currentIndex] : undefined;
 
@@ -570,6 +603,7 @@ export function CombatTracker({
                         onCastSpell={onCastSpell}
                         onDodge={onDodge}
                         onUsePotion={onUsePotion}
+                        onUseAbility={onUseAbility}
                         disabled={isResolvingAction}
                     />
                 </div>

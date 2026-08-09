@@ -33,7 +33,7 @@ def get_pipeline():
     if pipe is not None:
         return pipe
         
-    print("Loading FLUX.2-klein-9B model with 4-bit NF4 Quantization on CUDA...")
+    print("Loading FLUX.2-klein-9B (transformer NF4, text encoder INT8) on CUDA...")
     try:
         # Configurer la quantification 4-bit (NF4) pour le Transformer
         bnb_config = DiffusersBitsAndBytesConfig(
@@ -52,14 +52,15 @@ def get_pipeline():
             local_files_only=True
         )
         
-        # Configurer la quantification 4-bit pour le Text Encoder Qwen3
+        # Text Encoder Qwen3 en INT8 (pas nf4) : c'est lui qui LIT le prompt,
+        # et en 4-bit il perdait la comprehension des scenes complexes — la
+        # cause n°1 des images hors-sujet. int8 est quasi sans perte ; le
+        # cpu_offload le decharge pendant la diffusion donc la VRAM ne bouge pas.
         text_encoder_config = TransformersBitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_compute_dtype=torch.bfloat16
+            load_in_8bit=True
         )
-        
-        # Charger le Text Encoder Qwen3 en 4-bit (~4.5 Go de VRAM)
+
+        # Charger le Text Encoder Qwen3 en int8 (~9 Go, offload CPU entre les steps)
         text_encoder = AutoModelForCausalLM.from_pretrained(
             "black-forest-labs/FLUX.2-klein-9B",
             subfolder="text_encoder",
@@ -103,7 +104,7 @@ async def startup_event():
 class ImageRequest(BaseModel):
     prompt: str
     aspect_ratio: str = "16:9"
-    num_inference_steps: int = 4  # Schnell/Klein est optimisé pour 4 étapes
+    num_inference_steps: int = 6  # 4 = plancher du distille (rendu mou) ; 6 = net, +50% de temps
 
 @app.get("/health")
 async def health():

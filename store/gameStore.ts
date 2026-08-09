@@ -173,6 +173,12 @@ interface GameState {
     isGeneratingImage: boolean;
     setIsGeneratingImage: (isGenerating: boolean) => void;
 
+    // Cloud save health — flips to 'failing' when a Firestore write throws so the
+    // UI can warn the player instead of silently losing progress.
+    saveHealth: 'ok' | 'failing';
+    lastSaveErrorAt: number | null;
+    setSaveHealth: (ok: boolean) => void;
+
     // Helpers to sync and update combat-related character states
     updateCharacterHPAndCombatHP: (hp: number) => void;
     deductSpellSlot: (level: string) => void;
@@ -199,6 +205,10 @@ const defaultSessionState = {
     combatRolls: [],
     devMode: false,
     isGeneratingImage: false,
+    // Reset per session so a failed-save badge from a previous game never leaks
+    // into a freshly loaded/started one (loadSaveState/resetSessionState spread this).
+    saveHealth: 'ok' as const,
+    lastSaveErrorAt: null,
 };
 
 function makeBranchId(): string {
@@ -370,6 +380,12 @@ export const useGameStore = create<GameState>((set) => ({
     isGeneratingImage: false,
     setIsGeneratingImage: (isGeneratingImage) => set({ isGeneratingImage }),
 
+    saveHealth: 'ok',
+    lastSaveErrorAt: null,
+    setSaveHealth: (ok) => set(ok
+        ? { saveHealth: 'ok' }
+        : { saveHealth: 'failing', lastSaveErrorAt: Date.now() }),
+
     updateCharacterHPAndCombatHP: (hp) => set((state) => {
         if (!state.character) return state;
         const nextChar = {
@@ -422,7 +438,11 @@ export const useGameStore = create<GameState>((set) => ({
         campaignRuntime: normalizeRuntime(saveData.campaignRuntime),
         transcript: saveData.transcript || [],
         journal: saveData.journal || DEFAULT_JOURNAL,
-        combatState: saveData.combat || defaultSessionState.combatState,
+        // Only restore a combat that is genuinely ACTIVE — a cleared/legacy
+        // combat block must never resurrect a finished fight on load.
+        combatState: (saveData.combat && saveData.combat.isActive)
+            ? saveData.combat
+            : defaultSessionState.combatState,
     }),
 
     resetSessionState: () => set({ ...defaultSessionState, character: null, selectedAdventure: '', activeSaveId: null, adventureManifest: '', adventureManifestData: null, campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME }),

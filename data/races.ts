@@ -138,9 +138,11 @@ export const RACE_DATA: Record<string, {
     },
     "Dragonborn": {
         desc: "Fiers descendants des dragons, ils possèdent un souffle dévastateur lié à leur ascendance.",
-        features: ["Souffle de dragon (2d6, type et sauvegarde selon l'ascendance draconique)", "Résistance au type de dégâts de l'ascendance (feu par défaut — à ajuster selon le dragon)"],
+        features: ["Souffle de dragon (2d6, type et sauvegarde selon l'ascendance draconique)", "Résistance au type de dégâts de ton ascendance draconique (choisie à la création)"],
         profs: [],
         languages: ["Commun", "Draconique"],
+        // Legacy fallback only — the real resistance follows character.draconicAncestry
+        // (see getDraconicDamageType / startEncounter). Kept 'fire' for old saves.
         speed: 30, size: 'Medium', resistances: ['fire'],
     },
 };

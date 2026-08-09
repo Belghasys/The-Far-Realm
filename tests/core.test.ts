@@ -1033,20 +1033,31 @@ describe('campaignEventLog persistence', () => {
 });
 
 describe('campaign media prompts', () => {
-    it('builds combat music as a short loop with no vocals', () => {
+    it('builds combat music as a compact instrumental caption (no instruction soup)', () => {
         const prompt = buildMusicPromptForMood('combat', [{ text: 'urgent drums', weight: 1 }], 30, true);
 
-        expect(prompt).toContain('30-second');
-        expect(prompt).toContain('loop cleanly');
-        expect(prompt).toContain('No vocals');
+        expect(prompt).toContain('Instrumental');
+        expect(prompt).toContain('urgent drums');
+        expect(prompt).toContain('loop');
+        // Stable Audio reads short captions: no negations (they summon what
+        // they name), no weight metadata, no "Create a..." instructions.
+        expect(prompt).not.toContain('No vocals');
+        expect(prompt).not.toContain('weight');
+        expect(prompt).not.toContain('Create');
+        expect(prompt.length).toBeLessThan(220);
     });
 
-    it('builds exploration music as long background ambience', () => {
-        const prompt = buildMusicPromptForMood('exploration', [{ text: 'soft strings', weight: 1 }], 180, true);
+    it('builds exploration music as a long ambient caption sorted by weight', () => {
+        const prompt = buildMusicPromptForMood('exploration', [
+            { text: 'soft strings', weight: 0.8 },
+            { text: 'ambient fantasy soundtrack', weight: 1.5 },
+        ], 180, true);
 
-        expect(prompt).toContain('3-minute');
         expect(prompt).toContain('background track');
-        expect(prompt).toContain('dungeon master narration');
+        expect(prompt).toContain('exploration theme');
+        // Strongest descriptor first (attention peaks early in the caption).
+        expect(prompt.indexOf('ambient fantasy soundtrack')).toBeLessThan(prompt.indexOf('soft strings'));
+        expect(prompt).not.toContain('dungeon master');
     });
 
     it('computes the shared 3-minute media cooldown', () => {
@@ -1401,3 +1412,709 @@ describe('getXPProgress (XP bar)', () => {
     });
 });
 
+
+// ─── Magic item catalog & loot tables ────────────────────────────────────────
+import { MAGIC_ITEMS, getMagicItemByName, magicItemToInventoryItem, rollLootTable, pickMagicItem } from '../data/magicItems';
+import { FEATS, getFeatById } from '../data/feats';
+import { featNumericBonus, featGrantsAdvantageOn } from '../services/rulesEngine';
+
+describe('magic item catalog & loot tables', () => {
+    it('ships a substantial SRD catalog with bilingual names', () => {
+        expect(MAGIC_ITEMS.length).toBeGreaterThanOrEqual(60);
+        for (const item of MAGIC_ITEMS) {
+            expect(item.name.length).toBeGreaterThan(0);
+            expect(item.nameFr.length).toBeGreaterThan(0);
+            expect(item.effects.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('finds items by EN or FR name, accent- and case-insensitive', () => {
+        expect(getMagicItemByName('flame tongue')?.id).toBe('flame_tongue');
+        expect(getMagicItemByName('Épée longue +1')?.id).toBe('longsword_plus_1');
+        expect(getMagicItemByName('epee longue +1')?.id).toBe('longsword_plus_1');
+    });
+
+    it('never rolls out-of-depth loot for a level 1-4 party (seeded rng sweep)', () => {
+        let seed = 42;
+        const rng = () => {
+            seed = (seed * 1103515245 + 12345) % 2147483648;
+            return seed / 2147483648;
+        };
+        for (let i = 0; i < 500; i++) {
+            for (const item of rollLootTable(2, rng)) {
+                expect(item.minLevel).toBeLessThanOrEqual(2);
+                expect(['very rare', 'legendary']).not.toContain(item.rarity);
+            }
+        }
+    });
+
+    it('pickMagicItem respects the rarity and level cap filters', () => {
+        const item = pickMagicItem('uncommon', () => 0.5, 4);
+        expect(item?.rarity).toBe('uncommon');
+        expect(item!.minLevel).toBeLessThanOrEqual(4);
+    });
+
+    it('converts a catalog weapon into an equippable inventory item with parsed effects', () => {
+        const def = getMagicItemByName('Flame Tongue')!;
+        const item = magicItemToInventoryItem(def, 'fr');
+        expect(item.name).toBe(def.nameFr);
+        expect(item.slot).toBe('mainHand');
+        expect(item.effect).toContain('fire');
+        expect(item.quantity).toBe(1);
+    });
+});
+
+// ─── Feats ───────────────────────────────────────────────────────────────────
+describe('feats', () => {
+    it('ships at least 15 feats with bilingual text and DM notes', () => {
+        expect(FEATS.length).toBeGreaterThanOrEqual(15);
+        for (const feat of FEATS) {
+            expect(feat.nameFr.length).toBeGreaterThan(0);
+            expect(feat.dmNote.length).toBeGreaterThan(0);
+        }
+    });
+
+    it('featNumericBonus sums Alert initiative bonus from the character feats', () => {
+        const char = { ...DEFAULT_CHAR, feats: ['alert'] };
+        expect(featNumericBonus(char, 'initiativeBonus')).toBe(5);
+        expect(featNumericBonus(DEFAULT_CHAR, 'initiativeBonus')).toBe(0);
+    });
+
+    it('Alert raises rolled initiative in startEncounter', () => {
+        const base = { ...DEFAULT_CHAR, feats: ['alert'] };
+        let minInit = Infinity;
+        for (let i = 0; i < 30; i++) {
+            const state = startEncounter(base, { isActive: false, combatants: [], currentTurn: '' });
+            const player = state.combatants.find(c => c.isPlayer)!;
+            minInit = Math.min(minInit, player.initiative);
+        }
+        const dexMod = Math.floor((DEFAULT_CHAR.stats.DEX - 10) / 2);
+        // d20 minimum is 1, so with +5 the floor is 6 + dexMod.
+        expect(minInit).toBeGreaterThanOrEqual(1 + dexMod + 5);
+    });
+
+    it('War Caster grants advantage on the concentration save prompt', () => {
+        const char = {
+            ...DEFAULT_CHAR,
+            feats: ['war-caster'],
+            hp: { current: 10, max: 10 },
+            activeEffects: [{
+                id: 'fx', name: 'Bless', source: 'spell', concentration: true,
+                duration: 'concentration', modifiers: [],
+            } as any],
+        };
+        const result = resolveConcentrationAfterDamage(char, 12);
+        expect(result.prompt?.advantage).toBe('advantage');
+    });
+
+    it('Mobile adds +10 to effective speed', () => {
+        const char = { ...DEFAULT_CHAR, feats: ['mobile'] };
+        expect(getEffectiveSpeed(char)).toBe(getEffectiveSpeed(DEFAULT_CHAR) + 10);
+    });
+});
+
+// ─── 2026-08-08 global audit regression tests ───────────────────────────────
+import { applyDamageToCharacter, playerResistances, sanitizeXPGrant, updateEnemyHP } from '../services/rulesEngine';
+import { getCheckModifier, canonicalSkillName } from '../services/skillSystem';
+import { getEnemyXP } from '../services/xpSystem';
+
+describe('audit fixes (combat/XP/skills/damage)', () => {
+    beforeAll(async () => {
+        await preloadCodexBestiary();
+    });
+
+    it('getCheckModifier keeps proficiency + expertise when the DM passes the FRENCH skill name', () => {
+        const res = getCheckModifier({
+            effectiveStats: { STR: 10, DEX: 16, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+            level: 5,
+            skill: 'Discrétion',
+            proficiencies: ['Stealth'],
+            expertise: ['Stealth'],
+        });
+        expect(res.ability).toBe('DEX');
+        expect(res.proficient).toBe(true);
+        expect(res.expert).toBe(true);
+        expect(res.modifier).toBe(3 + 3 + 3); // DEX +3, proficiency +3, expertise +3
+        expect(canonicalSkillName('Discrétion')).toBe('Stealth');
+        expect(canonicalSkillName('perception')).toBe('Perception');
+    });
+
+    it('getEnemyXP uses whole-word matching (a Pirate is not a Rat)', () => {
+        expect(getEnemyXP('Rat')).toBe(10);
+        expect(getEnemyXP('Pirate')).toBe(50); // falls to default, not the Rat 10
+        expect(getEnemyXP('Goblin Boss')).toBe(50); // whole-word Goblin still matches
+    });
+
+    it('sanitizeXPGrant clamps against real bestiary XP instead of the tiny English table', () => {
+        const dragon = getCreature('Adult Black Dragon');
+        expect(dragon).toBeTruthy();
+        const clamped = sanitizeXPGrant(999999, ['Adult Black Dragon']);
+        // Old behavior: unknown name → 50 XP default → cap max(75, 100) = 100.
+        expect(clamped).toBeGreaterThan(1000);
+        expect(clamped).toBe(Math.round(Math.max(dragon!.xp * 1.5, 100)));
+    });
+
+    it('startEncounter drops a stale (inactive) roster so corpses never re-enter the next fight', () => {
+        const stale: any = {
+            isActive: false,
+            currentTurn: '',
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 9, max: 9 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'g1', name: 'Goblin', hp: { current: 0, max: 7 }, ac: 15, initiative: 12, isPlayer: false, side: 'enemy' },
+                { id: 'g2', name: 'Goblin', hp: { current: 4, max: 7 }, ac: 15, initiative: 8, isPlayer: false, side: 'enemy' },
+            ],
+        };
+        const fresh = startEncounter(DEFAULT_CHAR, stale);
+        expect(fresh.combatants.some(c => c.id === 'g1')).toBe(false);
+        expect(fresh.combatants.some(c => c.id === 'g2')).toBe(false);
+        expect(fresh.combatants.some(c => c.isPlayer)).toBe(true);
+        // A genuinely ACTIVE combat keeps its full roster (mid-fight resume).
+        const resumed = startEncounter(DEFAULT_CHAR, { ...stale, isActive: true });
+        expect(resumed.combatants.some(c => c.id === 'g2')).toBe(true);
+    });
+
+    it('applyDamageToCharacter halves racially-resisted damage out of combat and burns temp HP first', () => {
+        const dwarf: any = { ...DEFAULT_CHAR, race: 'Dwarf', tempHP: 3, hp: { current: 20, max: 20 } };
+        const res = applyDamageToCharacter(dwarf, 10, 'poison');
+        expect(res.mitigation).toBe('resistant');
+        expect(res.amountApplied).toBe(5);
+        expect(res.character.tempHP).toBe(0);
+        expect(res.character.hp.current).toBe(18); // 5 halved − 3 temp = 2 through
+    });
+
+    it('playerResistances covers racial and draconic-ancestry resistances', () => {
+        expect(playerResistances({ ...DEFAULT_CHAR, race: 'Dwarf' } as any)).toContain('poison');
+        expect(playerResistances({ ...DEFAULT_CHAR, race: 'Dragonborn', draconicAncestry: 'Blue' } as any)).toContain('lightning');
+    });
+
+    it('resolveAttackAction rolls enemy attacks against the player LIVE effective AC (Shield counts)', () => {
+        const random = vi.spyOn(Math, 'random').mockReturnValue(0.5); // d20 = 11
+        const shielded: any = {
+            ...DEFAULT_CHAR,
+            activeEffects: [{ id: 's', name: 'Shield', source: 'spell', duration: 'rounds', roundsRemaining: 1, modifiers: [{ stat: 'AC', bonus: 5 }] }],
+        };
+        const state: any = {
+            isActive: true, currentTurn: 'enemy-1', round: 1, turnIndex: 0,
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 10, max: 10 }, ac: 5, initiative: 5, isPlayer: true },
+                { id: 'enemy-1', name: 'Sbire', hp: { current: 10, max: 10 }, ac: 10, initiative: 15, isPlayer: false },
+            ],
+        };
+        const result = resolveAttackAction(state, { attacker: 'enemy-1', target: 'player', attackBonus: 4, damageFormula: '1d6', damageType: 'slashing' }, shielded);
+        random.mockRestore();
+        expect(result.success).toBe(true);
+        // 11 + 4 = 15 beats the STALE row AC (5) but must miss the live 16+5 = 21.
+        expect(result.resolution?.hit).toBe(false);
+    });
+
+    it('adds scaled Sneak Attack dice for a Rogue striking with advantage and a finesse weapon', () => {
+        const random = vi.spyOn(Math, 'random').mockReturnValue(0.9); // d20 = 19 → hit
+        const rogue: any = {
+            ...DEFAULT_CHAR,
+            class: 'Rogue',
+            level: 5, // 3d6 sneak attack
+            weapon: { name: 'Dagger', damage: '1d4', damageType: 'piercing', abilityMod: 'DEX', attackBonus: 5, properties: ['finesse', 'light'] },
+        };
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, turnIndex: 0,
+            actionEconomy: { player: { attacksUsed: 0, attacksMax: 1 } },
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 10, max: 10 }, ac: 16, initiative: 15, isPlayer: true },
+                { id: 'g1', name: 'Goblin', hp: { current: 30, max: 30 }, ac: 5, initiative: 5, isPlayer: false },
+            ],
+        };
+        const result = resolveAttackAction(state, {
+            attacker: 'player', target: 'g1', advantage: 'advantage',
+            damageFormula: '1d4+3', damageType: 'piercing',
+        }, rogue);
+        random.mockRestore();
+        expect(result.success).toBe(true);
+        expect(result.resolution?.hit).toBe(true);
+        expect(result.resolution?.damageParts?.some(part => part.damageFormula === '3d6')).toBe(true);
+    });
+
+    it('updateEnemyHP can heal/revive a downed enemy', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player',
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 9, max: 9 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'g1', name: 'Goblin', hp: { current: 0, max: 7 }, ac: 15, initiative: 5, isPlayer: false },
+            ],
+        };
+        const res = updateEnemyHP(state, 'Goblin', 5);
+        expect(res.found).toBe(true);
+        expect(res.enemy?.hp.current).toBe(5);
+    });
+});
+
+// ─── Feature batch: durations, class abilities, companions, 11-20 content ───
+import { tickRoundEffects, rageEffect, monkMartialArtsDie, syncCompanionsFromState } from '../services/rulesEngine';
+import { maxSpellLevelForClass } from '../services/codexService';
+import { buildChronicleHtml } from '../services/galleryService';
+
+describe('feature batch (durations, abilities, companions, high levels)', () => {
+    it('tickRoundEffects decrements per-round durations and reports expiries', () => {
+        const effects: any[] = [
+            { id: 'a', name: 'Shield', source: 'spell', duration: 'rounds', roundsRemaining: 1, modifiers: [] },
+            { id: 'b', name: 'Rage', source: 'class_feature', duration: 'rounds', roundsRemaining: 10, modifiers: [] },
+            { id: 'c', name: 'Mage Armor', source: 'spell', duration: '8_hours', modifiers: [] },
+        ];
+        const ticked = tickRoundEffects(effects);
+        expect(ticked.expired).toEqual(['Shield']);
+        expect(ticked.activeEffects.find(e => e.name === 'Rage')?.roundsRemaining).toBe(9);
+        expect(ticked.activeEffects.some(e => e.name === 'Mage Armor')).toBe(true); // untimed: untouched
+    });
+
+    it('Rage grants +2 damage and physical resistance via playerResistances', () => {
+        const effect = rageEffect();
+        expect(effect.modifiers).toEqual([{ stat: 'damageBonus', bonus: 2 }]);
+        const raging: any = { ...DEFAULT_CHAR, class: 'Barbarian', activeEffects: [effect] };
+        const resist = playerResistances(raging);
+        expect(resist).toEqual(expect.arrayContaining(['bludgeoning', 'piercing', 'slashing']));
+        // Totem Warrior rage resists (almost) everything.
+        const totem: any = { ...raging, subclass: 'Totem Warrior' };
+        expect(playerResistances(totem)).toContain('fire');
+    });
+
+    it('monk martial arts die scales with level', () => {
+        expect(monkMartialArtsDie(1)).toBe('1d4');
+        expect(monkMartialArtsDie(5)).toBe('1d6');
+        expect(monkMartialArtsDie(11)).toBe('1d8');
+        expect(monkMartialArtsDie(17)).toBe('1d10');
+    });
+
+    it('recruited companions auto-join encounters and sync HP back', () => {
+        const withCompanion: any = {
+            ...DEFAULT_CHAR,
+            companions: [{
+                id: 'comp_borin', name: 'Borin', hp: { current: 15, max: 20 }, ac: 14,
+                attack: { name: 'Hache', attackBonus: 4, damage: '1d8+2', damageType: 'slashing' },
+                recruitedAt: 1,
+            }],
+        };
+        const state = startEncounter(withCompanion, { isActive: false, combatants: [], currentTurn: '' });
+        const row = state.combatants.find(c => c.id === 'comp_borin');
+        expect(row).toBeTruthy();
+        expect(row!.side).toBe('ally');
+        expect(row!.hp).toEqual({ current: 15, max: 20 });
+        // Combat ends with the companion wounded → HP persists onto the sheet.
+        const wounded = state.combatants.map(c => c.id === 'comp_borin' ? { ...c, hp: { ...c.hp, current: 6 } } : c);
+        const synced = syncCompanionsFromState(withCompanion, wounded as any);
+        expect(synced.companions![0].hp.current).toBe(6);
+        // Rests heal: short → at least half, long → full.
+        const rested = applyShortRest(synced);
+        expect(rested.companions![0].hp.current).toBeGreaterThanOrEqual(10);
+        const fullRest = applyLongRest(synced);
+        expect(fullRest.companions![0].hp.current).toBe(20);
+    });
+
+    it('high-level spells (6-9) are in the codex and gated by class level', () => {
+        expect(lookupSpell('Meteor Swarm')?.level).toBe(9);
+        expect(lookupSpell('Chain Lightning')?.level).toBe(6);
+        expect(lookupSpell('Finger of Death')?.damage?.dice).toBe('7d8+30');
+        expect(maxSpellLevelForClass('Mage', 1)).toBe(1);
+        expect(maxSpellLevelForClass('Mage', 11)).toBe(6);
+        expect(maxSpellLevelForClass('Mage', 17)).toBe(9);
+        expect(maxSpellLevelForClass('Paladin', 1)).toBe(0);
+        expect(maxSpellLevelForClass('Paladin', 9)).toBe(3);
+        expect(maxSpellLevelForClass('Warlock', 9)).toBe(5);
+        expect(maxSpellLevelForClass('Fighter', 20)).toBe(0);
+    });
+
+    it('buildChronicleHtml produces a self-contained export with images and beats', () => {
+        const html = buildChronicleHtml({
+            title: 'Hiver sans aube',
+            heroLine: 'Testeur — Nain Guerrier, niveau 3',
+            dayLine: 'Jour 4',
+            prologue: 'Il neigeait déjà…',
+            chronicle: [{ title: 'Premier sang', description: 'Le gobelin est tombé.', timestamp: 1700000000000 }],
+            images: [{ id: 'i1', saveId: 's', dataUrl: 'data:image/jpeg;base64,AAAA', prompt: 'p', summary: 'Le col gelé', phase: 'exploration', createdAt: 1 }],
+            language: 'fr',
+        });
+        expect(html).toContain('<!DOCTYPE html>');
+        expect(html).toContain('Hiver sans aube');
+        expect(html).toContain('Premier sang');
+        expect(html).toContain('data:image/jpeg;base64,AAAA');
+        expect(html).toContain('Le col gelé');
+    });
+});
+
+// ─── 24-point batch: hour expiry, riders, distance, AoE, XP, FR parsing ─────
+import { worldHourOf, stampEffectExpiry, sweepExpiredEffects, resolveSpellAgainstTargets, hasFeatSpecial } from '../services/rulesEngine';
+import { estimateXPFromHP } from '../services/xpSystem';
+import { parseItemStatModifier, parseItemSpeedModifier, getRollBonus, getGearSkillBonus, getEffectiveAttackBonus } from '../types';
+
+describe('24-point batch (hour expiry, riders, distance, AoE, FR parsing)', () => {
+    it('worldHourOf maps day/timeOfDay to absolute hours', () => {
+        expect(worldHourOf(1, 'dawn')).toBe(6);
+        expect(worldHourOf(1, 'night')).toBe(23);
+        expect(worldHourOf(2, 'day')).toBe(36);
+    });
+
+    it('stampEffectExpiry + sweepExpiredEffects expire 1h/8h effects with the clock', () => {
+        const hour = worldHourOf(1, 'day'); // 12
+        const mark = stampEffectExpiry({ id: 'm', name: "Hunter's Mark", source: 'spell', duration: '1_hour', modifiers: [] } as any, hour);
+        const armor = stampEffectExpiry({ id: 'a', name: 'Mage Armor', source: 'spell', duration: '8_hours', modifiers: [] } as any, hour);
+        expect(mark.expiresAtWorldHour).toBe(13);
+        expect(armor.expiresAtWorldHour).toBe(20);
+        const char: any = { ...DEFAULT_CHAR, activeEffects: [mark, armor] };
+        // dusk (18h) : la Marque (13h) expire, l'Armure (20h) tient.
+        const swept = sweepExpiredEffects(char, worldHourOf(1, 'dusk'));
+        expect(swept.expired).toEqual(["Hunter's Mark"]);
+        expect(swept.character.activeEffects!.map(e => e.name)).toEqual(['Mage Armor']);
+    });
+
+    it("Hunter's Mark / Hex / Divine Favor create onWeaponHit riders", () => {
+        const ranger: any = { ...DEFAULT_CHAR, class: 'Ranger', knownSpells: ["Hunter's Mark"], spellSlots: { '1': { current: 2, max: 2 } } };
+        const cast = castSpell(ranger, { spellName: "Hunter's Mark", slotLevel: 1, worldHour: 10 });
+        expect(cast.success).toBe(true);
+        const fx = cast.character.activeEffects.find(e => e.name === "Hunter's Mark");
+        expect(fx?.onWeaponHit?.dice).toBe('1d6');
+        expect(fx?.expiresAtWorldHour).toBe(11);
+        expect(lookupSpell('Divine Favor')?.classes).toContain('Paladin');
+    });
+
+    it('estimateXPFromHP follows the SRD CR curve', () => {
+        expect(estimateXPFromHP(5)).toBe(25);
+        expect(estimateXPFromHP(30)).toBe(200);
+        expect(estimateXPFromHP(100)).toBe(1100);
+        expect(estimateXPFromHP(500)).toBe(8400);
+    });
+
+    it('French item texts parse: stats, vitesse, and roll bonuses on gear', () => {
+        expect(parseItemStatModifier({ name: 'Ceinturon de force', effect: 'FOR = 21', description: '' } as any, 'STR')).toMatchObject({ setTo: 21 });
+        expect(parseItemStatModifier({ name: 'Amulette', effect: 'Sagesse +2', description: '' } as any, 'WIS')).toMatchObject({ bonus: 2 });
+        expect(parseItemSpeedModifier({ name: 'Bottes', effect: 'vitesse +10', description: '' } as any)).toBe(10);
+        const geared: any = {
+            ...DEFAULT_CHAR,
+            inventory: [
+                { id: '1', name: 'Anneau de précision', type: 'ring', equipped: true, quantity: 1, effect: "+1 aux jets d'attaque" },
+                { id: '2', name: 'Cape', type: 'armor', equipped: true, quantity: 1, effect: '+2 Discrétion' },
+                { id: '3', name: 'Talisman', type: 'trinket', equipped: true, quantity: 1, effect: '+1 aux jets de sauvegarde' },
+            ],
+        };
+        expect(getEffectiveAttackBonus(geared)).toBe(1);
+        expect(getRollBonus(geared, 'save')).toBe(1);
+        expect(getGearSkillBonus(geared, ['Stealth', 'Discrétion'])).toBe(2);
+    });
+
+    it('French condition names resolve through aliases', () => {
+        expect(lookupCondition('aveuglé')?.id).toBe('blinded');
+        expect(lookupCondition('à terre')?.id).toBe('prone');
+        expect(lookupCondition('empoisonné')?.id).toBe('poisoned');
+        expect(lookupCondition('agrippé')?.id).toBe('grappled');
+    });
+
+    it('melee attack vs a FAR enemy becomes an engage (far → near), near engages free', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'e1', name: 'Archer', hp: { current: 10, max: 10 }, ac: 12, initiative: 5, isPlayer: false, side: 'enemy', range: 'far' },
+            ],
+        };
+        const char: any = { ...DEFAULT_CHAR, weapon: { name: 'Épée', damage: '1d8', damageType: 'slashing', abilityMod: 'STR', properties: [] } };
+        const first = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false }, char);
+        expect(first.success).toBe(true);
+        expect((first as any).advanced).toEqual({ name: 'Archer', from: 'far', to: 'near' });
+        expect(first.resolution).toBeUndefined();
+        const nearState = first.state;
+        expect(nearState.combatants.find((c: any) => c.id === 'e1')?.range).toBe('near');
+        // Depuis near : l'engagement est gratuit, l'attaque se résout et colle au contact.
+        const second = resolveAttackAction(nearState, { attacker: 'player', target: 'e1', consumeAction: false }, char);
+        expect(second.success).toBe(true);
+        expect(second.resolution).toBeTruthy();
+        expect(second.state.combatants.find((c: any) => c.id === 'e1')?.range).toBe('melee');
+    });
+
+    it('powerAttack flag is ignored without the matching feat', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'e1', name: 'Brute', hp: { current: 10, max: 10 }, ac: 12, initiative: 5, isPlayer: false, side: 'enemy' },
+            ],
+        };
+        const char: any = { ...DEFAULT_CHAR, feats: [], weapon: { name: 'Espadon', damage: '2d6', damageType: 'slashing', abilityMod: 'STR', properties: ['two-handed', 'heavy'] } };
+        const plain = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false }, char);
+        const flagged = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false, powerAttack: true } as any, char);
+        expect(flagged.resolution!.attackRoll.prompt.formula).toBe(plain.resolution!.attackRoll.prompt.formula);
+        expect(hasFeatSpecial(char, 'heavy_weapon_power_attack')).toBe(false);
+        const gwm: any = { ...char, feats: ['great-weapon-master'] };
+        const empowered = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false, powerAttack: true } as any, gwm);
+        const plainBonus = Number(plain.resolution!.attackRoll.prompt.formula.replace('1d20', '') || 0);
+        const empoweredBonus = Number(empowered.resolution!.attackRoll.prompt.formula.replace('1d20', '') || 0);
+        expect(empoweredBonus).toBe(plainBonus - 5);
+    });
+
+    it('resolveSpellAgainstTargets rolls one save per enemy and shares the damage roll', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'g1', name: 'Goblin', hp: { current: 7, max: 7 }, ac: 15, initiative: 5, isPlayer: false, side: 'enemy' },
+                { id: 'g2', name: 'Goblin', hp: { current: 7, max: 7 }, ac: 15, initiative: 4, isPlayer: false, side: 'enemy' },
+            ],
+        };
+        const prompt: any = {
+            type: 'SAVE', name: 'Burning Hands (DEX save)', formula: '1d20+1', dc: 13,
+            advantage: 'normal', dmBonus: 0, requestedAt: 1,
+            pendingSpell: { spellName: 'Burning Hands', damageFormula: '3d6', damageType: 'fire', effectOnSuccess: 'half' },
+        };
+        const aoe = resolveSpellAgainstTargets(state, prompt, ['g1', 'g2']);
+        expect(aoe).toBeTruthy();
+        expect(aoe!.results).toHaveLength(2);
+        expect(aoe!.sharedDamageRoll).toBeGreaterThanOrEqual(3);
+        for (const r of aoe!.results) {
+            // amountApplied rapporte les dégâts infligés (l'overkill n'est pas
+            // plafonné aux PV restants) — ½ arrondi bas sur sauvegarde réussie.
+            const expected = r.saveSuccess ? Math.floor(aoe!.sharedDamageRoll / 2) : aoe!.sharedDamageRoll;
+            expect(r.damage).toBe(expected);
+            expect(r.hp.current).toBeGreaterThanOrEqual(0);
+        }
+    });
+
+    it('Arcane Recovery restores slot levels on a short rest (once)', () => {
+        const mage: any = {
+            ...DEFAULT_CHAR, class: 'Mage', level: 4,
+            spellSlots: { '1': { current: 0, max: 4 }, '2': { current: 0, max: 3 } },
+            resources: { arcaneRecovery: { current: 1, max: 1, recoverOn: 'long_rest', label: 'Arcane Recovery' } },
+        };
+        const rested = applyShortRest(mage);
+        const recovered = (rested.spellSlots!['1'].current * 1) + (rested.spellSlots!['2'].current * 2);
+        expect(recovered).toBe(Math.ceil(4 / 2)); // budget ⌈niveau/2⌉ = 2
+        expect(rested.resources!.arcaneRecovery.current).toBe(0);
+    });
+});
+
+// ─── Batch montures / mode histoire / effets combattants / double équipement ─
+import { combatantEffectBonus } from '../services/rulesEngine';
+import { maxRollOfFormula } from '../services/utils';
+
+describe('mounts, story-mode healing, combatant effects', () => {
+    it('maxRollOfFormula computes the maximum of dice formulas', () => {
+        expect(maxRollOfFormula('2d4+2')).toBe(10);
+        expect(maxRollOfFormula('8d4+8')).toBe(40);
+        expect(maxRollOfFormula('1d8')).toBe(8);
+        expect(maxRollOfFormula('2d6+1d4+3')).toBe(19);
+        expect(maxRollOfFormula('5')).toBe(5);
+    });
+
+    it('castSpell maximizeHealing restores the maximum (story mode)', () => {
+        const cleric: any = {
+            ...DEFAULT_CHAR, class: 'Cleric', level: 3,
+            hp: { current: 1, max: 30 },
+            knownSpells: ['Cure Wounds'], preparedSpells: ['Cure Wounds'],
+            spellSlots: { '1': { current: 2, max: 2 } },
+        };
+        const result = castSpell(cleric, { spellName: 'Cure Wounds', slotLevel: 1, casterAbilityMod: 3, maximizeHealing: true });
+        expect(result.success).toBe(true);
+        // Cure Wounds 1d8 + mod → max 8 + 3 = 11, every time.
+        expect(result.healing).toBe(11);
+    });
+
+    it('combatantEffectBonus reads numeric effects on ANY combatant', () => {
+        const blessedAlly: any = {
+            id: 'a1', name: 'Borin', hp: { current: 10, max: 10 }, ac: 14, initiative: 5, side: 'ally',
+            activeEffects: [{ id: 'x', name: 'Bénédiction', source: 'spell', duration: 'rounds', roundsRemaining: 3, modifiers: [{ stat: 'AC', bonus: 2 }, { stat: 'attackBonus', bonus: 1 }] }],
+        };
+        expect(combatantEffectBonus(blessedAlly, 'AC')).toBe(2);
+        expect(combatantEffectBonus(blessedAlly, 'attackBonus')).toBe(1);
+        expect(combatantEffectBonus(blessedAlly, 'damageBonus')).toBe(0);
+    });
+
+    it('a cursed enemy is easier to hit (AC effect applied by the engine)', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                {
+                    id: 'e1', name: 'Chef bandit', hp: { current: 20, max: 20 }, ac: 30, initiative: 5, side: 'enemy',
+                    activeEffects: [{ id: 'c', name: 'Malédiction', source: 'spell', duration: 'rounds', roundsRemaining: 3, modifiers: [{ stat: 'AC', bonus: -10 }] }],
+                },
+            ],
+        };
+        const char: any = { ...DEFAULT_CHAR, weapon: { name: 'Épée', damage: '1d8', damageType: 'slashing', abilityMod: 'STR', properties: [] } };
+        const result = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false }, char);
+        // CA effective = 30 - 10 = 20 (visible dans le prompt du jet).
+        expect(result.resolution!.attackRoll.prompt.dc).toBe(20);
+    });
+
+    it('an ALLY melee attack ignores distance bands (no fake engage)', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'a1', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'a1', name: 'Borin', hp: { current: 10, max: 10 }, ac: 14, initiative: 8, side: 'ally' },
+                { id: 'e1', name: 'Archer', hp: { current: 10, max: 10 }, ac: 12, initiative: 5, side: 'enemy', range: 'far' },
+            ],
+        };
+        const result = resolveAttackAction(state, { attacker: 'a1', target: 'e1', attackBonus: 4, damageFormula: '1d8+2', consumeAction: false });
+        expect(result.success).toBe(true);
+        expect((result as any).advanced).toBeUndefined();
+        expect(result.resolution).toBeTruthy();
+        // La bande de l'ennemi (relative au JOUEUR) n'a pas bougé.
+        expect(result.state.combatants.find((c: any) => c.id === 'e1')?.range).toBe('far');
+    });
+
+    it('MOUNTED CHARGE: melee vs far closes to melee AND strikes in one action', () => {
+        const state: any = {
+            isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
+            combatants: [
+                { id: 'player', name: 'Hero', hp: { current: 20, max: 20 }, ac: 16, initiative: 10, isPlayer: true },
+                { id: 'e1', name: 'Archer', hp: { current: 10, max: 10 }, ac: 12, initiative: 5, side: 'enemy', range: 'far' },
+            ],
+        };
+        const rider: any = {
+            ...DEFAULT_CHAR,
+            mount: { name: 'Tempête', speed: 60, acquiredAt: 1 },
+            weapon: { name: 'Lance', damage: '1d12', damageType: 'piercing', abilityMod: 'STR', properties: [] },
+        };
+        const result = resolveAttackAction(state, { attacker: 'player', target: 'e1', consumeAction: false }, rider);
+        expect(result.success).toBe(true);
+        expect((result as any).advanced).toBeUndefined();
+        expect(result.resolution).toBeTruthy(); // l'attaque a bien eu lieu
+        expect(result.state.combatants.find((c: any) => c.id === 'e1')?.range).toBe('melee');
+    });
+});
+
+// ─── Créatures liées : montures typées, bêtes du rôdeur, familiers ──────────
+import { MOUNT_TYPES, getMountType, BEAST_COMPANIONS, getBeastCompanion, getFamiliarType, FAMILIAR_CLASSES } from '../data/companionOptions';
+import { ensureProgressionState as ensureProgression } from '../services/rulesEngine';
+
+describe('typed mounts, ranger beasts, familiars', () => {
+    it('mount catalog resolves by id or French/English name (accent-insensitive)', () => {
+        expect(getMountType('destrier')?.speed).toBe(60);
+        expect(getMountType('Élan')?.id).toBe('elan');
+        expect(getMountType('griffon')?.flying).toBe(true);
+        expect(getMountType('Pegasus')?.id).toBe('pegase');
+        expect(MOUNT_TYPES.every(m => m.speed >= 40)).toBe(true);
+    });
+
+    it('the Celestial Steed is gated to Paladin level 5+ (Find Steed)', () => {
+        const steed = getMountType('destrier_celeste');
+        expect(steed?.classOnly).toEqual({ class: 'Paladin', minLevel: 5 });
+    });
+
+    it('Beast Master beasts have distinct real stats and drive the ally row', () => {
+        expect(getBeastCompanion('ours')?.attack.damage).toBe('1d8+4');
+        expect(getBeastCompanion('Panthère')?.ac).toBe(14);
+        expect(getBeastCompanion('faucon')?.ac).toBe(15);
+        expect(BEAST_COMPANIONS).toHaveLength(4);
+
+        const ranger: any = { ...DEFAULT_CHAR, class: 'Ranger', subclass: 'Beast Master', level: 3, beastKind: 'ours' };
+        const state = startEncounter(ranger, { isActive: false, combatants: [], currentTurn: '' });
+        const row = state.combatants.find(c => c.id === 'companion');
+        expect(row?.name).toContain('Ours');
+        expect(row?.ac).toBe(12);
+        // Rétro-compatibilité : sans beastKind → loup.
+        const legacy = startEncounter({ ...ranger, beastKind: undefined }, { isActive: false, combatants: [], currentTurn: '' });
+        expect(legacy.combatants.find(c => c.id === 'companion')?.name).toContain('Loup');
+    });
+
+    it('a bonded familiar grants the Help resource (1/short rest)', () => {
+        expect(getFamiliarType('hibou')?.nameEn).toBe('Owl');
+        expect(getFamiliarType('chauve-souris')?.id).toBe('chauve_souris');
+        expect(FAMILIAR_CLASSES).toContain('Druid');
+
+        const mage: any = {
+            ...DEFAULT_CHAR, class: 'Mage',
+            familiar: { name: 'Plume', kind: 'Hibou', acquiredAt: 1 },
+        };
+        const ensured = ensureProgression(mage);
+        expect(ensured.resources?.familiarHelp).toMatchObject({ current: 1, max: 1, recoverOn: 'short_rest' });
+        // Sans familier : pas de ressource.
+        const plain = ensureProgression({ ...DEFAULT_CHAR, class: 'Mage' } as any);
+        expect(plain.resources?.familiarHelp).toBeUndefined();
+    });
+});
+
+// ─── Alliés autonomes : monture combattante, level-up des compagnons ────────
+import { levelUpCompanions } from '../services/rulesEngine';
+import { MOUNT_TYPES as MOUNTS_FOR_COMBAT } from '../data/companionOptions';
+
+describe('fighting mounts and companion level-ups', () => {
+    it('every mount type carries combat stats (hp, ac, attack)', () => {
+        for (const m of MOUNTS_FOR_COMBAT) {
+            expect(m.hp).toBeGreaterThan(0);
+            expect(m.ac).toBeGreaterThanOrEqual(9);
+            expect(m.attack.damage).toMatch(/\d+d\d+/);
+        }
+    });
+
+    it('the mount joins the encounter as an ally row with its type stats', () => {
+        const rider: any = {
+            ...DEFAULT_CHAR,
+            mount: { name: 'Tempête', kind: 'destrier', speed: 60, hp: { current: 19, max: 19 }, acquiredAt: 1 },
+        };
+        const state = startEncounter(rider, { isActive: false, combatants: [], currentTurn: '' });
+        const row = state.combatants.find(c => c.id === 'mount');
+        expect(row).toBeTruthy();
+        expect(row!.side).toBe('ally');
+        expect(row!.ac).toBe(11);
+        expect(row!.hp).toEqual({ current: 19, max: 19 });
+        // Monture à 0 PV (céleste en attente de repos) : ne se présente pas.
+        const downed = startEncounter({ ...rider, mount: { ...rider.mount, hp: { current: 0, max: 19 } } }, { isActive: false, combatants: [], currentTurn: '' });
+        expect(downed.combatants.some(c => c.id === 'mount')).toBe(false);
+    });
+
+    it('mount HP syncs back after combat and rests heal it', () => {
+        const rider: any = {
+            ...DEFAULT_CHAR,
+            mount: { name: 'Tempête', kind: 'destrier', speed: 60, hp: { current: 19, max: 19 }, acquiredAt: 1 },
+        };
+        const wounded = syncCompanionsFromState(rider, [
+            { id: 'mount', name: 'Tempête', hp: { current: 5, max: 19 }, ac: 11, initiative: 8, side: 'ally' } as any,
+        ]);
+        expect(wounded.mount!.hp).toEqual({ current: 5, max: 19 });
+        const rested = applyShortRest(wounded);
+        expect(rested.mount!.hp!.current).toBeGreaterThanOrEqual(9); // au moins la moitié
+        const full = applyLongRest(wounded);
+        expect(full.mount!.hp!.current).toBe(19);
+    });
+
+    it('companions grow with the hero: +4 max HP per level, +1 attack at 5/9/13/17', () => {
+        const withComp: any = {
+            ...DEFAULT_CHAR,
+            level: 6,
+            companions: [{
+                id: 'comp_borin', name: 'Borin', hp: { current: 10, max: 20 }, ac: 14,
+                attack: { name: 'Hache', attackBonus: 4, damage: '1d8+2', damageType: 'slashing' },
+                recruitedAt: 1, level: 3,
+            }],
+        };
+        const leveled = levelUpCompanions(withComp, 6);
+        const comp = leveled.companions![0];
+        expect(comp.hp.max).toBe(20 + 4 * 3);   // 3 niveaux gagnés
+        expect(comp.hp.current).toBe(10 + 12);  // soigné d'autant
+        expect(comp.attack.attackBonus).toBe(5); // franchit le niveau 5
+        expect(comp.level).toBe(6);
+        // Idempotent : re-appliquer au même niveau ne change rien.
+        expect(levelUpCompanions(leveled, 6).companions![0].hp.max).toBe(32);
+    });
+});
+
+// ─── Persistent NPCs in the director context ────────────────────────────────
+describe('persistent NPC director context', () => {
+    it('injects disposition and remembered facts into the NPC lines', () => {
+        const context = buildCampaignDirectorContext({
+            character: DEFAULT_CHAR,
+            adventure: 'Test',
+            journal: {
+                quests: [], locations: [], chronicle: [],
+                npcs: [{
+                    id: 'npc1', name: 'Mira', description: 'Innkeeper', location: 'Ravenport',
+                    disposition: 3, knownFacts: ['the hero saved her son', 'the hero owes 20 gold'],
+                }],
+            },
+            combatState: { isActive: false, combatants: [], currentTurn: '' },
+            events: [],
+            storySummary: 'The hero crossed the frozen pass and swore to lift the curse.',
+        });
+        expect(context).toContain('Mira @ Ravenport');
+        expect(context).toContain('disposition +3');
+        expect(context).toContain('the hero saved her son');
+        expect(context).toContain('Story so far');
+        expect(context).toContain('frozen pass');
+    });
+});

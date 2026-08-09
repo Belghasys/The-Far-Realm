@@ -13,13 +13,22 @@
  */
 export const DICE_ANIM_MS = 3000;
 
+// Player-adjustable duration (Réglages → vitesse des dés). Defaults to the
+// historical 3s; settingsStore pushes the persisted choice at startup.
+let diceAnimMs = DICE_ANIM_MS;
+
+/** Override the default dice-overlay duration (from the Settings panel). */
+export function setDiceAnimMs(ms: number): void {
+    diceAnimMs = Math.max(100, Math.min(10000, Math.trunc(ms) || DICE_ANIM_MS));
+}
+
 let skipResolver: (() => void) | null = null;
 
 /**
  * Wait for the cinematic dice duration, but resolve early if skipDice() fires.
  * Always resolves exactly once.
  */
-export function waitDice(ms: number = DICE_ANIM_MS): Promise<void> {
+export function waitDice(ms: number = diceAnimMs): Promise<void> {
     return new Promise<void>((resolve) => {
         let done = false;
         const finish = () => {

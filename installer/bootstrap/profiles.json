@@ -9,11 +9,11 @@
         "enabled": true,
         "model": "black-forest-labs/FLUX.2-klein-9B",
         "transformer_quant": "nf4",
-        "text_encoder_quant": "nf4",
+        "text_encoder_quant": "int8",
         "cpu_offload": true,
         "width": 1024,
         "height": 576,
-        "steps": 4,
+        "steps": 6,
         "max_sequence_length": 256
       },
       "audio": {
@@ -33,7 +33,7 @@
         "enabled": true,
         "model": "black-forest-labs/FLUX.2-klein-9B",
         "transformer_quant": "nf4",
-        "text_encoder_quant": "nf4",
+        "text_encoder_quant": "int8",
         "cpu_offload": false,
         "width": 1280,
         "height": 720,

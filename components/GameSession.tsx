@@ -8,12 +8,14 @@ import { useMusicDirector } from '../hooks/useMusicDirector';
 import { useGameStore } from '../store/gameStore';
 import { LiveConnectionManager } from '../services/geminiRealtime';
 import { auditBus } from '../services/auditBus';
+import { auditNarration } from '../services/narrationAuditor';
+import { runJournalKeeper } from '../services/journalKeeper';
 
-import { AdventureManifest, CampaignRuntimeState, CharacterSheet, calculateLevelFromXP, getEffectiveStat, getPlayerAttackModifier, getPlayerDamageBonus, getXPProgress, parseItemStatModifier, getPlayerAttackCount } from '../types';
-import { Mic, MicOff, Volume2, User, Backpack, Scroll, Swords, MessageSquare, LogOut, Book, Save, Music, Sparkles, Map as MapIcon, BookOpen } from 'lucide-react';
+import { AdventureManifest, CampaignRuntimeState, CharacterSheet, TimeOfDay, calculateLevelFromXP, getCombatAC, getEffectiveAC, getEffectiveStat, getPlayerAttackModifier, getPlayerDamageBonus, getXPProgress, parseItemStatModifier, getPlayerAttackCount } from '../types';
+import { Mic, MicOff, Volume2, User, Backpack, Scroll, Swords, MessageSquare, LogOut, Book, Save, Music, Sparkles, Map as MapIcon, BookOpen, Settings as SettingsIcon, CalendarDays, Dices } from 'lucide-react';
 import { DiceTray, DiceTrayRef } from './DiceTray';
 import { RollingDice } from './RollingDice';
-import { InventoryPanel, CharacterSheetPanel } from './InGameMenus';
+import { InventoryPanel, CharacterSheetPanel, toWeaponOverride } from './InGameMenus';
 import SpellbookPanel from './SpellbookPanel';
 import { CombatTracker, combatantSide, isHero } from './CombatTracker';
 import { AuditWindow } from './AuditConsole';
@@ -28,12 +30,22 @@ import { ActionPips } from './ActionPips';
 import { LevelUpModal } from './LevelUpModal';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildCampaignDirectorContext } from '../services/campaignDirector';
-import { advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier } from '../services/rulesEngine';
+import { advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, levelUpCompanions } from '../services/rulesEngine';
 import type { ProposedPlayerAction } from '../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
+import { DeathScreen } from './DeathScreen';
+import { ReactionPrompt, ReactionRequest } from './ReactionPrompt';
+import { SettingsPanel } from './SettingsPanel';
+import type { ClassAbilityId } from './CombatActionsPanel';
+import { AbilityHotbar } from './AbilityHotbar';
+import { usePortrait, heroPortraitKey, portraitPrompt } from '../services/portraitService';
+import { useSettingsStore } from '../store/settingsStore';
+import { lyriaMusicService } from '../services/lyriaMusic';
 import { getCreature, getCreatureAttacks, getMultiattackCount } from '../data/bestiary';
+import { estimateXPFromHP } from '../services/xpSystem';
+import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { lookupMonster, lookupSpell } from '../services/codexService';
-import { rollDice } from '../services/utils';
+import { rollDice, maxRollOfFormula } from '../services/utils';
 import { waitDice } from '../services/diceTiming';
 
 // ========== STRUCTURED LOGGING ==========
@@ -84,6 +96,8 @@ const TRANS = {
     waiting: 'waiting',
     saving: 'Saving…',
     save: 'Save',
+    saveFailed: '☁️ Not synced',
+    saveFailedTooltip: 'Cloud save is failing — recent progress may not be persisted. Check your connection, then click Save.',
     music: 'Music',
     shortRest: 'Short rest',
     longRest: 'Long rest',
@@ -124,6 +138,15 @@ const TRANS = {
     ac: 'AC',
     potion: 'Potion',
     healing: 'healing',
+    abilitySecondWindLabel: 'Second Wind',
+    abilityLayOnHandsLabel: 'Lay on Hands',
+    abilityBardicLabel: 'Bardic Inspiration',
+    abilityFlurryLabel: 'Flurry of Blows',
+    abilityPatientLabel: 'Patient Defense',
+    shieldReactionTitle: 'Incoming hit!',
+    shieldReactionDetail: (attacker: string, total: number, ac: number) => `${attacker} hits you (${total} vs AC ${ac}) — Shield would turn it into a miss (AC ${ac + 5}).`,
+    shieldCastLine: (attacker: string) => `🛡️ SHIELD! ${attacker}'s attack shatters against the arcane barrier (+5 AC until your next turn).`,
+    dayWord: 'Day',
   },
   fr: {
     devModeOn: '🛠️ *[MODE DÉVELOPPEUR ACTIVÉ — le MJ obéit désormais à tes ordres directs. Retape IDDAD pour désactiver.]*',
@@ -157,6 +180,8 @@ const TRANS = {
     waiting: 'en attente',
     saving: 'Sauvegarde…',
     save: 'Sauver',
+    saveFailed: '☁️ Non synchronisé',
+    saveFailedTooltip: 'La sauvegarde cloud échoue — la progression récente risque de ne pas être conservée. Vérifiez votre connexion, puis cliquez sur Sauver.',
     music: 'Musique',
     shortRest: 'Repos court',
     longRest: 'Repos long',
@@ -197,6 +222,15 @@ const TRANS = {
     ac: 'CA',
     potion: 'Potion',
     healing: 'soin',
+    abilitySecondWindLabel: 'Second souffle',
+    abilityLayOnHandsLabel: 'Imposition des mains',
+    abilityBardicLabel: 'Inspiration bardique',
+    abilityFlurryLabel: 'Déluge de coups',
+    abilityPatientLabel: 'Défense patiente',
+    shieldReactionTitle: 'Coup imminent !',
+    shieldReactionDetail: (attacker: string, total: number, ac: number) => `${attacker} te touche (${total} vs CA ${ac}) — Bouclier transformerait le coup en échec (CA ${ac + 5}).`,
+    shieldCastLine: (attacker: string) => `🛡️ BOUCLIER ! L'attaque de ${attacker} se brise sur la barrière arcanique (+5 CA jusqu'à ton prochain tour).`,
+    dayWord: 'Jour',
   },
 } as const;
 
@@ -240,7 +274,7 @@ interface Props {
 
 export function GameSession({ character, adventure, adventureManifest = '', adventureManifestData = null, campaignRuntime, onLeave, onCharacterUpdate, language = 'en', initialHistory = [], initialJournal, saveId }: Props) {
   const tr = TRANS[language === 'fr' ? 'fr' : 'en'];
-  const [activePanel, setActivePanel] = useState<'none' | 'inventory' | 'character' | 'journal' | 'codex' | 'campaign' | 'spells'>('none');
+  const [activePanel, setActivePanel] = useState<'none' | 'inventory' | 'character' | 'journal' | 'codex' | 'campaign' | 'spells' | 'settings'>('none');
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [playerRoll, setPlayerRoll] = useState<{ result: number, reason: string, success?: boolean } | null>(null);
@@ -277,7 +311,38 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   const devMode = useGameStore(s => s.devMode);
   const setDevMode = useGameStore(s => s.setDevMode);
   const pushCombatRoll = useGameStore(s => s.pushCombatRoll);
+  const saveHealth = useGameStore(s => s.saveHealth);
   const [auditOpen, setAuditOpen] = useState(false);
+
+  // ── Réaction (Bouclier) : carte proposée en plein tour ennemi ───────────
+  const [reactionRequest, setReactionRequest] = useState<ReactionRequest | null>(null);
+  // Échec de test retenu en attente d'une décision « relancer avec
+  // l'Inspiration ? » (façon BG3). Le prompt reste actif tant qu'on délibère.
+  const [rerollOffer, setRerollOffer] = useState<{ outcome: any } | null>(null);
+  // ── Portrait du héros (généré localement, cache IndexedDB) ─────────────
+  const heroPortraitUrl = usePortrait(
+    heroPortraitKey(saveId, character.name),
+    portraitPrompt(
+      `${character.name || 'a hero'}, ${character.race} ${character.class}`,
+      character.storyProfile?.appearance || undefined
+    )
+  );
+  // ── Volume musique piloté par les Réglages ──────────────────────────────
+  const musicVolume = useSettingsStore(s => s.musicVolume);
+  useEffect(() => { lyriaMusicService.setVolume(musicVolume); }, [musicVolume]);
+  // ── Calendrier en jeu (Jour N — moment) ─────────────────────────────────
+  const dayCount = campaignRuntime.dayCount || 1;
+  const timeOfDay: TimeOfDay = campaignRuntime.timeOfDay || 'day';
+  const timeOfDayLabel = language === 'fr'
+    ? ({ dawn: 'Aube', day: 'Journée', dusk: 'Crépuscule', night: 'Nuit' } as const)[timeOfDay]
+    : ({ dawn: 'Dawn', day: 'Day', dusk: 'Dusk', night: 'Night' } as const)[timeOfDay];
+
+  // Surface Firestore write failures as a visible badge — a silent sync failure
+  // can otherwise lose minutes of progress without the player ever knowing.
+  useEffect(() => {
+    saveService.setSyncListener(ok => useGameStore.getState().setSaveHealth(ok));
+    return () => saveService.setSyncListener(null);
+  }, []);
 
   // Initialize journal from saved data on mount
   useEffect(() => {
@@ -420,7 +485,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       // gagné (l'ancien code n'ajoutait qu'un seul gain de PV même pour +2 niveaux).
       const levelsGained = newLevel - currentChar.level;
       const perLevelGain = Math.max(1, hitDie + conMod)
-        + ((currentChar as any).subclass === 'Draconic Bloodline' ? 1 : 0);
+        + ((currentChar as any).subclass === 'Draconic Bloodline' ? 1 : 0)
+        + ((currentChar.feats || []).includes('tough') ? 2 : 0);
       const hpGain = levelsGained * perLevelGain;
       const newMaxHP = currentChar.hp.max + hpGain;
 
@@ -499,6 +565,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     journal: journal as any,
     combatState,
     events: campaignEventLog.getEvents(),
+    storySummary: memoryManager.getCachedSummary()?.text,
   }), [
     character,
     adventure,
@@ -577,6 +644,129 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     }
   }, [isConnected, audioLevel, musicDirector]);
 
+  // ── Voice-mode director context push ─────────────────────────────────────
+  // consumePrivateContext only piggybacks the director context on TYPED messages,
+  // so in pure-voice play the DM's view of HP, clocks, scene, and canon facts
+  // silently drifted. Push it as a private note when a SIGNIFICANT part of the
+  // state changes (not on every narration): flushDirectorContext enforces a
+  // 30s min interval and skips identical contexts.
+  const directorPushKeyRef = React.useRef('');
+  useEffect(() => {
+    if (!dm || !isConnected) return;
+    dm.updateDirectorContext(directorContext);
+    const significanceKey = [
+      character.hp.current, character.hp.max, character.level,
+      character.deathSaves ? `${character.deathSaves.successes}/${character.deathSaves.failures}` : '-',
+      combatState.isActive ? `combat:r${combatState.round || 1}` : 'free',
+      campaignRuntime.currentChapterId || '', campaignRuntime.currentSceneId || '',
+      (campaignRuntime.worldClocks || []).map(c => `${c.id}:${c.stage}:${c.status}`).join(','),
+      (campaignRuntime.canonFacts || []).length,
+      campaignRuntime.activeBranch?.id || '',
+      (journal.quests || []).filter((q: any) => q.status === 'active').length,
+      (journal.npcs || []).length,
+    ].join('|');
+    if (directorPushKeyRef.current === significanceKey) return;
+    const isFirstRun = directorPushKeyRef.current === '';
+    directorPushKeyRef.current = significanceKey;
+    // The initial context already ships inside the system prompt at connection.
+    if (!isFirstRun) dm.flushDirectorContext();
+  }, [dm, isConnected, directorContext]);
+
+  // ── Narration consistency auditor (light verifier agent) ─────────────────
+  // Throttled async Flash pass comparing the DM's latest narration to the REAL
+  // engine state (HP, gold, inventory, combat). On a clear contradiction it
+  // sends a private corrective note so the DM realigns in the next beat —
+  // invisible to the player, at most one check per 90s.
+  const lastNarrationAuditRef = React.useRef({ at: 0, transcriptLen: 0 });
+  useEffect(() => {
+    if (!dm || !isConnected || transcript.length === 0) return;
+    const last = transcript[transcript.length - 1];
+    if (last.speaker !== 'dm') return;
+    if (/^\s*\*?\[/.test(last.text.trim())) return; // skip [SYSTEM]/marker lines
+    if (last.text.trim().length < 120) return;      // too short to contradict anything material
+    const now = Date.now();
+    if (now - lastNarrationAuditRef.current.at < 90000) return;
+    if (transcript.length === lastNarrationAuditRef.current.transcriptLen) return;
+    lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length };
+
+    const runtimeNow = useGameStore.getState().campaignRuntime;
+    const activeQuestLine = (useGameStore.getState().journal?.quests || [])
+      .filter((q: any) => q.status === 'active')
+      .slice(0, 2)
+      .map((q: any) => q.title)
+      .join(' | ');
+    const stateFacts = [
+      `Player ${character.name} HP: ${character.hp.current}/${character.hp.max}${character.tempHP ? ` (+${character.tempHP} temp)` : ''}`,
+      `Level: ${character.level}, XP: ${character.xp}`,
+      `Gold purse: ${character.gold ?? 0} gp`,
+      `Inventory: ${(character.inventory || []).slice(0, 25).map(i => `${i.name} x${i.quantity}`).join(', ') || 'empty'}`,
+      combatState.isActive
+        ? `Combat ACTIVE round ${combatState.round || 1}: ${combatState.combatants.map((cb: any) => `${cb.name} HP ${cb.hp.current}/${cb.hp.max}`).join(', ')}`
+        : 'No active combat',
+      // Dérive narrative : l'objectif courant fait partie de l'état vérifié —
+      // une narration partie ailleurs sans transition se fait ré-ancrer.
+      ...(runtimeNow.currentObjective ? [`Current campaign objective: ${runtimeNow.currentObjective}`] : []),
+      ...(activeQuestLine ? [`Active quests: ${activeQuestLine}`] : []),
+      `In-world time: Day ${runtimeNow.dayCount || 1}, ${runtimeNow.timeOfDay || 'day'}`,
+    ];
+    void auditNarration({ narration: last.text, stateFacts, language }).then(result => {
+      if (!result || result.consistent || !result.note) return;
+      auditBus.publish('gemini-system', `Consistency check flagged: ${result.note.slice(0, 80)}`, { note: result.note, narration: last.text });
+      dm.sendSystemMessage(`[SYSTEM] Consistency check — the engine state disagrees with your last narration: ${result.note} Honor the engine values from now on; do not announce a correction, just weave the true state into the fiction.`);
+    });
+  }, [dm, isConnected, transcript, character, combatState, language]);
+
+  // ── Greffier de journal (background scribe) ──────────────────────────────
+  // Toutes les ~2 min hors combat, relit le dialogue récent et consigne ce que
+  // le MJ vocal a oublié : étapes de quête franchies, moments de chronique,
+  // faits appris sur les PNJ. Applique via les MÊMES outils que le MJ.
+  const journalKeeperRef = React.useRef({ at: 0, transcriptLen: 0, running: false });
+  useEffect(() => {
+    if (!isConnected || combatState.isActive) return;
+    const now = Date.now();
+    const ref = journalKeeperRef.current;
+    if (ref.running || now - ref.at < 120_000) return;
+    const fresh = transcript.slice(ref.transcriptLen).filter(m => !/^\s*\*?\[/.test(m.text.trim()));
+    if (fresh.length < 8) return;
+    ref.at = now;
+    ref.transcriptLen = transcript.length;
+    ref.running = true;
+
+    const journalNow = useGameStore.getState().journal;
+    const activeQuests = (journalNow.quests || [])
+      .filter((q: any) => q.status === 'active')
+      .map((q: any) => `${q.title} — steps: ${(q.steps || []).map((s: any) => `${s.done ? '[x]' : '[ ]'} ${s.text}`).join('; ') || 'none'}`);
+    const input = {
+      transcriptLines: transcript.slice(-30)
+        .filter(m => !/^\s*\*?\[/.test(m.text.trim()))
+        .map(m => `${m.speaker === 'dm' ? 'DM' : 'PLAYER'}: ${m.text.slice(0, 300)}`),
+      activeQuests,
+      npcNames: (journalNow.npcs || []).map((n: any) => n.name),
+      recentMoments: (journalNow.chronicle || []).slice(-8).map((c: any) => c.title),
+      language,
+    };
+    void runJournalKeeper(input).then(async result => {
+      if (!result) return;
+      const applied: string[] = [];
+      for (const step of result.questStepUpdates) {
+        const r: any = await processToolCall({ name: 'update_quest_step', args: { questTitle: step.questTitle, step: step.stepText, done: step.done } });
+        if (r?.success) applied.push(`étape « ${step.stepText.slice(0, 50)} »`);
+      }
+      for (const moment of result.moments) {
+        const r: any = await processToolCall({ name: 'add_story_moment', args: { title: moment.title, description: moment.description } });
+        if (r?.success) applied.push(`moment « ${moment.title.slice(0, 50)} »`);
+      }
+      for (const fact of result.npcFacts) {
+        const r: any = await processToolCall({ name: 'update_npc', args: { name: fact.name, memory: fact.fact } });
+        if (r?.success) applied.push(`PNJ ${fact.name}`);
+      }
+      if (applied.length) {
+        auditBus.publish('gemini-system', `Journal keeper logged: ${applied.join(', ')}`, result);
+        campaignEventLog.append('JOURNAL_UPDATED', `Journal keeper (background) logged: ${applied.join(', ')}`, result as any);
+      }
+    }).finally(() => { journalKeeperRef.current.running = false; });
+  }, [isConnected, transcript, combatState.isActive, language, processToolCall]);
+
   // ── Fix #3: DEATH SAVES — auto-trigger at HP=0 ──────────────────────────────
   const lastDeathSavePromptKeyRef = React.useRef<string | null>(null);
   useEffect(() => {
@@ -622,6 +812,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
 
   const handleLeave = async () => {
     console.log('🚪 Leaving session - flushing pending saves...');
+    // FULL save first: flushAll only covers pending character/journal patches,
+    // which silently dropped up to 60s of transcript + runtime on an in-app
+    // leave (the beforeunload handlers only fire on tab close).
+    if (transcript.length > 0) {
+      try { await triggerManualSave(); } catch (e) { console.error('Final save on leave failed:', e); }
+    }
     await saveService.flushAll();
     LiveConnectionManager.getInstance().disconnect();
     console.log('✅ All saves flushed, leaving...');
@@ -762,14 +958,27 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // dead/fled = victory, or whole party down = defeat). Returns true if it ended,
   // so callers can stop the turn loop. Hands narration to the DM; awards XP on
   // victory. Guarded so it only fires once per combat.
-  // Persist the Beast Master companion's HP between fights (read fresh char so
-  // we never clobber an XP grant that just synced).
+  // Persist ALL persistent allies' HP between fights: the Beast Master wolf +
+  // recruited companions (read fresh char so we never clobber a just-synced
+  // XP grant).
   const persistCompanionHP = (state: any) => {
-    const companion = (state?.combatants || []).find((c: any) => c.id === 'companion');
-    if (!companion) return;
     const freshChar = useGameStore.getState().character;
-    if (!freshChar || freshChar.subclass !== 'Beast Master') return;
-    syncCharacterUpdate({ ...freshChar, companionHP: { current: companion.hp.current, max: companion.hp.max } });
+    if (!freshChar) return;
+    let synced = syncCompanionsFromState(freshChar, state?.combatants || []);
+    // Monture tombée à 0 : morte (retirée de la fiche) — SAUF le Destrier
+    // céleste, esprit qui regagne les plans et revient au prochain repos long.
+    if (synced.mount?.hp && synced.mount.hp.current <= 0) {
+      if (synced.mount.kind === 'destrier_celeste') {
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✨ ${synced.mount!.name} se dissout en lumière — le destrier céleste reviendra au prochain repos long.]*` }]);
+        if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] The celestial steed ${synced.mount.name} was slain and returned to the higher planes. It will answer the paladin's call again after a LONG REST. Narrate its luminous departure.`);
+      } else {
+        const fallenName = synced.mount.name;
+        synced = { ...synced, mount: undefined };
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${fallenName} est tombé au combat.]*` }]);
+        if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] The hero's mount ${fallenName} was KILLED in this fight. It is gone — narrate the loss with weight; a new mount must be found or bought.`);
+      }
+    }
+    if (synced !== freshChar) syncCharacterUpdate(synced);
   };
 
   const maybeEndCombat = (state: any): boolean => {
@@ -780,14 +989,23 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     setIsNPCTurn(false);
     if (outcome === 'victory') {
       const enemies = (state.combatants || []).filter((c: any) => (c.side ? c.side === 'enemy' : !c.isPlayer));
-      const xp = enemies.reduce((sum: number, e: any) => sum + (getCreature(e.name)?.xp || lookupMonster(e.name)?.xp || 25), 0);
+      // Ordre de préférence : xp explicite du MJ (add_enemy_init) → bestiaire →
+      // estimation par PV max (les ennemis custom valaient un forfait de 25 XP).
+      const xp = enemies.reduce((sum: number, e: any) => sum + (
+        (Number(e.xpValue) > 0 ? Number(e.xpValue) : 0)
+        || getCreature(e.name)?.xp
+        || lookupMonster(e.name)?.xp
+        || estimateXPFromHP(e.hp?.max ?? 1)
+      ), 0);
       if (xp > 0) grantXP(xp, 'Combat victory');
       setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Victoire ! +${xp} XP]*` }]);
       if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] All enemies are defeated or fled. Combat is over (victory). Narrate the aftermath.`);
       musicDirector.handleMusicTag('victory');
     }
     persistCompanionHP(state);
-    setCombatState({ ...state, isActive: false, currentTurn: '', enemyIntents: {} });
+    // Clear the roster too: leftover corpses re-entered the NEXT fight via
+    // startEncounter's roster reuse and their XP was awarded a second time.
+    setCombatState({ ...state, isActive: false, combatants: [], currentTurn: '', enemyIntents: {} });
     return true;
   };
 
@@ -818,18 +1036,22 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     next.bonusActionUsed = (next.bonusUsed ?? 0) >= (next.bonusMax ?? 1);
     return { ...state, actionEconomy: { ...(state.actionEconomy || {}), player: next } };
   };
-  // A spell / dodge / potion / improv card spends the WHOLE main action (= all
-  // remaining attacks), not a single attack.
+  // A spell / dodge / potion / improv card spends ONE main action — c.-à-d. une
+  // « tranche » de pips égale à l'Extra Attack de base. Avant, ça vidait TOUS
+  // les pips : un tour avec Sursaut d'action (pips doublés) perdait aussi
+  // l'action bonus du Sursaut en lançant un sort.
   const spendPlayerMainAction = (state: any) => {
     const econ = getPlayerEconomy(state);
-    return patchPlayerEconomy(state, { attacksUsed: econ.attacksMax ?? getPlayerAttackCount(character) });
+    const base = getPlayerAttackCount(character);
+    const max = econ.attacksMax ?? base;
+    return patchPlayerEconomy(state, { attacksUsed: Math.min(max, (econ.attacksUsed ?? 0) + base) });
   };
   const spendPlayerBonus = (state: any) => {
     const econ = getPlayerEconomy(state);
     return patchPlayerEconomy(state, { bonusUsed: (econ.bonusUsed ?? 0) + 1 });
   };
 
-  const handlePlayerAttack = async (weaponItem: any, targetId: string) => {
+  const handlePlayerAttack = async (weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) => {
     if (actionLockRef.current) return;
     if (!combatState.isActive) return;
     let target = combatState.combatants.find(c => c.id === targetId);
@@ -852,8 +1074,13 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     actionLockRef.current = true;
     setIsResolvingAction(true);
     try {
-      const damageBonus = getPlayerDamageBonus({ ...character, weapon: weaponItem });
-      const baseAttackBonus = getPlayerAttackModifier({ ...character, weapon: weaponItem });
+      // L'arme SÉLECTIONNÉE (épée en main OU arc du slot distance) devient
+      // l'arme du personnage pour cette résolution : le moteur (bandes de
+      // distance, sneak, jet, GWM) juge la bonne arme, pas character.weapon.
+      const weaponShape = toWeaponOverride(weaponItem);
+      const attackChar = { ...character, weapon: weaponShape };
+      const damageBonus = getPlayerDamageBonus(attackChar);
+      const baseAttackBonus = getPlayerAttackModifier(attackChar);
       const damageDice = weaponItem.damageDice || weaponItem.damage || '1d4';
       const damageFormula = `${damageDice}${damageBonus >= 0 ? '+' : ''}${damageBonus}`;
 
@@ -893,8 +1120,19 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         attackName: weaponItem.name,
         advantage,
         consumeAction: false, // pips are managed below, not via the boolean economy
-      } as any, character);
+        powerAttack: opts?.powerAttack, // -5/+10, revalidé côté moteur (feat + arme)
+      } as any, attackChar);
 
+      if (result.success && (result as any).advanced) {
+        // Cible trop loin : l'attaque est devenue un ENGAGEMENT (far → near).
+        let state = patchPlayerEconomy(result.state, { attacksUsed: attacksUsed + 1 });
+        setCombatState(state);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${character.name} se rapproche de ${target.name} (loin → proche) — attaque au prochain pas.]*` }]);
+        if (dm && isConnected) {
+          await dm.sendUserMessage(`[SYSTEM] The player CLOSED THE DISTANCE toward ${target.name} (far → near) instead of striking — the target was too far for melee. Narrate the charge. Do NOT advance the turn.`);
+        }
+        return;
+      }
       if (!result.success || !result.resolution) {
         console.error('Attack resolution failed:', result.error);
         return;
@@ -985,8 +1223,14 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         damageType: weaponItem.damageType || 'slashing',
         attackName: weaponItem.name,
         consumeAction: false,
-      } as any, character);
+      } as any, { ...character, weapon: toWeaponOverride(weaponItem) });
 
+      if (result.success && (result as any).advanced) {
+        // Cible hors de portée : le bonus se convertit en rapprochement.
+        setCombatState(spendPlayerBonus(result.state));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${character.name} se rapproche de ${target.name} (loin → proche).]*` }]);
+        return;
+      }
       if (!result.success || !result.resolution) {
         console.error('Bonus attack resolution failed:', result.error);
         return;
@@ -1044,8 +1288,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     actionLockRef.current = true;
     setIsResolvingAction(true);
     try {
-    const target = combatState.combatants.find(c => c.id === targetId);
-    const targetName = target ? target.name : 'Target';
+    // Sort de ZONE : cible 'all_enemies' → chaque ennemi vivant fera SA
+    // sauvegarde (résolution moteur ci-dessous). Le cast lui-même est plombé
+    // sur le premier ennemi pour construire DC/dés.
+    const isAoECast = targetId === 'all_enemies';
+    const aoeTargets = isAoECast
+      ? combatState.combatants.filter(c => (c.side ? c.side === 'enemy' : !c.isPlayer) && c.hp.current > 0)
+      : [];
+    const effectiveTargetId = isAoECast ? (aoeTargets[0]?.id ?? targetId) : targetId;
+    const target = combatState.combatants.find(c => c.id === effectiveTargetId);
+    const targetName = isAoECast
+      ? (language === 'fr' ? 'tous les ennemis' : 'all enemies')
+      : (target ? target.name : 'Target');
 
     const spellLevelNum = slotLevel ? Number(slotLevel.replace('level', '')) : undefined;
 
@@ -1068,7 +1322,9 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       slotLevel: spellLevelNum,
       target: targetName,
       targetAC: target?.ac,
-      targetSaveBonus: targetSaveBonusMod
+      targetSaveBonus: targetSaveBonusMod,
+      worldHour: worldHourOf(dayCount, timeOfDay),
+      maximizeHealing: !!character.storyMode,
     });
 
     if (!spellResult.success) {
@@ -1115,6 +1371,34 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       if (dm && isConnected) {
         const msg = `[SYSTEM] Player cast ${spellName} on ${targetName}. Healing: ${spellResult.healing} HP. Please narrate this action in character.`;
         await dm.sendUserMessage(msg);
+      }
+    } else if (isAoECast && spellResult.prompt?.type === 'SAVE' && spellResult.prompt.pendingSpell && aoeTargets.length) {
+      // ── ZONE : sauvegarde individuelle par ennemi, dégâts lancés UNE fois ──
+      const prompt = spellResult.prompt;
+      const aoe = resolveSpellAgainstTargets(combatState, prompt, aoeTargets.map(t => t.id));
+      if (aoe) {
+        setCombatState(aoe.state);
+        if (aoe.sharedDamageRoll > 0) {
+          setPlayerRoll({ result: aoe.sharedDamageRoll, reason: `${spellName} — ${language === 'fr' ? 'dégâts de zone' : 'area damage'}` });
+          await waitDice();
+        }
+        for (const r of aoe.results) {
+          logCombatRoll({
+            type: 'save',
+            name: `${r.name} — ${spellName}`,
+            total: r.saveTotal,
+            formula: `vs DC ${prompt.dc}`,
+            isDM: true,
+            success: r.saveSuccess,
+          });
+          if (r.damage > 0) {
+            logCombatRoll({ type: 'damage', name: `${spellName} → ${r.name}`, total: r.damage, formula: prompt.pendingSpell?.damageFormula || '', isDM: false });
+          }
+        }
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} (zone) — ${aoe.summary}]*` }]);
+        if (dm && isConnected) {
+          await dm.sendUserMessage(`[SYSTEM] Player cast ${spellName} on ALL enemies (area). Per-target results: ${aoe.summary}. All HP changes are applied — narrate the blast in ONE beat, do not re-roll anything.`);
+        }
       }
     } else if (spellResult.prompt) {
       // Spell requires attack roll or saving throw
@@ -1200,6 +1484,320 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // The player ends their turn explicitly — don't auto-advance. Resolve victory
     // if this spell dropped the last foe.
     maybeEndCombat(useGameStore.getState().combatState);
+    } finally {
+      actionLockRef.current = false;
+      setIsResolvingAction(false);
+    }
+  };
+
+  // ── Capacités de classe (Rage, Second souffle, Sursaut, Imposition, Ki,
+  //    Inspiration bardique) — les ressources existaient sur la fiche mais
+  //    AUCUN bouton ne les consommait. Chaque branche : garde-fous, dépense de
+  //    la ressource + du pip, effet moteur réel, dés visibles, rapport au MJ.
+  const spendResource = (char: CharacterSheet, key: string, amount = 1): CharacterSheet => ({
+    ...char,
+    resources: {
+      ...(char.resources || {}),
+      [key]: { ...(char.resources as any)[key], current: Math.max(0, ((char.resources as any)[key]?.current ?? 0) - amount) },
+    },
+  });
+
+  const handleUseClassAbility = async (abilityId: ClassAbilityId, targetId?: string) => {
+    if (actionLockRef.current) return;
+    // Hotbar BG3 : utilisable AUSSI hors combat (Imposition des mains,
+    // Second souffle, Inspiration bardique, familier…). Les capacités qui
+    // exigent l'économie de tour restent verrouillées en combat.
+    const inCombat = useGameStore.getState().combatState.isActive;
+    if (!inCombat && ['actionSurge', 'kiFlurry', 'kiPatientDefense', 'cunningDash', 'superiorityStrike'].includes(abilityId)) return;
+    const patchCombat = (value: any) => { if (inCombat) setCombatState(value); };
+    const char = useGameStore.getState().character;
+    if (!char) return;
+    const res: any = char.resources || {};
+    actionLockRef.current = true;
+    setIsResolvingAction(true);
+    try {
+      if (abilityId === 'rage' && (res.rage?.current ?? 0) > 0) {
+        const effect = rageEffect();
+        const updated = spendResource({ ...char, activeEffects: [...(char.activeEffects || []), effect] }, 'rage');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
+        }));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🔥 RAGE — +2 dégâts, résistance aux dégâts physiques (10 rounds)]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player enters a RAGE (bonus action): +2 damage, resistance to physical damage. Narrate the fury briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'secondWind' && (res.secondWind?.current ?? 0) > 0) {
+        const heal = rollDice(`1d10+${char.level || 1}`).total;
+        const nextHP = Math.min(char.hp.max, char.hp.current + heal);
+        const updated = spendResource({ ...char, hp: { ...char.hp, current: nextHP } }, 'secondWind');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, hp: { ...c.hp, current: nextHP } } : c),
+        }));
+        setPlayerRoll({ result: heal, reason: `${tr.abilitySecondWindLabel} : +${heal} ${tr.hp}` });
+        await waitDice();
+        logCombatRoll({ type: 'damage', name: tr.abilitySecondWindLabel, total: heal, formula: `1d10+${char.level}`, isDM: false });
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Second Wind (bonus action) and regained ${heal} HP (now ${nextHP}/${char.hp.max}). Narrate briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'actionSurge' && (res.actionSurge?.current ?? 0) > 0) {
+        const extra = getPlayerAttackCount(char);
+        syncCharacterCritical(spendResource(char, 'actionSurge'), 'hp');
+        patchCombat((prev: any) => {
+          const econ = prev.actionEconomy?.['player'] || {};
+          return patchPlayerEconomy(prev, { attacksMax: (econ.attacksMax ?? extra) + extra });
+        });
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ Sursaut d'action — +${extra} attaque(s) ce tour]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used ACTION SURGE: ${extra} extra attack(s) this turn. Narrate the burst of speed. Do NOT advance the turn.`);
+      } else if (abilityId === 'layOnHands' && (res.layOnHands?.current ?? 0) > 0) {
+        const missing = char.hp.max - char.hp.current;
+        const heal = Math.min(res.layOnHands.current, missing);
+        if (heal <= 0) return;
+        const nextHP = char.hp.current + heal;
+        const updated = spendResource({ ...char, hp: { ...char.hp, current: nextHP } }, 'layOnHands', heal);
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerMainAction({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, hp: { ...c.hp, current: nextHP } } : c),
+        }));
+        setPlayerRoll({ result: heal, reason: `${tr.abilityLayOnHandsLabel} : +${heal} ${tr.hp}` });
+        await waitDice();
+        logCombatRoll({ type: 'damage', name: tr.abilityLayOnHandsLabel, total: heal, formula: `${language === 'fr' ? 'réserve' : 'pool'} -${heal}`, isDM: false });
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Lay on Hands (action) and healed ${heal} HP (now ${nextHP}/${char.hp.max}; pool left ${updated.resources?.layOnHands?.current ?? 0}). Narrate the divine touch. Do NOT advance the turn.`);
+      } else if (abilityId === 'bardicInspiration' && (res.bardicInspiration?.current ?? 0) > 0) {
+        const lvl = char.level || 1;
+        const die = lvl >= 15 ? 'd12' : lvl >= 10 ? 'd10' : lvl >= 5 ? 'd8' : 'd6';
+        const bonus = Math.min(5, lvl >= 15 ? 6 : lvl >= 10 ? 5 : lvl >= 5 ? 4 : 3);
+        const modifier = normalizeStoryModifier({
+          source: 'dm_inspiration',
+          name: `${tr.abilityBardicLabel} (${die})`,
+          mode: 'normal',
+          bonus,
+          uses: 1,
+          scope: 'any',
+          reason: language === 'fr' ? 'Inspiration bardique auto-accordée' : 'Self-granted Bardic Inspiration',
+        });
+        const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'bardicInspiration');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus(s));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎵 ${tr.abilityBardicLabel} (${die}) — +${bonus} sur un prochain jet]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player banked a Bardic Inspiration (${die}) on themselves (bonus action). Narrate the flourish. Do NOT advance the turn.`);
+      } else if (abilityId === 'kiFlurry' && (res.ki?.current ?? 0) > 0) {
+        let state = useGameStore.getState().combatState;
+        let target = state.combatants.find((c: any) => c.id === targetId);
+        if (!target || target.hp.current <= 0) {
+          target = state.combatants.find((c: any) => (c.side ? c.side === 'enemy' : !c.isPlayer) && c.hp.current > 0);
+        }
+        if (!target) return;
+        const unarmed = {
+          name: language === 'fr' ? 'Frappe à mains nues' : 'Unarmed Strike',
+          damage: monkMartialArtsDie(char.level || 1),
+          damageType: 'bludgeoning',
+          abilityMod: 'DEX' as const,
+          attackBonus: 0,
+          properties: ['finesse'],
+        };
+        const atkBonus = getPlayerAttackModifier({ ...char, weapon: unarmed as any });
+        const dmgBonus = getPlayerDamageBonus({ ...char, weapon: unarmed as any });
+        syncCharacterCritical(spendResource(char, 'ki'), 'hp');
+        const hits: string[] = [];
+        for (let strike = 1; strike <= 2; strike++) {
+          const result = resolveAttackAction(state, {
+            attacker: 'player',
+            target: target.id,
+            attackBonus: atkBonus,
+            damageFormula: `${unarmed.damage}${dmgBonus >= 0 ? '+' : ''}${dmgBonus}`,
+            damageType: 'bludgeoning',
+            attackName: `${tr.abilityFlurryLabel} ${strike}/2`,
+            consumeAction: false,
+          } as any, char);
+          if (result.success && (result as any).advanced) { state = result.state; break; }
+          if (!result.success || !result.resolution) break;
+          const resAtk = result.resolution;
+          state = result.state;
+          setPlayerRoll({ result: resAtk.attackRoll.total, reason: `${tr.abilityFlurryLabel} ${strike}/2 ${tr.vs} ${resAtk.target} (${resAtk.hit ? tr.hit : tr.miss})`, success: resAtk.hit });
+          await waitDice();
+          logCombatRoll({ type: 'attack', name: `${tr.abilityFlurryLabel} ${strike}/2`, total: resAtk.attackRoll.total, formula: `${resAtk.attackRoll.die} + ${resAtk.attackRoll.modifier} = ${resAtk.attackRoll.total} ${tr.vs} ${tr.ac} ${resAtk.attackRoll.prompt.dc}`, isDM: false, success: resAtk.hit });
+          if (resAtk.hit && resAtk.damage > 0) {
+            logCombatRoll({ type: 'damage', name: `${tr.abilityFlurryLabel} (${tr.damage})`, total: resAtk.damage, formula: resAtk.damageFormula, isDM: false });
+          }
+          hits.push(resAtk.hit ? `${resAtk.damage} dmg` : 'miss');
+          if (resAtk.targetHP.current <= 0) break;
+        }
+        state = spendPlayerBonus(state);
+        patchCombat(state);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent 1 ki on Flurry of Blows (bonus action): two unarmed strikes on ${target.name} → ${hits.join(', ')}. Narrate the flurry. Do NOT advance the turn.`);
+        maybeEndCombat(useGameStore.getState().combatState);
+      } else if (abilityId === 'kiPatientDefense' && (res.ki?.current ?? 0) > 0) {
+        const dodgeEffect = {
+          id: `dodge-${Date.now()}`,
+          name: 'Dodge',
+          source: 'condition' as const,
+          duration: 'rounds' as const,
+          roundsRemaining: 1,
+          description: tr.dodgeDesc,
+          modifiers: [],
+        };
+        const updated = spendResource({
+          ...char,
+          activeEffects: [...(char.activeEffects || []).filter(e => e.name !== 'Dodge'), dodgeEffect],
+        }, 'ki');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
+        }));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🛡️ ${tr.abilityPatientLabel} (1 ki) — Esquive jusqu'à ton prochain tour]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent 1 ki on Patient Defense (bonus action): Dodge until their next turn. Narrate briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'familiarHelp' && char.familiar && (res.familiarHelp?.current ?? 0) > 0) {
+        const fam = char.familiar;
+        const modifier = normalizeStoryModifier({
+          source: 'tactic',
+          name: language === 'fr' ? `Aide du familier (${fam.name})` : `Familiar's Help (${fam.name})`,
+          mode: 'advantage',
+          bonus: 0,
+          uses: 1,
+          scope: 'attack',
+          reason: language === 'fr' ? 'Le familier harcèle la cible' : 'The familiar harries the target',
+        });
+        const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'familiarHelp');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus(s));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🦉 ${fam.name} (${fam.kind}) harcèle l'ennemi — avantage sur ta prochaine attaque]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player's familiar ${fam.name} (${fam.kind}) used the HELP action (bonus action): advantage on their next attack. Narrate the little creature darting at the foe. Do NOT advance the turn.`);
+      } else if (abilityId === 'lucky' && (res.luckyPoints?.current ?? 0) > 0) {
+        const modifier = normalizeStoryModifier({
+          source: 'blessing',
+          name: language === 'fr' ? 'Chanceux' : 'Lucky',
+          mode: 'advantage',
+          bonus: 0,
+          uses: 1,
+          scope: 'any',
+          reason: language === 'fr' ? 'Point de chance dépensé' : 'Luck point spent',
+        });
+        const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'luckyPoints');
+        syncCharacterCritical(updated, 'hp');
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🍀 Chanceux — avantage sur ton prochain jet (${updated.resources?.luckyPoints?.current ?? 0} restant(s))]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent a Lucky point: advantage on their next roll. Narrate the twist of fate briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'cunningHide') {
+        const modifier = normalizeStoryModifier({
+          source: 'tactic',
+          name: language === 'fr' ? 'Caché (Ruse)' : 'Hidden (Cunning)',
+          mode: 'advantage',
+          bonus: 0,
+          uses: 1,
+          scope: 'attack',
+          reason: language === 'fr' ? 'Attaque depuis l\'ombre' : 'Striking from hiding',
+        });
+        const updated = { ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) };
+        syncCharacterCritical(updated as any, 'hp');
+        patchCombat((s: any) => spendPlayerBonus(s));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🫥 Ruse — caché : avantage sur ta prochaine attaque]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Cunning Action to HIDE (bonus action): advantage on their next attack. Narrate them melting into cover. Do NOT advance the turn.`);
+      } else if (abilityId === 'cunningDash') {
+        const moveEffect = {
+          id: `cunning-${Date.now()}`,
+          name: language === 'fr' ? 'Désengagé' : 'Disengaged',
+          source: 'class_feature' as const,
+          duration: 'rounds' as const,
+          roundsRemaining: 1,
+          description: language === 'fr' ? 'Repli/Sprint — pas d\'attaques d\'opportunité ce round.' : 'Dash/Disengage — no opportunity attacks this round.',
+          modifiers: [],
+        };
+        const updated = { ...char, activeEffects: [...(char.activeEffects || []).filter(e => e.name !== moveEffect.name), moveEffect] };
+        syncCharacterCritical(updated as any, 'hp');
+        patchCombat((s: any) => spendPlayerBonus({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
+        }));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🏃 Ruse — Repli/Sprint : tu te repositionnes sans provoquer d'attaques]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Cunning Action to Dash/Disengage (bonus action): they reposition safely. Narrate the movement. Do NOT advance the turn.`);
+      } else if (abilityId === 'channelPreserveLife' && (res.channelDivinity?.current ?? 0) > 0) {
+        const lvl = char.level || 1;
+        const halfMax = Math.floor(char.hp.max / 2);
+        const heal = Math.min(5 * lvl, Math.max(0, halfMax - char.hp.current));
+        if (heal <= 0) return;
+        const nextHP = char.hp.current + heal;
+        const updated = spendResource({ ...char, hp: { ...char.hp, current: nextHP } }, 'channelDivinity');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerMainAction({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, hp: { ...c.hp, current: nextHP } } : c),
+        }));
+        setPlayerRoll({ result: heal, reason: `${language === 'fr' ? 'Préserver la vie' : 'Preserve Life'} : +${heal} ${tr.hp}` });
+        await waitDice();
+        logCombatRoll({ type: 'damage', name: language === 'fr' ? 'Canalisation : Préserver la vie' : 'Channel Divinity: Preserve Life', total: heal, formula: `5 × ${lvl}`, isDM: false });
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — Preserve Life (action): healed ${heal} HP (now ${nextHP}/${char.hp.max}). Narrate the holy light. Do NOT advance the turn.`);
+      } else if (abilityId === 'channelGuidedStrike' && (res.channelDivinity?.current ?? 0) > 0) {
+        const modifier = normalizeStoryModifier({
+          source: 'blessing',
+          name: language === 'fr' ? 'Frappe guidée' : 'Guided Strike',
+          mode: 'normal',
+          bonus: 10,
+          uses: 1,
+          scope: 'attack',
+          reason: language === 'fr' ? 'Canalisation divine' : 'Channel Divinity',
+        });
+        const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'channelDivinity');
+        syncCharacterCritical(updated, 'hp');
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ Frappe guidée — +10 sur ton prochain jet d'attaque]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — Guided Strike: +10 on their next attack roll. Narrate the divine guidance briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'sorceryCreateSlot' && (res.sorceryPoints?.current ?? 0) >= 2) {
+        const slots = { ...(char.spellSlots || {}) };
+        const key = '1';
+        slots[key] = { current: (slots[key]?.current ?? 0) + 1, max: Math.max(slots[key]?.max ?? 0, 1) };
+        const updated = spendResource({ ...char, spellSlots: slots }, 'sorceryPoints', 2);
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerBonus(s));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✨ Source de magie — emplacement de niveau 1 créé (2 pts de sorcellerie)]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player converted 2 sorcery points into a level-1 spell slot (bonus action). Narrate the raw magic gathering. Do NOT advance the turn.`);
+      } else if (abilityId === 'superiorityStrike' && (res.superiorityDice?.current ?? 0) > 0) {
+        const die = (char.level || 1) >= 10 ? '1d10' : '1d8';
+        const maneuverEffect = {
+          id: `maneuver-${Date.now()}`,
+          name: language === 'fr' ? 'Manœuvre' : 'Maneuver',
+          source: 'class_feature' as const,
+          duration: 'rounds' as const,
+          roundsRemaining: 1,
+          description: language === 'fr' ? `Dé de supériorité : +${die} de dégâts sur ta prochaine attaque d'arme.` : `Superiority die: +${die} damage on your next weapon hit.`,
+          modifiers: [],
+          onWeaponHit: { dice: die },
+        };
+        const updated = spendResource({
+          ...char,
+          activeEffects: [...(char.activeEffects || []).filter(e => e.name !== maneuverEffect.name), maneuverEffect],
+        }, 'superiorityDice');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => ({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
+        }));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎲 Manœuvre — +${die} de dégâts sur tes attaques d'arme ce round]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player primed a Battle Master maneuver: +${die} damage on their weapon hits this round. Narrate the tactical setup briefly. Do NOT advance the turn.`);
+      } else if (abilityId === 'wildShape' && (res.wildShape?.current ?? 0) > 0) {
+        const lvl = char.level || 1;
+        const tempHP = 2 * lvl;
+        const shapeEffect = {
+          id: `wildshape-${Date.now()}`,
+          name: language === 'fr' ? 'Forme sauvage' : 'Wild Shape',
+          source: 'class_feature' as const,
+          duration: 'rounds' as const,
+          roundsRemaining: 10,
+          description: language === 'fr' ? `Forme animale — ${tempHP} PV temporaires absorbent les coups.` : `Beast form — ${tempHP} temporary HP soak damage.`,
+          modifiers: [],
+        };
+        const updated = spendResource({
+          ...char,
+          tempHP: Math.max((char as any).tempHP || 0, tempHP),
+          activeEffects: [...(char.activeEffects || []).filter(e => e.name !== shapeEffect.name), shapeEffect],
+        } as any, 'wildShape');
+        syncCharacterCritical(updated, 'hp');
+        patchCombat((s: any) => spendPlayerMainAction({
+          ...s,
+          combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
+        }));
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐻 Forme sauvage — ${tempHP} PV temporaires (10 rounds)]*` }]);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Wild Shape (action): beast form, ${tempHP} temporary HP. Ask what beast they become and narrate the transformation. Do NOT advance the turn.`);
+      }
     } finally {
       actionLockRef.current = false;
       setIsResolvingAction(false);
@@ -1310,7 +1908,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         inventory: consumeFromInventory(character.inventory || []),
         activeEffects: [
           ...(character.activeEffects || []).filter((e: any) => e.name !== name),
-          { id: `potion-${Date.now()}`, name, source: 'potion' as const, duration: '1_hour' as const, description: `${name}: ${label} (1h)`, modifiers },
+          stampEffectExpiry({ id: `potion-${Date.now()}`, name, source: 'potion' as const, duration: '1_hour' as const, description: `${name}: ${label} (1h)`, modifiers }, worldHourOf(dayCount, timeOfDay)),
         ],
       };
       onCharacterUpdate(updatedChar);
@@ -1332,7 +1930,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     else if (effectText.includes('superior') || effectText.includes('majeur')) formula = '8d4+8';
     else if (effectText.includes('supreme') || effectText.includes('suprême')) formula = '10d4+20';
 
-    const healAmount = rollDice(formula).total;
+    // Mode histoire : la potion rend toujours son MAXIMUM (2d4+2 → 10).
+    const healAmount = character.storyMode ? maxRollOfFormula(formula) : rollDice(formula).total;
     const updatedInventory = consumeFromInventory(character.inventory || []);
     const updatedHP = Math.min(character.hp.max, character.hp.current + healAmount);
     const updatedChar = { ...character, hp: { ...character.hp, current: updatedHP }, inventory: updatedInventory };
@@ -1434,7 +2033,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             attackBonus: p.attackBonus, damageFormula: p.damageFormula, damageType: p.damageType,
             advantage: p.advantage, attackName: p.label, consumeAction: false,
           }, character);
-          if (result.success && result.resolution) {
+          if (result.success && (result as any).advanced) {
+            state = result.state;
+            summaries.push(language === 'fr' ? 'se rapproche (loin → proche)' : 'closes in (far → near)');
+          } else if (result.success && result.resolution) {
             const res = result.resolution;
             state = result.state;
             setPlayerRoll({ result: res.attackRoll.total, reason: `${p.label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, success: res.hit });
@@ -1652,9 +2254,54 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         bonusMax: 1,
         bonusUsed: 0,
       }));
+
+      // Décompte des durées d'effets du JOUEUR au début de son tour (Shield = 1
+      // round, Rage/Bless = 10). Les effets expirés quittent la fiche ET sa
+      // ligne de combat — avant ça, aucun buff « en rounds » n'expirait jamais.
+      const ticked = tickRoundEffects(character.activeEffects || []);
+      if (ticked.changed) {
+        const tickedChar = { ...character, activeEffects: ticked.activeEffects };
+        if (ticked.expired.length) {
+          syncCharacterCritical(tickedChar, 'hp');
+          setCombatState((prev: any) => ({
+            ...prev,
+            combatants: prev.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: ticked.activeEffects } : c),
+          }));
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effet(s) dissipé(s) : ${ticked.expired.join(', ')}]*` }]);
+          if (dm && isConnected) {
+            dm.sendSystemMessage(`[SYSTEM] Effect(s) expired on the player: ${ticked.expired.join(', ')}. Weave it into the narration if relevant.`);
+          }
+        } else {
+          syncCharacterUpdate(tickedChar);
+        }
+      }
     }
     prevTurnRef.current = combatState.currentTurn;
   }, [combatState.currentTurn, combatState.isActive, combatState.combatants, setIsNPCTurn, setCombatState]);
+
+  // Keep the player's combat row LIVE: AC (Shield, Mage Armor, gear swaps),
+  // resistances (Rage!, feats) and portrait. The engine reads the SHEET for
+  // the authoritative AC on enemy attacks; this keeps the tracker honest too.
+  // Returns prev unchanged when equal so the effect cannot loop.
+  useEffect(() => {
+    if (!combatState.isActive) return;
+    const liveAC = getCombatAC(character);
+    const liveResistances = playerResistances(character);
+    setCombatState((prev: any) => {
+      const player = (prev.combatants || []).find((c: any) => c.isPlayer);
+      if (!player) return prev;
+      const sameAC = player.ac === liveAC;
+      const sameResist = JSON.stringify(player.resistances || []) === JSON.stringify(liveResistances);
+      const samePortrait = !heroPortraitUrl || player.portrait === heroPortraitUrl;
+      if (sameAC && sameResist && samePortrait) return prev;
+      return {
+        ...prev,
+        combatants: prev.combatants.map((c: any) => c.isPlayer
+          ? { ...c, ac: liveAC, resistances: liveResistances, portrait: heroPortraitUrl || c.portrait }
+          : c),
+      };
+    });
+  }, [character, combatState.isActive, setCombatState, heroPortraitUrl]);
 
   // Mid-combat RESUME normalization (runs once). If a save was made during a
   // fight on a non-player turn, restoring it used to set isNPCTurn=true and the
@@ -1679,23 +2326,240 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat repris — c'est à toi de jouer.]*` }]);
   }, [combatState.isActive, combatState.combatants, combatState.currentTurn, character, setCombatState, setIsNPCTurn, setTranscript]);
 
+  // ── Réaction « Bouclier » ────────────────────────────────────────────────
+  // Le mage qui connaît Shield, a un emplacement et sa réaction, se voit
+  // proposer d'annuler un coup ennemi quand +5 CA suffirait (fenêtre ~10 s,
+  // silence = refus, le combat ne bloque jamais).
+  const canOfferShieldReaction = (state: any): boolean => {
+    const c = useGameStore.getState().character;
+    if (!c || c.hp.current <= 0) return false;
+    const knowsShield = [...(c.knownSpells || []), ...(c.preparedSpells || [])]
+      .some(name => String(name).toLowerCase() === 'shield');
+    if (!knowsShield) return false;
+    const hasSlot = Object.values(c.spellSlots || {}).some((pool: any) => (pool?.current ?? 0) > 0);
+    if (!hasSlot) return false;
+    if ((c.activeEffects || []).some(e => e.name === 'Shield')) return false;
+    const econ = state.actionEconomy?.['player'];
+    return !(econ?.reactionUsed);
+  };
+
+  const askShieldReaction = (attackerName: string, total: number, currentAC: number): Promise<boolean> =>
+    new Promise<boolean>((resolve) => {
+      let settled = false;
+      const finish = (accepted: boolean) => {
+        if (settled) return;
+        settled = true;
+        setReactionRequest(null);
+        resolve(accepted);
+      };
+      const timeout = setTimeout(() => finish(false), 10000);
+      setReactionRequest({
+        title: tr.shieldReactionTitle,
+        detail: tr.shieldReactionDetail(attackerName, total, currentAC),
+        timeoutSeconds: 10,
+        onAnswer: (accepted) => { clearTimeout(timeout); finish(accepted); },
+      });
+    });
+
+  // ── Flux de jet en deux temps (relance BG3) ──────────────────────────────
+  // showRollFeedback : dés + journal, TOUJOURS (l'échec puis la relance sont
+  // tous deux visibles). finalizeRollOutcome : effets d'état (jet de mort,
+  // concentration, sort en attente) + LIVRAISON au MJ + fermeture du prompt.
+  const showRollFeedback = (outcome: any, suffix = '') => {
+    const isAttack = outcome.prompt.type === 'ATTACK' || outcome.prompt.name.toLowerCase().includes('attack');
+    const dc = outcome.prompt.dc || 10;
+    setPlayerRoll({ result: outcome.total, reason: `${outcome.prompt.name}${suffix}`, success: outcome.success });
+    logCombatRoll({
+      type: isAttack ? 'attack' : outcome.prompt.type === 'SAVE' || outcome.prompt.type === 'DEATH_SAVE' ? 'save' : 'check',
+      name: `${outcome.prompt.name}${suffix}`,
+      total: outcome.total,
+      formula: `${outcome.die} ${outcome.modifier >= 0 ? '+' : ''}${outcome.modifier} = ${outcome.total} vs ${isAttack ? 'AC' : 'DC'} ${dc}`,
+      success: outcome.success,
+    });
+    campaignEventLog.append('ROLL_RESOLVED', `Roll resolved: ${outcome.prompt.name}${suffix} = ${outcome.total}`, outcome);
+  };
+
+  // Brûle UNE Inspiration du MJ (source dm_inspiration) pour la relance — la
+  // relance est « sèche » : le nouveau jet remplace l'ancien, sans bonus.
+  const spendInspirationForReroll = (): boolean => {
+    const liveChar = useGameStore.getState().character;
+    if (!liveChar) return false;
+    const mods = [...(liveChar.storyModifiers || [])];
+    const idx = mods.findIndex((m: any) => m.source === 'dm_inspiration' && (m.remainingUses ?? 0) > 0);
+    if (idx < 0) return false;
+    const mod: any = mods[idx];
+    if ((mod.remainingUses ?? 1) <= 1) mods.splice(idx, 1);
+    else mods[idx] = { ...mod, remainingUses: mod.remainingUses - 1 };
+    syncCharacterCritical({ ...liveChar, storyModifiers: mods }, 'hp');
+    return true;
+  };
+
+  const finalizeRollOutcome = (outcome: any, rerolled = false) => {
+    const { total, die: dieResult, modifier, success } = outcome;
+    const dc = outcome.prompt.dc || 10;
+    const rollList = outcome.rolls.join(',');
+
+    if (outcome.prompt.type === 'DEATH_SAVE') {
+      const updatedChar = applyDeathSaveOutcome(character, outcome);
+      syncCharacterCritical(updatedChar, 'hp');
+    }
+
+    if (outcome.prompt.type === 'SAVE' && outcome.prompt.concentrationDamage) {
+      const concentration = resolveConcentrationAfterDamage(character, outcome.prompt.concentrationDamage, total);
+      syncCharacterCritical(concentration.character, 'hp');
+      if (concentration.broken) {
+        setTranscript(prev => [...prev, {
+          speaker: 'dm',
+          text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map(effect => effect.name).join(', ')}]*`
+        }]);
+      } else {
+        setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Concentration maintained]*' }]);
+      }
+    }
+
+    let spellSummary = '';
+    if (outcome.prompt.pendingSpell) {
+      const spellResolution = resolvePendingSpellRoll(combatState, outcome);
+      if (spellResolution.resolved) {
+        setCombatState(spellResolution.state);
+        if (spellResolution.target?.isPlayer) {
+          syncCharacterCritical({
+            ...character,
+            hp: spellResolution.target.hp,
+            tempHP: spellResolution.target.tempHP !== undefined ? spellResolution.target.tempHP : character.tempHP,
+            activeEffects: spellResolution.target.activeEffects || character.activeEffects,
+          }, 'hp');
+        }
+        campaignEventLog.append('SPELL_RESOLVED', spellResolution.summary, spellResolution);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellResolution.summary}]*` }]);
+        spellSummary = spellResolution.summary;
+      }
+    }
+
+    // Deliver the outcome through the HELD tool response when this roll came
+    // from request_roll/cast_spell (blocking two-step roll) — the DM was
+    // silenced until now and reacts to the REAL result. The [ROLL_RESULT]
+    // user message stays as the channel for engine-initiated prompts (death
+    // saves, concentration) and for a roll landing after the hold timed out.
+    const outcomePayload = {
+      rolled: true,
+      outcome: {
+        check: outcome.prompt.name,
+        type: outcome.prompt.type,
+        total,
+        dc,
+        success,
+        die: dieResult,
+        rolls: rollList,
+        modifier,
+        critical: outcome.critical,
+        ...(rerolled ? { rerolledWithInspiration: true } : {}),
+        ...(spellSummary ? { spellResolution: spellSummary } : {}),
+      },
+      instruction: `The dice have landed — THIS is the official outcome${rerolled ? ' (the player BURNED an Inspiration to reroll; this new result replaces the failed one — acknowledge the twist of fate)' : ''}. Narrate it now (fail forward on a failure). Do not re-roll or second-guess it.`,
+    };
+    const deliveredViaTool = activePrompt && typeof (activePrompt as any).resolveToolCall === 'function'
+      && (activePrompt as any).resolveToolCall(outcomePayload);
+    if (!deliveredViaTool && dm) {
+      const successStr = success ? 'true' : 'false';
+      const rollMsg = `[ROLL_RESULT: Check="${outcome.prompt.name}" | Type=${outcome.prompt.type} | Total=${total} | DC=${dc} | Success=${successStr} | Die=${dieResult} | Rolls=${rollList} | Mod=${modifier >= 0 ? '+' : ''}${modifier} | Critical=${outcome.critical}${rerolled ? ' | RerolledWithInspiration=true' : ''}${spellSummary ? ` | Effect=${spellSummary}` : ''}]`;
+      dm.sendUserMessage(rollMsg);
+    }
+
+    setActivePrompt(null);
+  };
+
   const runNPCTurn = async (npc: any) => {
-    // ALLY turns are played by the MJ, not the deterministic runner (per design:
-    // an ally is an NPC the DM controls). Hand the turn to the DM to narrate and
-    // act via its improv tools, then keep combat flowing by advancing.
+    // ALLIÉS À PROFIL CONNU (compagnons recrutés, bête du Beast Master,
+    // monture) : le MOTEUR joue leur tour lui-même — vrai jet d'attaque, vrais
+    // dégâts, le MJ ne fait que narrer le rapport. Fini le tour d'allié qui
+    // « passe » parce que le MJ n'a pas appelé resolve_attack à temps.
     if (combatantSide(npc) === 'ally') {
+      const allyProfile = (() => {
+        const comp = (character.companions || []).find(c => c.id === npc.id);
+        if (comp) return { ...comp.attack };
+        if (npc.id === 'companion') {
+          const beast = getBeastCompanion(character.beastKind || DEFAULT_BEAST_ID);
+          if (beast) return { ...beast.attack };
+        }
+        if (npc.id === 'mount' && character.mount) {
+          const mt = getMountType(character.mount.kind || character.mount.name);
+          if (mt) return { ...mt.attack };
+        }
+        const creature = getCreature(npc.name);
+        const atk: any = creature ? getCreatureAttacks(creature)[0] : null;
+        if (atk) return { name: atk.name, attackBonus: Number(atk.attackBonus) || 4, damage: String(atk.damage || '1d6+2'), damageType: String(atk.damageType || 'bludgeoning') };
+        return null;
+      })();
+
+      if (allyProfile) {
+        const livingEnemies = combatState.combatants.filter((c: any) => combatantSide(c) === 'enemy' && c.hp.current > 0);
+        if (!livingEnemies.length) { if (!maybeEndCombat(combatState)) setCombatState(advanceTurn(combatState)); return; }
+        // Proie blessée : l'allié achève la cible la plus entamée.
+        const target = [...livingEnemies].sort((a: any, b: any) => a.hp.current - b.hp.current)[0];
+        const result = resolveAttackAction(combatState, {
+          attacker: npc.id,
+          target: target.id,
+          attackBonus: allyProfile.attackBonus,
+          damageFormula: allyProfile.damage,
+          damageType: allyProfile.damageType,
+          attackName: allyProfile.name,
+          consumeAction: false,
+        }, character);
+        if (result.success && result.resolution) {
+          const res = result.resolution;
+          setCurrentRoll({ result: res.attackRoll.total, reason: `${npc.name} — ${allyProfile.name} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, isDM: false, success: res.hit });
+          await waitDice();
+          pushCombatRoll({ name: `${npc.name} : ${allyProfile.name}`, total: res.attackRoll.total, formula: `${res.attackRoll.die} + ${res.attackRoll.modifier} ${tr.vs} ${tr.ac} ${res.attackRoll.prompt.dc}`, isDM: false, success: res.hit });
+          if (res.hit && res.damage > 0) {
+            setCurrentRoll({ result: res.damage, reason: `${npc.name} — ${res.damage} ${res.damageType}`, isDM: false });
+            await waitDice();
+            pushCombatRoll({ name: `${npc.name} (${tr.damage})`, total: res.damage, formula: res.damageFormula, isDM: false });
+          }
+          let after = result.state;
+          setCombatState(after);
+          if (dm && isConnected) {
+            dm.sendSystemMessage(`[SYSTEM] Ally ${npc.name} attacked ${res.target} with ${allyProfile.name}: ${res.hit ? `HIT for ${res.damage} ${res.damageType}${res.targetHP.current <= 0 ? ' — TARGET DOWN' : ''}` : 'MISS'}. Already resolved — narrate it in one short beat, do NOT re-roll.`);
+          }
+          if (maybeEndCombat(after)) return;
+          setCombatState(advanceTurn(useGameStore.getState().combatState));
+          return;
+        }
+        // Résolution impossible (cible disparue…) : on passe simplement.
+        if (maybeEndCombat(useGameStore.getState().combatState)) return;
+        setCombatState(advanceTurn(useGameStore.getState().combatState));
+        return;
+      }
+
+      // Allié SANS profil connu (PNJ improvisé par le MJ) : fenêtre MJ classique.
       if (dm && isConnected) {
         const enemyList = combatState.combatants
           .filter(c => combatantSide(c) === 'enemy' && c.hp.current > 0)
           .map(c => `${c.name} (${c.hp.current}/${c.hp.max} HP)`).join(', ') || 'no enemies';
-        dm.sendSystemMessage(`[SYSTEM] It is your ally ${npc.name}'s turn. You control this ally — IMMEDIATELY resolve its action with your tools (resolve_attack attacker="${npc.id}" / apply_condition) and narrate it. You have a short window (~8s); the engine will then advance to the next combatant automatically — do NOT call advance_turn.`);
+        // Compagnon recruté : fournis sa mini-fiche d'attaque pour que le MJ
+        // résolve avec les BONS chiffres (son nom custom n'est pas au bestiaire).
+        const companionSheet = (character.companions || []).find(comp => comp.id === npc.id);
+        const attackHint = companionSheet
+          ? ` Its attack: ${companionSheet.attack.name} — use resolve_attack(attacker="${npc.id}", target=<enemy id>, attackBonus: ${companionSheet.attack.attackBonus}, damageFormula: "${companionSheet.attack.damage}", damageType: "${companionSheet.attack.damageType}").`
+          : '';
+        dm.sendSystemMessage(`[SYSTEM] It is your ally ${npc.name}'s turn (enemies: ${enemyList}). You control this ally — IMMEDIATELY resolve its action with your tools (resolve_attack attacker="${npc.id}" / apply_condition) and narrate it.${attackHint} You have a short window (~8s); the engine will then advance to the next combatant automatically — do NOT call advance_turn.`);
       }
       setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Allied ${npc.name}'s turn — the DM directs them]*` }]);
-      // Give the DM a real window to PLAY the ally before moving on. Advancing
-      // immediately raced the next enemy's auto-turn against the DM's ally
-      // resolution (interleaved dice, double narration) — with the Beast Master
-      // wolf this happened every fight.
-      await new Promise(r => setTimeout(r, 8000));
+      // Give the DM a real window to PLAY the ally before moving on — but
+      // advance EARLY the moment its action is spent or the turn moved. The old
+      // flat 8s sleep taxed every Beast Master round even when the DM resolved
+      // the wolf in two seconds.
+      const ALLY_WINDOW_MS = 8000;
+      const allyWaitStart = Date.now();
+      while (Date.now() - allyWaitStart < ALLY_WINDOW_MS) {
+        await new Promise(r => setTimeout(r, 700));
+        const live = useGameStore.getState().combatState;
+        if (!live.isActive) return;
+        if (live.currentTurn !== npc.id && live.currentTurn !== npc.name) return; // someone already moved the turn
+        const allyEcon = live.actionEconomy?.[npc.id] || live.actionEconomy?.[npc.name];
+        if (allyEcon?.actionUsed) break;            // the DM resolved the ally's action
+        if (encounterOutcome(live) !== 'ongoing') break; // the ally just ended the fight
+      }
       const freshAfterAlly = useGameStore.getState().combatState;
       if (!freshAfterAlly.isActive) return;
       const stillAllyTurn = freshAfterAlly.currentTurn === npc.id || freshAfterAlly.currentTurn === npc.name;
@@ -1818,6 +2682,17 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         consumeAction: false
       }, character);
 
+      if (result.success && (result as any).advanced) {
+        // Ennemi trop loin pour la mêlée : son attaque devient une CHARGE
+        // (far → near). Il frappera au prochain tour.
+        currentState = result.state;
+        setCombatState(currentState);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${npc.name} se rapproche (loin → proche).]*` }]);
+        if (dm && isConnected) {
+          dm.sendSystemMessage(`[SYSTEM] ${npc.name} was too far to strike and CLOSED THE DISTANCE instead (far → near). Narrate the advance in one short beat.`);
+        }
+        break; // la charge consomme le tour de cet ennemi
+      }
       if (!result.success || !result.resolution) {
         // NEVER skip silently: a skipped strike looked exactly like "the monster
         // does no damage". Surface the reason in the audit console so any future
@@ -1828,6 +2703,38 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       }
 
       const res = result.resolution;
+
+      // RÉACTION BOUCLIER : le coup touche le joueur, mais +5 CA l'annulerait.
+      // On propose la réaction AVANT d'adopter l'état frappé — si le joueur
+      // accepte, on jette result.state (les dégâts n'ont jamais eu lieu).
+      if (res.hit && target.isPlayer && !res.criticalHit && canOfferShieldReaction(currentState)) {
+        const liveChar = useGameStore.getState().character!;
+        const currentAC = getEffectiveAC(liveChar);
+        if (res.attackRoll.total < currentAC + 5) {
+          const accepted = await askShieldReaction(npc.name, res.attackRoll.total, currentAC);
+          if (accepted) {
+            const castResult = castSpell(liveChar, { spellName: 'Shield' });
+            if (castResult.success) {
+              syncCharacterCritical(castResult.character, 'hp');
+              const consumed = consumeCombatAction(currentState, 'player', 'reaction');
+              currentState = consumed.success ? consumed.state : currentState;
+              setCombatState((prev: any) => {
+                const reacted = consumeCombatAction(prev, 'player', 'reaction');
+                return reacted.success ? reacted.state : prev;
+              });
+              setCurrentRoll({ result: res.attackRoll.total, reason: `${npc.name} ${tr.vs} ${tr.ac} ${currentAC + 5} — ${tr.miss}`, isDM: true, success: false });
+              await waitDice();
+              pushCombatRoll({ name: `${npc.name} : ${attack.name}`, total: res.attackRoll.total, formula: `${tr.vs} ${tr.ac} ${currentAC + 5} (Shield)`, isDM: true, success: false });
+              setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.shieldCastLine(npc.name)}]*` }]);
+              auditBus.publish('combat', `Shield reaction: ${npc.name} attack ${res.attackRoll.total} negated (AC ${currentAC}→${currentAC + 5})`, res);
+              if (dm && isConnected) {
+                dm.sendSystemMessage(`[SYSTEM] The player cast SHIELD as a reaction: ${npc.name}'s attack (${res.attackRoll.total}) now MISSES against AC ${currentAC + 5}. +5 AC until their next turn. Narrate the arcane barrier.`);
+              }
+              continue; // le coup n'a jamais porté — on garde currentState intact
+            }
+          }
+        }
+      }
 
       // 1. Roll Attack dice animation
       setCurrentRoll({
@@ -1887,11 +2794,32 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           // syncCharacterCritical (not bare onCharacterUpdate) so the HP loss is
           // PERSISTED to the save and the tempHP/death-save path runs — otherwise
           // enemy damage vanished on reload and HP-0 didn't trigger death saves.
-          syncCharacterCritical({
+          const struck = {
             ...character,
             tempHP: updatedPlayer.tempHP ?? character.tempHP ?? 0,
             hp: { ...character.hp, current: updatedPlayer.hp.current },
-          }, 'hp');
+          };
+          syncCharacterCritical(struck, 'hp');
+          // Concentration was only checked on the DM-tool damage paths — the
+          // automated enemy turns (where MOST damage comes from) never asked
+          // for the save, so Bless/Hold Person effectively could not break.
+          if (res.hit && res.damage > 0) {
+            const concentration = resolveConcentrationAfterDamage(struck, res.damage);
+            if (concentration.broken) {
+              syncCharacterCritical(concentration.character, 'hp');
+              setTranscript(prev => [...prev, {
+                speaker: 'dm',
+                text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map(e => e.name).join(', ')}]*`
+              }]);
+            } else if (struck.hp.current > 0 && concentration.prompt) {
+              setActivePrompt(concentration.prompt);
+              campaignEventLog.append('ROLL_REQUESTED', 'Concentration save requested after damage', concentration.prompt);
+              setTranscript(prev => [...prev, {
+                speaker: 'dm',
+                text: `*[SYSTEM: Concentration save required, DC ${concentration.dc} after ${res.damage} damage]*`
+              }]);
+            }
+          }
         }
       }
     }
@@ -1975,6 +2903,133 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     };
   }, [combatState.currentTurn, isNPCTurn, combatState.isActive, isConnected]);
 
+  // ── Temps auto : la NARRATION pilote l'horloge ──────────────────────────
+  // Dépendre du bon vouloir de Flash pour appeler set_time_of_day était naïf :
+  // on écoute les tournures temporelles dans la narration du MJ et on avance
+  // l'horloge nous-mêmes (l'outil reste pour les sauts explicites).
+  const lastTimeScanIndexRef = useRef(-1);
+  useEffect(() => {
+    // Premier passage (historique restauré d'une sauvegarde) : on se cale à la
+    // fin SANS scanner — sinon une vieille tombée de nuit d'il y a 3 jours de
+    // jeu écrasait l'heure actuelle au chargement.
+    if (lastTimeScanIndexRef.current < 0) {
+      lastTimeScanIndexRef.current = transcript.length;
+      return;
+    }
+    if (transcript.length <= lastTimeScanIndexRef.current) return;
+    const fresh = transcript.slice(lastTimeScanIndexRef.current);
+    lastTimeScanIndexRef.current = transcript.length;
+    const dmText = fresh.filter(m => m.speaker === 'dm' && !/\[\s*SYSTEM/i.test(m.text)).map(m => m.text).join(' ').toLowerCase();
+    if (!dmText) return;
+    const detect = (): TimeOfDay | null => {
+      if (/(la nuit tombe|nuit tomb[ée]e|en pleine nuit|au c[œoe]ur de la nuit|night falls|nightfall|dead of night|minuit|midnight)/.test(dmText)) return 'night';
+      if (/(le soir tombe|le soleil se couche|soleil couchant|cr[ée]puscule|fin de journ[ée]e|dusk|sunset|evening falls|le soleil d[ée]cline)/.test(dmText)) return 'dusk';
+      if (/(l'aube|a l'aube|au petit matin|le jour se l[èe]ve|premi[èe]res lueurs|dawn breaks|at dawn|sunrise|au lever du soleil)/.test(dmText)) return 'dawn';
+      if (/(en pleine journ[ée]e|le soleil est haut|en milieu de journ[ée]e|midi sonne|à midi|midday|high noon)/.test(dmText)) return 'day';
+      return null;
+    };
+    const detected = detect();
+    if (!detected || detected === (useGameStore.getState().campaignRuntime.timeOfDay || 'day')) return;
+    useGameStore.getState().setCampaignRuntime(prev => ({ ...prev, timeOfDay: detected, updatedAt: Date.now() }));
+    void saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+    campaignEventLog.append('CAMPAIGN_RUNTIME_UPDATED', `World time auto-detected from narration: ${detected}`, { timeOfDay: detected });
+  }, [transcript]);
+
+  // ── Expiration horaire des effets (1 heure / 8 heures) ──────────────────
+  // Quel que soit CE qui a fait avancer l'horloge (repos, outil, narration
+  // auto-détectée), on balaie les effets estampillés expiresAtWorldHour.
+  useEffect(() => {
+    const hour = worldHourOf(dayCount, timeOfDay);
+    const swept = sweepExpiredEffects(character, hour);
+    if (!swept.expired.length) return;
+    syncCharacterCritical(swept.character, 'hp');
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effet(s) dissipé(s) avec le temps : ${swept.expired.join(', ')}]*` }]);
+    if (dm && isConnected) {
+      dm.sendSystemMessage(`[SYSTEM] Time passed — effect(s) expired on the player: ${swept.expired.join(', ')}. Mention it only if relevant.`);
+    }
+  }, [dayCount, timeOfDay]);
+
+  // ── Mort du héros : 3 échecs de jets de mort → écran de fin de destin ────
+  const isDead = Boolean(character.deathSaves?.isDead);
+  const deathNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (!isDead) { deathNotifiedRef.current = false; return; }
+    if (deathNotifiedRef.current) return;
+    deathNotifiedRef.current = true;
+    setActivePrompt(null);
+    campaignEventLog.append('HP_CHANGED', `${character.name} est mort (3 échecs de jets de mort)`, { dead: true });
+    if (dm && isConnected) {
+      dm.sendSystemMessage('[SYSTEM] The hero has DIED (3 failed death saves). Give ONE short, somber narrative beat, then wait: the player is choosing between a costly miraculous resurrection and ending the campaign.');
+    }
+  }, [isDead, dm, isConnected, character.name, setActivePrompt]);
+
+  const handleResurrect = () => {
+    const c = useGameStore.getState().character;
+    if (!c) return;
+    const goldCost = Math.floor((c.gold || 0) / 2);
+    const scarName = language === 'fr' ? 'Cicatrice du destin' : 'Scar of Destiny';
+    const hasScar = (c.features || []).some(f => f.name === scarName);
+    const updated: CharacterSheet = {
+      ...c,
+      hp: { ...c.hp, current: 1 },
+      tempHP: 0,
+      deathSaves: { successes: 0, failures: 0, isStable: false, isDead: false },
+      gold: Math.max(0, (c.gold || 0) - goldCost),
+      features: hasScar ? c.features : [...(c.features || []), {
+        name: scarName,
+        description: language === 'fr'
+          ? "Revenu(e) d'entre les morts — une marque que le destin n'oublie pas."
+          : 'Returned from death — a mark fate never forgets.',
+      }],
+    };
+    syncCharacterCritical(updated, 'hp');
+    syncCharacterUpdate(updated);
+    setJournal(prev => {
+      const next = {
+        ...prev,
+        chronicle: [...(prev.chronicle || []), {
+          id: `death_${Date.now()}`,
+          title: language === 'fr' ? "Retour d'entre les morts" : 'Back from the dead',
+          description: language === 'fr'
+            ? `${c.name} a frôlé la mort et payé ${goldCost} po au destin.`
+            : `${c.name} brushed death and paid ${goldCost} gp to fate.`,
+          timestamp: Date.now(),
+        }],
+      };
+      syncJournalImmediate(next);
+      return next;
+    });
+    setTranscript(prev => [...prev, {
+      speaker: 'dm',
+      text: `*[SYSTEM: ✨ ${language === 'fr' ? `Résurrection miraculeuse — 1 PV, -${goldCost} po, ${scarName}` : `Miraculous resurrection — 1 HP, -${goldCost} gp, ${scarName}`}]*`,
+    }]);
+    if (dm && isConnected) {
+      dm.sendSystemMessage(`[SYSTEM] FATE INTERVENES: the hero returns to life at 1 HP. The price: half their gold (${goldCost} gp) claimed by a mysterious debt, and a permanent "${scarName}". Narrate the miraculous survival vividly (who or what pulled them back?), plant the debt as a future story hook, and resume the scene calmly. Do not kill them again immediately.`);
+    }
+  };
+
+  const handleDeathEnd = () => {
+    setTranscript(prev => [...prev, {
+      speaker: 'dm',
+      text: `*[SYSTEM: 💀 ${language === 'fr' ? `La saga de ${character.name} s'achève ici.` : `${character.name}'s saga ends here.`}]*`,
+    }]);
+    void handleLeave();
+  };
+
+  // ── Calendrier en jeu : les repos font avancer le temps ─────────────────
+  const TIME_STEPS: TimeOfDay[] = ['dawn', 'day', 'dusk', 'night'];
+  const advanceWorldTime = (opts: { newDay?: boolean; step?: boolean }) => {
+    useGameStore.getState().setCampaignRuntime(prev => {
+      if (opts.newDay) {
+        return { ...prev, dayCount: (prev.dayCount || 1) + 1, timeOfDay: 'dawn', updatedAt: Date.now() };
+      }
+      const idx = TIME_STEPS.indexOf(prev.timeOfDay || 'day');
+      const nextTime = TIME_STEPS[Math.min(TIME_STEPS.length - 1, idx + 1)];
+      return { ...prev, timeOfDay: nextTime, updatedAt: Date.now() };
+    });
+    void saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+  };
+
   const handleShortRest = () => {
     // Spend hit dice when hurt, otherwise the short rest heals nothing (the
     // engine only heals inside `if diceToSpend > 0`). Spend up to half the
@@ -1993,7 +3048,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       hitDice: updated.hitDice,
     });
     musicDirector.handleRestMusic(false);
+    advanceWorldTime({ step: true });
     setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Short rest completed]*' }]);
+    // Le bouton doit PARLER au MJ — sinon la narration ignore le repos.
+    if (dm && isConnected) {
+      dm.sendUserMessage(`[SYSTEM] The player takes a SHORT REST (~1 hour). HP now ${updated.hp.current}/${updated.hp.max}; short-rest resources recovered. Narrate the breather in the current scene (where they sit, what they see/hear, a small character beat), then resume.`);
+    }
   };
 
   const handleLongRest = () => {
@@ -2006,7 +3066,30 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       hitDice: updated.hitDice,
     });
     musicDirector.handleRestMusic(true);
+    advanceWorldTime({ newDay: true });
     setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Long rest completed]*' }]);
+
+    // Une nuit passe : tick des horloges du monde (le bouton manuel ne le
+    // faisait pas — seul l'outil long_rest du MJ tiquait) + narration.
+    const clocksAdvanced: string[] = [];
+    const activeClocks = (useGameStore.getState().campaignRuntime.worldClocks || []).filter(clock => clock.status === 'active');
+    if (activeClocks.length) {
+      useGameStore.getState().setCampaignRuntime(prev => ({
+        ...prev,
+        worldClocks: (prev.worldClocks || []).map(clock => {
+          if (clock.status !== 'active') return clock;
+          const stage = Math.min(clock.maxStage, clock.stage + 1);
+          clocksAdvanced.push(`"${clock.name}" ${stage}/${clock.maxStage}${stage >= clock.maxStage ? ' (FINAL STAGE)' : ''}`);
+          return { ...clock, stage, updatedAt: Date.now() };
+        }),
+        updatedAt: Date.now(),
+      }));
+      void saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+    }
+    if (dm && isConnected) {
+      const runtimeNow = useGameStore.getState().campaignRuntime;
+      dm.sendUserMessage(`[SYSTEM] The player takes a LONG REST — a night passes (now Day ${runtimeNow.dayCount}, dawn). Full HP, spell slots and resources recovered.${clocksAdvanced.length ? ` World clocks advanced: ${clocksAdvanced.join('; ')} — weave visible signs of this into the morning.` : ''} Narrate the camp, the night (a dream, a sound, a watch moment), and the dawn, then resume.`);
+    }
   };
 
   return (
@@ -2350,6 +3433,13 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           <div className="pointer-events-auto min-w-0 max-w-[min(620px,calc(100vw-1.5rem))] rounded-md border border-white/10 bg-zinc-950/80 px-3 py-2 shadow-xl backdrop-blur-xl">
             <div className="flex min-w-0 items-center gap-3">
               <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${dm ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]' : 'bg-red-500 animate-pulse'}`} title={dm ? tr.connected : tr.disconnected} />
+              {heroPortraitUrl && (
+                <img
+                  src={heroPortraitUrl}
+                  alt={character.name}
+                  className="h-10 w-10 shrink-0 rounded-md border border-amber-400/30 object-cover shadow-lg"
+                />
+              )}
               <div className="min-w-0">
                 <h2 className="truncate font-fantasy text-lg font-bold tracking-wide text-white">
                   {character.name}
@@ -2364,33 +3454,58 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             </div>
             {!!character.storyModifiers?.length && (
               <div className="mt-2 flex flex-wrap gap-1">
-                {character.storyModifiers.slice(0, 3).map(modifier => (
-                  <span
-                    key={modifier.id}
-                    className={`inline-flex items-center gap-1 rounded border bg-black/50 px-2 py-0.5 text-[10px] ${
-                      modifier.mode === 'disadvantage' || modifier.bonus < 0
-                        ? 'border-red-700/50 text-red-200'
-                        : 'border-amber-700/50 text-amber-200'
-                    }`}
-                    title={modifier.reason}
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {modifier.name} {modifier.remainingUses}x
-                  </span>
-                ))}
+                {character.storyModifiers.slice(0, 4).map(modifier => {
+                  // L'Inspiration du MJ brille : elle sert aussi de RELANCE sur
+                  // un échec de test (façon BG3) — le joueur doit la voir.
+                  const isInspiration = modifier.source === 'dm_inspiration';
+                  return (
+                    <span
+                      key={modifier.id}
+                      className={`inline-flex items-center gap-1 rounded border bg-black/50 px-2 py-0.5 text-[10px] ${
+                        isInspiration
+                          ? 'border-yellow-400/70 bg-yellow-500/10 text-yellow-200 shadow-[0_0_8px_rgba(250,204,21,0.35)]'
+                          : modifier.mode === 'disadvantage' || modifier.bonus < 0
+                            ? 'border-red-700/50 text-red-200'
+                            : 'border-amber-700/50 text-amber-200'
+                      }`}
+                      title={isInspiration
+                        ? (language === 'fr' ? `${modifier.reason} — utilisable aussi pour RELANCER un test raté` : `${modifier.reason} — can also REROLL a failed check`)
+                        : modifier.reason}
+                    >
+                      {isInspiration ? <Dices className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+                      {modifier.name} {modifier.remainingUses}x
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
 
           <div className="pointer-events-auto hidden min-w-0 flex-col items-end gap-2 sm:flex">
-            <div className="max-w-sm rounded-md border border-white/10 bg-zinc-950/75 px-3 py-2 text-right shadow-xl backdrop-blur-xl">
-              <h3 className="truncate font-fantasy text-sm uppercase tracking-widest text-gold/70">{adventure}</h3>
+            <div className="flex items-center gap-2">
+              {/* Calendrier en jeu — Jour N, moment de la journée */}
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-zinc-950/75 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-200/80 shadow-xl backdrop-blur-xl">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {tr.dayWord} {dayCount} — {timeOfDayLabel}
+              </span>
+              <div className="max-w-sm rounded-md border border-white/10 bg-zinc-950/75 px-3 py-2 text-right shadow-xl backdrop-blur-xl">
+                <h3 className="truncate font-fantasy text-sm uppercase tracking-widest text-gold/70">{adventure}</h3>
+              </div>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
+              {saveHealth === 'failing' && (
+                <span
+                  className="flex items-center rounded-md border border-red-500/60 bg-red-950/80 px-2 py-1 text-[11px] font-semibold text-red-300 shadow-lg animate-pulse"
+                  title={tr.saveFailedTooltip}
+                >
+                  {tr.saveFailed}
+                </span>
+              )}
               <HeaderActionButton icon={<Save className="h-3.5 w-3.5" />} label={isSaving ? tr.saving : tr.save} onClick={handleManualSave} />
               <HeaderActionButton icon={<Music className="h-3.5 w-3.5" />} label={tr.music} onClick={musicDirector.toggleMusic} />
               <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label={tr.shortRest} onClick={handleShortRest} />
               <HeaderActionButton icon={<Sparkles className="h-3.5 w-3.5" />} label={tr.longRest} onClick={handleLongRest} />
+              <HeaderActionButton icon={<SettingsIcon className="h-3.5 w-3.5" />} label={language === 'fr' ? 'Réglages' : 'Settings'} onClick={() => setActivePanel(activePanel === 'settings' ? 'none' : 'settings')} />
             </div>
           </div>
         </div>
@@ -2471,6 +3586,19 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         />
       )}
 
+      {activePanel === 'settings' && (
+        <SettingsPanel
+          onClose={() => setActivePanel('none')}
+          storyMode={!!character.storyMode}
+          onToggleStoryMode={(value) => {
+            const updated = { ...character, storyMode: value };
+            onCharacterUpdate(updated);
+            syncCharacterCritical(updated, 'hp');
+            setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Mode histoire ${value ? 'activé — potions et sorts de soin rendent leur maximum' : 'désactivé — les soins redeviennent des jets'}]*` }]);
+          }}
+        />
+      )}
+
       {/* Tabletop Overlays */}
       <CombatTracker
         isActive={combatState.isActive}
@@ -2490,8 +3618,28 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         onCastSpell={handlePlayerCastSpell}
         onDodge={handlePlayerDodge}
         onUsePotion={handlePlayerUsePotion}
+        onUseAbility={handleUseClassAbility}
         isResolvingAction={isResolvingAction}
       />
+
+      {/* Barre de capacités permanente (façon BG3) — combat ET exploration */}
+      <AbilityHotbar
+        onUseAbility={handleUseClassAbility}
+        selectedTargetId={selectedTargetId}
+        disabled={isResolvingAction}
+      />
+
+      {/* Réaction (Bouclier) proposée en plein tour ennemi */}
+      {reactionRequest && <ReactionPrompt request={reactionRequest} />}
+
+      {/* Séquence de mort — 3 échecs de jets de mort */}
+      {isDead && (
+        <DeathScreen
+          character={character}
+          onResurrect={handleResurrect}
+          onEndCampaign={handleDeathEnd}
+        />
+      )}
 
       {/* Audit / dev control cluster — always visible (fixed, bottom-left). The
           audit console opens in a SEPARATE OS window; Dév toggles developer mode
@@ -2544,7 +3692,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         />
       )}
 
-      {activePrompt && (
+      {activePrompt && !rerollOffer && (
         <ActionPrompt
           checkType={activePrompt.type}
           checkName={activePrompt.name}
@@ -2553,73 +3701,80 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           advantage={activePrompt.advantage}
           dmBonus={activePrompt.dmBonus}
           contextReasons={activePrompt.contextReasons}
-          onDismiss={() => setActivePrompt(null)}
-          onRoll={() => {
-            const outcome = resolveRollPrompt(activePrompt);
-            const { total, die: dieResult, modifier, success } = outcome;
-            const dc = outcome.prompt.dc || 10;
-            const isAttack = outcome.prompt.type === 'ATTACK' || outcome.prompt.name.toLowerCase().includes('attack');
-            const rollList = outcome.rolls.join(',');
-
-            // Show visual feedback with success status
-            setPlayerRoll({ result: total, reason: outcome.prompt.name, success });
-
-            // Log to DiceTray with improved formula display
-            logCombatRoll({
-              type: isAttack ? 'attack' : outcome.prompt.type === 'SAVE' || outcome.prompt.type === 'DEATH_SAVE' ? 'save' : 'check',
-              name: outcome.prompt.name,
-              total,
-              formula: `${dieResult} ${modifier >= 0 ? '+' : ''}${modifier} = ${total} vs ${isAttack ? 'AC' : 'DC'} ${dc}`,
-              success
-            });
-
-            campaignEventLog.append('ROLL_RESOLVED', `Roll resolved: ${outcome.prompt.name} = ${total}`, outcome);
-
-            if (outcome.prompt.type === 'DEATH_SAVE') {
-              const updatedChar = applyDeathSaveOutcome(character, outcome);
-              syncCharacterCritical(updatedChar, 'hp');
+          canDismiss={activePrompt.type !== 'DEATH_SAVE' && !activePrompt.concentrationDamage}
+          onDismiss={() => {
+            // Release a HELD request_roll/cast_spell tool response: without
+            // this the DM stays frozen until the 90s timeout when the player
+            // declines the roll.
+            if (typeof (activePrompt as any).resolveToolCall === 'function') {
+              (activePrompt as any).resolveToolCall({
+                rolled: false,
+                cancelled: true,
+                instruction: 'The player dismissed this roll. Do not narrate any outcome; continue the scene and let them choose another approach.',
+              });
             }
-
-            if (outcome.prompt.type === 'SAVE' && outcome.prompt.concentrationDamage) {
-              const concentration = resolveConcentrationAfterDamage(character, outcome.prompt.concentrationDamage, total);
-              syncCharacterCritical(concentration.character, 'hp');
-              if (concentration.broken) {
-                setTranscript(prev => [...prev, {
-                  speaker: 'dm',
-                  text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map(effect => effect.name).join(', ')}]*`
-                }]);
-              } else {
-                setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Concentration maintained]*' }]);
-              }
-            }
-
-            if (outcome.prompt.pendingSpell) {
-              const spellResolution = resolvePendingSpellRoll(combatState, outcome);
-              if (spellResolution.resolved) {
-                setCombatState(spellResolution.state);
-                if (spellResolution.target?.isPlayer) {
-                  syncCharacterCritical({
-                    ...character,
-                    hp: spellResolution.target.hp,
-                    tempHP: spellResolution.target.tempHP !== undefined ? spellResolution.target.tempHP : character.tempHP,
-                    activeEffects: spellResolution.target.activeEffects || character.activeEffects,
-                  }, 'hp');
-                }
-                campaignEventLog.append('SPELL_RESOLVED', spellResolution.summary, spellResolution);
-                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellResolution.summary}]*` }]);
-              }
-            }
-
-            // Send ROLL_RESULT as a USER message so GPT Realtime generates a narrative response
-            if (dm) {
-              const successStr = success ? 'true' : 'false';
-              const rollMsg = `[ROLL_RESULT: Check="${outcome.prompt.name}" | Type=${outcome.prompt.type} | Total=${total} | DC=${dc} | Success=${successStr} | Die=${dieResult} | Rolls=${rollList} | Mod=${modifier >= 0 ? '+' : ''}${modifier} | Critical=${outcome.critical}]`;
-              dm.sendUserMessage(rollMsg);
-            }
-
             setActivePrompt(null);
           }}
+          onRoll={() => {
+            const outcome = resolveRollPrompt(activePrompt);
+            showRollFeedback(outcome);
+            // RELANCE BG3 : sur un ÉCHEC de test/sauvegarde (pas jet de mort,
+            // pas sort en attente), si une Inspiration du MJ est en réserve,
+            // on retient la livraison et on propose de la brûler pour relancer.
+            const inspirationsLeft = (useGameStore.getState().character?.storyModifiers || [])
+              .filter((m: any) => m.source === 'dm_inspiration' && (m.remainingUses ?? 0) > 0).length;
+            const rerollable = !outcome.success
+              && (outcome.prompt.type === 'CHECK' || outcome.prompt.type === 'SAVE')
+              && !outcome.prompt.pendingSpell
+              && inspirationsLeft > 0;
+            if (rerollable) {
+              setRerollOffer({ outcome });
+              return;
+            }
+            finalizeRollOutcome(outcome);
+          }}
         />
+      )}
+
+      {/* Relance BG3 — l'échec est affiché, l'Inspiration peut le rejouer */}
+      {activePrompt && rerollOffer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="flex min-w-[340px] max-w-md flex-col items-center gap-5 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-b from-gray-900 to-black p-8 shadow-[0_0_60px_rgba(255,180,0,0.25)]">
+            <div className="text-center">
+              <div className="text-sm font-bold uppercase tracking-widest text-red-400">{language === 'fr' ? 'Échec' : 'Failure'}</div>
+              <div className="mt-1 text-2xl font-bold text-white">{rerollOffer.outcome.prompt.name}</div>
+              <div className="mt-2 font-mono text-lg text-white/70">
+                {rerollOffer.outcome.total} <span className="text-white/40">vs DC {rerollOffer.outcome.prompt.dc || 10}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const offer = rerollOffer;
+                setRerollOffer(null);
+                if (!spendInspirationForReroll()) { finalizeRollOutcome(offer.outcome); return; }
+                const second = resolveRollPrompt(activePrompt);
+                showRollFeedback(second, language === 'fr' ? ' (relance)' : ' (reroll)');
+                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎲 Inspiration brûlée — relance : ${second.total} vs DC ${second.prompt.dc || 10} (${second.success ? 'réussite' : 'échec'})]*` }]);
+                finalizeRollOutcome(second, true);
+              }}
+              className="w-full rounded-xl border border-amber-400 bg-gradient-to-r from-amber-700 to-yellow-600 py-3.5 text-lg font-bold uppercase tracking-wide text-white shadow-lg transition hover:scale-[1.02] hover:from-amber-600 hover:to-yellow-500"
+            >
+              🎲 {language === 'fr' ? `Relancer avec l'Inspiration` : 'Reroll with Inspiration'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const offer = rerollOffer;
+                setRerollOffer(null);
+                finalizeRollOutcome(offer.outcome);
+              }}
+              className="text-sm text-white/50 underline hover:text-white"
+            >
+              {language === 'fr' ? "Accepter l'échec" : 'Accept the failure'}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Level Up Modal */}
@@ -2629,7 +3784,14 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           newLevel={pendingLevelUp.to}
           fromLevel={pendingLevelUp.from}
           onConfirm={(updatedChar) => {
-            syncCharacterUpdate(updatedChar);
+            // Les compagnons grandissent AVEC le héros : +4 PV max/niveau,
+            // +1 attaque aux niveaux 5/9/13/17 (la bête du Beast Master scale
+            // déjà via 4×niveau, la monture garde ses stats de type).
+            const withCompanions = levelUpCompanions(updatedChar, pendingLevelUp.to);
+            syncCharacterUpdate(withCompanions);
+            if ((withCompanions.companions?.length ?? 0) > 0 && dm && isConnected) {
+              dm.sendSystemMessage(`[SYSTEM] The hero reached level ${pendingLevelUp.to} — their companions grew stronger too (+HP, better attacks at milestone levels). Acknowledge it briefly if fitting.`);
+            }
             setPendingLevelUp(null);
           }}
           onClose={() => setPendingLevelUp(null)}

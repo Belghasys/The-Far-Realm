@@ -36,6 +36,13 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             11: [
                 { name: 'Extra Attack (2)', description: "Tu attaques trois fois quand tu effectues l'action Attaquer." }
             ],
+            13: [
+                { name: 'Indomitable (2)', description: 'Deux relances de sauvegarde ratée par repos long.' }
+            ],
+            17: [
+                { name: 'Action Surge (2)', description: 'Deux utilisations d\'Action Surge par repos court (une seule par tour).' },
+                { name: 'Indomitable (3)', description: 'Trois relances de sauvegarde ratée par repos long.' }
+            ],
             20: [
                 { name: 'Extra Attack (3)', description: "Tu attaques quatre fois quand tu effectues l'action Attaquer." }
             ]
@@ -67,8 +74,17 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             6: [
                 { name: 'Aura of Protection', description: '+mod. CHA aux jets de sauvegarde des alliés à 3 m ou moins.' }
             ],
+            10: [
+                { name: 'Aura of Courage', description: 'Toi et tes alliés à 3 m ou moins ne pouvez pas être effrayés tant que tu es conscient.' }
+            ],
+            11: [
+                { name: 'Improved Divine Smite', description: 'Toutes tes attaques de mêlée infligent +1d8 dégâts radiants.' }
+            ],
             14: [
                 { name: 'Cleansing Touch', description: 'Mets fin à un sort sur toi ou un allié. Mod. CHA/repos long.' }
+            ],
+            18: [
+                { name: 'Aura Improvements', description: 'Tes auras de protection et de courage passent à 9 m de rayon.' }
             ]
         }
     },
@@ -111,8 +127,14 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             5: [
                 { name: 'Destroy Undead', description: 'Les morts-vivants de FP 1/2 ou moins sont détruits par ton Renvoi des morts-vivants.' }
             ],
+            8: [
+                { name: 'Divine Strike / Potent Cantrips', description: 'Une fois par tour, +1d8 dégâts (du type de ton domaine) quand tu touches avec une arme — ou tes tours de magie gagnent +mod. SAG selon le domaine.' }
+            ],
             10: [
                 { name: 'Divine Intervention', description: "Appelle ta divinité à l'aide. 10 % + niveau de chances de réussite." }
+            ],
+            17: [
+                { name: 'Divine Intervention Improved', description: 'Ton Intervention divine réussit automatiquement.' }
             ]
         }
     },
@@ -130,6 +152,12 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             2: [
                 { name: 'Wild Shape', description: 'Transforme-toi en bête. 2/repos court. FP max = niveau/8.' },
                 { name: 'Druid Circle', description: 'Choisis Circle of the Land ou Circle of the Moon.' }
+            ],
+            4: [
+                { name: 'Wild Shape Improvement', description: 'Formes de FP 1/2 max, nage autorisée.' }
+            ],
+            8: [
+                { name: 'Wild Shape Improvement (2)', description: 'Formes de FP 1 max, vol autorisé.' }
             ],
             18: [
                 { name: 'Timeless Body', description: 'Tu vieillis 10 fois plus lentement et ne peux pas être vieilli par magie.' }
@@ -161,6 +189,12 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             5: [
                 { name: 'Extra Attack', description: "Tu attaques deux fois quand tu effectues l'action Attaquer." }
             ],
+            10: [
+                { name: 'Hide in Plain Sight', description: "Camoufle-toi 1 minute contre une surface solide : +10 aux tests de Discrétion tant que tu restes immobile." }
+            ],
+            14: [
+                { name: 'Vanish', description: 'Action bonus : Se cacher. Tu ne peux plus être pisté par des moyens non magiques.' }
+            ],
             20: [
                 { name: 'Foe Slayer', description: "Ajoute ton mod. SAG à l'attaque ou aux dégâts contre ton ennemi juré." }
             ]
@@ -191,6 +225,15 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             ],
             11: [
                 { name: 'Reliable Talent', description: 'Minimum 10 aux tests de caractéristique que tu maîtrises.' }
+            ],
+            14: [
+                { name: 'Blindsense', description: 'Tu perçois toute créature cachée ou invisible à 3 m ou moins de toi.' }
+            ],
+            15: [
+                { name: 'Slippery Mind', description: 'Tu gagnes la maîtrise des jets de sauvegarde de Sagesse.' }
+            ],
+            18: [
+                { name: 'Elusive', description: "Aucun jet d'attaque n'a l'avantage contre toi tant que tu n'es pas incapable d'agir." }
             ],
             20: [
                 { name: 'Stroke of Luck', description: 'Transforme une attaque ratée en coup au but OU considère un d20 comme un 20. 1/repos court.' }
@@ -226,6 +269,18 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             ],
             11: [
                 { name: 'Relentless Rage', description: 'Si tu tombes à 0 PV en rage, réussis une sauvegarde de CON DD 10 pour rester à 1 PV à la place.' }
+            ],
+            13: [
+                { name: 'Brutal Critical (2)', description: 'Deux dés de dégâts d\'arme supplémentaires sur un coup critique.' }
+            ],
+            15: [
+                { name: 'Persistent Rage', description: 'Ta rage ne prend fin que si tu tombes inconscient ou si tu le décides.' }
+            ],
+            17: [
+                { name: 'Brutal Critical (3)', description: 'Trois dés de dégâts d\'arme supplémentaires sur un coup critique.' }
+            ],
+            18: [
+                { name: 'Indomitable Might', description: 'Un test de FOR inférieur à ta valeur de FOR utilise ta valeur de FOR à la place.' }
             ],
             20: [
                 { name: 'Primal Champion', description: 'FOR et CON augmentent de 4 (max 24).' }
@@ -267,6 +322,15 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             10: [
                 { name: 'Purity of Body', description: 'Immunisé contre les maladies et le poison.' }
             ],
+            13: [
+                { name: 'Tongue of the Sun and Moon', description: 'Tu comprends toutes les langues parlées, et toute créature te comprend.' }
+            ],
+            14: [
+                { name: 'Diamond Soul', description: 'Maîtrise de TOUS les jets de sauvegarde ; dépense 1 ki pour relancer une sauvegarde ratée.' }
+            ],
+            18: [
+                { name: 'Empty Body', description: 'Dépense 4 ki : invisible 1 minute avec résistance à tous les dégâts sauf force.' }
+            ],
             20: [
                 { name: 'Perfect Self', description: "Regagne 4 points de ki quand tu lances l'initiative sans qu'il t'en reste." }
             ]
@@ -291,6 +355,15 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             ],
             11: [
                 { name: 'Mystic Arcanum (6th)', description: 'Lance un sort de niveau 6 une fois par repos long, sans emplacement.' }
+            ],
+            13: [
+                { name: 'Mystic Arcanum (7th)', description: 'Un sort de niveau 7, 1/repos long, sans emplacement.' }
+            ],
+            15: [
+                { name: 'Mystic Arcanum (8th)', description: 'Un sort de niveau 8, 1/repos long, sans emplacement.' }
+            ],
+            17: [
+                { name: 'Mystic Arcanum (9th)', description: 'Un sort de niveau 9, 1/repos long, sans emplacement.' }
             ],
             20: [
                 { name: 'Eldritch Master', description: 'Passe 1 minute à implorer ton patron pour récupérer tous tes emplacements de Pact Magic. 1/repos long.' }
@@ -323,8 +396,21 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             6: [
                 { name: 'Countercharm', description: "Action : les alliés à 9 m ou moins gagnent l'avantage contre les états charmé et effrayé." }
             ],
+            9: [
+                { name: 'Song of Rest (d8)', description: 'Ton dé de Chant reposant passe au d8 (d10 au niveau 13, d12 au 17).' }
+            ],
             10: [
-                { name: 'Magical Secrets', description: "Apprends deux sorts de n'importe quelle classe." }
+                { name: 'Magical Secrets', description: "Apprends deux sorts de n'importe quelle classe." },
+                { name: 'Bardic Inspiration (d10)', description: "Ton dé d'inspiration passe au d10." }
+            ],
+            14: [
+                { name: 'Magical Secrets (2)', description: "Deux sorts supplémentaires de n'importe quelle classe." }
+            ],
+            15: [
+                { name: 'Bardic Inspiration (d12)', description: "Ton dé d'inspiration passe au d12." }
+            ],
+            18: [
+                { name: 'Magical Secrets (3)', description: "Encore deux sorts de n'importe quelle classe." }
             ],
             20: [
                 { name: 'Superior Inspiration', description: "Regagne une Bardic Inspiration quand tu lances l'initiative et qu'il ne t'en reste plus." }
@@ -347,6 +433,12 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
             ],
             3: [
                 { name: 'Metamagic', description: 'Modifie tes sorts avec des options comme Twinned Spell, Quickened Spell ou Subtle Spell.' }
+            ],
+            10: [
+                { name: 'Metamagic (3e option)', description: 'Apprends une option de Métamagie supplémentaire.' }
+            ],
+            17: [
+                { name: 'Metamagic (4e option)', description: 'Apprends une dernière option de Métamagie.' }
             ],
             20: [
                 { name: 'Sorcerous Restoration', description: 'Regagne 4 points de sorcellerie après un repos court.' }

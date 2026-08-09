@@ -100,14 +100,20 @@ export function useSaveSync({
                     actionEconomy: data.combatState.actionEconomy,
                     enemyIntents: data.combatState.enemyIntents,
                 }
-            } : {}),
+            } : {
+                // EXPLICITLY overwrite: every write is merge:true, so omitting the
+                // key left a finished fight in the save forever — each reload then
+                // resumed a ghost combat with mid-fight HP.
+                combat: { isActive: false, combatants: [], currentTurn: '' }
+            }),
             journal: {
                 briefing: data.journal.briefing,
                 quests: (data.journal.quests || []).map((q: any) => ({
                     id: q.id, title: q.title, description: q.description, status: q.status
                 })),
                 npcs: (data.journal.npcs || []).map((n: any) => ({
-                    id: n.id, name: n.name, description: n.description, location: n.location
+                    id: n.id, name: n.name, description: n.description, location: n.location,
+                    disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt
                 })),
                 locations: data.journal.locations || [],
                 chronicle: data.journal.chronicle || []
@@ -135,6 +141,18 @@ export function useSaveSync({
             memoryManager.setSaveId(saveId);
             campaignEventLog.setCampaignId(saveId);
             console.log('📍 Active save set for real-time sync:', saveId);
+
+            // Rehydrate long-term memory from the Firestore archives when this
+            // device's localStorage has no cached summary (fresh device / cleared
+            // storage). Without this, the "story so far" only survives locally.
+            if (!memoryManager.getCachedSummary()) {
+                void saveService.loadLatestArchiveSummary(saveId).then(summary => {
+                    if (summary && !memoryManager.getCachedSummary()) {
+                        memoryManager.setCachedSummary(summary);
+                        console.log('🧠 Long-term summary rehydrated from Firestore archives');
+                    }
+                }).catch(() => { /* non-fatal */ });
+            }
         }
 
         // Flush pending saves before browser unload/visibility loss.
@@ -203,21 +221,30 @@ export function useSaveSync({
                 if (memoryManager.shouldSummarize()) {
                     console.log('⚠️ Token threshold reached! Triggering AI summarization...');
                     try {
-                        const { summarizeHistory } = await import('../services/llmService');
+                        const { summarizeHistory, extractCampaignFacts } = await import('../services/llmService');
+                        const parseArchivedMessages = (text: string) => text.split('\n')
+                            .filter(l => l.trim())
+                            .map(line => {
+                                const [speaker, ...rest] = line.split(':');
+                                return {
+                                    speaker: speaker.toLowerCase().includes('user') ? 'user' as const : 'dm' as const,
+                                    text: rest.join(':').trim()
+                                };
+                            });
+                        let archivedMessages: { speaker: 'user' | 'dm'; text: string }[] = [];
+                        // Cumulative: fold the previous "story so far" into the new summary
+                        // so nothing established is lost across successive purges.
+                        const previousSummary = memoryManager.getCachedSummary()?.text || '';
                         const summary = await memoryManager.purgeAndSummarize(async (text) => {
-                            const messages = text.split('\n')
-                                .filter(l => l.trim())
-                                .map(line => {
-                                    const [speaker, ...rest] = line.split(':');
-                                    return {
-                                        speaker: speaker.toLowerCase().includes('user') ? 'user' as const : 'dm' as const,
-                                        text: rest.join(':').trim()
-                                    };
-                                });
-                            return await summarizeHistory(messages, data.character.name, data.language);
+                            archivedMessages = parseArchivedMessages(text);
+                            return await summarizeHistory(archivedMessages, data.character.name, data.language, previousSummary);
                         });
 
                         if (summary) {
+                            // THE key link: cache the summary so buildSystemPrompt and the
+                            // director context can re-inject it (it was generated then dropped).
+                            memoryManager.setCachedSummary(summary);
+
                             await saveService.archiveConversation(
                                 summary,
                                 data.transcript.slice(0, -Math.ceil(data.transcript.length * 0.8)),
@@ -228,6 +255,69 @@ export function useSaveSync({
                                 speaker: 'dm',
                                 text: '📚 [Mémoire archivée par IA - conversation résumée intelligemment]'
                             }]);
+
+                            // Fire-and-forget: extract durable facts from the archived segment
+                            // and merge them into the campaign runtime + NPC journal, so
+                            // continuity does not depend on the live DM having called
+                            // update_campaign_runtime at the right moments.
+                            void (async () => {
+                                try {
+                                    const { useGameStore } = await import('../store/gameStore');
+                                    const knownFacts = useGameStore.getState().campaignRuntime?.canonFacts || [];
+                                    const facts = await extractCampaignFacts(archivedMessages, knownFacts, data.language);
+                                    if (!facts) return;
+
+                                    const newFacts = [
+                                        ...facts.canonFacts,
+                                        ...facts.promises.map(p => `[Promesse] ${p}`),
+                                        ...facts.threats.map(t => `[Menace] ${t}`),
+                                    ];
+                                    if (newFacts.length) {
+                                        useGameStore.getState().setCampaignRuntime(prev => {
+                                            const seen = new Set((prev.canonFacts || []).map(f => f.toLowerCase()));
+                                            const merged = [...(prev.canonFacts || [])];
+                                            for (const fact of newFacts) {
+                                                if (!seen.has(fact.toLowerCase())) { seen.add(fact.toLowerCase()); merged.push(fact); }
+                                            }
+                                            return { ...prev, canonFacts: merged.slice(-80), updatedAt: Date.now() };
+                                        });
+                                        await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+                                    }
+
+                                    if (facts.npcUpdates.length) {
+                                        // Functional update: extractCampaignFacts awaited for seconds,
+                                        // so a plain get-then-set here would clobber any add_npc /
+                                        // update_npc the DM ran meanwhile. Merge against the LATEST
+                                        // journal (zustand passes it in) so concurrent edits survive.
+                                        let changed = false;
+                                        latestData.current.setJournal((prev: any) => {
+                                            const npcs = [...(prev.npcs || [])];
+                                            for (const update of facts.npcUpdates) {
+                                                const idx = npcs.findIndex((n: any) => n.name.toLowerCase() === update.name.toLowerCase());
+                                                if (idx < 0) continue; // only enrich NPCs the DM already logged
+                                                const npc: any = { ...npcs[idx] };
+                                                if (update.dispositionDelta) {
+                                                    npc.disposition = Math.max(-5, Math.min(5, (npc.disposition || 0) + update.dispositionDelta));
+                                                }
+                                                if (update.note) {
+                                                    npc.knownFacts = [...(npc.knownFacts || []), update.note].slice(-12);
+                                                }
+                                                if (update.location) npc.location = update.location;
+                                                npcs[idx] = npc;
+                                                changed = true;
+                                            }
+                                            return changed ? { ...prev, npcs } : prev;
+                                        });
+                                        if (changed) {
+                                            // zustand set is synchronous → getState() reflects the merge.
+                                            saveService.updateJournalDebounced(useGameStore.getState().journal as any);
+                                        }
+                                    }
+                                    console.log('🧠 Facts extracted & merged:', newFacts.length, 'facts,', facts.npcUpdates.length, 'NPC updates');
+                                } catch (e) {
+                                    console.error('❌ Fact extraction failed:', e);
+                                }
+                            })();
                         }
                     } catch (e) {
                         console.error('❌ AI Summarization failed:', e);
@@ -327,7 +417,7 @@ export function useSaveSync({
         saveService.updateJournalDebounced({
             briefing: updatedJournal.briefing,
             quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status })),
-            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location })),
+            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt })),
             locations: (updatedJournal.locations || []).map((l: any) => ({ id: l.id, name: l.name, description: l.description })),
             chronicle: (updatedJournal.chronicle || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, timestamp: c.timestamp })),
         });
@@ -338,7 +428,7 @@ export function useSaveSync({
         await saveService.updateJournalImmediate({
             briefing: updatedJournal.briefing,
             quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status })),
-            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location })),
+            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt })),
             locations: (updatedJournal.locations || []).map((l: any) => ({ id: l.id, name: l.name, description: l.description })),
             chronicle: (updatedJournal.chronicle || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, timestamp: c.timestamp })),
         });

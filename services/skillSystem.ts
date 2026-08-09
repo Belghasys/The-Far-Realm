@@ -54,6 +54,36 @@ export const SKILL_TRANSLATIONS: Record<string, string> = {
     'Persuasion': 'Persuasion',
 };
 
+/**
+ * Resolve any skill spelling (EN canonical, FR translation, loose case, light
+ * fuzzy) to the canonical ENGLISH key used by stored proficiency lists.
+ * request_roll may pass either language — comparing raw strings silently
+ * dropped proficiency/expertise whenever the DM spoke French ("Discrétion"
+ * never matched the stored "Stealth").
+ */
+export function canonicalSkillName(name: string): string {
+    const raw = String(name || '').trim();
+    if (!raw) return raw;
+    if (SKILL_ABILITIES[raw]) return raw;
+    if (SKILL_TRANSLATIONS[raw]) return SKILL_TRANSLATIONS[raw];
+    const lower = raw.toLowerCase();
+    for (const key of Object.keys(SKILL_ABILITIES)) {
+        if (key.toLowerCase() === lower) return key;
+    }
+    for (const [fr, en] of Object.entries(SKILL_TRANSLATIONS)) {
+        if (fr.toLowerCase() === lower) return en;
+    }
+    for (const key of Object.keys(SKILL_ABILITIES)) {
+        const k = key.toLowerCase();
+        if (k.includes(lower) || lower.includes(k)) return key;
+    }
+    for (const [fr, en] of Object.entries(SKILL_TRANSLATIONS)) {
+        const f = fr.toLowerCase();
+        if (f.includes(lower) || lower.includes(f)) return en;
+    }
+    return raw;
+}
+
 // Get the ability modifier for a skill
 export function getSkillAbility(skillName: string): 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' {
     // Try direct match
@@ -140,11 +170,12 @@ export function calculateSkillModifier(
     // Proficiency bonus by level
     const profBonus = Math.floor((level - 1) / 4) + 2;
 
-    // Check if proficient (case-insensitive exact match to avoid false positives like Perception ↔ Deception)
-    const lowerSkill = skillName.toLowerCase();
+    // Check if proficient — canonicalized so FR/EN spellings co-match, but still
+    // an exact-key comparison (no Perception ↔ Deception false positives).
+    const canonSkill = canonicalSkillName(skillName).toLowerCase();
     const isProficient = proficiencies.some(p => {
         const lowerP = p.toLowerCase();
-        return lowerP === lowerSkill || lowerP === ability.toLowerCase();
+        return canonicalSkillName(p).toLowerCase() === canonSkill || lowerP === ability.toLowerCase();
     });
 
     return abilityMod + (isProficient ? profBonus : 0);
@@ -205,9 +236,12 @@ export function getCheckModifier(params: {
     if (isSave) {
         proficient = proficientSaves.some(s => s.toUpperCase() === abil);
     } else if (skill) {
-        const ls = skill.toLowerCase();
-        proficient = proficiencies.some(p => p.toLowerCase() === ls);
-        expert = expertise.some(e => e.toLowerCase() === ls);
+        // Canonicalize BOTH sides: the DM passes "Discrétion" in FR games while
+        // the sheet stores "Stealth" — raw comparison silently lost proficiency
+        // and expertise on the single most common roll path.
+        const ls = canonicalSkillName(skill).toLowerCase();
+        proficient = proficiencies.some(p => canonicalSkillName(p).toLowerCase() === ls);
+        expert = expertise.some(e => canonicalSkillName(e).toLowerCase() === ls);
     }
 
     const modifier = abilityMod + (proficient ? prof : 0) + (expert ? prof : 0);

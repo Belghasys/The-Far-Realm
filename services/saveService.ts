@@ -54,7 +54,7 @@ export interface GameSave {
     journal?: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
         quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs: { id: string; name: string; description: string; location: string }[];
+        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
         locations: { id: string; name: string; description: string }[];
         chronicle?: { id: string; title: string; description: string; timestamp: number }[];
     };
@@ -95,6 +95,18 @@ class WriteQueue {
 class SaveService {
     private userId: string | null = null;
     private writeQueue = new WriteQueue();
+
+    // Sync health notifications: the UI subscribes so a failed Firestore write
+    // shows a "not synced" badge instead of dying silently in console.error.
+    private syncListener: ((ok: boolean) => void) | null = null;
+
+    setSyncListener(listener: ((ok: boolean) => void) | null) {
+        this.syncListener = listener;
+    }
+
+    private reportSync(ok: boolean) {
+        try { this.syncListener?.(ok); } catch { /* listener must never break saves */ }
+    }
 
     // Recursive function to remove undefined values before Firestore sync.
     private sanitize(obj: any): any {
@@ -172,24 +184,31 @@ class SaveService {
         const saveRef = doc(db, 'users', userId, 'saves', saveId);
 
         const write = async () => {
-            const now = Timestamp.now();
-            if (immediate) {
-                // Omit createdAt → merge:true keeps whatever is already stored.
-                await setDoc(saveRef, this.sanitize({ ...gameState, updatedAt: now }), { merge: true });
+            try {
+                const now = Timestamp.now();
+                if (immediate) {
+                    // Omit createdAt → merge:true keeps whatever is already stored.
+                    await setDoc(saveRef, this.sanitize({ ...gameState, updatedAt: now }), { merge: true });
+                    this.reportSync(true);
+                    return saveId;
+                }
+                const saveDoc = await getDoc(saveRef);
+                const createdAt = saveDoc.exists() ? (saveDoc.data().createdAt || now) : now;
+
+                const payload = this.sanitize({
+                    ...gameState,
+                    createdAt,
+                    updatedAt: now,
+                });
+
+                await setDoc(saveRef, payload, { merge: true });
+                console.log(`✅ Game saved (${isAuto ? 'auto' : 'manual'}):`, saveId);
+                this.reportSync(true);
                 return saveId;
+            } catch (error) {
+                this.reportSync(false);
+                throw error;
             }
-            const saveDoc = await getDoc(saveRef);
-            const createdAt = saveDoc.exists() ? (saveDoc.data().createdAt || now) : now;
-
-            const payload = this.sanitize({
-                ...gameState,
-                createdAt,
-                updatedAt: now,
-            });
-
-            await setDoc(saveRef, payload, { merge: true });
-            console.log(`✅ Game saved (${isAuto ? 'auto' : 'manual'}):`, saveId);
-            return saveId;
         };
 
         // Bypass the serialized write queue on the unload path so the setDoc fires now
@@ -326,8 +345,10 @@ class SaveService {
                         gold: this.pendingUpdates.gold,
                     });
                     this.pendingUpdates = {};
+                    this.reportSync(true);
                 } catch (error) {
                     console.error('❌ Character sync failed:', error);
+                    this.reportSync(false);
                 }
             });
         }, 500);
@@ -354,8 +375,10 @@ class SaveService {
                 }), { merge: true });
 
                 console.log('✅ Character sync (immediate)');
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Immediate sync failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -389,8 +412,10 @@ class SaveService {
                     hp: this.pendingUpdates.hp,
                 });
                 this.pendingUpdates = {};
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Character flush failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -450,8 +475,10 @@ class SaveService {
                 }), { merge: true });
 
                 console.log('🔴 CRITICAL sync (immediate):', updates);
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Critical sync failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -462,7 +489,7 @@ class SaveService {
     private pendingJournal: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
         quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs: { id: string; name: string; description: string; location: string }[];
+        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
         locations: { id: string; name: string; description: string }[];
         chronicle: { id: string; title: string; description: string; timestamp: number }[];
     } | null = null;
@@ -471,7 +498,7 @@ class SaveService {
     updateJournalDebounced(journal: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
         quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs?: { id: string; name: string; description: string; location: string }[];
+        npcs?: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
         locations?: { id: string; name: string; description: string }[];
         chronicle?: { id: string; title: string; description: string; timestamp: number }[];
     }): void {
@@ -517,8 +544,10 @@ class SaveService {
                         this.pendingJournal.chronicle.length, 'chronicle entries'
                     );
                     this.pendingJournal = null;
+                    this.reportSync(true);
                 } catch (error) {
                     console.error('❌ Journal sync failed:', error);
+                    this.reportSync(false);
                 }
             });
         }, 2000); // 2 second debounce
@@ -527,7 +556,7 @@ class SaveService {
     // Legacy immediate sync (for backward compatibility)
     async updateJournal(journal: {
         quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs?: { id: string; name: string; description: string; location: string }[];
+        npcs?: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
         locations?: { id: string; name: string; description: string }[];
     }): Promise<void> {
         // Use debounced version now
@@ -556,8 +585,10 @@ class SaveService {
 
                 console.log('📜 Journal flushed immediately');
                 this.pendingJournal = null;
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Journal flush failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -566,7 +597,7 @@ class SaveService {
     async updateJournalImmediate(journal: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
         quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs?: { id: string; name: string; description: string; location: string }[];
+        npcs?: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
         locations?: { id: string; name: string; description: string }[];
         chronicle?: { id: string; title: string; description: string; timestamp: number }[];
     }): Promise<void> {
@@ -601,8 +632,10 @@ class SaveService {
                 }), { merge: true });
 
                 console.log('📜 Journal synced immediately:', fullJournal.quests.length, 'quests');
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Immediate journal sync failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -625,8 +658,10 @@ class SaveService {
                 }), { merge: true });
 
                 console.log('Campaign runtime synced');
+                this.reportSync(true);
             } catch (error) {
                 console.error('Campaign runtime sync failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -646,8 +681,10 @@ class SaveService {
                 }), { merge: true });
 
                 console.log('💬 Transcript synced:', transcript.length, 'messages');
+                this.reportSync(true);
             } catch (error) {
                 console.error('❌ Transcript sync failed:', error);
+                this.reportSync(false);
             }
         });
     }
@@ -684,6 +721,24 @@ class SaveService {
                 console.error('❌ Archive failed:', error);
             }
         });
+    }
+
+    // Fetch the most recent archived summary for a save — used to rehydrate the
+    // long-term memory cache after a reload on a fresh device/localStorage.
+    async loadLatestArchiveSummary(saveId?: string): Promise<string | null> {
+        const id = saveId || this.currentSaveId;
+        if (!id) return null;
+        try {
+            const userId = this.getCurrentUserId();
+            const archivesRef = collection(db, 'users', userId, 'saves', id, 'archives');
+            const q = query(archivesRef, orderBy('archivedAt', 'desc'), limit(1));
+            const snapshot = await getDocs(q);
+            const summary = snapshot.docs[0]?.data()?.summary;
+            return typeof summary === 'string' && summary.trim() ? summary : null;
+        } catch (error) {
+            console.error('❌ Archive summary load failed:', error);
+            return null;
+        }
     }
 
     // Add NPC conversation summary to journal

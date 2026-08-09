@@ -10,7 +10,9 @@ export interface CharacterStats {
 }
 
 export type ItemType = 'weapon' | 'armor' | 'consumable' | 'misc' | 'ammo' | 'container';
-export type ItemSlot = 'head' | 'chest' | 'legs' | 'feet' | 'hands' | 'mainHand' | 'offHand' | 'ring' | 'neck' | 'back' | 'waist' | 'none';
+// 'ranged' : emplacement d'arme À DISTANCE séparé de la main directrice — arc
+// et épée restent équipés ENSEMBLE, plus besoin de permuter à chaque combat.
+export type ItemSlot = 'head' | 'chest' | 'legs' | 'feet' | 'hands' | 'mainHand' | 'offHand' | 'ranged' | 'ring' | 'neck' | 'back' | 'waist' | 'none';
 
 export interface Item {
   id: string;
@@ -62,7 +64,7 @@ export interface Weapon {
 export type EffectDuration = 'concentration' | 'long_rest' | 'short_rest' | 'rounds' | 'permanent' | '1_hour' | '8_hours';
 
 export interface StatModifier {
-  stat: 'AC' | 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' | 'attackBonus' | 'damageBonus' | 'speed';
+  stat: 'AC' | 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA' | 'attackBonus' | 'damageBonus' | 'speed' | 'checkBonus' | 'saveBonus';
   bonus: number;
   setTo?: number; // For effects like Mage Armor that SET AC to a value
   formula?: 'mage_armor'; // Dynamic AC formulas that depend on current stats
@@ -74,9 +76,16 @@ export interface ActiveEffect {
   source: 'spell' | 'potion' | 'item' | 'condition' | 'class_feature';
   duration: EffectDuration;
   roundsRemaining?: number;
+  /** For 1_hour / 8_hours effects: absolute world hour ((day-1)*24 + hour-of-day)
+   *  past which the effect drops. Swept when the in-game clock advances. */
+  expiresAtWorldHour?: number;
   concentration?: boolean;
   description?: string;
   modifiers: StatModifier[];
+  /** Damage rider added to the player's weapon hits while the effect is active
+   *  (Hunter's Mark, Hex, Divine Favor, Battle Master maneuver…). Omitted
+   *  damageType = the weapon's own damage type. */
+  onWeaponHit?: { dice: string; damageType?: string };
 }
 
 export interface DeathSaves {
@@ -135,6 +144,57 @@ export interface CharacterStoryProfile {
   dmHooks?: string[];
 }
 
+/**
+ * A recruited party companion (rescued NPC, hireling, summoned ally) with a
+ * mini stat block. Unlike add_ally_init (one combat), companions PERSIST: they
+ * auto-join every encounter as side 'ally', their HP carries between fights
+ * (synced at combat end), and rests heal them like the Beast Master wolf.
+ */
+export interface CompanionSheet {
+  id: string;
+  name: string;
+  description?: string;
+  hp: { current: number; max: number };
+  ac: number;
+  attack: { name: string; attackBonus: number; damage: string; damageType: string };
+  recruitedAt: number;
+  /** Niveau du héros auquel le compagnon a été mis à jour pour la dernière
+   *  fois — la montée de niveau du héros fait grandir ses compagnons
+   *  (+4 PV max/niveau, +1 attaque aux niveaux 5/9/13/17). */
+  level?: number;
+}
+
+/** Monture (cheval, poney de guerre, griffon…). Hors combat : vitesse de
+ *  voyage narrée par le MJ. En combat : la CHARGE MONTÉE ferme la distance
+ *  loin → contact en une seule action d'attaque. */
+export interface MountSheet {
+  name: string;
+  /** Type du catalogue (data/companionOptions MOUNT_TYPES) : 'destrier',
+   *  'griffon', 'destrier_celeste' (paladin 5+)… Libre si monture custom. */
+  kind?: string;
+  /** Vitesse en pieds (cheval 60, poney 40, griffon volant 80). */
+  speed: number;
+  /** Monture volante (griffon, pégase) — le MJ narre le vol. */
+  flying?: boolean;
+  /** PV persistants ENTRE combats — la monture rejoint chaque rencontre comme
+   *  alliée et attaque d'elle-même. À 0 : morte (retirée), sauf le Destrier
+   *  céleste qui revient au prochain repos long. */
+  hp?: { current: number; max: number };
+  description?: string;
+  acquiredAt: number;
+}
+
+/** Familier d'un lanceur de sorts (Find Familiar / pacte / esprit animal du
+ *  druide). Narratif + « Aide du familier » : 1×/repos court, avantage sur la
+ *  prochaine attaque. */
+export interface FamiliarSheet {
+  name: string;
+  /** Type du catalogue (chat, hibou, corbeau… 'renard' pour les druides). */
+  kind: string;
+  description?: string;
+  acquiredAt: number;
+}
+
 export interface CharacterSheet {
   name: string;
   race: string;
@@ -142,11 +202,29 @@ export interface CharacterSheet {
   /** Archetype/subclass (Hunter, Champion, Life Domain…) — chosen at the class's
    *  subclass level via the level-up modal or the character sheet. */
   subclass?: string;
+  /** Draconic ancestry for Dragonborn (dragon color id, e.g. 'Red', 'White'). Drives
+   *  the breath weapon type and the racial damage resistance. Undefined for legacy
+   *  Dragonborn saves → falls back to fire (see getDraconicDamageType / startEncounter). */
+  draconicAncestry?: string;
   /** Unspent Ability Score Improvement points (2 per ASI level crossed). Banked
    *  when the player dismisses the level-up modal; spendable from the sheet. */
   pendingASIPoints?: number;
+  /** Feat ids taken at ASI levels (see data/feats.ts). Resolved via getFeatById. */
+  feats?: string[];
+  /** Mode histoire (choisi à la création, modifiable dans les réglages) :
+   *  potions et sorts de soin rendent toujours leur MAXIMUM. */
+  storyMode?: boolean;
+  /** Monture du héros — vitesse de voyage + charge montée en combat. */
+  mount?: MountSheet;
+  /** Familier lié (mage/sorcier/occultiste/druide) — aide 1×/repos court. */
+  familiar?: FamiliarSheet;
+  /** Bête liée du Rôdeur Beast Master (id de BEAST_COMPANIONS : loup, ours,
+   *  panthere, faucon). Absent = loup (rétro-compatible). */
+  beastKind?: string;
   /** Beast Master companion HP, persisted BETWEEN encounters (max = 4×level, min 11). */
   companionHP?: { current: number; max: number };
+  /** Recruited party companions (max 2) — they auto-join every encounter. */
+  companions?: CompanionSheet[];
   level: number;
   xp: number;
   background: string;
@@ -207,6 +285,27 @@ export function getRacialBonus(race: string, stat: Ability): number {
   return RACIAL_BONUSES[race]?.[stat] || 0;
 }
 
+// SRD 5.1 Draconic Ancestry: dragon color → breath-weapon / resistance damage type.
+// The choice is purely the damage element (ability bonuses are the same for all
+// Dragonborn, STR+2/CHA+1), so it lives as a lightweight field, not a subrace.
+export const DRACONIC_ANCESTRIES: { id: string; en: string; fr: string; type: CodexDamageType }[] = [
+  { id: 'Red', en: 'Red', fr: 'Rouge', type: 'fire' },
+  { id: 'Gold', en: 'Gold', fr: 'Or', type: 'fire' },
+  { id: 'Brass', en: 'Brass', fr: 'Airain', type: 'fire' },
+  { id: 'Blue', en: 'Blue', fr: 'Bleu', type: 'lightning' },
+  { id: 'Bronze', en: 'Bronze', fr: 'Bronze', type: 'lightning' },
+  { id: 'White', en: 'White', fr: 'Blanc', type: 'cold' },
+  { id: 'Silver', en: 'Silver', fr: 'Argent', type: 'cold' },
+  { id: 'Black', en: 'Black', fr: 'Noir', type: 'acid' },
+  { id: 'Copper', en: 'Copper', fr: 'Cuivre', type: 'acid' },
+  { id: 'Green', en: 'Green', fr: 'Vert', type: 'poison' },
+];
+
+/** The damage type a Dragonborn's ancestry grants (breath + resistance), or undefined. */
+export function getDraconicDamageType(ancestry?: string): CodexDamageType | undefined {
+  return DRACONIC_ANCESTRIES.find(a => a.id === ancestry)?.type;
+}
+
 function abilityModifier(score: number): number {
   return Math.floor((score - 10) / 2);
 }
@@ -262,12 +361,15 @@ export function parseItemStatModifier(item: Item, stat: 'STR' | 'DEX' | 'CON' | 
   const nameText = item.name.toLowerCase();
   const combined = `${nameText} ${effectText}`;
 
-  const aliases = stat === 'STR' ? ['str', 'strength'] :
-                  stat === 'DEX' ? ['dex', 'dexterity'] :
+  // Alias EN + FR : les objets du jeu sont souvent décrits en français
+  // (« FOR = 21 », « SAG +2 ») — sans ces alias, les potions/objets de stats
+  // français étaient silencieusement inertes.
+  const aliases = stat === 'STR' ? ['str', 'strength', 'for', 'force'] :
+                  stat === 'DEX' ? ['dex', 'dexterity', 'dexterite', 'dextérité'] :
                   stat === 'CON' ? ['con', 'constitution'] :
                   stat === 'INT' ? ['int', 'intelligence'] :
-                  stat === 'WIS' ? ['wis', 'wisdom'] :
-                  ['cha', 'charisma'];
+                  stat === 'WIS' ? ['wis', 'wisdom', 'sag', 'sagesse'] :
+                  ['cha', 'charisma', 'charisme'];
 
   for (const alias of aliases) {
     const a = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // escape (safety)
@@ -312,8 +414,8 @@ export function parseItemSpeedModifier(item: Item): number {
   const nameText = item.name.toLowerCase();
   const combined = `${nameText} ${effectText}`;
 
-  const speedRegex1 = /([+-]\s*\d+)\s*(?:ft\s*)?speed/i;
-  const speedRegex2 = /speed\s*([+-]\s*\d+)/i;
+  const speedRegex1 = /([+-]\s*\d+)\s*(?:ft\s*)?(?:speed|vitesse)/i;
+  const speedRegex2 = /(?:speed|vitesse)\s*([+-]\s*\d+)/i;
 
   const match1 = combined.match(speedRegex1);
   if (match1) {
@@ -471,7 +573,10 @@ export function isStatModified(character: CharacterSheet, stat: string): boolean
 
 // ========== COMBAT HELPER FUNCTIONS ==========
 
-// Calculate effective attack bonus with active effects
+// Calculate effective attack bonus with active effects + equipped gear.
+// Gear: any equipped non-weapon item whose text carries « +N aux jets
+// d'attaque » / "+N to attack rolls" (anneaux, gantelets…) — l'arme elle-même
+// passe par magicBonus, on l'exclut pour ne pas compter double.
 export function getEffectiveAttackBonus(character: CharacterSheet): number {
   let bonus = 0;
   for (const effect of character.activeEffects || []) {
@@ -479,6 +584,57 @@ export function getEffectiveAttackBonus(character: CharacterSheet): number {
       if (mod.stat === 'attackBonus') {
         bonus += mod.bonus;
       }
+    }
+  }
+  if (character.inventory) {
+    for (const item of character.inventory) {
+      if (!item.equipped || item.type === 'weapon') continue;
+      const text = `${item.name || ''} ${item.effect || ''} ${item.description || ''}`.toLowerCase();
+      const m = text.match(/([+-]\d+)\s*(?:aux?\s+)?(?:jets? d'attaque|attaques?|attack(?:\s+rolls?)?|to\s+hit)/);
+      if (m) bonus += Number(m[1]) || 0;
+    }
+  }
+  return bonus;
+}
+
+// Flat bonus applied to ability checks ('check') or saving throws ('save'),
+// from active effects (StatModifier checkBonus/saveBonus) AND equipped gear
+// text (« +1 aux jets de sauvegarde », "+2 on ability checks"…).
+export function getRollBonus(character: CharacterSheet, kind: 'check' | 'save'): number {
+  let bonus = 0;
+  const stat = kind === 'save' ? 'saveBonus' : 'checkBonus';
+  for (const effect of character.activeEffects || []) {
+    for (const mod of effect.modifiers) {
+      if (mod.stat === stat) bonus += mod.bonus;
+    }
+  }
+  const gearRe = kind === 'save'
+    ? /([+-]\d+)\s*(?:aux?\s+|to\s+|on\s+)?(?:jets? de sauvegarde|sauvegardes?|saving\s+throws?|saves?)/
+    : /([+-]\d+)\s*(?:aux?\s+|to\s+|on\s+)?(?:tests? de caract[ée]ristique|tests?|ability\s+checks?|checks?)/;
+  if (character.inventory) {
+    for (const item of character.inventory) {
+      if (!item.equipped || item.type === 'weapon') continue;
+      const text = `${item.name || ''} ${item.effect || ''} ${item.description || ''}`.toLowerCase();
+      const m = text.match(gearRe);
+      if (m) bonus += Number(m[1]) || 0;
+    }
+  }
+  return bonus;
+}
+
+// Skill-specific gear bonus: equipped item text carrying « +N <skill> » where
+// <skill> is the FR or EN skill name (« +2 Discrétion », "+2 Stealth bonus").
+export function getGearSkillBonus(character: CharacterSheet, skillNames: string[]): number {
+  if (!character.inventory || !skillNames.length) return 0;
+  const strip = (s: string) => s.toLowerCase().normalize('NFD').replace(new RegExp('[\\u0300-\\u036f]', 'g'), '');
+  const wanted = skillNames.map(strip).filter(Boolean);
+  let bonus = 0;
+  for (const item of character.inventory) {
+    if (!item.equipped || item.type === 'weapon') continue;
+    const text = strip(`${item.name || ''} ${item.effect || ''} ${item.description || ''}`);
+    for (const skill of wanted) {
+      const m = text.match(new RegExp('([+-]\\d+)\\s*(?:aux?\\s+|en\\s+|to\\s+|on\\s+)?(?:jets? de\\s+)?' + skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      if (m) { bonus += Number(m[1]) || 0; break; }
     }
   }
   return bonus;
@@ -518,6 +674,12 @@ export function getEffectiveSpeed(character: CharacterSheet, baseSpeed: number =
         speed += parseItemSpeedModifier(item);
       }
     }
+  }
+  // Feat speed bonuses. Kept as an inline map: importing data/feats here would
+  // create a types ⇄ data import cycle (feats.ts imports Ability from types).
+  const FEAT_SPEED_BONUS: Record<string, number> = { mobile: 10 };
+  for (const featId of character.feats || []) {
+    speed += FEAT_SPEED_BONUS[featId] || 0;
   }
   return Math.max(0, speed);
 }
@@ -801,6 +963,8 @@ export interface CampaignWorldClock {
   updatedAt: number;
 }
 
+export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';
+
 export interface CampaignRuntimeState {
   currentChapterId?: string;
   currentSceneId?: string;
@@ -810,6 +974,11 @@ export interface CampaignRuntimeState {
   canonFacts: string[];
   protectedSecrets: string[];
   worldClocks: CampaignWorldClock[];
+  /** In-world calendar: day counter (starts at 1) + moment of the day. Long
+   *  rests advance the day; short rests and the set_time_of_day tool move the
+   *  moment. Shown in the HUD and injected into scene-image prompts. */
+  dayCount?: number;
+  timeOfDay?: TimeOfDay;
   updatedAt?: number;
 }
 
@@ -819,6 +988,8 @@ export const DEFAULT_CAMPAIGN_RUNTIME: CampaignRuntimeState = {
   canonFacts: [],
   protectedSecrets: [],
   worldClocks: [],
+  dayCount: 1,
+  timeOfDay: 'day',
 };
 
 
@@ -842,11 +1013,19 @@ export interface GameSessionState {
 
 // ─── Journal ────────────────────────────────────────────────────────────────
 
+export interface QuestStep {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface QuestEntry {
   id: string;
   title: string;
   description: string;
   status: 'active' | 'completed' | 'failed';
+  /** Optional checkable sub-objectives (update_quest_step tool / DM). */
+  steps?: QuestStep[];
 }
 
 export interface NPCEntry {
@@ -854,6 +1033,12 @@ export interface NPCEntry {
   name: string;
   description: string;
   location: string;
+  /** -5 (hostile) .. +5 (devoted). 0/undefined = neutral. Moved by update_npc / fact extraction. */
+  disposition?: number;
+  /** Short memories this NPC holds about the hero ("the hero saved my son"). Max ~12, newest last. */
+  knownFacts?: string[];
+  /** Epoch ms of the last update_npc / scene featuring this NPC. */
+  lastSeenAt?: number;
 }
 
 export interface LocationEntry {
@@ -1000,6 +1185,9 @@ export interface ConditionEntry {
   kind: 'condition';
   id: string;
   name: string;
+  /** Alternate spellings (FRENCH names!) matched by lookupCondition — the DM
+   *  narrates « aveuglé »/« à terre » and the EN-only match silently failed. */
+  aliases?: string[];
   summary: string;
   effects: string[];
   movement?: 'normal' | 'halved' | 'zero' | 'special';

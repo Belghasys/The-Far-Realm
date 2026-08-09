@@ -346,6 +346,27 @@ export function spellClassFor(playableClass: string): string {
 }
 
 /**
+ * Highest spell level a class can CAST at a given character level (SRD slot
+ * progression). 0 = non-caster (or a half-caster below level 2). Used by the
+ * level-up spell picker to gate what can be learned.
+ */
+export function maxSpellLevelForClass(playableClass: string, level: number): number {
+    const lvl = Math.max(1, Math.min(20, Math.trunc(level || 1)));
+    if (playableClass === 'Warlock') {
+        return lvl >= 9 ? 5 : lvl >= 7 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
+    }
+    const fullCasters = ['Bard', 'Cleric', 'Druid', 'Mage', 'Wizard', 'Sorcerer'];
+    if (fullCasters.includes(playableClass)) {
+        return Math.min(9, Math.ceil(lvl / 2));
+    }
+    if (playableClass === 'Paladin' || playableClass === 'Ranger') {
+        if (lvl < 2) return 0;
+        return Math.min(5, Math.ceil(lvl / 4));
+    }
+    return 0;
+}
+
+/**
  * Spells available to a class, optionally capped at maxLevel (use for the
  * "Add spells" browser so a caster only sees their own list up to slots they
  * can use). Cantrips (level 0) are always included. Sorted by level then name.

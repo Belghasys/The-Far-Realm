@@ -47,6 +47,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     7: [{ name: 'Remarkable Athlete', description: "Ajoute la moitié de ton bonus de maîtrise aux tests de FOR/DEX/CON qui n'en profitent pas déjà ; tes sauts avec élan s'allongent de 30 cm par point de mod. FOR." }],
                     10: [{ name: 'Additional Fighting Style', description: 'Choisis un deuxième style de combat.' }],
                     15: [{ name: 'Superior Critical', description: "Tes attaques d'arme infligent un coup critique sur 18-20." }],
+                    18: [{ name: 'Survivor', description: 'Au début de chacun de tes tours, si tu es sous la moitié de tes PV (et > 0), regagne 5 + mod. CON PV.' }],
                 },
             },
             {
@@ -57,6 +58,8 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     3: [{ name: 'Combat Superiority', description: "4 dés de supériorité (d8, repos court). Dépenses-en un pour alimenter une manœuvre : Trip (cible à terre), Riposte (contre-attaque), Feinting (avantage), Menacing (effraie), Disarming (désarme)… Ajoute le dé aux dégâts de l'attaque. Annonce la manœuvre au MJ." }],
                     7: [{ name: 'Know Your Enemy', description: "Étudie une créature pendant 1 minute pour savoir si elle t'est égale ou supérieure dans deux caractéristiques." }],
                     10: [{ name: 'Improved Combat Superiority', description: 'Tes dés de supériorité deviennent des d10 (5 dés).' }],
+                    15: [{ name: 'Relentless', description: 'Quand tu lances l’initiative sans dé de supériorité restant, tu en regagnes 1.' }],
+                    18: [{ name: 'Improved Combat Superiority (d12)', description: 'Tes dés de supériorité deviennent des d12 (6 dés).' }],
                 },
             },
             {
@@ -140,6 +143,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     3: [{ name: "Ranger's Companion", description: "Un loup fidèle se bat à tes côtés : il rejoint automatiquement l'initiative comme ALLIÉ dans chaque combat. Le MJ joue son tour (morsure +4, 2d4+2 perforants ; tactique de meute dans l'esprit)." }],
                     7: [{ name: 'Exceptional Training', description: "Ton compagnon peut Foncer, Se désengager ou Aider avec son action quand il n'attaque pas." }],
                     11: [{ name: 'Bestial Fury', description: 'Ton compagnon effectue deux attaques quand il attaque.' }],
+                    15: [{ name: 'Share Spells', description: 'Tes sorts qui te ciblent peuvent aussi affecter ton compagnon à 9 m ou moins.' }],
                 },
             },
         ],
@@ -200,6 +204,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     ],
                     2: [{ name: 'Preserve Life (Channel Divinity)', description: 'Action : répartis 5×niveau de clerc PV de soins entre des créatures à 9 m ou moins (max : la moitié de leurs PV).' }],
                     8: [{ name: 'Divine Strike', description: 'Une fois par tour, +1d8 dégâts radiants quand tu touches avec une arme.' }],
+                    17: [{ name: 'Supreme Healing', description: 'Tes dés de soins rendent leur MAXIMUM au lieu d’être lancés.' }],
                 },
             },
             {
@@ -273,6 +278,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     2: [{ name: 'Sculpt Spells', description: "Tes sorts d'évocation épargnent jusqu'à 1+niveau du sort alliés dans la zone (ils réussissent automatiquement leur sauvegarde et ne subissent aucun dégât de ton sort)." }],
                     6: [{ name: 'Potent Cantrip', description: 'Les cibles qui réussissent leur sauvegarde contre tes tours de magie offensifs subissent quand même la moitié des dégâts.' }],
                     10: [{ name: 'Empowered Evocation', description: "Ajoute ton modificateur d'INT à un jet de dégâts de tes sorts d'évocation." }],
+                    14: [{ name: 'Overchannel', description: 'Un sort de niveau 1-5 inflige ses dégâts MAXIMUM (gratuit la 1re fois, puis dégâts nécrotiques croissants pour toi).' }],
                 },
             },
             {
@@ -308,6 +314,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     3: [{ name: 'Frenzy', description: "Quand tu entres en Rage, tu peux entrer en frénésie : effectue une attaque d'arme de mêlée en ACTION BONUS à chacun de tes tours. (Un bouton dédié apparaît en combat pendant la rage.) Tu subis un niveau d'épuisement quand la rage prend fin." }],
                     6: [{ name: 'Mindless Rage', description: 'Tu ne peux être ni charmé ni effrayé pendant ta rage.' }],
                     10: [{ name: 'Intimidating Presence', description: 'Action : effraie une créature à 9 m ou moins (sauvegarde de SAG contre 8+maîtrise+CHA).' }],
+                    14: [{ name: 'Retaliation', description: 'Réaction : quand une créature à 1,50 m ou moins te blesse, effectue une attaque de mêlée contre elle.' }],
                 },
             },
             {
@@ -320,6 +327,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Spirit Seeker', description: 'Lance Beast Sense et Speak with Animals sous forme de rituels.' },
                     ],
                     6: [{ name: 'Aspect of the Beast', description: 'Gagne un aspect passif de ton animal totem (Ours : capacité de charge doublée, avantage aux tests de FOR).' }],
+                    14: [{ name: 'Totemic Attunement (Bear)', description: 'En rage, les ennemis à 1,50 m ou moins ont le désavantage aux attaques contre tout autre que toi.' }],
                 },
             },
         ],
@@ -339,6 +347,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Bonus Proficiencies (Lore)', description: 'Maîtrise de trois compétences de ton choix.' },
                     ],
                     6: [{ name: 'Additional Magical Secrets', description: "Apprends 2 sorts de N'IMPORTE quelle classe." }],
+                    14: [{ name: 'Peerless Skill', description: 'Dépense une inspiration bardique pour l’ajouter à TON propre test de caractéristique.' }],
                 },
             },
             {
@@ -351,6 +360,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Bonus Proficiencies (Valor)', description: 'Maîtrise des armures intermédiaires, des boucliers et des armes de guerre.' },
                     ],
                     6: [{ name: 'Extra Attack', description: "Tu attaques deux fois quand tu effectues l'action Attaquer." }],
+                    14: [{ name: 'Battle Magic', description: 'Quand tu lances un sort de barde, effectue une attaque d’arme en action bonus.' }],
                 },
             },
         ],
@@ -367,6 +377,8 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                 featuresByLevel: {
                     3: [{ name: 'Open Hand Technique', description: "Quand tu touches avec Flurry of Blows, impose un effet : la cible réussit une sauvegarde de DEX ou est mise À TERRE ; une sauvegarde de FOR ou est REPOUSSÉE de 4,50 m ; ou elle ne peut plus utiliser de réaction jusqu'à ton prochain tour." }],
                     6: [{ name: 'Wholeness of Body', description: 'Action : regagne 3×niveau de moine PV (une fois par repos long).' }],
+                    11: [{ name: 'Tranquility', description: 'À la fin d’un repos long, tu es sous « sanctuaire » : on doit réussir une sauvegarde de SAG pour t’attaquer (jusqu’à ta première attaque).' }],
+                    17: [{ name: 'Quivering Palm', description: 'Dépense 3 ki quand tu touches à mains nues : vibrations létales — à ta demande, la cible fait une sauvegarde de CON ou tombe à 0 PV.' }],
                 },
             },
             {
@@ -376,6 +388,7 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                 featuresByLevel: {
                     3: [{ name: 'Shadow Arts', description: 'Dépense 2 ki pour lancer Darkness, Darkvision, Pass without Trace ou Silence. Tu connais Minor Illusion.' }],
                     6: [{ name: 'Shadow Step', description: "Action bonus dans la lumière faible ou les ténèbres : téléporte-toi jusqu'à 18 m vers une autre ombre ; avantage à ta prochaine attaque de mêlée avant la fin du tour." }],
+                    11: [{ name: 'Cloak of Shadows', description: 'Action dans la lumière faible/ténèbres : deviens invisible jusqu’à ce que tu attaques ou entres dans la lumière.' }],
                 },
             },
             {
@@ -400,6 +413,8 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                 featuresByLevel: {
                     1: [{ name: "Dark One's Blessing", description: "Quand tu réduis une créature hostile à 0 PV, gagne des PV temporaires égaux à mod. CHA + niveau d'occultiste." }],
                     6: [{ name: "Dark One's Own Luck", description: 'Ajoute 1d10 à un test de caractéristique ou une sauvegarde (une fois par repos court, après avoir vu le jet).' }],
+                    10: [{ name: 'Fiendish Resilience', description: 'Après un repos, choisis un type de dégâts : tu y résistes jusqu’au prochain choix.' }],
+                    14: [{ name: 'Hurl Through Hell', description: '1/repos long, quand tu touches : la cible disparaît en enfer et revient à ton prochain tour avec 10d10 dégâts psychiques.' }],
                 },
             },
             {
@@ -437,6 +452,8 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Dragon Ancestor', description: 'Tu parles, lis et écris le draconique ; bonus de maîtrise doublé aux tests de CHA face aux dragons.' },
                     ],
                     6: [{ name: 'Elemental Affinity', description: "Ajoute ton mod. CHA à un jet de dégâts d'un sort du même type de dégâts que ton ancêtre ; dépense 1 point de sorcellerie pour y gagner la résistance pendant 1 h." }],
+                    14: [{ name: 'Dragon Wings', description: 'Action bonus : déploie des ailes draconiques — vitesse de vol égale à ta vitesse au sol.' }],
+                    18: [{ name: 'Draconic Presence', description: 'Dépense 5 points de sorcellerie : aura de crainte ou de fascination à 18 m (sauvegarde de SAG).' }],
                 },
             },
             {
