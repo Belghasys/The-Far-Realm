@@ -2094,6 +2094,39 @@ describe('fighting mounts and companion level-ups', () => {
     });
 });
 
+// ─── Campagne d'auteur « Le Chant Brisé » (vitrine 12 chapitres) ────────────
+import { CHANT_BRISE } from '../data/campaigns/chantBrise';
+import { getAuthoredCampaign } from '../data/campaigns';
+import { getAdventureById } from '../data/adventures';
+
+describe('flagship campaign — Le Chant Brisé', () => {
+    it('assembles 12 chapters in 4 acts with a coherent spine', () => {
+        expect(CHANT_BRISE.chapters).toHaveLength(12);
+        expect(CHANT_BRISE.chapters[0].status).toBe('active');
+        expect(CHANT_BRISE.chapters.every((c, i) => c.id === String(i + 1))).toBe(true);
+        expect(CHANT_BRISE.villain.name).toContain('Vaelrian');
+        expect(CHANT_BRISE.firstScene.chapterId).toBe('1');
+    });
+
+    it('is registered as an authored campaign and in the adventure menu', () => {
+        expect(getAuthoredCampaign('chant_brise')).toBe(CHANT_BRISE);
+        expect(getAdventureById('chant_brise')?.maxLevel).toBe(12);
+    });
+
+    it('carries the v2 authored format: draws, clocks, secrets, personalization slots', () => {
+        const text = JSON.stringify(CHANT_BRISE);
+        for (const token of ['{{HERO_NAME}}', '{{HERO_WOUND}}', '{{MIRROR_VARIANT}}', '{{TRAITOR_NAME}}', '{{KEY_LOCATION}}', '{{FRAGMENT_HOLDER}}', '{{SOLIST_NAME}}']) {
+            expect(text).toContain(token);
+        }
+        expect(CHANT_BRISE.initialWorldClocks).toHaveLength(2);
+        expect(CHANT_BRISE.initialProtectedSecrets!.length).toBeGreaterThanOrEqual(4);
+        // Le guide MJ complet (7 volumes) doit être massif — c'est la matière
+        // que lookup_campaign sert à la demande (~70k chars, vs ~8k pour
+        // Hiver sans Aube).
+        expect(CHANT_BRISE.fullManifesto.length).toBeGreaterThan(60_000);
+    });
+});
+
 // ─── Persistent NPCs in the director context ────────────────────────────────
 describe('persistent NPC director context', () => {
     it('injects disposition and remembered facts into the NPC lines', () => {

@@ -82,6 +82,14 @@ export const ADVENTURES: AdventureOption[] = [
         minLevel: 1,
         maxLevel: 8,
     },
+    {
+        id: 'chant_brise',
+        title: 'Le Chant Brisé',
+        desc: "Niveaux 1-12. Ruines elfiques mythiques — campagne d'auteur.",
+        lore: 'La Cité du Chant est tombée en une nuit, voilà six siècles. Ses sceaux tombent enfin, la Ruée commence — mais dans les ruines qui fredonnent, quelque chose recrute des voix vivantes pour un dernier concert.',
+        minLevel: 1,
+        maxLevel: 12,
+    },
 ];
 
 export function getAdventureById(id?: string | null): AdventureOption | undefined {
