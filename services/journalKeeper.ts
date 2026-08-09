@@ -13,10 +13,16 @@
  */
 import { GoogleGenAI } from '@google/genai';
 import { log } from './logger';
-import { requireViteEnv } from './modelConfig';
+import { requireViteEnv, viteEnv } from './modelConfig';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
-const KEEPER_MODEL = requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL);
+// Même famille que l'auditeur : extraction mécanique fréquente → modèle léger
+// (VITE_AUDIT_MODEL), fallback sur le modèle de résumé si absent.
+const KEEPER_MODEL = viteEnv(
+    'VITE_AUDIT_MODEL',
+    import.meta.env.VITE_AUDIT_MODEL,
+    requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL)
+);
 
 let ai: GoogleGenAI | null = null;
 function getClient(): GoogleGenAI {

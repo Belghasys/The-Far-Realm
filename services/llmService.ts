@@ -1,11 +1,16 @@
 import { CharacterSheet, AdventureManifest } from "../types";
 import { GoogleGenAI } from '@google/genai';
 import { log } from './logger';
-import { requireViteEnv } from './modelConfig';
+import { requireViteEnv, viteEnv } from './modelConfig';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);
 const SUMMARY_MODEL = requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL);
+// Extraction de faits = tâche mécanique (schema JSON) → modèle léger dédié
+// (VITE_AUDIT_MODEL, partagé avec l'auditeur/greffier). Le RÉSUMÉ cumulatif
+// reste sur SUMMARY_MODEL : retrouver tous les fils dans 60k tokens exige le
+// meilleur contexte long, pas le moins cher.
+const FACTS_MODEL = viteEnv('VITE_AUDIT_MODEL', import.meta.env.VITE_AUDIT_MODEL, SUMMARY_MODEL);
 
 let ai: GoogleGenAI | null = null;
 
@@ -124,7 +129,7 @@ export async function extractCampaignFacts(
 
     try {
         const result = await client.models.generateContent({
-            model: SUMMARY_MODEL,
+            model: FACTS_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {
                 thinkingConfig: { thinkingLevel: 'LOW' },

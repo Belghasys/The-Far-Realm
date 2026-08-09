@@ -13,10 +13,17 @@
  */
 import { GoogleGenAI } from '@google/genai';
 import { log } from './logger';
-import { requireViteEnv } from './modelConfig';
+import { requireViteEnv, viteEnv } from './modelConfig';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
-const AUDIT_MODEL = requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL);
+// Passe fréquente et mécanique → modèle léger dédié (VITE_AUDIT_MODEL, ex.
+// gemini-3.5-flash-lite) pour épargner le quota du Flash principal. Retombe
+// sur VITE_SUMMARY_MODEL si non configuré (comportement historique).
+const AUDIT_MODEL = viteEnv(
+    'VITE_AUDIT_MODEL',
+    import.meta.env.VITE_AUDIT_MODEL,
+    requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL)
+);
 
 let ai: GoogleGenAI | null = null;
 function getClient(): GoogleGenAI {
