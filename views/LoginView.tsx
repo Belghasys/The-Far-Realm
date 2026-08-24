@@ -10,9 +10,9 @@ import { BANNER } from '../theme/art';
 
 const TRANS = {
     en: {
-        tagline: "The Realms Are Waiting...",
-        kicker: "SOLO ROLEPLAY · 100% AI",
-        pitch: "Build a hero, roll your dice, play a whole campaign alone. The dungeon master is an AI that remembers everything — your choices, your oaths, and the guard you knocked out in chapter 2.",
+        tagline: "The last place where we still play like we used to.",
+        kicker: "A DUNGEON MASTER THAT SPEAKS, AND LISTENS",
+        pitch: "The dungeon master is a live AI. It describes the room out loud, plays every character with its own voice, hears what you answer, and remembers all of it — your choices, your oaths, and the guard you knocked out in chapter 2.",
         emailPlaceholder: "Email",
         passwordPlaceholder: "Password",
         login: "Login",
@@ -23,15 +23,13 @@ const TRANS = {
         signupFailed: "Signup failed: ",
         googleLoginFailed: "Google Login failed: ",
         authFailed: "Authentication failed",
-        chapters: "18 written chapters",
-        levels: "Levels 1 to 16",
-        rules: "D20 rules",
+        basement: "Doors close. Screens win. Down here, the table is still set.",
         googleBlocked: (domain: string, url: string) => `Google login is blocked by Firebase because "${domain}" is not in Authentication > Settings > Authorized domains. Add "${domain}" there, or open the app from localhost instead: ${url}`,
     },
     fr: {
-        tagline: "Les Royaumes Vous Attendent...",
-        kicker: "JEU DE RÔLE SOLO · 100 % IA",
-        pitch: "Crée ton héros, lance tes dés, joue une campagne entière en solo. Le maître du jeu est une IA qui retient tout : tes choix, tes serments, et le nom du garde que tu as assommé au chapitre 2.",
+        tagline: "Le dernier endroit où l'on joue encore comme avant.",
+        kicker: "UN MAÎTRE DU JEU QUI PARLE, ET QUI ÉCOUTE",
+        pitch: "Le maître du jeu est une IA en direct. Elle décrit la salle à voix haute, prête sa voix à chaque personnage, entend ce que vous répondez, et se souvient de tout : vos choix, vos serments, et le garde que vous avez assommé au chapitre 2.",
         emailPlaceholder: "E-mail",
         passwordPlaceholder: "Mot de passe",
         login: "Connexion",
@@ -42,9 +40,7 @@ const TRANS = {
         signupFailed: "Échec de l'inscription : ",
         googleLoginFailed: "Échec de la connexion Google : ",
         authFailed: "Échec de l'authentification",
-        chapters: "18 chapitres écrits",
-        levels: "Niveaux 1 à 16",
-        rules: "Règles D20",
+        basement: "Les portes ferment. Les écrans gagnent. En bas, la table est encore mise.",
         googleBlocked: (domain: string, url: string) => `La connexion Google est bloquée par Firebase car "${domain}" ne figure pas dans Authentication > Settings > Authorized domains. Ajoutez-y "${domain}", ou ouvrez l'application depuis localhost à la place : ${url}`,
     },
 } as const;
@@ -122,8 +118,8 @@ export function LoginView() {
                 borderBottom: `2px solid ${T.cyan}59`,
             }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 9 }}>
-                    <span style={{ fontFamily: DISP, fontSize: 'clamp(18px, 3vw, 24px)', color: T.magenta, textShadow: `3px 3px 0 ${T.cyan}` }}>DUNGEON</span>
-                    <span style={{ fontFamily: DISP, fontSize: 'clamp(18px, 3vw, 24px)' }}>AI</span>
+                    <span style={{ fontFamily: DISP, fontSize: 'clamp(16px, 3vw, 22px)' }}>THE LAST</span>
+                    <span style={{ fontFamily: DISP, fontSize: 'clamp(16px, 3vw, 22px)', color: T.magenta, textShadow: `3px 3px 0 ${T.cyan}` }}>BASEMENT</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <MenuMusicToggle />
@@ -157,14 +153,14 @@ export function LoginView() {
                         fontFamily: DISP, margin: 0, fontSize: 'clamp(34px, 5.5vw, 60px)',
                         lineHeight: 1.05, textWrap: 'pretty',
                     }}>
-                        DUNGEON <span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>AI</span>
+                        THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span>
                     </h1>
                     <p style={{ margin: 0, fontSize: 'clamp(16px, 2vw, 19px)', fontStyle: 'italic', color: T.acid }}>{tr.tagline}</p>
                     <p style={{ margin: 0, maxWidth: 480, fontSize: 16, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{tr.pitch}</p>
 
                     <img
-                        src={`/art/${BANNER.party}.webp`}
-                        srcSet={`/art/${BANNER.party}.webp 1x, /art/${BANNER.party}@2x.webp 2x`}
+                        src={`/art/${BANNER.cover}.webp`}
+                        srcSet={`/art/${BANNER.cover}.webp 1x, /art/${BANNER.cover}@2x.webp 2x`}
                         alt=""
                         style={{
                             display: 'block', width: '100%', maxWidth: 560, marginTop: 6,
@@ -172,11 +168,10 @@ export function LoginView() {
                         }}
                     />
 
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, fontSize: 13, color: 'rgba(237,230,216,.55)' }}>
-                        <span>{tr.chapters}</span><span style={{ color: T.cyan }}>·</span>
-                        <span>{tr.levels}</span><span style={{ color: T.cyan }}>·</span>
-                        <span>{tr.rules}</span>
-                    </div>
+                    <p style={{
+                        margin: 0, paddingLeft: 16, borderLeft: `3px solid ${T.magenta}`,
+                        fontSize: 14, lineHeight: 1.5, fontStyle: 'italic', color: 'rgba(237,230,216,.6)',
+                    }}>{tr.basement}</p>
                 </div>
 
                 {/* Formulaire */}

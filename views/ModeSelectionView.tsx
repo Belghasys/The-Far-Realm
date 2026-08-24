@@ -10,8 +10,9 @@ import { auth } from '../services/firebase';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { NeonCard } from '../components/neon/NeonButton';
-import { NeonFrame } from '../components/neon/NeonFrame';
-import { CLASS_ART } from '../theme/art';
+import { AlterEgoFrame } from '../components/neon/AlterEgoFrame';
+import { CollageWall } from '../components/neon/CollageWall';
+import { CLASS_ART, ALTER_ART, ALTER_CAPTION } from '../theme/art';
 import { dispClass } from '../data/labels';
 import { CLASS_DATA } from '../data';
 
@@ -51,9 +52,13 @@ export function ModeSelectionView() {
             loadSavedGame: "Load a Saved Game",
             loadError: "Error while loading the save",
             enter: "ENTER",
-            paradeTitle: "THE PARADE",
-            paradeHint: "Every class the realms will let you wear.",
+            dmTitle: "GET TO KNOW YOUR DM",
+            dmHint: "Click a portrait. The dungeon master will show you what that class looks like on a Tuesday.",
+            flipHint: "see the alter ego",
             classCount: (n: number) => `${n} CLASSES`,
+            wallTitle: "THE WALL",
+            wallHint: "Ten scenes the dungeon master keeps pinned above the table. The rules never left — they just moved upstairs.",
+            wallRefresh: "SHUFFLE",
         },
         fr: {
             choosePath: "Choisissez Votre Voie",
@@ -69,9 +74,13 @@ export function ModeSelectionView() {
             loadSavedGame: "Charger une Partie Sauvegardée",
             loadError: "Erreur lors du chargement de la sauvegarde",
             enter: "ENTRER",
-            paradeTitle: "LA PARADE",
-            paradeHint: "Toutes les classes que les royaumes vous laissent porter.",
+            dmTitle: "APPRENEZ À CONNAÎTRE VOTRE MJ",
+            dmHint: "Cliquez un portrait. Le maître du jeu vous montre à quoi ressemble cette classe un mardi.",
+            flipHint: "voir l'alter ego",
             classCount: (n: number) => `${n} CLASSES`,
+            wallTitle: "LE MUR",
+            wallHint: "Dix scènes que le maître du jeu garde punaisées au-dessus de la table. Les règles ne sont jamais parties — elles ont juste déménagé à l'étage.",
+            wallRefresh: "MÉLANGER",
         }
     };
     const t = TRANS[language as keyof typeof TRANS];
@@ -92,14 +101,17 @@ export function ModeSelectionView() {
     const rangee = (cles: string[], sens: 'a' | 'b') => (
         <div className={`ms-lane ms-lane-${sens}`}>
             {[...cles, ...cles].map((cle, i) => (
-                <NeonFrame
+                <AlterEgoFrame
                     key={`${cle}-${i}`}
-                    slug={CLASS_ART[cle].slug}
+                    faceSlug={CLASS_ART[cle].slug}
+                    alterSlug={ALTER_ART[cle].slug}
                     tint={CLASS_ART[cle].tint}
                     shadow={i % 2 ? T.magenta : T.acid}
                     label={dispClass(cle, language as 'en' | 'fr').toUpperCase()}
-                    width={168}
-                    height={224}
+                    caption={ALTER_CAPTION[cle][language as 'en' | 'fr']}
+                    hint={t.flipHint}
+                    width={172}
+                    height={230}
                 />
             ))}
         </div>
@@ -225,17 +237,18 @@ export function ModeSelectionView() {
                 </div>
             </main>
 
-            {/* La Parade — vitrine. Le clic qui pré-remplit la classe arrive avec
-                le sélecteur de la fiche ; d'ici là, un cadre qui ne mène nulle
-                part vaut mieux qu'un clic qui promet ce qu'il ne tient pas. */}
+            {/* Apprendre à connaître le MJ : chaque cadre se retourne sur
+                l'alter ego de la classe. C'est le ton du jeu qu'on présente
+                ici, pas un catalogue — d'où le retournement plutôt qu'un lien
+                vers la création. */}
             <section style={{ paddingTop: 48, paddingBottom: 56, borderTop: `4px solid ${T.cyan}`, marginTop: 40 }}>
                 <div style={{
                     display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
                     padding: '0 clamp(20px, 5vw, 64px) 28px', maxWidth: 1360, margin: '0 auto',
                 }}>
                     <div>
-                        <h2 style={{ fontFamily: DISP, margin: '0 0 8px', fontSize: 'clamp(24px, 3vw, 32px)' }}>{t.paradeTitle}</h2>
-                        <p style={{ margin: 0, fontSize: 14, color: 'rgba(237,230,216,.55)' }}>{t.paradeHint}</p>
+                        <h2 style={{ fontFamily: DISP, margin: '0 0 8px', fontSize: 'clamp(24px, 3vw, 32px)' }}>{t.dmTitle}</h2>
+                        <p style={{ margin: 0, fontSize: 14, color: 'rgba(237,230,216,.55)', maxWidth: 620 }}>{t.dmHint}</p>
                     </div>
                     <span style={{ fontFamily: DISP, fontSize: 12, color: T.acid }}>{t.classCount(hautes.length + basses.length)}</span>
                 </div>
@@ -245,6 +258,17 @@ export function ModeSelectionView() {
                     {rangee(basses, 'b')}
                 </div>
             </section>
+
+            <div style={{
+                padding: '0 clamp(20px, 5vw, 64px) 72px', maxWidth: 1360, margin: '0 auto',
+            }}>
+                <CollageWall
+                    title={t.wallTitle}
+                    hint={t.wallHint}
+                    refreshLabel={t.wallRefresh}
+                    lang={language as 'en' | 'fr'}
+                />
+            </div>
 
             {showLoadMenu && (
                 <LoadGameMenu

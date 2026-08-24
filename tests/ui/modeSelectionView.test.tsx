@@ -152,28 +152,68 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
         expect(screen.getByText('ARENA MODE')).toBeInTheDocument();
         expect(screen.getByText('Solo Journey')).toBeInTheDocument();
         // La copie ajoutée par la refonte doit suivre la langue comme le reste.
-        expect(screen.getByText('THE PARADE')).toBeInTheDocument();
-        expect(screen.getByText(/Every class the realms/)).toBeInTheDocument();
+        expect(screen.getByText('GET TO KNOW YOUR DM')).toBeInTheDocument();
+        expect(screen.getByText(/what that class looks like on a Tuesday/)).toBeInTheDocument();
+        expect(screen.getByText('THE WALL')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'SHUFFLE' })).toBeInTheDocument();
         expect(screen.queryByText('MODE ARÈNE')).toBeNull();
-        expect(screen.queryByText('LA PARADE')).toBeNull();
+        expect(screen.queryByText('LE MUR')).toBeNull();
     });
 
     it('affiche la copie neuve en français', () => {
         render(<ModeSelectionView />);
 
-        expect(screen.getByText('LA PARADE')).toBeInTheDocument();
-        expect(screen.getByText(/Toutes les classes/)).toBeInTheDocument();
-        expect(screen.queryByText('THE PARADE')).toBeNull();
+        expect(screen.getByText('APPRENEZ À CONNAÎTRE VOTRE MJ')).toBeInTheDocument();
+        expect(screen.getByText(/à quoi ressemble cette classe un mardi/)).toBeInTheDocument();
+        expect(screen.getByText('LE MUR')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'MÉLANGER' })).toBeInTheDocument();
+        expect(screen.queryByText('THE WALL')).toBeNull();
     });
 
-    it('donne un portrait à chacune des douze classes de la Parade', () => {
+    it('donne à chaque classe un portrait ET un alter ego', () => {
         render(<ModeSelectionView />);
-        // Deux rangées, chacune doublée pour boucler sans couture : 12 × 2.
-        const portraits = screen.getAllByRole('img');
-        expect(portraits.length).toBe(24);
-        for (const img of portraits) {
-            expect(img.getAttribute('src')).toMatch(/^\/art\/classes\/[a-z]+\.webp$/);
-        }
+        const sources = screen.getAllByRole('img').map(i => i.getAttribute('src') || '');
+
+        // Deux rangées, chacune doublée pour boucler sans couture : 12 × 2
+        // cartes, et chaque carte porte ses deux faces.
+        const classes = sources.filter(s => s.startsWith('/art/classes/'));
+        const alter = sources.filter(s => s.startsWith('/art/alter/'));
+        expect(classes).toHaveLength(24);
+        expect(alter).toHaveLength(24);
+
+        // Aucune classe ne doit se retrouver sans verso : les douze fichiers
+        // d'alter ego doivent tous être servis.
+        const distincts = new Set(alter);
+        expect(distincts.size).toBe(12);
+    });
+
+    it('retourne la carte sur l’alter ego au clic, et le libellé suit la langue', () => {
+        render(<ModeSelectionView />);
+        const carte = screen.getAllByRole('button', { name: /GUERRIER — voir l’alter ego|GUERRIER — voir l'alter ego/ })[0];
+
+        expect(carte).toHaveAttribute('aria-pressed', 'false');
+        fireEvent.click(carte);
+        expect(carte).toHaveAttribute('aria-pressed', 'true');
+
+        // La chute est du texte, pas seulement une image : elle doit être là.
+        expect(screen.getAllByText(/Trois adolescents le tiennent en respect/).length).toBeGreaterThan(0);
+    });
+
+    it('accroche dix vignettes au mur, et en change au mélange', () => {
+        const { container } = render(<ModeSelectionView />);
+        // Les vignettes du mur sont décoratives (alt vide) : le sens est porté
+        // par le titre et l'accroche de la section, pas par cinquante-trois
+        // textes de remplacement. On les interroge donc par leur source.
+        const mur = () => Array.from(container.querySelectorAll('img[src^="/art/wall/"]'))
+            .map(i => i.getAttribute('src') || '');
+
+        const avant = mur();
+        expect(avant).toHaveLength(10);
+        // Un collage qui répète une image se voit immédiatement.
+        expect(new Set(avant).size).toBe(10);
+
+        fireEvent.click(screen.getByRole('button', { name: 'MÉLANGER' }));
+        expect(mur()).not.toEqual(avant);
     });
 
     it('réclame la musique de menu au montage et la relâche au démontage', () => {
