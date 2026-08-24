@@ -1,5 +1,5 @@
 import { AdventureManifest } from '../../../types';
-import { AdventureOption } from '../../adventures';
+import { AdventureOption, requireAdventure } from '../../adventures';
 import { CB_VILLAIN, CB_INTRODUCTION, CB_CINEMATIC, CB_FIRST_SCENE, CB_WORLD_CLOCKS, CB_PROTECTED_SECRETS, CB_CANON_FACTS, CB_MONSTER_IDS, CB_REWARDS } from './foundations';
 import { CB_ACT_I } from './actI';
 import { CB_ACT_II } from './actII';
@@ -19,7 +19,7 @@ import { CB_BESTIARY_NOTES } from './bestiaryNotes';
 /**
  * ════════════════════════════════════════════════════════════════════════════
  *  FLAGSHIP CAMPAIGN — « Le Chant Brisé »
- *  L'équivalent original de la grande cité elfique en ruines (Myth Drannor) :
+ *  L'équivalent original de la grande cité elfique en ruines (archétype de la grande cité magique tombée) :
  *  Lyrandelle, la Cité du Chant, tombée en une nuit — et le Dernier Chantre
  *  qui recrute des voix vivantes pour rejouer cette nuit à l'envers.
  *
@@ -49,15 +49,19 @@ export const CHANT_BRISE: AdventureManifest = {
   initialProtectedSecrets: CB_PROTECTED_SECRETS,
   initialCanonFacts: CB_CANON_FACTS,
   selectedMonsterIds: CB_MONSTER_IDS,
-  fullManifesto: [CB_MANIFESTO_CORE, CB_MANIFESTO_WORLD, CB_STAGING_1, CB_STAGING_2, CB_ENDINGS].join('\n\n'),
+  // CP6 (contre-audit 2026-08-13) — les 4 volumes de donjons/lore/bestiaire
+  // étaient importés mais JAMAIS joints : ~48 000 caractères (les trois donjons
+  // salle par salle, les épreuves du fragment, les paroles des 4 chants, le
+  // bestiaire re-skinné) inatteignables par lookup_campaign — 40 % du guide.
+  fullManifesto: [
+    CB_MANIFESTO_CORE, CB_MANIFESTO_WORLD, CB_STAGING_1, CB_STAGING_2,
+    CB_DUNGEONS_1, CB_DUNGEONS_2, CB_LORE, CB_BESTIARY_NOTES, CB_ENDINGS,
+  ].join('\n\n'),
 };
 
-/** Carte de sélection (branchée dans ADVENTURES). */
-export const CHANT_BRISE_OPTION: AdventureOption = {
-  id: 'chant_brise',
-  title: 'Le Chant Brisé',
-  desc: 'Niveaux 1-12. Ruines elfiques mythiques — campagne d\'auteur.',
-  lore: "La Cité du Chant est tombée en une nuit, voilà six siècles. Ses sceaux tombent enfin, la Ruée commence — mais dans les ruines qui fredonnent, quelque chose recrute des voix vivantes pour un dernier concert.",
-  minLevel: 1,
-  maxLevel: 12,
-};
+/**
+ * Carte de sélection — DÉRIVÉE de data/adventures.ts, qui reste l'unique
+ * source de vérité. La fiche était recopiée ici jusqu'au 2026-08-23 : deux
+ * exemplaires du même texte, à maintenir en parallèle.
+ */
+export const CHANT_BRISE_OPTION: AdventureOption = requireAdventure('chant_brise');

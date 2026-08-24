@@ -37,9 +37,9 @@ export const CB_BESTIARY_NOTES: string =
   "**ettercap — « Berger de soie »** : les bergers des nids — mi-araignée, mi-geôlier, ils ÉLÈVENT les fileuses et vendent leur soie aux drows. Tactique : pièges de toile, jamais loin du nid. Leur chute : le nid réagit — partir VITE.\n" +
   "**giant_spider — « Fileuse des Racines »** : le bétail-prédateur des profondeurs. Les drows les respectent (« elles étaient là avant nous »). Tactique : plafonds, cocons, patience. Leur chute devant témoin drow : une amende (sérieusement — Szinta la déduit du prochain marché).\n\n" +
 
-  "## Les drows des Racines (SRD : drow, drow_elite_warrior)\n" +
+  "## Les drows des Racines (SRD : drow, drow_house_captain)\n" +
   "**drow — « Lame des Racines »** : patrouilleurs du marché et des descentes. PAS des fanatiques d'un culte-araignée ici : des marchands-soldats d'une cité-comptoir (re-skin volontaire — la faction est commerçante, pas démoniaque). Tactique : poison, noir total, retraite rentable (ils décrochent dès que le combat coûte plus qu'il ne rapporte). Leur chute : les leurs REVIENNENT pour le corps — toujours. Gêner ça est l'insulte suprême.\n" +
-  "**drow_elite_warrior — « Première Lame »** : la garde de Szinta et des prêtresses. Tactique : duels propres, désarmement de préférence (un débiteur vivant vaut mieux qu'un cadavre). Leur chute : Szinta présente ses condoléances ET sa facture — les deux sincères.\n\n" +
+  "**drow_house_captain — « Première Lame »** : la garde de Szinta et des prêtresses. Tactique : duels propres, désarmement de préférence (un débiteur vivant vaut mieux qu'un cadavre). Leur chute : Szinta présente ses condoléances ET sa facture — les deux sincères.\n\n" +
 
   "## Rappels d'exécution (résumé opérationnel)\n" +
   "1. add_enemy_init avec l'ID SRD ANGLAIS ; narrer le nom re-skinné FR (« un Braillard fond des toits — vrock au moteur »).\n" +

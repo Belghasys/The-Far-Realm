@@ -124,7 +124,7 @@ export const CB_MONSTER_IDS: string[] = [
   'dretch', 'quasit', 'shadow', 'specter', 'ghost', 'will_o_wisp',
   'animated_armor', 'gargoyle', 'mimic', 'wight', 'phase_spider',
   'wraith', 'banshee', 'ghast', 'shadow_demon', 'gibbering_mouther',
-  'drow', 'drow_elite_warrior', 'giant_spider', 'ettercap',
+  'drow', 'drow_house_captain', 'giant_spider', 'ettercap',
   'vrock', 'hezrou', 'glabrezu', 'invisible_stalker', 'spirit_naga',
 ];
 

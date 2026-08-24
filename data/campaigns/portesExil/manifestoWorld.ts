@@ -1,0 +1,58 @@
+/**
+ * LES PORTES DE L'EXIL — Guide du Maître du Jeu, VOLUME 2 (le monde)
+ * (cosmologie, gazetteer des six mondes, quêtes secondaires, rumeurs,
+ *  rencontres, mise à l'échelle 1→16, notes de personnalisation)
+ * Sections ## courtes — l'essentiel dans les 700 premiers caractères.
+ */
+export const PE_MANIFESTO_WORLD: string =
+  "# LES PORTES DE L'EXIL — Guide du MJ (volume 2 : le monde)\n\n" +
+
+  "## Cosmologie — les six portes de Vantael\n" +
+  "Vantael tenait SIX portes : le monde natal du héros ; le Val Clos ; Vert-Sépulcre ; la Marche de Cendre ; le Revers ; et le monde perdu de Séverin — la sixième porte, NOIRE, morte, devant laquelle nul ne s'attarde au Seuil. L'Entre-Seuil n'est pas un monde : c'est LE seuil — la carcasse du dieu devenue ville-carrefour. Les autres portes de la création sont mortes avec l'Hôte ; voilà pourquoi les morts s'entassent en transit et pourquoi la Couture n'a pas d'adversaire naturel. RÈGLE MJ : passer `region` à set_campaign_position à CHAQUE changement de monde (les six valeurs : L'Entre-Seuil, Le Val Clos, Vert-Sépulcre, La Marche de Cendre, Le Revers, Le Grand Métier).\n\n" +
+
+  "## Les Veines du Mort (voyage propre)\n" +
+  "Les anciens vaisseaux du dieu, gardés par le Cortège : des galeries d'os et de pénombre qui relient les six portes PAR L'INTÉRIEUR de la carcasse. Y voyager ne coud PAS (nul fil ne s'y tire) — mais les Veines OUBLIENT ceux qui les empruntent : chaque passage, Ancre +1 (le héros sent son monde pâlir — jouer un souvenir qui se floute). Elles sont lentes (un jour plein), sombres (rencontres d'échos en transit — jamais hostiles, toujours poignantes) et exigent l'amitié du Cortège. Séverin ne les VOIT pas : c'est l'angle mort de son décompte (Ch12).\n\n" +
+
+  "## Gazetteer — L'Entre-Seuil\n" +
+  "Les Quais d'Os (douane des âmes, files, guichets) ; le Quartier des Côtes (voûtes, échoppes, le refuge des Combleurs) ; la Place du Cœur-Tu (silence coutumier, le battement rendu après le Ch10) ; les Doigts (taille des clefs — Mille-Clés, Isaure) ; l'Œil-Clos (observatoire dans l'orbite — on y VOIT les six portes) ; la crypte du Cortège et le reliquaire du sternum ; le Rade des Trois Quais (taverne de la Franchise) ; la Capitainerie (Brochet). Ambiance : merveille funèbre + comédie administrative. La ville CHANGE à chaque interlude selon la Couture — c'est le baromètre du monde.\n\n" +
+
+  "## Gazetteer — Le Val Clos\n" +
+  "Vallée de vignes sous fin d'été perpétuelle, cousue sur SON PROPRE JOUR il y a soixante ans (Pièce nº 1). On entre librement ; on RESSORT le jour de son entrée ; rien du Val n'atteint un lendemain. Lieux : le village et l'auberge du Pressoir (Maëlle) ; le manoir d'Aubemort (Ysold) ; les landes des Défaits (Osmond) ; la chapelle basse (l'ourlet, l'Œil) ; le col des Adieux. Coutume : l'ASSIGNATION (l'étranger reçoit le rôle d'un absent — le héros sera « Aubin », le fils parti avant la couture). Les Défaits : rêves non vécus incarnés la nuit — chassables, ou ÉCOUTABLES (une vérité chacun).\n\n" +
+
+  "## Gazetteer — Vert-Sépulcre\n" +
+  "Forêt-organisme continentale où la mort ne se TERMINE pas : tout ce qui meurt continue de pousser (cadavres-vergers, blessures qui bourgeonnent, tombes fleuries). Le Cœur de Vantael y bat FAUX depuis quatre siècles — blessé par la toute première agrafe de Séverin. Lieux : le camp des Émondeurs (l'Abbé Taillis) ; les cinq étapes (Canopée Noyée, Gué des Fleurs-Carnivores, Tombeau des Géants Verts, Nef des Racines, le chemin du guide) ; la Cage-aux-Côtes (temple-berceau — donjon). La GANGRÈNE : la sève noire suinte par les coutures fraîches vers d'autres mondes (horloge locale).\n\n" +
+
+  "## Gazetteer — La Marche de Cendre\n" +
+  "Continent-champ de bataille : la Ligne Grise (discipline) contre l'Ost des Braises (ferveur), en guerre depuis des générations pour une cause OUBLIÉE — gravée sur une stèle enfouie qu'aucun camp ne veut retrouver (un droit de passage ; un pont qui n'existe plus). Le Pas de Vantael, volé par Cendrelin, ouvre des PLAIES entre les lignes (déchirures suppurant des choses d'autres plans). Lieux : les deux QG ; le no man's land et la cote 9 ; le grand marché de guerre (pavillon blanc permanent, huit étals) ; la « poste » de Sorrel (boyau 12) ; la citadelle des plaies.\n\n" +
+
+  "## Gazetteer — Le Revers\n" +
+  "La féerie douce-amère où dérive tout ce qui se perd : collines-collections (la vallée des clefs, le lac des lettres, la forêt des parapluies), Oubliés translucides et polis, crépuscule doré perpétuel. La COUR DES OUBLIÉS (palais d'objets perdus) : la Dame Dépareillée, le Majordome-sans-visage, Trouvère. Les QUATRE LOIS (gravées à l'arche) : 1. tout ce qui est ici fut oublié — 2. nommer réveille — 3. tout conflit a une issue sans violence, souvent plus chère — 4. on ne repart qu'avec UNE chose retrouvée. Entrée : laisser quelque chose de VRAI à la haie-frontière. La galerie des navettes (Ch14) : les âmes liminales usées de Séverin — et la niche vide de Brindille.\n\n" +
+
+  "## Gazetteer — Le Grand Métier\n" +
+  "L'atelier du monde, visible dans tous les ciels dès le palier 7 : cadre céleste de fils d'or, établis grands comme des places, bobines hautes comme des tours — et le soin déchirant d'un artisan (outils rangés, tablier au clou). Trois ZONES-échantillons barrent le Chas (une ruelle du Val, une nef de Vert-Sépulcre, une tranchée de la Marche — chacune UNE scène et UN geste : trouver le point-mère par l'Œil, dépenser un gage). Au centre : le CHAS — l'Aiguille originelle en menhir de nacre, la carcasse assemblée sous le sol translucide, et LE seuil de Séverin, remonté marche par marche depuis son monde mort.\n\n" +
+
+  "## Quêtes secondaires (12 — deux par interlude, deux par grand plan)\n" +
+  "1. LA LICENCE D'HALVARD (Seuil, Ch1+) : faire réhabiliter le capitaine — trois antichambres, un vice de forme, et le vrai dossier : la famille sans papiers qu'il a sauvée (la retrouver, la faire témoigner).\n" +
+  "2. LA CARTE JUSTE (Seuil, Ch3+) : Isaure cherche trois relevés impossibles pour SA carte secrète — chaque relevé est une mini-expédition (l'Œil-Clos, une Veine, le toit de la Capitainerie). RÉCOMPENSE : elle REMET au héros la seule carte JUSTE qu'elle ait jamais tracée — son GAGE (« gardez-la. Si elle devient fausse, c'est que je me serai trompée sur vous »).\n" +
+  "3. LES RUCHES DU PRESSOIR (Val) : les abeilles du Val meurent-renaissent chaque jour — Maëlle veut UN miel qui vieillisse ; la solution touche à l'ourlet (et préfigure le choix du Ch6).\n" +
+  "4. LE BÂTON DE PERRETTE (Val) : graver un décompte que la nuit n'efface pas — l'objet doit passer une nuit HORS du Val (donc dans la sacoche du héros : la première chose du Val à connaître un lendemain).\n" +
+  "5. LA DETTE DE SANG DES ÉMONDEURS (Vert-Sépulcre) : si le camp fut défendu — l'Abbé offre de « finir » un tourment au choix du héros (un mort-poussant NOMMÉ qu'on aime encore trop pour le tailler).\n" +
+  "6. LES TROIS CHOSES DE RONCE (Vert-Sépulcre) : rendre à la forêt ce qu'on lui doit — trois offrandes à choisir dans l'inventaire du héros (la forêt juge la sincérité au poids du regret).\n" +
+  "7. LE COURRIER DE SORREL (Marche, filable sur toute la campagne) : livrer des lettres de morts — chaque livraison est une scène d'adieu jouée, et un fil du rachat de Sorrel.\n" +
+  "8. LE VENT DU VIEUX (Marche) : le marchand de vent veut RATTRAPER un vent qu'il a vendu jadis et qui a fait chavirer un navire — le retrouver (il niche dans une plaie) et le lui rendre.\n" +
+  "9. LES RETROUVAILLES EN CASCADE (Revers) : rendre trois objets de la Regrattière à leurs Oubliés — trois scènes écrites, et la ruine du marché noir.\n" +
+  "10. LA CHANSON MANQUANTE (Revers) : Trouvère a perdu SA chanson (celle qu'il chantait avant d'échouer ici) — elle est dans le lac des lettres, sous forme de partition jamais envoyée.\n" +
+  "11. LE REGISTRE DE BROCHET (Seuil, interludes) : le Maître-Quai perd la mémoire par pages entières (début de couture sur sa personne ?) — enquête courte, coupable poignant (il s'auto-archive pour ne pas trembler).\n" +
+  "12. LE SALUT À RENDRE (épilogue, si promis au Ch15) : saluer quelqu'un qui ne vous verra pas — la vignette finale, à placer au moment parfait.\n\n" +
+
+  "## Table de rumeurs (2 par soirée d'interlude — V=vrai, F=faux, D=déformé)\n" +
+  "1(V) Deux clochers de mondes différents sonnent ensemble, des nuits entières. 2(D) « Les Combleurs cousent les gens » — en fait : leurs NOSTALGIES. 3(V) La sixième porte est morte — mais quelqu'un balaie son seuil chaque semaine. 4(F) « Le Cortège cache un organe du dieu dans ses cryptes. » 5(V) Le Ravaudeur paie en clefs impossibles quiconque agrafe pour lui. 6(D) « Une femme sans nom vole les choses perdues » — Brindille les RAMASSE. 7(V) Les Veines oublient ceux qui les prennent trop souvent. 8(F) « L'âme liminale est un présage de fin du monde » (c'en est un de CHOIX). 9(V) Ysold d'Aubemort écrit à quelqu'un par miroir. 10(D) « Séverin ne dort jamais » — il dort une heure, l'aiguille à la main.\n\n" +
+
+  "## Rencontres par monde (1d6 — épices entre les scènes)\n" +
+  "SEUIL : 1 golem de douane à cheval sur l'article 12 · 2 procession du Cortège (se découvrir) · 3 réfugiés d'un monde inconnu, perdus · 4 contrôle surprise de Brochet · 5 porteurs des Combleurs en tournée · 6 un écho de la file qui a « perdu sa place ». VAL : 1 ronde des vendangeurs · 2 un Défait isolé, suppliant · 3 Perrette et ses bâtons · 4 le Père Cellier en sermon · 5 une maison qui rejoue une dispute vieille de 60 ans · 6 Osmond qui relève ses pièges. VERT-SÉPULCRE : 1 meute de morts-poussants qui INVITE · 2 fleurs-cloches (suivre ?) · 3 un Émondeur en tournée de taille · 4 un géant vert qui rêve tout haut · 5 sève noire fraîche (Gangrène !) · 6 le guide non choisi, croisé au loin. MARCHE : 1 patrouille mixte perdue · 2 bombardement (à terre !) · 3 une plaie qui s'ouvre · 4 marchand ambulant du grand marché · 5 Sorrel en livraison · 6 sergent recruteur des deux camps À LA FOIS. REVERS : 1 un Oublié poli qui demande son chemin · 2 une collection qui frémit au passage · 3 Trouvère en récital aux objets · 4 sbires de la Regrattière · 5 une chose perdue qui SUIT le héros · 6 le Majordome, en course, qui salue.\n\n" +
+
+  "## Mise à l'échelle 1 → 16 (rythme des niveaux)\n" +
+  "Un niveau par chapitre jusqu'au 12 (Ch1=1 … Ch12=12), puis le rythme ralentit : niveau 13 au Ch13-14, 14 en fin d'acte V (Ch15), 15 aux Ch16-17, 16 au Chas. Les paliers de puissance à respecter : Ch6 (l'Œil) = niv. 6, sorts de cercle 3 ; Ch9 (le Cœur) = niv. 9 ; Ch12 (le Pas) = niv. 12, cercle 6 ; Ch15 (la Voix) = niv. 14, cercle 7 — À PARTIR D'ICI, plane_shift existe : rappeler le fait canonique (une déchirure = +2 Couture) À LA PREMIÈRE tentative, jamais l'interdire. Les rencontres des actes V-VI supposent compagnon + alliés de circonstance : ajuster à la baisse si le héros est seul (retirer une créature par vague, jamais baisser les DC).\n\n" +
+
+  "## Notes de personnalisation (passe fill-only — impératives)\n" +
+  "1. Les cinq slots forment UNE campagne cohérente, pas cinq hasards (règle de répartition : volume 1). 2. {{COUSU}} = celui des deux candidats que CE héros a le plus emmené (à défaut : Halvard). 3. {{VISAGE}} se déduit du profil (protecteur→Gardien, déraciné→Exilé, endeuillé→Endeuillé) — au doute : Exilé (le héros EST un exilé par prémisse). 4. {{PORTE_NATALE}} « déjà cousue dans le Métier » est la plus cruelle — la réserver aux joueurs qui aiment payer. 5. Ne JAMAIS traduire les valeurs de slots (noms canoniques). 6. {{HERO_HOOK}} se recontextualise en scène de mort inachevée (Ch1) — la Déchirure interrompt cette mort-LÀ.";
