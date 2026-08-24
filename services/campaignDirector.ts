@@ -40,6 +40,61 @@ function trimText(value: string | undefined | null, max = 420): string {
     return text.length > max ? `${text.slice(0, max)}...` : text;
 }
 
+/**
+ * BUDGETS D'INJECTION — la table unique des coupes appliquées au contenu
+ * d'auteur (audit 2026-08-24, lot 2).
+ *
+ * Ces nombres étaient auparavant des littéraux dispersés dans les appels à
+ * `trimText`. Résultat : on relevait le budget du champ signalé, et la famille
+ * restait ouverte ailleurs. Les secrets et les horloges avaient été relevés le
+ * 2026-08-14 ; le cliffhanger, la motivation du vilain et le setup de la
+ * première scène coupaient toujours quatre mois plus tard.
+ *
+ * Chaque valeur est CALIBRÉE sur le contenu réellement écrit dans les trois
+ * campagnes, avec une marge : `tests/injectionBudgets.test.ts` échoue si un
+ * texte d'auteur dépasse sa case. Le test est le vrai garde-fou — la table
+ * seule ne protège de rien.
+ *
+ * Mesures au 2026-08-24 (max observé sur 36 chapitres / 3 campagnes) :
+ *   objectif de chapitre 192 · cliffhanger narratif 517 · consigne d'horloge 175
+ *   motivation du vilain 392 · setup de 1re scène 659 · question d'ouverture 170
+ */
+export const INJECTION_BUDGETS = {
+    chapterObjective: 220,
+    /** Part NARRATIVE du cliffhanger, une fois la consigne détachée. */
+    chapterCliffhanger: 520,
+    /** Consigne mécanique entre crochets en fin de cliffhanger. */
+    chapterClockCue: 200,
+    villainMotivation: 400,
+    firstSceneObjective: 200,
+    /** Porte les interdits de révélation (« NE PAS révéler … ») : ne jamais couper. */
+    firstSceneSetup: 700,
+    firstSceneQuestion: 200,
+    worldClock: 340,
+    canonFact: 300,
+    protectedSecret: 360,
+} as const;
+
+/**
+ * Sépare un cliffhanger en sa tension narrative et sa consigne mécanique.
+ *
+ * Les trois campagnes écrivent leurs tics d'horloge entre crochets, EN FIN de
+ * cliffhanger — « … Rendormez-vous. » [La Couture 1/8 : deux clochers de mondes
+ * différents sonnent la même heure.] » — soit exactement la partie que la coupe
+ * à 180 caractères emportait, sur 33 des 36 chapitres qui en portent une. Le MJ
+ * n'appelant presque jamais `update_campaign_runtime`, cette consigne EST le
+ * canal par lequel une horloge d'auteur avance.
+ *
+ * Les deux morceaux ont des budgets distincts parce qu'ils n'ont pas la même
+ * fonction : la tension peut être resserrée, la consigne doit passer entière.
+ */
+export function splitChapterPressure(cliffhanger?: string | null): { narrative: string; cue: string } {
+    const full = String(cliffhanger || '').replace(/\s+/g, ' ').trim();
+    const match = full.match(/\s*\[([^\]]{10,})\]$/);
+    if (!match) return { narrative: full, cue: '' };
+    return { narrative: full.slice(0, full.length - match[0].length).trim(), cue: match[1].trim() };
+}
+
 function resolveCurrentChapter(manifest?: AdventureManifest | null, runtime?: CampaignRuntimeState) {
     if (!manifest?.chapters?.length) return null;
     return manifest.chapters.find(chapter => chapter.id === runtime?.currentChapterId)
@@ -219,12 +274,12 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
         .slice()
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
         .slice(0, 6)
-        .map(clock => `${clock.name} ${clock.stage}/${clock.maxStage}: ${trimText(clock.description, 340)}`);
+        .map(clock => `${clock.name} ${clock.stage}/${clock.maxStage}: ${trimText(clock.description, INJECTION_BUDGETS.worldClock)}`);
 
     const lines: string[] = [];
 
     if (manifest?.villain) {
-        lines.push(`Campaign spine: villain ${manifest.villain.name} (${manifest.villain.archetype}); motivation ${trimText(manifest.villain.motivation || manifest.villain.description, 180)}`);
+        lines.push(`Campaign spine: villain ${manifest.villain.name} (${manifest.villain.archetype}); motivation ${trimText(manifest.villain.motivation || manifest.villain.description, INJECTION_BUDGETS.villainMotivation)}`);
     } else if (manifestoText) {
         lines.push(`Campaign spine excerpt: ${trimText(manifestoText, 700)}`);
     } else {
@@ -242,11 +297,16 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
     const stillAtOpening = !runtime?.currentSceneId
         || (manifest?.firstScene?.sceneId && runtime.currentSceneId === manifest.firstScene.sceneId);
     if (manifest?.firstScene && stillAtOpening && !runtime?.branchHistory?.length && !runtime?.activeBranch) {
-        lines.push(`Locked first scene: ${manifest.firstScene.title} @ ${manifest.firstScene.location}; objective ${trimText(manifest.firstScene.objective, 180)}; setup ${trimText(manifest.firstScene.setup, 220)}; opening question ${trimText(manifest.firstScene.openingQuestion, 160) || 'none'}`);
+        // Budgets relevés (lot 2) : le `setup` porte les interdits de révélation
+        // de l'ouverture — « NE PAS révéler Séverin comme menace, ni la Couture,
+        // ni la nature de navette » — au caractère ~480 d'un texte de 659. La
+        // coupe à 220 les emportait dans les TROIS campagnes écrites, ce qui
+        // laissait la scène d'ouverture sans aucune garde anti-spoiler.
+        lines.push(`Locked first scene: ${manifest.firstScene.title} @ ${manifest.firstScene.location}; objective ${trimText(manifest.firstScene.objective, INJECTION_BUDGETS.firstSceneObjective)}; setup ${trimText(manifest.firstScene.setup, INJECTION_BUDGETS.firstSceneSetup)}; opening question ${trimText(manifest.firstScene.openingQuestion, INJECTION_BUDGETS.firstSceneQuestion) || 'none'}`);
     }
 
     if (chapter) {
-        lines.push(`Current main chapter: ${chapter.id} - ${chapter.title}; objective ${trimText(runtime?.currentObjective || chapter.objective, 220)}`);
+        lines.push(`Current main chapter: ${chapter.id} - ${chapter.title}; objective ${trimText(runtime?.currentObjective || chapter.objective, INJECTION_BUDGETS.chapterObjective)}`);
         if (scene) lines.push(`Current main scene: ${scene.id} - ${scene.title}; location ${scene.location}; mood ${scene.mood || 'unknown'}`);
         // TR9 — LA SUITE. Les quêtes avancent (« steps 1/2, next: … », puis
         // « all done — consider complete_quest ») ; les chapitres ne bougeaient
@@ -254,7 +314,15 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
         // aller ni quand clore. Même modèle, même séance : la seule différence
         // était la formulation. On transpose donc le motif qui marche.
         lines.push(...spineNextLines(manifest, chapter, scene));
-        if (chapter.cliffhanger) lines.push(`Chapter pressure: ${trimText(chapter.cliffhanger, 180)}`);
+        // La consigne d'horloge sort en ligne DÉDIÉE : elle ne partage plus la
+        // coupe avec la tension narrative, qui l'emportait systématiquement.
+        const pressure = splitChapterPressure(chapter.cliffhanger);
+        if (pressure.narrative) {
+            lines.push(`Chapter pressure: ${trimText(pressure.narrative, INJECTION_BUDGETS.chapterCliffhanger)}`);
+        }
+        if (pressure.cue) {
+            lines.push(`Clock cue for this chapter's end (advance it with update_campaign_runtime when the beat lands): ${trimText(pressure.cue, INJECTION_BUDGETS.chapterClockCue)}`);
+        }
     } else if (runtime?.currentObjective) {
         lines.push(`Current objective: ${trimText(runtime.currentObjective, 220)}`);
     }
@@ -278,7 +346,7 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
     // les consignes de calendrier des secrets (« NE PAS révéler avant le Ch X »
     // littéralement tronqué en plein « NE PAS ») et amputait les 3 faiblesses du
     // vilain — condition de victoire de la campagne.
-    lines.push(`Canon facts: ${compactList((runtime?.canonFacts || []).map(fact => trimText(fact, 300)))}`);
+    lines.push(`Canon facts: ${compactList((runtime?.canonFacts || []).map(fact => trimText(fact, INJECTION_BUDGETS.canonFact)))}`);
     // LIGNE D'INDEX : compactList n'en montre que 14 (4 en tête + 10 en queue).
     // Le MILIEU existe en base mais était INVISIBLE et, pire, le MJ ignorait
     // même son existence — il ne pouvait donc pas le demander. Injecter tout
@@ -293,7 +361,7 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
     // Étiquette DURCIE : elle était nue (« Protected secrets: »), alors que le
     // secret du héros, lui, porte un avertissement explicite dans le prompt
     // système. Un secret injecté à chaque tour sans consigne finit par fuiter.
-    lines.push(`Protected secrets (DM-ONLY — never state outright; seed them, reveal only at their beat): ${compactList((runtime?.protectedSecrets || []).map(secret => trimText(secret, 360)))}`);
+    lines.push(`Protected secrets (DM-ONLY — never state outright; seed them, reveal only at their beat): ${compactList((runtime?.protectedSecrets || []).map(secret => trimText(secret, INJECTION_BUDGETS.protectedSecret)))}`);
     lines.push(`World clocks: ${compactList(clocks)}`);
     lines.push('Campaign director rule: keep this compact spine coherent, but do not force the player back to it. Use branch/clue/consequence tools when the player detours.');
 
