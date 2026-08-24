@@ -34,10 +34,42 @@ export default defineConfig(({ mode }) => {
         }
       }
     },
+    // Deux suites, volontairement séparées.
+    //
+    // `node` est la suite historique : mêmes fichiers, même environnement,
+    // mêmes réglages qu'avant l'ajout des tests d'interface. Toucher à la
+    // configuration commune aurait fait porter le doute sur 392 tests qui
+    // gardent les règles du jeu.
+    //
+    // `ui` monte de vraies vues React dans jsdom. Elle sert d'abord de filet
+    // anti-régression pour la refonte du menu : les tests sont écrits contre
+    // le comportement EXISTANT, donc ils passent avant le reskin et doivent
+    // passer après. Un test qui ne verrouille rien d'observable — un libellé
+    // décoratif, une couleur — n'a rien à faire ici.
+    //
+    // Les motifs ne se recouvrent pas (`.test.ts` d'un côté, `.test.tsx` de
+    // l'autre) : aucun fichier ne peut tourner deux fois.
     test: {
-      globals: true,
-      environment: 'node',
-      include: ['tests/**/*.test.ts'],
+      projects: [
+        {
+          test: {
+            name: 'node',
+            globals: true,
+            environment: 'node',
+            include: ['tests/**/*.test.ts'],
+          },
+        },
+        {
+          plugins: [react()],
+          test: {
+            name: 'ui',
+            globals: true,
+            environment: 'jsdom',
+            include: ['tests/ui/**/*.test.tsx'],
+            setupFiles: ['./tests/ui/setup.ts'],
+          },
+        },
+      ],
     }
 
   };

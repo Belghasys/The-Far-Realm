@@ -37,12 +37,25 @@ const HANDOVER_MS = 250;
 
 let audio: HTMLAudioElement | null = null;
 let wanted = false;               // une vue hors jeu est-elle montée ?
+/**
+ * La Taverne (lecteur YouTube) a-t-elle pris la main ?
+ *
+ * Deux sources de musique en même temps, c'est le pire des deux mondes. Quand
+ * le joueur lance une piste dans la Taverne, elle SUSPEND ce thème ; quand il
+ * la met en pause ou quitte l'écran, elle le rend.
+ *
+ * C'est un état de session, pas un réglage : rien n'est écrit sur le disque,
+ * donc la connexion garde sa musique au prochain lancement même si la dernière
+ * chose faite était d'écouter YouTube.
+ */
+let suspended = false;
 let gestureArmed = false;
 let fadeTimer: ReturnType<typeof setInterval> | null = null;
 let stopTimer: ReturnType<typeof setTimeout> | null = null;
 let unsubscribe: (() => void) | null = null;
 
 function targetVolume(): number {
+    if (suspended) return 0;
     const s = getAppSettings();
     return s.menuMusic ? s.musicVolume : 0;
 }
@@ -160,6 +173,23 @@ export const menuTheme = {
                 audio.volume = 0;
             }
         }, HANDOVER_MS);
+    },
+
+    /**
+     * La Taverne prend la main : ce thème se tait sans oublier qu'il est voulu.
+     * `sync()` fait le travail — il met le volume à zéro et met en pause.
+     */
+    suspend(): void {
+        if (suspended) return;
+        suspended = true;
+        sync();
+    },
+
+    /** La Taverne rend la main. Le thème repart s'il est toujours attendu. */
+    resume(): void {
+        if (!suspended) return;
+        suspended = false;
+        sync();
     },
 
     /** true quand une piste est réellement en cours (utile pour l'icône). */
