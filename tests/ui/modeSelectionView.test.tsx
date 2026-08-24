@@ -145,13 +145,35 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
         expect(H.signOut).toHaveBeenCalledWith(H.auth);
     });
 
-    it('bascule intégralement en anglais', () => {
+    it('bascule intégralement en anglais, copie neuve comprise', () => {
         b.langue = 'en';
         render(<ModeSelectionView />);
 
         expect(screen.getByText('ARENA MODE')).toBeInTheDocument();
         expect(screen.getByText('Solo Journey')).toBeInTheDocument();
+        // La copie ajoutée par la refonte doit suivre la langue comme le reste.
+        expect(screen.getByText('THE PARADE')).toBeInTheDocument();
+        expect(screen.getByText(/Every class the realms/)).toBeInTheDocument();
         expect(screen.queryByText('MODE ARÈNE')).toBeNull();
+        expect(screen.queryByText('LA PARADE')).toBeNull();
+    });
+
+    it('affiche la copie neuve en français', () => {
+        render(<ModeSelectionView />);
+
+        expect(screen.getByText('LA PARADE')).toBeInTheDocument();
+        expect(screen.getByText(/Toutes les classes/)).toBeInTheDocument();
+        expect(screen.queryByText('THE PARADE')).toBeNull();
+    });
+
+    it('donne un portrait à chacune des douze classes de la Parade', () => {
+        render(<ModeSelectionView />);
+        // Deux rangées, chacune doublée pour boucler sans couture : 12 × 2.
+        const portraits = screen.getAllByRole('img');
+        expect(portraits.length).toBe(24);
+        for (const img of portraits) {
+            expect(img.getAttribute('src')).toMatch(/^\/art\/classes\/[a-z]+\.webp$/);
+        }
     });
 
     it('réclame la musique de menu au montage et la relâche au démontage', () => {

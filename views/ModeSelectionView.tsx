@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { ArrowRight, User as UserIcon, Users, Sword, FolderOpen } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/saveService';
 import { memoryManager } from '../services/memoryManager';
@@ -9,6 +8,28 @@ import { campaignEventLog } from '../services/campaignEventLog';
 import { LoadGameMenu } from '../components/LoadGameMenu';
 import { auth } from '../services/firebase';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
+import { T, DISP, BODY, onTint } from '../theme/tokens';
+import { NeonCard } from '../components/neon/NeonButton';
+import { NeonFrame } from '../components/neon/NeonFrame';
+import { CLASS_ART } from '../theme/art';
+import { dispClass } from '../data/labels';
+import { CLASS_DATA } from '../data';
+
+/**
+ * Les rangées de la Parade dérivent en sens opposés. Les keyframes sont
+ * injectées ici plutôt que dans index.css : elles ne servent qu'à cet écran,
+ * et une feuille globale qui grossit à chaque écran finit par n'appartenir à
+ * personne.
+ */
+const PARADE_CSS = `
+@keyframes ms-drift-l { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes ms-drift-r { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+.ms-lane { display: flex; gap: 20px; width: max-content; }
+.ms-lane-a { animation: ms-drift-l 52s linear infinite; }
+.ms-lane-b { animation: ms-drift-r 64s linear infinite; }
+.ms-rail:hover .ms-lane { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .ms-lane { animation: none; } }
+`;
 
 export function ModeSelectionView() {
     const navigate = useNavigate();
@@ -18,37 +39,39 @@ export function ModeSelectionView() {
     const TRANS = {
         en: {
             choosePath: "Choose Your Path",
+            pathHint: "You can change your mind. Your character, less so.",
             solo: "Solo Journey",
             soloDesc: "Brave the darkness alone. You are the sole hero of your story.",
             multi: "Gather Your Party",
             multiDesc: "Team up with friends in real time. Coming soon.",
-            host: "Host Game",
-            join: "Join",
-            enterCode: "ENTER CODE",
-            unavailable: "Unavailable",
             comingSoon: "Coming Soon",
             logout: "Log Out",
             arenaTitle: "ARENA MODE",
             arenaDesc: "Instant Combat. No Story. Pure Glory.",
             loadSavedGame: "Load a Saved Game",
-            loadError: "Error while loading the save"
+            loadError: "Error while loading the save",
+            enter: "ENTER",
+            paradeTitle: "THE PARADE",
+            paradeHint: "Every class the realms will let you wear.",
+            classCount: (n: number) => `${n} CLASSES`,
         },
         fr: {
             choosePath: "Choisissez Votre Voie",
+            pathHint: "Vous pourrez changer d'avis. Votre personnage, moins.",
             solo: "Aventure Solo",
             soloDesc: "Affrontez les ténèbres seul. Vous êtes le seul héros de votre histoire.",
             multi: "Rassemblez Votre Groupe",
             multiDesc: "Jouez à plusieurs en temps réel. Bientôt disponible.",
-            host: "Héberger",
-            join: "Rejoindre",
-            enterCode: "CODE",
-            unavailable: "Indisponible",
             comingSoon: "Bientôt disponible",
             logout: "Déconnexion",
             arenaTitle: "MODE ARÈNE",
             arenaDesc: "Combat instantané. Pas d'histoire. Gloire pure.",
             loadSavedGame: "Charger une Partie Sauvegardée",
-            loadError: "Erreur lors du chargement de la sauvegarde"
+            loadError: "Erreur lors du chargement de la sauvegarde",
+            enter: "ENTRER",
+            paradeTitle: "LA PARADE",
+            paradeHint: "Toutes les classes que les royaumes vous laissent porter.",
+            classCount: (n: number) => `${n} CLASSES`,
         }
     };
     const t = TRANS[language as keyof typeof TRANS];
@@ -58,65 +81,170 @@ export function ModeSelectionView() {
         navigate('/');
     };
 
+    // Deux rangées, chacune doublée : l'animation s'arrête à -50 %, ce qui rend
+    // la boucle invisible.
+    const [hautes, basses] = useMemo(() => {
+        const cles = Object.keys(CLASS_DATA).filter(k => CLASS_ART[k]);
+        const moitie = Math.ceil(cles.length / 2);
+        return [cles.slice(0, moitie), cles.slice(moitie)];
+    }, []);
+
+    const rangee = (cles: string[], sens: 'a' | 'b') => (
+        <div className={`ms-lane ms-lane-${sens}`}>
+            {[...cles, ...cles].map((cle, i) => (
+                <NeonFrame
+                    key={`${cle}-${i}`}
+                    slug={CLASS_ART[cle].slug}
+                    tint={CLASS_ART[cle].tint}
+                    shadow={i % 2 ? T.magenta : T.acid}
+                    label={dispClass(cle, language as 'en' | 'fr').toUpperCase()}
+                    width={168}
+                    height={224}
+                />
+            ))}
+        </div>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 text-white relative">
-            <button
-                onClick={handleLogout}
-                className="absolute top-4 left-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-                <ArrowRight className="w-4 h-4 rotate-180" />
-                <span>{t.logout}</span>
-            </button>
+        <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
+            <style>{PARADE_CSS}</style>
 
-            <div className="absolute top-4 right-4 flex items-center gap-3">
-                <MenuMusicToggle />
-                <div className="flex gap-4 bg-gray-800 p-2 rounded-lg border border-gray-600">
-                    <button onClick={() => setLanguage('en')} className={`font-bold transition-colors ${language === 'en' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>EN</button>
-                    <div className="w-px bg-gray-600 h-6"></div>
-                    <button onClick={() => setLanguage('fr')} className={`font-bold transition-colors ${language === 'fr' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>FR</button>
-                </div>
-            </div>
-
-            <h1 className="text-4xl font-fantasy text-gold mb-12">{t.choosePath}</h1>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full">
-                <div
-                    onClick={() => { setGameMode('solo'); setSelectedAdventure('ARENA_MODE'); navigate('/create'); }}
-                    className="bg-red-950/40 border-2 border-red-800 p-8 rounded-xl cursor-pointer hover:border-red-500 hover:bg-red-900/60 transition-all group text-center"
+            <header style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 16, flexWrap: 'wrap', padding: '20px clamp(20px, 5vw, 64px)',
+                borderBottom: `2px solid ${T.cyan}59`,
+            }}>
+                <button
+                    onClick={handleLogout}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 8, background: 'none',
+                        border: 'none', cursor: 'pointer', padding: 0,
+                        fontFamily: BODY, fontSize: 14, color: 'rgba(237,230,216,.6)',
+                    }}
                 >
-                    <Sword className="w-16 h-16 mx-auto mb-4 text-red-700 group-hover:text-red-500 animate-pulse" />
-                    <h2 className="text-2xl font-bold mb-2 text-red-500">{t.arenaTitle}</h2>
-                    <p className="text-red-300/60">{t.arenaDesc}</p>
-                </div>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M19 12H5" /><path d="m12 19-7-7 7-7" />
+                    </svg>
+                    {t.logout}
+                </button>
 
-                <div
-                    onClick={() => { setGameMode('solo'); navigate('/lobby'); }}
-                    className="bg-gray-800 border-2 border-gray-600 p-8 rounded-xl cursor-pointer hover:border-gold hover:bg-gray-700 transition-all group text-center"
-                >
-                    <UserIcon className="w-16 h-16 mx-auto mb-4 text-gray-400 group-hover:text-gold" />
-                    <h2 className="text-2xl font-bold mb-2">{t.solo}</h2>
-                    <p className="text-gray-400">{t.soloDesc}</p>
-                </div>
-
-                <div className="relative bg-gray-800 border-2 border-gray-700 p-8 rounded-xl opacity-60 grayscale cursor-not-allowed select-none text-center">
-                    <span className="absolute top-3 right-3 bg-gold/20 text-gold text-xs font-bold px-2 py-1 rounded-full border border-gold/40 uppercase tracking-wide">
-                        {t.comingSoon}
-                    </span>
-                    <Users className="w-16 h-16 mx-auto mb-4 text-gray-500" />
-                    <h2 className="text-2xl font-bold mb-4">{t.multi}</h2>
-                    <p className="text-gray-400 mb-6">{t.multiDesc}</p>
-
-                    <div className="flex flex-col gap-4 justify-center">
-                        <button disabled className="cursor-not-allowed bg-gray-700 text-gray-500 px-6 py-2 rounded font-bold">
-                            {t.comingSoon}
-                        </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <MenuMusicToggle />
+                    <div style={{ display: 'flex', gap: 2, border: '2px solid rgba(237,230,216,.25)', padding: 3 }}>
+                        {(['en', 'fr'] as const).map(code => (
+                            <button
+                                key={code}
+                                onClick={() => setLanguage(code)}
+                                style={{
+                                    fontFamily: DISP, fontSize: 12, padding: '7px 12px', border: 'none', cursor: 'pointer',
+                                    background: language === code ? T.acid : 'transparent',
+                                    color: language === code ? onTint(T.acid) : 'rgba(237,230,216,.55)',
+                                }}
+                            >{code.toUpperCase()}</button>
+                        ))}
                     </div>
                 </div>
-            </div>
+            </header>
 
-            <button onClick={() => setShowLoadMenu(true)} className="mt-8 flex items-center gap-2 text-gray-400 hover:text-gold transition-colors underline">
-                <FolderOpen className="w-5 h-5" /> {t.loadSavedGame}
-            </button>
+            <main style={{ padding: 'clamp(36px, 5vw, 64px) clamp(20px, 5vw, 64px) 0', maxWidth: 1360, margin: '0 auto' }}>
+                <div style={{
+                    display: 'flex', alignItems: 'end', justifyContent: 'space-between',
+                    gap: 16, flexWrap: 'wrap', paddingBottom: 34,
+                }}>
+                    <h1 style={{ fontFamily: DISP, margin: 0, fontSize: 'clamp(28px, 4vw, 42px)' }}>{t.choosePath}</h1>
+                    <span style={{ fontSize: 14, color: 'rgba(237,230,216,.5)' }}>{t.pathHint}</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 28 }}>
+
+                    <NeonCard
+                        tint={T.pink}
+                        rotate={-1.2}
+                        onClick={() => { setGameMode('solo'); setSelectedAdventure('ARENA_MODE'); navigate('/create'); }}
+                    >
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M14.5 17.5 3 6V3h3l11.5 11.5" /><path d="m13 19 6-6" /><path d="m16 16 4 4" /><path d="M19 21v-4h-4" /><path d="M21 3h-3L6.5 14.5" /><path d="m5 19 6-6" />
+                        </svg>
+                        <h2 style={{ fontFamily: DISP, margin: 0, fontSize: 24 }}>{t.arenaTitle}</h2>
+                        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, opacity: .82 }}>{t.arenaDesc}</p>
+                        <span style={{ fontFamily: DISP, fontSize: 12, marginTop: 'auto' }}>{t.enter} →</span>
+                    </NeonCard>
+
+                    <NeonCard
+                        tint={T.azure}
+                        rotate={0.8}
+                        onClick={() => { setGameMode('solo'); navigate('/lobby'); }}
+                    >
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                        <h2 style={{ fontFamily: DISP, margin: 0, fontSize: 24 }}>{t.solo}</h2>
+                        <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, opacity: .82 }}>{t.soloDesc}</p>
+                        <span style={{ fontFamily: DISP, fontSize: 12, marginTop: 'auto' }}>{t.enter} →</span>
+                    </NeonCard>
+
+                    <div style={{ position: 'relative' }}>
+                        <span style={{
+                            position: 'absolute', top: -12, right: 14, zIndex: 2,
+                            fontFamily: DISP, fontSize: 11, background: T.acid, color: onTint(T.acid),
+                            padding: '6px 12px',
+                        }}>{t.comingSoon}</span>
+                        <NeonCard tint={T.void} rotate={-0.6} disabled>
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                            </svg>
+                            <h2 style={{ fontFamily: DISP, margin: 0, fontSize: 24 }}>{t.multi}</h2>
+                            <p style={{ margin: 0, fontSize: 15, lineHeight: 1.5, opacity: .75 }}>{t.multiDesc}</p>
+                            <button
+                                disabled
+                                style={{
+                                    marginTop: 'auto', fontFamily: DISP, fontSize: 12, padding: '14px 20px',
+                                    background: 'transparent', color: 'rgba(237,230,216,.4)',
+                                    border: '2px dashed rgba(237,230,216,.3)', cursor: 'not-allowed',
+                                }}
+                            >{t.comingSoon}</button>
+                        </NeonCard>
+                    </div>
+
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0 8px' }}>
+                    <button
+                        onClick={() => setShowLoadMenu(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 10, background: 'none', cursor: 'pointer',
+                            border: `2px solid ${T.cyan}80`, padding: '14px 24px',
+                            fontFamily: BODY, fontSize: 15, fontWeight: 700, color: T.cyan,
+                        }}
+                    >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2z" />
+                        </svg>
+                        {t.loadSavedGame}
+                    </button>
+                </div>
+            </main>
+
+            {/* La Parade — vitrine. Le clic qui pré-remplit la classe arrive avec
+                le sélecteur de la fiche ; d'ici là, un cadre qui ne mène nulle
+                part vaut mieux qu'un clic qui promet ce qu'il ne tient pas. */}
+            <section style={{ paddingTop: 48, paddingBottom: 56, borderTop: `4px solid ${T.cyan}`, marginTop: 40 }}>
+                <div style={{
+                    display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap',
+                    padding: '0 clamp(20px, 5vw, 64px) 28px', maxWidth: 1360, margin: '0 auto',
+                }}>
+                    <div>
+                        <h2 style={{ fontFamily: DISP, margin: '0 0 8px', fontSize: 'clamp(24px, 3vw, 32px)' }}>{t.paradeTitle}</h2>
+                        <p style={{ margin: 0, fontSize: 14, color: 'rgba(237,230,216,.55)' }}>{t.paradeHint}</p>
+                    </div>
+                    <span style={{ fontFamily: DISP, fontSize: 12, color: T.acid }}>{t.classCount(hautes.length + basses.length)}</span>
+                </div>
+
+                <div className="ms-rail" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {rangee(hautes, 'a')}
+                    {rangee(basses, 'b')}
+                </div>
+            </section>
 
             {showLoadMenu && (
                 <LoadGameMenu

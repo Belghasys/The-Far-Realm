@@ -136,7 +136,21 @@ describe('LoginView — contrat à préserver pendant la refonte', () => {
         expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Register' })).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
+        // La copie ajoutée par la refonte doit suivre la langue comme le reste.
+        expect(screen.getByText(/SOLO ROLEPLAY/)).toBeInTheDocument();
+        expect(screen.getByText(/Build a hero, roll your dice/)).toBeInTheDocument();
+        expect(screen.getByText('The Realms Are Waiting...')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Connexion' })).toBeNull();
+        expect(screen.queryByText(/JEU DE RÔLE SOLO/)).toBeNull();
+    });
+
+    it('affiche la copie neuve en français', () => {
+        render(<LoginView />);
+
+        expect(screen.getByText(/JEU DE RÔLE SOLO/)).toBeInTheDocument();
+        expect(screen.getByText(/Crée ton héros, lance tes dés/)).toBeInTheDocument();
+        expect(screen.getByText('Les Royaumes Vous Attendent...')).toBeInTheDocument();
+        expect(screen.queryByText(/SOLO ROLEPLAY/)).toBeNull();
     });
 
     it('réclame la musique de menu au montage et la relâche au démontage', () => {
