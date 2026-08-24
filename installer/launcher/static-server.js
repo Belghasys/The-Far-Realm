@@ -32,9 +32,21 @@ function serveClient(rootDir) {
 
     const server = http.createServer((req, res) => {
       // Strip query string, decode, and prevent path traversal.
-      const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
-      let filePath = path.join(rootDir, urlPath);
-      if (!filePath.startsWith(rootDir)) {
+      // ML2 (contre-audit) — decodeURIComponent lève URIError sur un pourcent
+      // malformé (GET /%zz) : non rattrapée, l'exception tuait tout le process
+      // main Electron (fenêtre + serveurs Python).
+      let urlPath;
+      try {
+        urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+      } catch {
+        res.writeHead(400).end('Bad request');
+        return;
+      }
+      // ML23 — comparer avec le séparateur : startsWith(rootDir) seul acceptait
+      // un dossier frère (`client-xyz` préfixé par `client`).
+      let filePath = path.resolve(path.join(rootDir, urlPath));
+      const rootResolved = path.resolve(rootDir);
+      if (filePath !== rootResolved && !filePath.startsWith(rootResolved + path.sep)) {
         res.writeHead(403).end('Forbidden');
         return;
       }

@@ -1,0 +1,602 @@
+key,file,score,flags,seconds,peak,rms,clip,tonal_ratio,pitch_stability,dominant_hz,attack_ratio
+combat/arrow_impact,combat/arrow_impact_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.195,0.0,0.0,0.125,861,0.36
+combat/arrow_impact,combat/arrow_impact_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.1035,0.0,0.024,0.317,172,0.37
+combat/arrow_impact,combat/arrow_impact_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.2319,0.0,0.0,0.167,172,1.06
+combat/arrow_impact,combat/arrow_impact_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.0976,0.0,0.0,0.281,172,0.41
+combat/axe_chop,combat/axe_chop_01.wav,1,tonal (à vérifier),2.0,0.944,0.0412,0.0,0.571,0.286,43,5621.45
+combat/axe_chop,combat/axe_chop_02.wav,0,,2.0,0.944,0.0472,0.0,0.375,0.25,43,5622.73
+combat/axe_chop,combat/axe_chop_03.wav,1,tonal (à vérifier),2.0,0.944,0.0466,0.0,0.625,0.25,86,7733.25
+combat/axe_chop,combat/axe_chop_04.wav,0,,2.0,0.944,0.0383,0.0,0.4,0.4,43,6186.6
+combat/blade_slice,combat/blade_slice_01.wav,0,,2.0,0.943,0.0256,0.0,0.0,0.167,0,3089.25
+combat/blade_slice,combat/blade_slice_02.wav,0,,2.0,0.944,0.0211,0.0,,,,
+combat/blade_slice,combat/blade_slice_03.wav,0,,2.0,0.944,0.0251,0.0,0.0,0.75,86,4417.0
+combat/blade_slice,combat/blade_slice_04.wav,0,,2.0,0.944,0.0251,0.0,0.0,0.75,86,4419.0
+combat/blade_slice,combat/blade_slice_05.wav,0,,2.0,0.944,0.0214,0.0,0.0,0.5,43,4758.46
+combat/bow_shoot,combat/bow_shoot_01.wav,0,,2.0,0.944,0.0345,0.0,0.0,0.2,43,409.56
+combat/bow_shoot,combat/bow_shoot_02.wav,0,,2.0,0.944,0.0296,0.0,0.0,0.5,43,311.81
+combat/bow_shoot,combat/bow_shoot_03.wav,0,,2.0,0.944,0.0436,0.0,0.0,0.192,43,473.6
+combat/bow_shoot,combat/bow_shoot_04.wav,0,,2.0,0.941,0.0366,0.0,0.0,0.214,43,366.23
+combat/bow_shoot,combat/bow_shoot_05.wav,0,,2.0,0.944,0.034,0.0,0.0,0.353,43,203.18
+combat/crossbow_shoot,combat/crossbow_shoot_01.wav,0,,2.0,0.944,0.0352,0.0,0.0,0.25,86,2898.0
+combat/crossbow_shoot,combat/crossbow_shoot_02.wav,0,,2.0,0.943,0.0302,0.0,0.0,0.333,86,3862.19
+combat/crossbow_shoot,combat/crossbow_shoot_03.wav,0,,2.0,0.944,0.0288,0.0,0.0,0.214,947,1398.81
+combat/crossbow_shoot,combat/crossbow_shoot_04.wav,0,,2.0,0.944,0.0379,0.0,0.0,0.357,86,5153.25
+combat/hammer_hit,combat/hammer_hit_01.wav,0,,2.0,0.943,0.0349,0.0,0.231,0.615,560,4755.15
+combat/hammer_hit,combat/hammer_hit_02.wav,0,,2.0,0.944,0.0406,0.0,0.077,0.462,560,3436.28
+combat/hammer_hit,combat/hammer_hit_03.wav,0,,2.0,0.944,0.048,0.0,0.176,0.529,560,2944.81
+combat/hammer_hit,combat/hammer_hit_04.wav,0,,2.0,0.944,0.0414,0.0,0.133,0.4,560,5154.5
+combat/knife_draw,combat/knife_draw_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.1984,0.0,0.0,0.333,5168,0.29
+combat/knife_draw,combat/knife_draw_02.wav,1,pas d'attaque (nappe),1.5,0.886,0.0623,0.0,0.008,0.297,172,0.9
+combat/knife_draw,combat/knife_draw_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.0929,0.0,0.15,0.283,172,1.07
+combat/knife_slice,combat/knife_slice_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.267,0.0,0.0,0.103,1895,0.79
+combat/knife_slice,combat/knife_slice_02.wav,1,pas d'attaque (nappe),1.5,0.943,0.2249,0.0,0.125,0.242,431,0.93
+combat/knife_slice,combat/knife_slice_03.wav,0,,1.5,0.944,0.1816,0.0,0.0,0.182,517,2.11
+combat/knife_slice,combat/knife_slice_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.1338,0.0,0.0,0.2,2929,0.33
+combat/parry_metal,combat/parry_metal_01.wav,0,,2.0,0.944,0.0546,0.0,0.0,0.15,10078,4758.54
+combat/parry_metal,combat/parry_metal_02.wav,0,,2.0,0.944,0.0516,0.0,0.0,0.133,6288,2576.67
+combat/parry_metal,combat/parry_metal_03.wav,0,,2.0,0.944,0.032,0.0,0.0,0.158,6503,5154.33
+combat/parry_metal,combat/parry_metal_04.wav,0,,2.0,0.944,0.0401,0.0,0.0,0.167,129,5153.67
+combat/parry_metal,combat/parry_metal_05.wav,0,,2.0,0.944,0.0327,0.0,0.0,0.176,6288,1104.58
+combat/shield_block,combat/shield_block_01.wav,0,,2.0,0.944,0.0376,0.0,0.0,0.333,3316,3436.39
+combat/shield_block,combat/shield_block_02.wav,0,,2.0,0.944,0.0328,0.0,0.0,0.286,3316,3638.29
+combat/shield_block,combat/shield_block_03.wav,0,,2.0,0.944,0.0319,0.0,0.0,0.143,2799,3436.83
+combat/shield_block,combat/shield_block_04.wav,0,,2.0,0.944,0.0313,0.0,0.0,0.286,3144,4417.93
+combat/shield_block,combat/shield_block_05.wav,0,,2.0,0.944,0.0349,0.0,0.0,0.429,3144,3866.25
+combat/spear_thrust,combat/spear_thrust_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.1033,0.0,0.057,0.286,0,0.45
+combat/spear_thrust,combat/spear_thrust_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.179,0.0,0.0,0.214,0,0.43
+combat/spear_thrust,combat/spear_thrust_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.2359,0.0,0.034,0.172,0,1.53
+combat/sword_swing,combat/sword_swing_01.wav,0,,2.0,0.944,0.0354,0.0,0.0,0.444,0,3255.16
+combat/sword_swing,combat/sword_swing_02.wav,0,,2.0,0.944,0.0332,0.0,0.0,0.556,0,4418.07
+combat/sword_swing,combat/sword_swing_03.wav,0,,2.0,0.944,0.0437,0.0,0.0,0.7,0,1995.58
+combat/sword_swing,combat/sword_swing_04.wav,0,,2.0,0.944,0.0331,0.0,0.0,0.636,43,2944.57
+combat/sword_swing,combat/sword_swing_05.wav,0,,2.0,0.943,0.0371,0.0,0.0,0.545,0,3252.21
+combat/sword_swing,combat/sword_swing_06.wav,0,,2.0,0.944,0.0382,0.0,0.0,0.5,0,3092.45
+combat/sword_unsheathe,combat/sword_unsheathe_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.125,0.0,0.907,0.374,172,0.97
+combat/sword_unsheathe,combat/sword_unsheathe_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.1148,0.0,0.836,0.486,172,1.1
+combat/sword_unsheathe,combat/sword_unsheathe_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.941,0.0942,0.0,0.64,0.463,172,0.54
+combat/sword_unsheathe,combat/sword_unsheathe_04.wav,1,pas d'attaque (nappe),2.5,0.942,0.1145,0.0,0.248,0.299,172,0.76
+combat/weapon_swish,combat/weapon_swish_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.4095,0.0,0.0,0.118,172,1.0
+combat/weapon_swish,combat/weapon_swish_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.1495,0.0,0.0,0.194,301,0.41
+combat/weapon_swish,combat/weapon_swish_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.4726,0.0,0.0,0.176,0,1.0
+combat/weapon_swish,combat/weapon_swish_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.3659,0.0,0.0,0.231,0,0.42
+dice/roll,dice/roll_06.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dice/roll,dice/roll_07.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dice/roll,dice/roll_08.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dice/roll,dice/roll_09.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dice/roll,dice/roll_10.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dice/roll,dice/roll_11.mp3,5,SOUCOUPE (sifflement modulé 984 Hz),1.39,1.007,0.0592,4e-05,1.0,0.222,984,111.77
+dungeon/chains,dungeon/chains_01.wav,0,,3.0,0.944,0.0569,0.0,0.0,0.299,0,11.12
+dungeon/chains,dungeon/chains_02.wav,0,,3.0,0.944,0.0673,0.0,0.0,0.436,0,28.49
+dungeon/chains,dungeon/chains_03.wav,0,,3.0,0.943,0.0791,0.0,0.0,0.536,0,19.16
+dungeon/chains,dungeon/chains_04.wav,0,,3.0,0.944,0.0573,0.0,0.0,0.521,0,7.96
+dungeon/door,dungeon/door_01.wav,0,,3.0,0.944,0.1037,0.0,0.853,0.153,431,3.28
+dungeon/door,dungeon/door_02.wav,0,,3.0,0.944,0.1249,0.0,0.773,0.153,861,8.63
+dungeon/door,dungeon/door_03.wav,0,,3.0,0.944,0.1297,0.0,0.781,0.219,861,5.62
+dungeon/door,dungeon/door_04.wav,0,,3.0,0.944,0.0878,0.0,0.782,0.173,431,5.87
+dungeon/door,dungeon/door_05.wav,0,,3.0,0.944,0.1209,0.0,0.764,0.182,861,6.84
+dungeon/door_slam,dungeon/door_slam_01.wav,0,,2.0,0.939,0.0569,0.0,0.536,0.286,86,1161.3
+dungeon/door_slam,dungeon/door_slam_02.wav,0,,2.0,0.789,0.0677,0.0,0.621,0.414,43,795.74
+dungeon/door_slam,dungeon/door_slam_03.wav,0,,2.0,0.882,0.054,0.0,0.643,0.393,43,431.37
+dungeon/gate_metal,dungeon/gate_metal_01.wav,0,,3.5,0.944,0.1185,0.0,0.059,0.306,86,0.59
+dungeon/gate_metal,dungeon/gate_metal_02.wav,0,,3.5,0.944,0.1172,0.0,0.11,0.26,86,2.0
+dungeon/gate_metal,dungeon/gate_metal_03.wav,0,,3.5,0.944,0.0964,0.0,0.343,0.399,43,0.74
+dungeon/gate_metal,dungeon/gate_metal_04.wav,0,,3.5,0.944,0.1034,0.0,0.343,0.275,86,2.56
+dungeon/lever,dungeon/lever_01.wav,0,,3.0,0.943,0.0325,0.0,0.0,0.186,689,0.87
+dungeon/lever,dungeon/lever_02.wav,0,,3.0,0.943,0.0265,0.0,0.0,0.087,732,0.91
+dungeon/lever,dungeon/lever_03.wav,0,,3.0,0.944,0.0328,0.0,0.0,0.159,689,1.59
+dungeon/mechanism_trap,dungeon/mechanism_trap_01.wav,0,,2.0,0.944,0.0179,0.0,0.0,0.167,3015,570.78
+dungeon/mechanism_trap,dungeon/mechanism_trap_02.wav,0,,2.0,0.943,0.0207,0.0,0.0,0.2,0,422.04
+dungeon/mechanism_trap,dungeon/mechanism_trap_03.wav,0,,2.0,0.944,0.0189,0.0,0.0,0.2,0,911.11
+dungeon/mechanism_trap,dungeon/mechanism_trap_04.wav,0,,2.0,0.943,0.014,0.0,0.0,0.2,5512,453.58
+dungeon/mechanism_trap,dungeon/mechanism_trap_05.wav,0,,2.0,0.943,0.0189,0.0,0.0,0.2,4910,623.18
+dungeon/rubble_collapse,dungeon/rubble_collapse_01.wav,0,,3.5,0.944,0.1547,0.0,0.039,0.296,43,1.82
+dungeon/rubble_collapse,dungeon/rubble_collapse_02.wav,0,,3.5,0.944,0.1207,0.0,0.179,0.312,43,2.19
+dungeon/rubble_collapse,dungeon/rubble_collapse_03.wav,0,,3.5,0.944,0.1502,0.0,0.239,0.255,43,1.38
+dungeon/rubble_collapse,dungeon/rubble_collapse_04.wav,0,,3.5,0.944,0.1455,0.0,0.203,0.314,43,2.31
+dungeon/secret_passage,dungeon/secret_passage_01.wav,0,,4.0,0.943,0.0293,0.0,0.0,0.265,129,27.86
+dungeon/secret_passage,dungeon/secret_passage_02.wav,0,,4.0,0.943,0.0275,0.0,0.0,0.324,86,268.58
+dungeon/secret_passage,dungeon/secret_passage_03.wav,0,,4.0,0.943,0.0178,0.0,0.0,0.318,129,21.67
+dungeon/stone_slab,dungeon/stone_slab_01.wav,0,,4.0,0.944,0.0772,0.0,0.012,0.28,129,79.6
+dungeon/stone_slab,dungeon/stone_slab_02.wav,0,,4.0,0.944,0.0724,0.0,0.0,0.317,258,112.29
+dungeon/stone_slab,dungeon/stone_slab_03.wav,0,,4.0,0.944,0.0821,0.0,0.0,0.387,258,69.36
+dungeon/stone_slab,dungeon/stone_slab_04.wav,0,,4.0,0.944,0.0661,0.0,0.0,0.329,129,174.2
+dungeon/torch_light,dungeon/torch_light_01.wav,0,,2.5,0.939,0.1975,0.0,0.995,0.439,86,0.86
+dungeon/torch_light,dungeon/torch_light_02.wav,0,,2.5,0.942,0.1931,0.0,0.981,0.374,86,1.08
+dungeon/torch_light,dungeon/torch_light_03.wav,0,,2.5,0.944,0.1415,0.0,0.925,0.393,86,0.84
+dungeon/torch_light,dungeon/torch_light_04.wav,0,,2.5,0.942,0.1567,0.0,0.822,0.374,86,1.23
+dungeon/water_drip,dungeon/water_drip_01.wav,0,,5.0,0.944,0.0335,0.0,0.0,0.088,2929,1.29
+dungeon/water_drip,dungeon/water_drip_02.wav,0,,5.0,0.943,0.0275,0.0,0.0,0.161,2196,1.62
+dungeon/water_drip,dungeon/water_drip_03.wav,0,,5.0,0.943,0.0552,0.0,0.0,0.104,2283,1.03
+environment/battlefield_distant,environment/battlefield_distant_01.wav,0,,10.0,0.943,0.1631,0.0,1.0,0.578,0,5.58
+environment/battlefield_distant,environment/battlefield_distant_02.wav,0,,10.0,0.943,0.1842,0.0,1.0,0.679,0,13.25
+environment/battlefield_distant,environment/battlefield_distant_03.wav,0,,10.0,0.943,0.1504,0.0,1.0,0.5,0,7.24
+environment/blizzard,environment/blizzard_01.wav,0,,10.0,0.944,0.133,0.0,0.0,0.243,689,0.99
+environment/blizzard,environment/blizzard_02.wav,0,,10.0,0.944,0.1535,0.0,0.0,0.25,646,1.7
+environment/blizzard,environment/blizzard_03.wav,0,,10.0,0.944,0.1705,0.0,0.0,0.214,646,0.86
+environment/cave,environment/cave_01.wav,0,,10.0,0.944,0.0883,0.0,0.0,0.329,43,0.93
+environment/cave,environment/cave_02.wav,0,,10.0,0.943,0.0773,0.0,0.007,0.414,0,2.91
+environment/cave,environment/cave_03.wav,0,,10.0,0.944,0.0756,0.0,0.011,0.408,0,1.44
+environment/city_night,environment/city_night_01.wav,0,,10.0,0.944,0.0579,0.0,0.095,0.228,43,1.97
+environment/city_night,environment/city_night_02.wav,0,,10.0,0.944,0.0907,0.0,0.134,0.337,0,0.84
+environment/city_night,environment/city_night_03.wav,0,,10.0,0.944,0.0534,0.0,0.084,0.287,0,4.33
+environment/crypt,environment/crypt_01.wav,0,,10.0,0.944,0.2102,0.0,0.812,0.648,0,1.28
+environment/crypt,environment/crypt_02.wav,0,,10.0,0.944,0.1112,0.0,0.0,0.554,0,2.21
+environment/crypt,environment/crypt_03.wav,0,,10.0,0.944,0.1719,0.0,1.0,0.575,0,0.82
+environment/fire_crackle,environment/fire_crackle_01.wav,0,,10.0,0.942,0.0142,0.0,0.0,0.186,129,0.39
+environment/fire_crackle,environment/fire_crackle_02.wav,0,,10.0,0.942,0.0181,0.0,0.0,0.505,86,3.27
+environment/fire_crackle,environment/fire_crackle_03.wav,0,,10.0,0.943,0.0215,0.0,0.0,0.132,86,1.03
+environment/forest,environment/forest_01.wav,0,,10.0,0.944,0.0519,0.0,0.0,0.043,3531,1.52
+environment/forest,environment/forest_02.wav,0,,10.0,0.944,0.0854,0.0,0.0,0.043,3488,0.26
+environment/forest,environment/forest_03.wav,0,,10.0,0.944,0.0569,0.0,0.026,0.038,3531,0.36
+environment/market_crowd,environment/market_crowd_01.wav,0,,10.0,0.944,0.1365,0.0,0.151,0.117,517,0.94
+environment/market_crowd,environment/market_crowd_02.wav,0,,10.0,0.944,0.1135,0.0,0.274,0.106,560,0.62
+environment/market_crowd,environment/market_crowd_03.wav,0,,10.0,0.944,0.1547,0.0,0.145,0.136,517,0.82
+environment/night_crickets,environment/night_crickets_01.wav,0,,10.0,0.944,0.1429,0.0,0.0,0.314,0,1.07
+environment/night_crickets,environment/night_crickets_02.wav,0,,10.0,0.944,0.0682,0.0,0.043,0.312,0,1.81
+environment/night_crickets,environment/night_crickets_03.wav,0,,10.0,0.943,0.144,0.0,0.001,0.258,43,1.15
+environment/rain,environment/rain_01.wav,0,,10.0,0.944,0.0819,0.0,0.0,0.713,0,1.48
+environment/rain,environment/rain_02.wav,0,,10.0,0.944,0.1279,0.0,0.0,0.694,0,0.75
+environment/rain,environment/rain_03.wav,0,,10.0,0.944,0.081,0.0,0.0,0.726,0,0.94
+environment/river,environment/river_01.wav,0,,10.0,0.944,0.1019,0.0,0.0,0.403,0,0.68
+environment/river,environment/river_02.wav,0,,10.0,0.944,0.0857,0.0,0.0,0.08,603,1.96
+environment/river,environment/river_03.wav,0,,10.0,0.944,0.1296,0.0,0.0,0.07,517,0.7
+environment/ship_deck,environment/ship_deck_01.wav,0,,10.0,0.943,0.1073,0.0,0.024,0.473,86,1.02
+environment/ship_deck,environment/ship_deck_02.wav,0,,10.0,0.944,0.129,0.0,0.098,0.547,86,0.87
+environment/ship_deck,environment/ship_deck_03.wav,0,,10.0,0.944,0.0797,0.0,0.078,0.514,86,1.37
+environment/storm,environment/storm_01.wav,0,,10.0,0.944,0.1085,0.0,0.53,0.266,215,5.67
+environment/storm,environment/storm_02.wav,0,,10.0,0.944,0.1269,0.0,0.541,0.267,215,6.1
+environment/storm,environment/storm_03.wav,0,,10.0,0.944,0.1273,0.0,0.433,0.25,215,7.52
+environment/swamp,environment/swamp_01.wav,0,,10.0,0.943,0.0827,0.0,0.0,0.464,0,1.95
+environment/swamp,environment/swamp_02.wav,0,,10.0,0.944,0.1091,0.0,0.0,0.344,43,0.92
+environment/swamp,environment/swamp_03.wav,0,,10.0,0.944,0.0895,0.0,0.0,0.395,43,2.13
+environment/tavern_crowd,environment/tavern_crowd_01.wav,0,,10.0,0.944,0.1233,0.0,0.85,0.126,517,0.79
+environment/tavern_crowd,environment/tavern_crowd_02.wav,0,,10.0,0.944,0.1356,0.0,0.807,0.118,560,0.71
+environment/tavern_crowd,environment/tavern_crowd_03.wav,0,,10.0,0.944,0.0794,0.0,0.765,0.123,646,0.31
+environment/tavern_quiet,environment/tavern_quiet_01.wav,0,,10.0,0.944,0.0143,0.0,0.438,0.188,129,0.44
+environment/tavern_quiet,environment/tavern_quiet_02.wav,0,,10.0,0.944,0.0138,0.0,0.0,0.4,172,0.1
+environment/tavern_quiet,environment/tavern_quiet_03.wav,0,,10.0,0.943,0.0108,0.0,0.5,0.25,86,0.02
+environment/tavern_rowdy,environment/tavern_rowdy_01.wav,0,,10.0,0.944,0.1178,0.0,0.638,0.086,732,0.76
+environment/tavern_rowdy,environment/tavern_rowdy_02.wav,0,,10.0,0.944,0.1274,0.0,0.661,0.088,646,0.83
+environment/tavern_rowdy,environment/tavern_rowdy_03.wav,0,,10.0,0.944,0.1152,0.0,0.577,0.106,689,0.8
+environment/temple_hall,environment/temple_hall_01.wav,0,,10.0,0.944,0.0281,0.0,0.439,0.211,258,5.31
+environment/temple_hall,environment/temple_hall_02.wav,0,,10.0,0.943,0.0319,0.0,0.026,0.233,301,6.84
+environment/temple_hall,environment/temple_hall_03.wav,0,,10.0,0.943,0.0135,0.0,0.267,0.3,474,18.67
+environment/thunder_distant,environment/thunder_distant_01.wav,0,,6.0,0.944,0.0685,0.0,0.567,0.29,215,5.01
+environment/thunder_distant,environment/thunder_distant_02.wav,0,,6.0,0.944,0.0851,0.0,0.538,0.193,215,5.5
+environment/thunder_distant,environment/thunder_distant_03.wav,0,,6.0,0.944,0.0703,0.0,0.525,0.217,258,12.1
+environment/wind,environment/wind_01.wav,0,,10.0,0.944,0.1351,0.0,0.507,0.18,646,8.67
+environment/wind,environment/wind_02.wav,0,,10.0,0.944,0.141,0.0,0.128,0.154,646,4.5
+environment/wind,environment/wind_03.wav,0,,10.0,0.944,0.1117,0.0,0.633,0.202,689,6.99
+feedback/death_sting,feedback/death_sting_01.wav,1,tonal (à vérifier),3.0,0.944,0.1027,0.0,1.0,0.724,43,141.21
+feedback/death_sting,feedback/death_sting_02.wav,1,tonal (à vérifier),3.0,0.944,0.1146,0.0,1.0,0.619,43,190.35
+feedback/death_sting,feedback/death_sting_03.wav,1,tonal (à vérifier),3.0,0.944,0.1185,0.0,1.0,0.698,43,173.73
+feedback/hurt_female,feedback/hurt_female_01.wav,0,,1.0,0.944,0.0845,0.0,0.0,0.333,0,1180.45
+feedback/hurt_female,feedback/hurt_female_02.wav,0,,1.0,0.944,0.1351,0.0,0.0,0.189,0,982.09
+feedback/hurt_female,feedback/hurt_female_03.wav,0,,1.0,0.944,0.1034,0.0,0.0,0.207,646,1438.37
+feedback/hurt_female,feedback/hurt_female_04.wav,0,,1.0,0.944,0.1366,0.0,0.0,0.139,646,1278.03
+feedback/hurt_male,feedback/hurt_male_01.wav,0,,1.0,0.944,0.1411,0.0,0.0,0.206,603,2209.32
+feedback/hurt_male,feedback/hurt_male_02.wav,0,,1.0,0.944,0.1357,0.0,0.0,0.2,345,1358.87
+feedback/hurt_male,feedback/hurt_male_03.wav,0,,1.0,0.944,0.1381,0.0,0.0,0.2,646,1100.71
+feedback/hurt_male,feedback/hurt_male_04.wav,0,,1.0,0.944,0.1339,0.0,0.0,0.235,646,1356.6
+feedback/level_up,feedback/level_up_01.wav,1,tonal (à vérifier),3.0,0.944,0.0994,0.0,0.863,0.471,474,95.3
+feedback/level_up,feedback/level_up_02.wav,1,tonal (à vérifier),3.0,0.944,0.1022,0.0,0.833,0.765,258,83.9
+feedback/level_up,feedback/level_up_03.wav,1,tonal (à vérifier),3.0,0.944,0.1244,0.0,0.904,0.232,517,51.32
+feedback/level_up,feedback/level_up_04.wav,1,tonal (à vérifier),3.0,0.944,0.1454,0.0,0.832,0.272,215,36.89
+feedback/low_health,feedback/low_health_01.wav,1,tonal (à vérifier),4.0,0.942,0.1109,0.0,1.0,0.566,0,0.81
+feedback/low_health,feedback/low_health_02.wav,1,tonal (à vérifier),4.0,0.942,0.1084,0.0,1.0,0.562,0,0.71
+feedback/low_health,feedback/low_health_03.wav,1,tonal (à vérifier),4.0,0.944,0.1124,0.0,1.0,0.731,0,1.01
+feedback/quest_complete,feedback/quest_complete_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.1149,0.0,0.061,0.701,86,0.85
+feedback/quest_complete,feedback/quest_complete_02.wav,1,pas d'attaque (nappe),2.5,0.942,0.1219,0.0,0.009,0.648,86,0.99
+feedback/quest_complete,feedback/quest_complete_03.wav,1,pas d'attaque (nappe),2.5,0.942,0.1077,0.0,0.099,0.657,86,0.75
+feedback/quest_complete,feedback/quest_complete_04.wav,1,pas d'attaque (nappe),2.5,0.943,0.1211,0.0,0.023,0.617,86,1.5
+feedback/xp_gain,feedback/xp_gain_01.wav,0,,1.0,0.943,0.0346,0.0,0.0,0.25,9862,556.82
+feedback/xp_gain,feedback/xp_gain_02.wav,0,,1.0,0.943,0.0422,0.0,0.0,0.571,3704,420.36
+feedback/xp_gain,feedback/xp_gain_03.wav,0,,1.0,0.944,0.0394,0.0,0.0,0.429,3187,361.72
+footsteps/armor_march,footsteps/armor_march_01.wav,0,,3.5,0.944,0.057,0.0,0.385,0.303,86,2.3
+footsteps/armor_march,footsteps/armor_march_02.wav,0,,3.5,0.944,0.0486,0.0,0.54,0.26,172,1.92
+footsteps/armor_march,footsteps/armor_march_03.wav,0,,3.5,0.944,0.0641,0.0,0.396,0.302,172,1.88
+footsteps/armor_march,footsteps/armor_march_04.wav,0,,3.5,0.944,0.0591,0.0,0.156,0.156,43,0.73
+footsteps/grass,footsteps/grass_01.wav,0,,3.5,0.944,0.1638,0.0,0.225,0.493,43,0.94
+footsteps/grass,footsteps/grass_02.wav,0,,3.5,0.943,0.1186,0.0,0.193,0.49,43,0.4
+footsteps/grass,footsteps/grass_03.wav,1,tonal (à vérifier),3.5,0.943,0.1994,0.0,0.673,0.48,43,0.84
+footsteps/grass,footsteps/grass_04.wav,0,,3.5,0.941,0.1575,0.0,0.316,0.509,43,1.31
+footsteps/gravel,footsteps/gravel_01.wav,0,,3.5,0.943,0.0659,0.0,0.087,0.426,0,1.36
+footsteps/gravel,footsteps/gravel_02.wav,0,,3.5,0.944,0.0568,0.0,0.017,0.417,0,1.21
+footsteps/gravel,footsteps/gravel_03.wav,0,,3.5,0.944,0.0643,0.0,0.022,0.443,43,1.76
+footsteps/gravel,footsteps/gravel_04.wav,0,,3.5,0.943,0.0588,0.0,0.007,0.396,0,1.39
+footsteps/mud,footsteps/mud_01.wav,0,,3.5,0.944,0.0869,0.0,0.012,0.474,43,0.53
+footsteps/mud,footsteps/mud_02.wav,0,,3.5,0.944,0.0435,0.0,0.006,0.479,43,0.94
+footsteps/mud,footsteps/mud_03.wav,0,,3.5,0.943,0.0966,0.0,0.025,0.535,43,0.81
+footsteps/run_dirt,footsteps/run_dirt_01.wav,0,,3.0,0.944,0.0435,0.0,0.065,0.587,0,1405.77
+footsteps/run_dirt,footsteps/run_dirt_02.wav,0,,3.0,0.944,0.0361,0.0,0.0,0.345,0,687.33
+footsteps/run_dirt,footsteps/run_dirt_03.wav,0,,3.0,0.944,0.0342,0.0,0.0,0.172,43,547.34
+footsteps/run_stone,footsteps/run_stone_01.wav,0,,3.0,0.944,0.0403,0.0,0.0,0.2,388,711.03
+footsteps/run_stone,footsteps/run_stone_02.wav,0,,3.0,0.944,0.0259,0.0,0.116,0.256,517,2576.75
+footsteps/run_stone,footsteps/run_stone_03.wav,0,,3.0,0.944,0.033,0.0,0.139,0.278,474,1573.64
+footsteps/snow,footsteps/snow_01.wav,0,,3.5,0.944,0.0953,0.0,0.039,0.329,43,2.44
+footsteps/snow,footsteps/snow_02.wav,0,,3.5,0.944,0.0835,0.0,0.0,0.365,43,0.58
+footsteps/snow,footsteps/snow_03.wav,0,,3.5,0.944,0.1052,0.0,0.004,0.45,43,1.08
+footsteps/snow,footsteps/snow_04.wav,0,,3.5,0.944,0.1033,0.0,0.003,0.425,43,0.54
+footsteps/stone,footsteps/stone_01.wav,0,,3.5,0.94,0.0807,0.0,0.007,0.518,43,2.03
+footsteps/stone,footsteps/stone_02.wav,0,,3.5,0.943,0.0509,0.0,0.108,0.217,43,0.54
+footsteps/stone,footsteps/stone_03.wav,0,,3.5,0.921,0.0636,0.0,0.045,0.399,43,1.01
+footsteps/stone,footsteps/stone_04.wav,0,,3.5,0.941,0.0443,0.0,0.061,0.417,43,0.26
+footsteps/water,footsteps/water_01.wav,0,,3.5,0.944,0.0639,0.0,0.0,0.071,904,0.84
+footsteps/water,footsteps/water_02.wav,0,,3.5,0.944,0.0926,0.0,0.0,0.098,43,1.13
+footsteps/water,footsteps/water_03.wav,0,,3.5,0.944,0.0753,0.0,0.0,0.107,43,1.0
+footsteps/water,footsteps/water_04.wav,0,,3.5,0.944,0.0828,0.0,0.0,0.101,603,0.75
+footsteps/wood,footsteps/wood_01.wav,0,,3.5,0.943,0.1091,0.0,0.478,0.621,0,1.16
+footsteps/wood,footsteps/wood_02.wav,0,,3.5,0.944,0.0586,0.0,0.527,0.441,43,0.52
+footsteps/wood,footsteps/wood_03.wav,1,tonal (à vérifier),3.5,0.944,0.0956,0.0,0.614,0.515,0,0.64
+footsteps/wood,footsteps/wood_04.wav,0,,3.5,0.942,0.144,0.0,0.423,0.523,0,1.15
+impacts/body_fall,impacts/body_fall_01.wav,0,,2.0,0.944,0.0372,0.0,0.0,0.094,947,1023.0
+impacts/body_fall,impacts/body_fall_02.wav,0,,2.0,0.944,0.0323,0.0,0.0,0.167,1077,1186.6
+impacts/body_fall,impacts/body_fall_03.wav,0,,2.0,0.943,0.0455,0.0,0.0,0.083,1077,1163.08
+impacts/body_fall,impacts/body_fall_04.wav,0,,2.0,0.944,0.0375,0.0,0.0,0.171,947,1980.18
+impacts/crit_hit,impacts/crit_hit_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.4001,0.0,0.0,0.198,0,1.0
+impacts/crit_hit,impacts/crit_hit_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.5345,0.0,0.0,0.149,2929,1.0
+impacts/crit_hit,impacts/crit_hit_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.1811,0.0,0.0,0.168,86,0.6
+impacts/crit_hit,impacts/crit_hit_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.5029,0.0,0.0,0.202,3101,1.0
+impacts/crit_hit,impacts/crit_hit_05.wav,1,pas d'attaque (nappe),1.5,0.944,0.3488,0.0,0.0,0.176,0,1.0
+impacts/explosion_small,impacts/explosion_small_01.wav,1,pas d'attaque (nappe),2.5,0.942,0.1138,0.0,0.355,0.579,86,1.02
+impacts/explosion_small,impacts/explosion_small_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.1172,0.0,0.524,0.613,86,1.36
+impacts/explosion_small,impacts/explosion_small_03.wav,1,pas d'attaque (nappe),2.5,0.941,0.0899,0.0,0.252,0.467,86,1.1
+impacts/explosion_small,impacts/explosion_small_04.wav,1,pas d'attaque (nappe),2.5,0.943,0.1202,0.0,0.192,0.407,86,1.15
+impacts/glass,impacts/glass_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.4032,0.0,0.0,0.164,172,0.32
+impacts/glass,impacts/glass_02.wav,0,,1.5,0.944,0.2707,0.0,0.0,0.167,0,2.67
+impacts/glass,impacts/glass_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.3664,0.0,0.0,0.236,0,1.0
+impacts/glass,impacts/glass_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.2066,0.0,0.0,0.176,172,0.4
+impacts/metal,impacts/metal_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.3368,0.0,0.0,0.111,0,1.0
+impacts/metal,impacts/metal_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.5044,0.0,0.0,0.257,0,1.0
+impacts/metal,impacts/metal_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.3538,0.0,0.0,0.184,0,0.47
+impacts/metal,impacts/metal_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.3899,0.0,0.0,0.131,172,1.0
+impacts/metal,impacts/metal_05.wav,1,pas d'attaque (nappe),1.5,0.944,0.324,0.0,0.0,0.159,172,0.35
+impacts/punch,impacts/punch_01.wav,0,,1.0,0.944,0.0505,0.0,0.0,0.833,43,6872.44
+impacts/punch,impacts/punch_02.wav,0,,1.0,0.943,0.0568,0.0,0.0,0.571,43,6177.7
+impacts/punch,impacts/punch_03.wav,0,,1.0,0.944,0.0548,0.0,0.0,0.5,43,4758.69
+impacts/punch,impacts/punch_04.wav,0,,1.0,0.943,0.0457,0.0,0.0,0.667,43,6181.6
+impacts/punch,impacts/punch_05.wav,0,,1.0,0.944,0.0522,0.0,0.0,0.667,43,4417.5
+impacts/soft,impacts/soft_01.wav,0,,1.0,0.944,0.0744,0.0,0.5,0.625,43,1546.42
+impacts/soft,impacts/soft_02.wav,1,tonal (à vérifier),1.0,0.944,0.0725,0.0,0.857,0.429,129,1932.75
+impacts/soft,impacts/soft_03.wav,0,,1.0,0.943,0.0643,0.0,0.333,0.667,43,1261.0
+impacts/soft,impacts/soft_04.wav,1,tonal (à vérifier),1.0,0.944,0.0553,0.0,0.6,0.6,129,3256.0
+impacts/stone,impacts/stone_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.3711,0.0,0.0,0.148,172,0.27
+impacts/stone,impacts/stone_02.wav,1,pas d'attaque (nappe),1.5,0.874,0.1916,0.0,0.016,0.203,172,0.87
+impacts/stone,impacts/stone_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.1678,0.0,0.0,0.333,172,0.3
+impacts/stone,impacts/stone_04.wav,0,,1.5,0.944,0.2872,0.0,0.0,0.269,689,3.64
+impacts/wood,impacts/wood_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.4155,0.0,0.0,0.169,2929,0.34
+impacts/wood,impacts/wood_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.0861,0.0,0.034,0.284,172,0.54
+impacts/wood,impacts/wood_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.3461,0.0,0.0,0.212,0,1.0
+impacts/wood,impacts/wood_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.1663,0.0,0.0,0.143,0,0.23
+items/anvil_forge,items/anvil_forge_01.wav,0,,3.0,0.944,0.0442,0.0,0.0,0.447,3015,4023.58
+items/anvil_forge,items/anvil_forge_02.wav,0,,3.0,0.943,0.0391,0.0,0.0,0.194,5599,6839.12
+items/anvil_forge,items/anvil_forge_03.wav,0,,3.0,0.944,0.0508,0.0,0.0,0.366,3015,6166.5
+items/armor,items/armor_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.0798,0.0,0.0,0.308,86,1.28
+items/armor,items/armor_02.wav,1,pas d'attaque (nappe),2.5,0.942,0.0983,0.0,0.0,0.276,86,0.67
+items/armor,items/armor_03.wav,1,pas d'attaque (nappe),2.5,0.943,0.1108,0.0,0.0,0.308,86,1.05
+items/armor,items/armor_04.wav,1,pas d'attaque (nappe),2.5,0.937,0.1365,0.0,0.0,0.276,86,0.98
+items/bag_rustle,items/bag_rustle_01.wav,1,pas d'attaque (nappe),2.5,0.942,0.0969,0.0,0.0,0.243,86,0.75
+items/bag_rustle,items/bag_rustle_02.wav,1,pas d'attaque (nappe),2.5,0.941,0.0816,0.0,0.0,0.285,129,0.53
+items/bag_rustle,items/bag_rustle_03.wav,1,pas d'attaque (nappe),2.5,0.941,0.0882,0.0,0.0,0.248,172,0.59
+items/book,items/book_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.0889,0.0,0.178,0.421,172,0.84
+items/book,items/book_02.wav,1,pas d'attaque (nappe),2.5,0.94,0.1045,0.0,0.249,0.432,172,0.85
+items/book,items/book_03.wav,1,pas d'attaque (nappe),2.5,0.942,0.1208,0.0,0.15,0.374,172,1.16
+items/book,items/book_04.wav,1,pas d'attaque (nappe),2.5,0.943,0.1195,0.0,0.276,0.332,172,0.69
+items/chest_open,items/chest_open_01.wav,1,pas d'attaque (nappe),2.5,0.933,0.1128,0.0,0.019,0.283,86,1.01
+items/chest_open,items/chest_open_02.wav,1,pas d'attaque (nappe),2.5,0.942,0.145,0.0,0.019,0.355,43,1.08
+items/chest_open,items/chest_open_03.wav,1,pas d'attaque (nappe),2.5,0.935,0.1298,0.0,0.023,0.36,43,1.16
+items/chest_open,items/chest_open_04.wav,0,,2.5,0.943,0.1123,0.0,0.0,0.294,258,1.67
+items/coins,items/coins_01.wav,0,,2.0,0.944,0.0623,0.0,0.0,0.206,12575,989.31
+items/coins,items/coins_02.wav,0,,2.0,0.944,0.0613,0.0,0.0,0.409,12575,1097.74
+items/coins,items/coins_03.wav,0,,2.0,0.944,0.0692,0.0,0.0,0.27,12575,1065.1
+items/coins,items/coins_04.wav,0,,2.0,0.944,0.0624,0.0,0.0,0.275,12575,740.07
+items/drink,items/drink_01.wav,1,pas d'attaque (nappe),2.5,0.942,0.116,0.0,0.089,0.411,86,1.01
+items/drink,items/drink_02.wav,1,pas d'attaque (nappe),2.5,0.936,0.0914,0.0,0.005,0.292,86,1.24
+items/drink,items/drink_03.wav,1,pas d'attaque (nappe),2.5,0.943,0.1263,0.0,0.103,0.407,86,1.07
+items/drop_item,items/drop_item_01.wav,1,pas d'attaque (nappe),1.5,0.931,0.2188,0.0,0.0,0.227,431,1.01
+items/drop_item,items/drop_item_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.1085,0.0,0.0,0.286,3962,0.64
+items/drop_item,items/drop_item_03.wav,0,,1.5,0.944,0.1163,0.0,,,,
+items/eat_food,items/eat_food_01.wav,1,pas d'attaque (nappe),2.5,0.944,0.0963,0.0,0.0,0.304,129,1.31
+items/eat_food,items/eat_food_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.0992,0.0,0.0,0.341,86,0.82
+items/eat_food,items/eat_food_03.wav,1,pas d'attaque (nappe),2.5,0.944,0.1214,0.0,0.0,0.299,86,1.14
+items/equip_weapon,items/equip_weapon_01.wav,0,,2.0,0.944,0.03,0.0,0.0,0.15,5685,1627.63
+items/equip_weapon,items/equip_weapon_02.wav,0,,2.0,0.944,0.0361,0.0,0.0,0.167,11283,1316.09
+items/equip_weapon,items/equip_weapon_03.wav,0,,2.0,0.944,0.034,0.0,0.0,0.2,11283,1405.34
+items/gem_clink,items/gem_clink_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.2147,0.0,0.0,0.526,0,1.11
+items/gem_clink,items/gem_clink_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.2091,0.0,0.0,0.207,0,0.69
+items/gem_clink,items/gem_clink_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.1857,0.0,0.0,0.125,172,0.38
+items/key_turn,items/key_turn_01.wav,0,,2.0,0.944,0.0425,0.0,0.0,0.192,129,7.24
+items/key_turn,items/key_turn_02.wav,1,pas d'attaque (nappe),2.0,0.944,0.0693,0.0,0.0,0.354,129,1.3
+items/key_turn,items/key_turn_03.wav,0,,2.0,0.944,0.0661,0.0,0.0,0.231,129,7.24
+items/lock_metal,items/lock_metal_01.wav,0,,2.0,0.944,0.032,0.0,0.0,0.154,8872,548.21
+items/lock_metal,items/lock_metal_02.wav,0,,2.0,0.943,0.0215,0.0,0.0,0.4,8742,874.2
+items/lock_metal,items/lock_metal_03.wav,0,,2.0,0.944,0.0247,0.0,0.0,0.2,8829,1622.3
+items/pickup_item,items/pickup_item_01.wav,0,,1.0,0.944,0.0281,0.0,0.0,0.222,43,3436.67
+items/pickup_item,items/pickup_item_02.wav,0,,1.0,0.943,0.0329,0.0,0.0,0.222,1292,2473.24
+items/pickup_item,items/pickup_item_03.wav,0,,1.0,0.944,0.0297,0.0,0.0,0.25,1335,2811.64
+items/pickup_item,items/pickup_item_04.wav,0,,1.0,0.944,0.0288,0.0,0.0,0.222,1464,2811.27
+items/potion,items/potion_01.wav,0,,2.5,0.944,0.0782,0.0,0.355,0.294,172,2.01
+items/potion,items/potion_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.1052,0.0,0.14,0.355,86,1.08
+items/potion,items/potion_03.wav,1,pas d'attaque (nappe),2.5,0.941,0.0931,0.0,0.379,0.393,86,1.36
+items/potion,items/potion_04.wav,1,pas d'attaque (nappe),2.5,0.939,0.1215,0.0,0.131,0.29,86,1.01
+items/scroll,items/scroll_01.wav,0,,2.0,0.944,0.0517,0.0,0.0,0.113,603,21.48
+items/scroll,items/scroll_02.wav,0,,2.0,0.944,0.0532,0.0,0.0,0.202,646,10.07
+items/scroll,items/scroll_03.wav,0,,2.0,0.944,0.0597,0.0,0.0,0.104,646,4.01
+magic/acid_force,magic/acid_force_01.wav,0,,3.0,0.944,0.1017,0.0,0.0,0.333,0,2290.7
+magic/acid_force,magic/acid_force_02.wav,0,,3.0,0.944,0.1045,0.0,0.0,0.168,0,2811.91
+magic/acid_force,magic/acid_force_03.wav,0,,3.0,0.944,0.112,0.0,0.0,0.218,0,600.62
+magic/acid_force,magic/acid_force_04.wav,0,,3.0,0.944,0.0949,0.0,0.0,0.227,0,631.28
+magic/arcane_zap,magic/arcane_zap_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.3176,0.0,0.0,0.325,0,0.6
+magic/arcane_zap,magic/arcane_zap_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.2895,0.0,0.0,0.258,172,0.22
+magic/arcane_zap,magic/arcane_zap_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.1439,0.0,0.0,0.2,345,0.37
+magic/arcane_zap,magic/arcane_zap_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.2604,0.0,0.0,0.238,2929,0.28
+magic/arcane_zap,magic/arcane_zap_05.wav,1,pas d'attaque (nappe),1.5,0.944,0.1809,0.0,0.0,0.211,0,0.32
+magic/buff_shimmer,magic/buff_shimmer_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.0708,0.0,0.0,0.484,86,1.54
+magic/buff_shimmer,magic/buff_shimmer_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.0717,0.0,0.0,0.39,86,1.0
+magic/buff_shimmer,magic/buff_shimmer_03.wav,1,pas d'attaque (nappe),2.5,0.935,0.0788,0.0,0.0,0.373,86,0.87
+magic/buff_shimmer,magic/buff_shimmer_04.wav,1,pas d'attaque (nappe),2.5,0.931,0.0981,0.0,0.0,0.579,86,1.16
+magic/dark_necro,magic/dark_necro_01.wav,1,tonal (à vérifier),3.5,0.943,0.2441,0.0,1.0,0.507,43,1.42
+magic/dark_necro,magic/dark_necro_02.wav,1,tonal (à vérifier),3.5,0.943,0.2452,0.0,0.964,0.464,43,0.69
+magic/dark_necro,magic/dark_necro_03.wav,1,tonal (à vérifier),3.5,0.941,0.2344,0.0,1.0,0.336,86,0.67
+magic/dark_necro,magic/dark_necro_04.wav,1,tonal (à vérifier),3.5,0.943,0.2171,0.0,0.996,0.43,43,0.83
+magic/dark_necro,magic/dark_necro_05.wav,1,tonal (à vérifier),3.5,0.944,0.2344,0.0,1.0,0.449,43,0.66
+magic/debuff_curse,magic/debuff_curse_01.wav,1,pas d'attaque (nappe),2.5,0.941,0.0977,0.0,0.22,0.215,86,1.28
+magic/debuff_curse,magic/debuff_curse_02.wav,0,,2.5,0.943,0.0853,0.0,0.272,0.31,258,1.71
+magic/debuff_curse,magic/debuff_curse_03.wav,1,pas d'attaque (nappe),2.5,0.943,0.1152,0.0,0.121,0.243,86,1.27
+magic/debuff_curse,magic/debuff_curse_04.wav,1,pas d'attaque (nappe),2.5,0.943,0.1268,0.0,0.248,0.276,258,1.12
+magic/dispel,magic/dispel_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.939,0.2167,0.0,0.869,0.589,86,1.02
+magic/dispel,magic/dispel_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.2333,0.0,0.743,0.542,86,0.94
+magic/dispel,magic/dispel_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.2073,0.0,0.911,0.528,86,0.83
+magic/earth_spike,magic/earth_spike_01.wav,0,,2.0,0.943,0.0298,0.0,0.0,0.458,0,1405.02
+magic/earth_spike,magic/earth_spike_02.wav,0,,2.0,0.943,0.0261,0.0,0.0,0.381,0,100.01
+magic/earth_spike,magic/earth_spike_03.wav,0,,2.0,0.944,0.0291,0.0,0.0,0.464,0,404.31
+magic/fire,magic/fire_01.wav,0,,3.0,0.944,0.1523,0.0,0.0,0.371,86,75.63
+magic/fire,magic/fire_02.wav,0,,3.0,0.944,0.1632,0.0,0.0,0.329,86,63.78
+magic/fire,magic/fire_03.wav,0,,3.0,0.944,0.1474,0.0,0.0,0.35,86,20.79
+magic/fire,magic/fire_04.wav,0,,3.0,0.944,0.1699,0.0,0.0,0.358,86,32.61
+magic/fire,magic/fire_05.wav,0,,3.0,0.944,0.1661,0.0,0.0,0.304,86,58.31
+magic/fire,magic/fire_06.wav,0,,3.0,0.944,0.1558,0.0,0.0,0.346,86,79.93
+magic/fire_impact,magic/fire_impact_01.wav,0,,2.0,0.943,0.1365,0.0,0.012,0.5,43,15.66
+magic/fire_impact,magic/fire_impact_02.wav,0,,2.0,0.944,0.1518,0.0,0.013,0.487,43,16.34
+magic/fire_impact,magic/fire_impact_03.wav,0,,2.0,0.944,0.1194,0.0,0.013,0.538,43,13.61
+magic/force_impact,magic/force_impact_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.1889,0.0,0.0,0.088,129,0.35
+magic/force_impact,magic/force_impact_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.3489,0.0,0.0,0.133,172,0.38
+magic/force_impact,magic/force_impact_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.2904,0.0,0.0,0.185,345,0.4
+magic/heal_divine,magic/heal_divine_04.wav,1,tonal (à vérifier),3.5,0.943,0.2113,0.0,0.915,0.447,301,1.05
+magic/heal_divine,magic/heal_divine_05.wav,1,tonal (à vérifier),3.5,0.944,0.1832,0.0,0.927,0.505,301,1.26
+magic/heal_divine,magic/heal_divine_06.wav,0,,3.5,0.944,0.0832,0.0,0.003,0.4,258,0.65
+magic/heal_divine,magic/heal_divine_07.wav,0,,3.5,0.944,0.0789,0.0,0.051,0.383,258,0.6
+magic/heal_divine,magic/heal_divine_08.wav,0,,3.5,0.944,0.1013,0.0,0.017,0.483,258,1.41
+magic/ice,magic/ice_01.wav,0,,3.0,0.944,0.0247,0.0,0.0,0.263,0,13.77
+magic/ice,magic/ice_02.wav,0,,3.0,0.944,0.0368,0.0,0.0,0.269,0,3.1
+magic/ice,magic/ice_03.wav,0,,3.0,0.944,0.0354,0.0,0.0,0.2,0,3.08
+magic/ice,magic/ice_04.wav,0,,3.0,0.942,0.0327,0.0,0.0,0.208,0,5.27
+magic/ice,magic/ice_05.wav,0,,3.0,0.944,0.0272,0.0,0.0,0.167,0,4.69
+magic/ice_impact,magic/ice_impact_01.wav,0,,2.0,0.944,0.028,0.0,0.0,0.2,517,399.08
+magic/ice_impact,magic/ice_impact_02.wav,0,,2.0,0.944,0.0298,0.0,0.0,0.222,86,7731.62
+magic/ice_impact,magic/ice_impact_03.wav,0,,2.0,0.944,0.0325,0.0,0.0,0.222,258,528.51
+magic/lightning,magic/lightning_01.wav,0,,3.0,0.944,0.0427,0.0,0.276,0.086,345,27.54
+magic/lightning,magic/lightning_02.wav,0,,3.0,0.944,0.0497,0.0,0.352,0.132,345,63.78
+magic/lightning,magic/lightning_03.wav,0,,3.0,0.944,0.0487,0.0,0.348,0.136,388,21.92
+magic/lightning,magic/lightning_04.wav,0,,3.0,0.944,0.051,0.0,0.155,0.19,345,126.26
+magic/lightning,magic/lightning_05.wav,0,,3.0,0.944,0.0571,0.0,0.162,0.189,388,57.33
+magic/lightning_impact,magic/lightning_impact_01.wav,0,,2.0,0.944,0.0397,0.0,0.0,0.184,16021,1419.14
+magic/lightning_impact,magic/lightning_impact_02.wav,0,,2.0,0.941,0.0465,0.0,0.0,0.089,11972,1755.55
+magic/lightning_impact,magic/lightning_impact_03.wav,0,,2.0,0.944,0.0409,0.0,0.0,0.14,11972,2689.3
+magic/necrotic_impact,magic/necrotic_impact_01.wav,0,,2.0,0.943,0.0811,0.0,0.0,0.354,0,232.43
+magic/necrotic_impact,magic/necrotic_impact_02.wav,0,,2.0,0.943,0.092,0.0,0.0,0.5,0,291.65
+magic/necrotic_impact,magic/necrotic_impact_03.wav,0,,2.0,0.944,0.0851,0.0,0.015,0.358,0,424.83
+magic/poison_cloud,magic/poison_cloud_01.wav,0,,3.5,0.944,0.1318,0.0,0.0,0.694,86,1.7
+magic/poison_cloud,magic/poison_cloud_02.wav,0,,3.5,0.944,0.126,0.0,0.0,0.435,86,1.04
+magic/poison_cloud,magic/poison_cloud_03.wav,0,,3.5,0.944,0.1469,0.0,0.0,0.533,86,1.29
+magic/psychic_pulse,magic/psychic_pulse_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1664,0.0,1.0,0.682,172,1.19
+magic/psychic_pulse,magic/psychic_pulse_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1838,0.0,0.976,0.679,172,0.98
+magic/psychic_pulse,magic/psychic_pulse_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.941,0.1224,0.0,0.986,0.643,172,1.25
+magic/radiant_smite,magic/radiant_smite_04.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.939,0.2083,0.0,1.0,0.584,172,0.85
+magic/radiant_smite,magic/radiant_smite_05.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1089,0.0,0.995,0.402,172,0.94
+magic/radiant_smite,magic/radiant_smite_06.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.1906,0.0,0.991,0.77,172,0.93
+magic/radiant_smite,magic/radiant_smite_07.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.1397,0.0,0.995,0.449,172,1.15
+magic/shield_ward,magic/shield_ward_01.wav,0,,2.5,0.943,0.1069,0.0,0.21,0.341,86,1.94
+magic/shield_ward,magic/shield_ward_02.wav,1,pas d'attaque (nappe),2.5,0.938,0.1171,0.0,0.341,0.299,86,1.15
+magic/shield_ward,magic/shield_ward_03.wav,1,pas d'attaque (nappe),2.5,0.944,0.1093,0.0,0.35,0.308,86,1.22
+magic/shield_ward,magic/shield_ward_04.wav,1,pas d'attaque (nappe),2.5,0.941,0.1011,0.0,0.285,0.294,172,1.33
+magic/spell_cast,magic/spell_cast_01.wav,0,,3.0,0.944,0.0319,0.0,0.0,0.104,4565,2810.91
+magic/spell_cast,magic/spell_cast_02.wav,0,,3.0,0.944,0.0306,0.0,0.0,0.121,11972,2576.88
+magic/spell_cast,magic/spell_cast_03.wav,0,,3.0,0.943,0.0262,0.0,0.0,0.125,11972,3254.21
+magic/spell_cast,magic/spell_cast_04.wav,0,,3.0,0.944,0.0297,0.0,0.0,0.137,16021,3865.88
+magic/spell_cast,magic/spell_cast_05.wav,0,,3.0,0.944,0.0346,0.0,0.0,0.069,4565,2378.54
+magic/spell_cast,magic/spell_cast_06.wav,0,,3.0,0.944,0.0369,0.0,0.0,0.119,16021,2811.45
+magic/summon_portal,magic/summon_portal_01.wav,1,tonal (à vérifier),4.0,0.944,0.1232,0.0,0.946,0.365,129,2.55
+magic/summon_portal,magic/summon_portal_02.wav,1,tonal (à vérifier),4.0,0.943,0.1233,0.0,0.984,0.424,86,1.26
+magic/summon_portal,magic/summon_portal_03.wav,1,tonal (à vérifier),4.0,0.944,0.1295,0.0,0.932,0.289,86,2.13
+magic/summon_portal,magic/summon_portal_04.wav,1,tonal (à vérifier),4.0,0.944,0.1236,0.0,0.956,0.38,86,1.43
+magic/teleport,magic/teleport_01.wav,1,pas d'attaque (nappe),2.5,0.942,0.1041,0.0,0.229,0.332,86,1.27
+magic/teleport,magic/teleport_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.1321,0.0,0.112,0.332,86,1.05
+magic/teleport,magic/teleport_03.wav,1,pas d'attaque (nappe),2.5,0.943,0.1116,0.0,0.131,0.346,86,1.19
+magic/teleport,magic/teleport_04.wav,1,pas d'attaque (nappe),2.5,0.939,0.1324,0.0,0.131,0.271,86,0.96
+magic/thunder_boom,magic/thunder_boom_01.wav,1,tonal (à vérifier),3.0,0.944,0.1083,0.0,0.576,0.347,129,6185.1
+magic/thunder_boom,magic/thunder_boom_02.wav,1,tonal (à vérifier),3.0,0.944,0.1127,0.0,0.631,0.262,129,6185.2
+magic/thunder_boom,magic/thunder_boom_03.wav,1,tonal (à vérifier),3.0,0.944,0.1136,0.0,0.802,0.25,86,6185.1
+magic/thunder_boom,magic/thunder_boom_04.wav,0,,3.0,0.944,0.1223,0.0,0.519,0.287,129,4758.46
+magic/thunder_wave,magic/thunder_wave_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1318,0.0,0.972,0.308,129,0.71
+magic/thunder_wave,magic/thunder_wave_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.1342,0.0,0.949,0.346,172,1.15
+magic/thunder_wave,magic/thunder_wave_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1294,0.0,0.991,0.327,172,1.42
+magic/water_blast,magic/water_blast_01.wav,0,,2.0,0.944,0.0694,0.0,0.0,0.432,86,193.92
+magic/water_blast,magic/water_blast_02.wav,0,,2.0,0.944,0.0766,0.0,0.0,0.382,86,16.97
+magic/water_blast,magic/water_blast_03.wav,0,,2.0,0.944,0.1232,0.0,0.009,0.346,43,25.27
+magic/wind_slash,magic/wind_slash_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.0768,0.0,0.176,0.209,431,1.0
+magic/wind_slash,magic/wind_slash_02.wav,1,pas d'attaque (nappe),1.5,0.844,0.1538,0.0,0.117,0.195,431,1.19
+magic/wind_slash,magic/wind_slash_03.wav,1,pas d'attaque (nappe),1.5,0.899,0.2175,0.0,0.086,0.227,301,0.97
+monsters/banshee,monsters/banshee_01.wav,1,tonal (à vérifier),3.5,0.944,0.1931,0.0,0.691,0.258,1593,0.4
+monsters/banshee,monsters/banshee_02.wav,1,tonal (à vérifier),3.5,0.937,0.1756,0.0,0.692,0.234,1723,0.39
+monsters/banshee,monsters/banshee_03.wav,0,,3.5,0.942,0.221,0.0,0.054,0.232,603,1.01
+monsters/basilisk,monsters/basilisk_01.wav,0,,3.0,0.944,0.1306,0.0,0.0,0.152,861,17.31
+monsters/basilisk,monsters/basilisk_02.wav,0,,3.0,0.944,0.1354,0.0,0.0,0.251,86,9.43
+monsters/basilisk,monsters/basilisk_03.wav,0,,3.0,0.944,0.1285,0.0,0.0,0.243,86,1030.97
+monsters/bat_swarm,monsters/bat_swarm_02.wav,0,,3.0,0.943,0.0798,0.0,0.0,0.513,0,8.41
+monsters/bat_swarm,monsters/bat_swarm_03.wav,0,,3.0,0.944,0.075,0.0,0.0,0.568,0,554.58
+monsters/bat_swarm,monsters/bat_swarm_04.wav,0,,3.0,0.944,0.0444,0.0,0.0,0.64,0,3.47
+monsters/bear,monsters/bear_01.wav,0,,3.0,0.944,0.1331,0.0,0.414,0.207,345,5154.92
+monsters/bear,monsters/bear_02.wav,0,,3.0,0.944,0.1494,0.0,0.329,0.231,345,4227.5
+monsters/bear,monsters/bear_03.wav,0,,3.0,0.944,0.1557,0.0,0.418,0.253,345,5092.5
+monsters/beast_growl,monsters/beast_growl_01.wav,0,,3.0,0.944,0.148,0.0,0.422,0.273,86,126.21
+monsters/beast_growl,monsters/beast_growl_02.wav,0,,3.0,0.944,0.1106,0.0,0.304,0.155,129,14.55
+monsters/beast_growl,monsters/beast_growl_03.wav,0,,3.0,0.944,0.1398,0.0,0.264,0.313,86,6.74
+monsters/beast_growl,monsters/beast_growl_04.wav,0,,3.0,0.944,0.1602,0.0,0.222,0.413,86,12.65
+monsters/beast_growl,monsters/beast_growl_05.wav,0,,3.0,0.944,0.1105,0.0,0.354,0.293,129,44.47
+monsters/beast_growl,monsters/beast_growl_06.wav,0,,3.0,0.943,0.1232,0.0,0.228,0.339,86,6.81
+monsters/bird_screech,monsters/bird_screech_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1175,0.0,0.949,0.528,86,1.06
+monsters/bird_screech,monsters/bird_screech_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.1672,0.0,0.995,0.491,86,1.25
+monsters/bird_screech,monsters/bird_screech_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1535,0.0,0.995,0.537,86,1.14
+monsters/demon_snarl,monsters/demon_snarl_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1559,0.0,0.981,0.308,86,1.0
+monsters/demon_snarl,monsters/demon_snarl_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1572,0.0,0.991,0.304,86,0.81
+monsters/demon_snarl,monsters/demon_snarl_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1554,0.0,0.981,0.28,86,1.02
+monsters/demon_snarl,monsters/demon_snarl_04.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1634,0.0,1.0,0.224,86,0.99
+monsters/dragon_breath,monsters/dragon_breath_01.wav,0,,4.0,0.944,0.1653,0.0,0.0,0.234,129,0.99
+monsters/dragon_breath,monsters/dragon_breath_02.wav,0,,4.0,0.944,0.1666,0.0,0.0,0.294,172,0.72
+monsters/dragon_breath,monsters/dragon_breath_03.wav,0,,4.0,0.944,0.1534,0.0,0.0,0.256,172,0.59
+monsters/dragon_breath,monsters/dragon_breath_04.wav,0,,4.0,0.943,0.1673,0.0,0.0,0.229,172,0.67
+monsters/dragon_roar,monsters/dragon_roar_01.wav,1,tonal (à vérifier),4.0,0.943,0.1584,0.0,1.0,0.508,43,86.44
+monsters/dragon_roar,monsters/dragon_roar_02.wav,1,tonal (à vérifier),4.0,0.944,0.1381,0.0,0.922,0.314,43,147.65
+monsters/dragon_roar,monsters/dragon_roar_03.wav,1,tonal (à vérifier),4.0,0.944,0.1376,0.0,1.0,0.511,43,49.49
+monsters/dragon_roar,monsters/dragon_roar_04.wav,1,tonal (à vérifier),4.0,0.944,0.1356,0.0,1.0,0.559,43,207.03
+monsters/dragon_roar,monsters/dragon_roar_05.wav,1,tonal (à vérifier),4.0,0.944,0.13,0.0,1.0,0.36,43,125.53
+monsters/dragon_wing,monsters/dragon_wing_01.wav,0,,3.0,0.943,0.1074,0.0,0.478,0.609,0,2.76
+monsters/dragon_wing,monsters/dragon_wing_02.wav,0,,3.0,0.943,0.1082,0.0,0.476,0.595,0,1.11
+monsters/dragon_wing,monsters/dragon_wing_03.wav,1,tonal (à vérifier),3.0,0.943,0.089,0.0,0.587,0.587,0,1.28
+monsters/drake,monsters/drake_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.1116,0.0,0.439,0.294,129,0.71
+monsters/drake,monsters/drake_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1156,0.0,0.682,0.393,172,0.86
+monsters/drake,monsters/drake_03.wav,1,pas d'attaque (nappe),2.5,0.942,0.1025,0.0,0.411,0.299,86,0.82
+monsters/elemental_air,monsters/elemental_air_01.wav,0,,3.0,0.943,0.1483,0.0,0.245,0.44,43,6.38
+monsters/elemental_air,monsters/elemental_air_02.wav,0,,3.0,0.944,0.1149,0.0,0.365,0.476,43,2.53
+monsters/elemental_air,monsters/elemental_air_03.wav,0,,3.0,0.944,0.0842,0.0,0.417,0.49,43,4.4
+monsters/elemental_earth,monsters/elemental_earth_01.wav,0,,3.0,0.943,0.0851,0.0,0.195,0.342,86,25.19
+monsters/elemental_earth,monsters/elemental_earth_02.wav,0,,3.0,0.944,0.0931,0.0,0.204,0.268,86,28.5
+monsters/elemental_earth,monsters/elemental_earth_03.wav,0,,3.0,0.943,0.0903,0.0,0.161,0.321,86,23.15
+monsters/elemental_fire,monsters/elemental_fire_01.wav,0,,3.0,0.944,0.0963,0.0,0.0,0.514,86,39.28
+monsters/elemental_fire,monsters/elemental_fire_02.wav,0,,3.0,0.944,0.0984,0.0,0.0,0.458,86,64.64
+monsters/elemental_fire,monsters/elemental_fire_03.wav,0,,3.0,0.944,0.0773,0.0,0.0,0.656,86,159.38
+monsters/elemental_water,monsters/elemental_water_01.wav,0,,3.0,0.944,0.0733,0.0,0.0,0.276,43,4418.29
+monsters/elemental_water,monsters/elemental_water_02.wav,0,,3.0,0.944,0.0686,0.0,0.0,0.238,43,54.22
+monsters/elemental_water,monsters/elemental_water_03.wav,0,,3.0,0.944,0.0616,0.0,0.0,0.247,43,5155.5
+monsters/ghoul,monsters/ghoul_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1544,0.0,0.682,0.621,172,0.68
+monsters/ghoul,monsters/ghoul_02.wav,1,pas d'attaque (nappe),2.5,0.944,0.1378,0.0,0.43,0.598,172,0.8
+monsters/ghoul,monsters/ghoul_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1786,0.0,0.818,0.575,172,1.03
+monsters/giant_rat,monsters/giant_rat_01.wav,0,,2.0,0.944,0.0785,0.0,0.0,0.045,2110,14.4
+monsters/giant_rat,monsters/giant_rat_02.wav,0,,2.0,0.944,0.0723,0.0,0.0,0.062,9001,11.48
+monsters/giant_rat,monsters/giant_rat_03.wav,0,,2.0,0.944,0.0745,0.0,0.0,0.129,43,21.69
+monsters/giant_roar,monsters/giant_roar_01.wav,1,tonal (à vérifier),3.5,0.943,0.2143,0.0,1.0,0.399,129,1.32
+monsters/giant_roar,monsters/giant_roar_02.wav,1,tonal (à vérifier),3.5,0.944,0.1956,0.0,1.0,0.334,129,1.03
+monsters/giant_roar,monsters/giant_roar_03.wav,1,tonal (à vérifier),3.5,0.944,0.2259,0.0,1.0,0.471,172,0.98
+monsters/giant_roar,monsters/giant_roar_04.wav,1,tonal (à vérifier),3.5,0.944,0.2092,0.0,1.0,0.421,172,0.97
+monsters/giant_roar,monsters/giant_roar_05.wav,1,tonal (à vérifier),3.5,0.943,0.2429,0.0,1.0,0.437,172,1.2
+monsters/gnoll,monsters/gnoll_01.wav,1,tonal (à vérifier),3.0,0.944,0.087,0.0,0.807,0.193,947,5.21
+monsters/gnoll,monsters/gnoll_02.wav,1,tonal (à vérifier),3.0,0.944,0.0811,0.0,0.767,0.133,1723,4.34
+monsters/gnoll,monsters/gnoll_03.wav,1,tonal (à vérifier),3.0,0.944,0.0845,0.0,0.683,0.117,947,8.02
+monsters/goblin_chatter,monsters/goblin_chatter_01.wav,0,,3.0,0.943,0.0631,0.0,0.0,0.119,1077,15.86
+monsters/goblin_chatter,monsters/goblin_chatter_02.wav,0,,3.0,0.944,0.0639,0.0,0.197,0.169,991,15.81
+monsters/goblin_chatter,monsters/goblin_chatter_03.wav,0,,3.0,0.944,0.0659,0.0,0.0,0.133,1206,19.78
+monsters/goblin_chatter,monsters/goblin_chatter_04.wav,0,,3.0,0.944,0.0614,0.0,0.034,0.136,1723,19.08
+monsters/harpy,monsters/harpy_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1696,0.0,0.953,0.664,86,1.05
+monsters/harpy,monsters/harpy_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.1739,0.0,0.986,0.509,86,0.83
+monsters/harpy,monsters/harpy_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1611,0.0,0.981,0.64,86,1.29
+monsters/horse_neigh,monsters/horse_neigh_01.wav,0,,3.0,0.944,0.1995,0.0,0.107,0.751,0,1.41
+monsters/horse_neigh,monsters/horse_neigh_02.wav,0,,3.0,0.944,0.1686,0.0,0.138,0.794,0,2.69
+monsters/horse_neigh,monsters/horse_neigh_03.wav,0,,3.0,0.943,0.126,0.0,0.054,0.741,0,2.38
+monsters/insect_swarm,monsters/insect_swarm_03.wav,1,tonal (à vérifier),3.5,0.943,0.2072,0.0,1.0,0.333,0,1.16
+monsters/insect_swarm,monsters/insect_swarm_04.wav,0,,3.5,0.944,0.1899,0.0,0.361,0.355,301,1.57
+monsters/insect_swarm,monsters/insect_swarm_05.wav,1,tonal (à vérifier),3.5,0.943,0.1619,0.0,0.705,0.393,0,1.47
+monsters/kobold,monsters/kobold_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1869,0.0,1.0,0.551,172,0.95
+monsters/kobold,monsters/kobold_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1302,0.0,0.995,0.617,172,0.99
+monsters/kobold,monsters/kobold_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1642,0.0,0.995,0.584,172,0.79
+monsters/lich,monsters/lich_01.wav,0,,3.0,0.944,0.0653,0.0,0.0,0.198,129,883.49
+monsters/lich,monsters/lich_02.wav,0,,3.0,0.944,0.081,0.0,0.0,0.179,86,3864.81
+monsters/lich,monsters/lich_03.wav,0,,3.0,0.944,0.0866,0.0,0.008,0.339,86,3865.81
+monsters/mimic,monsters/mimic_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.1403,0.0,0.161,0.578,86,1.28
+monsters/mimic,monsters/mimic_02.wav,1,pas d'attaque (nappe),2.5,0.941,0.0885,0.0,0.023,0.542,86,0.79
+monsters/mimic,monsters/mimic_03.wav,1,pas d'attaque (nappe),2.5,0.943,0.1039,0.0,0.14,0.486,86,0.72
+monsters/minotaur,monsters/minotaur_01.wav,0,,3.0,0.944,0.1197,0.0,0.134,0.395,129,102.84
+monsters/minotaur,monsters/minotaur_02.wav,0,,3.0,0.944,0.1493,0.0,0.192,0.558,172,81.18
+monsters/minotaur,monsters/minotaur_03.wav,0,,3.0,0.944,0.1417,0.0,0.248,0.481,172,110.55
+monsters/monster_bite,monsters/monster_bite_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.1452,0.0,0.078,0.2,0,1.2
+monsters/monster_bite,monsters/monster_bite_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.2424,0.0,0.0,0.481,0,1.23
+monsters/monster_bite,monsters/monster_bite_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.2004,0.0,0.034,0.207,0,0.52
+monsters/monster_bite,monsters/monster_bite_04.wav,1,pas d'attaque (nappe),1.5,0.944,0.3107,0.0,0.08,0.227,0,0.82
+monsters/monster_death,monsters/monster_death_01.wav,0,,3.0,0.944,0.0922,0.0,0.006,0.222,172,5.06
+monsters/monster_death,monsters/monster_death_02.wav,0,,3.0,0.944,0.1129,0.0,0.006,0.156,172,11.19
+monsters/monster_death,monsters/monster_death_03.wav,0,,3.0,0.944,0.1216,0.0,0.0,0.293,129,10.56
+monsters/monster_death,monsters/monster_death_04.wav,0,,3.0,0.944,0.116,0.0,0.029,0.131,129,7.95
+monsters/monster_death,monsters/monster_death_05.wav,0,,3.0,0.944,0.1359,0.0,0.017,0.166,129,7.44
+monsters/mummy,monsters/mummy_01.wav,0,,3.0,0.944,0.0976,0.0,0.0,0.603,0,6.49
+monsters/mummy,monsters/mummy_02.wav,0,,3.0,0.944,0.0761,0.0,0.028,0.645,0,11.21
+monsters/mummy,monsters/mummy_03.wav,0,,3.0,0.944,0.11,0.0,0.0,0.576,0,12.88
+monsters/ogre_grunt,monsters/ogre_grunt_01.wav,1,tonal (à vérifier),2.0,0.944,0.1523,0.0,0.736,0.341,172,43.75
+monsters/ogre_grunt,monsters/ogre_grunt_02.wav,1,tonal (à vérifier),2.0,0.944,0.1039,0.0,0.837,0.593,172,195.72
+monsters/ogre_grunt,monsters/ogre_grunt_03.wav,1,tonal (à vérifier),2.0,0.944,0.1141,0.0,0.7,0.333,172,100.61
+monsters/ogre_grunt,monsters/ogre_grunt_04.wav,1,tonal (à vérifier),2.0,0.943,0.0843,0.0,0.557,0.443,172,208.15
+monsters/orc,monsters/orc_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1175,0.0,1.0,0.238,172,0.65
+monsters/orc,monsters/orc_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1563,0.0,0.977,0.28,129,1.17
+monsters/orc,monsters/orc_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1052,0.0,0.991,0.318,172,1.44
+monsters/shade_ghost,monsters/shade_ghost_01.wav,1,tonal (à vérifier),3.5,0.942,0.1992,0.0,0.834,0.463,43,1.35
+monsters/shade_ghost,monsters/shade_ghost_02.wav,1,tonal (à vérifier),3.5,0.943,0.213,0.0,0.951,0.476,0,2.21
+monsters/shade_ghost,monsters/shade_ghost_03.wav,1,tonal (à vérifier),3.5,0.944,0.1823,0.0,0.775,0.46,43,1.67
+monsters/shade_ghost,monsters/shade_ghost_04.wav,1,tonal (à vérifier),3.5,0.944,0.2213,0.0,0.598,0.523,43,0.93
+monsters/shade_ghost,monsters/shade_ghost_05.wav,1,tonal (à vérifier),3.5,0.941,0.2072,0.0,0.997,0.468,0,1.93
+monsters/skeleton_rattle,monsters/skeleton_rattle_01.wav,1,pas d'attaque (nappe),2.5,0.944,0.0945,0.0,0.005,0.263,86,1.13
+monsters/skeleton_rattle,monsters/skeleton_rattle_02.wav,1,pas d'attaque (nappe),2.5,0.935,0.1123,0.0,0.0,0.327,86,1.01
+monsters/skeleton_rattle,monsters/skeleton_rattle_03.wav,1,pas d'attaque (nappe),2.5,0.941,0.0869,0.0,0.005,0.268,86,0.57
+monsters/skeleton_rattle,monsters/skeleton_rattle_04.wav,1,pas d'attaque (nappe),2.5,0.943,0.0822,0.0,0.0,0.33,86,1.32
+monsters/slime_squish,monsters/slime_squish_01.wav,1,pas d'attaque (nappe),2.5,0.939,0.1121,0.0,0.009,0.266,172,0.61
+monsters/slime_squish,monsters/slime_squish_02.wav,1,pas d'attaque (nappe),2.5,0.943,0.123,0.0,0.051,0.322,86,1.35
+monsters/slime_squish,monsters/slime_squish_03.wav,1,pas d'attaque (nappe),2.5,0.942,0.091,0.0,0.043,0.293,86,1.13
+monsters/slime_squish,monsters/slime_squish_04.wav,1,pas d'attaque (nappe),2.5,0.94,0.13,0.0,0.079,0.341,86,1.33
+monsters/snake_hiss,monsters/snake_hiss_01.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.942,0.2077,0.0,1.0,0.383,86,0.94
+monsters/snake_hiss,monsters/snake_hiss_02.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.944,0.2125,0.0,0.981,0.416,86,0.95
+monsters/snake_hiss,monsters/snake_hiss_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1996,0.0,1.0,0.402,172,1.4
+monsters/spider_skitter,monsters/spider_skitter_01.wav,1,pas d'attaque (nappe),2.5,0.943,0.089,0.0,0.059,0.309,86,1.2
+monsters/spider_skitter,monsters/spider_skitter_02.wav,1,pas d'attaque (nappe),2.5,0.939,0.0728,0.0,0.174,0.216,129,0.95
+monsters/spider_skitter,monsters/spider_skitter_03.wav,1,pas d'attaque (nappe),2.5,0.944,0.0765,0.0,0.043,0.374,86,0.75
+monsters/spider_skitter,monsters/spider_skitter_04.wav,1,pas d'attaque (nappe),2.5,0.942,0.0803,0.0,0.08,0.427,86,1.21
+monsters/troll,monsters/troll_01.wav,1,tonal (à vérifier),3.5,0.944,0.2124,0.0,1.0,0.692,86,1.4
+monsters/troll,monsters/troll_02.wav,1,tonal (à vérifier),3.5,0.944,0.2439,0.0,1.0,0.721,86,1.17
+monsters/troll,monsters/troll_03.wav,1,tonal (à vérifier),3.5,0.944,0.2349,0.0,1.0,0.644,86,1.4
+monsters/undead_moan,monsters/undead_moan_01.wav,0,,3.0,0.944,0.1552,0.0,0.007,0.227,172,89.53
+monsters/undead_moan,monsters/undead_moan_02.wav,0,,3.0,0.944,0.1536,0.0,0.0,0.167,86,86.16
+monsters/undead_moan,monsters/undead_moan_03.wav,0,,3.0,0.944,0.127,0.0,0.007,0.146,345,36.61
+monsters/undead_moan,monsters/undead_moan_04.wav,0,,3.0,0.944,0.1619,0.0,0.052,0.136,646,52.92
+monsters/vampire,monsters/vampire_01.wav,1,pas d'attaque (nappe),2.5,0.944,0.1026,0.0,0.453,0.486,172,1.2
+monsters/vampire,monsters/vampire_02.wav,1,pas d'attaque (nappe),2.5,0.941,0.126,0.0,0.542,0.528,172,0.75
+monsters/vampire,monsters/vampire_03.wav,2,tonal (à vérifier) | pas d'attaque (nappe),2.5,0.943,0.1158,0.0,0.71,0.477,172,0.68
+monsters/werewolf,monsters/werewolf_01.wav,0,,3.0,0.944,0.1263,0.0,0.015,0.421,129,1523.86
+monsters/werewolf,monsters/werewolf_02.wav,0,,3.0,0.944,0.1376,0.0,0.036,0.299,129,2030.07
+monsters/werewolf,monsters/werewolf_03.wav,0,,3.0,0.944,0.1138,0.0,0.007,0.326,129,2002.58
+monsters/wight,monsters/wight_01.wav,0,,3.0,0.944,0.1419,0.0,0.07,0.435,172,1451.97
+monsters/wight,monsters/wight_02.wav,0,,3.0,0.944,0.1398,0.0,0.107,0.339,172,196.97
+monsters/wight,monsters/wight_03.wav,0,,3.0,0.944,0.1148,0.0,0.025,0.311,172,2099.13
+monsters/wolf_howl,monsters/wolf_howl_01.wav,0,,4.0,0.944,0.2274,0.0,0.105,0.229,732,18.97
+monsters/wolf_howl,monsters/wolf_howl_02.wav,0,,4.0,0.944,0.1639,0.0,0.269,0.238,689,33.64
+monsters/wolf_howl,monsters/wolf_howl_03.wav,0,,4.0,0.944,0.1985,0.0,0.205,0.308,689,24.68
+monsters/wolf_howl,monsters/wolf_howl_04.wav,0,,4.0,0.944,0.2137,0.0,0.16,0.198,689,22.83
+monsters/zombie,monsters/zombie_01.wav,0,,3.0,0.944,0.0744,0.0,0.25,0.204,474,21.75
+monsters/zombie,monsters/zombie_02.wav,0,,3.0,0.944,0.0831,0.0,0.284,0.239,431,217.22
+monsters/zombie,monsters/zombie_03.wav,0,,3.0,0.944,0.0797,0.0,0.193,0.132,301,240.6
+ui/click,ui/click_01.wav,0,,1.0,0.944,0.0625,0.0,0.0,0.4,1335,997.61
+ui/click,ui/click_02.wav,0,,1.0,0.943,0.059,0.0,0.0,0.636,1335,1236.22
+ui/click,ui/click_03.wav,0,,1.0,0.944,0.0559,0.0,0.0,0.222,775,687.19
+ui/click,ui/click_04.wav,0,,1.0,0.944,0.0532,0.0,0.071,0.786,1335,1316.0
+ui/close_panel,ui/close_panel_01.wav,1,pas d'attaque (nappe),1.5,0.944,0.2388,0.0,0.0,0.118,172,0.37
+ui/close_panel,ui/close_panel_02.wav,1,pas d'attaque (nappe),1.5,0.939,0.1936,0.0,0.047,0.195,431,0.83
+ui/close_panel,ui/close_panel_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.2901,0.0,0.0,0.154,2929,0.35
+ui/confirm,ui/confirm_01.wav,1,pas d'attaque (nappe),1.5,0.894,0.2122,0.0,0.055,0.352,431,1.14
+ui/confirm,ui/confirm_02.wav,1,pas d'attaque (nappe),1.5,0.905,0.2258,0.0,0.008,0.344,431,1.41
+ui/confirm,ui/confirm_03.wav,1,pas d'attaque (nappe),1.5,0.885,0.2014,0.0,0.016,0.352,431,1.29
+ui/confirm,ui/confirm_04.wav,1,pas d'attaque (nappe),1.5,0.927,0.2523,0.0,0.031,0.352,431,1.0
+ui/error,ui/error_01.wav,0,,1.0,0.944,0.1149,0.0,0.0,0.385,172,1994.71
+ui/error,ui/error_02.wav,0,,1.0,0.944,0.1082,0.0,0.077,0.615,215,1586.21
+ui/error,ui/error_03.wav,0,,1.0,0.944,0.1099,0.0,0.0,0.357,0,1671.81
+ui/hover,ui/hover_01.wav,0,,1.0,0.943,0.0286,0.0,0.0,0.5,1981,256.46
+ui/hover,ui/hover_02.wav,0,,1.0,0.944,0.0357,0.0,0.0,0.5,3531,131.05
+ui/hover,ui/hover_03.wav,0,,1.0,0.943,0.0424,0.0,0.0,0.4,2067,238.71
+ui/open_panel,ui/open_panel_01.wav,0,,1.5,0.944,0.4116,0.0,0.0,0.138,43,2.17
+ui/open_panel,ui/open_panel_02.wav,1,pas d'attaque (nappe),1.5,0.944,0.224,0.0,0.0,0.19,0,0.29
+ui/open_panel,ui/open_panel_03.wav,1,pas d'attaque (nappe),1.5,0.944,0.409,0.0,0.0,0.224,0,0.33

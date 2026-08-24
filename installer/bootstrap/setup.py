@@ -118,10 +118,19 @@ def main() -> int:
         "# VITE_* keys are exposed to the game UI by the launcher (window.__DND_RUNTIME__).",
         f"VITE_GEMINI_API_KEY={args.gemini_key}",
         "VITE_AUDIO_MODEL=models/gemini-3.1-flash-live-preview",
-        "VITE_IMAGE_MODEL=gemini-3.1-flash-image-preview",
         "VITE_LLM_MODEL=gemini-flash-latest",
         "VITE_SUMMARY_MODEL=gemini-flash-latest",
         "VITE_BRANCH_MODEL=gemini-flash-latest",
+        # GM1 — modele leger pour les passes frequentes (auditeur ~40/h,
+        # greffier ~15/h, extraction de faits). Sans cette ligne, le jeu
+        # installe retombait sur gemini-flash-latest et brulait le quota
+        # du modele principal (l'optimisation n'existait qu'en dev).
+        "VITE_AUDIT_MODEL=gemini-3.5-flash-lite",
+        # GM1 — TTS de la cinematique d'intro (absent avant : defaut fige au build).
+        "VITE_TTS_MODEL=gemini-3.1-flash-tts-preview",
+        "VITE_TTS_VOICE=Charon",
+        # (VITE_IMAGE_MODEL supprime : le service d'images Gemini est
+        # decommissionne — les images passent par le serveur local.)
         "VITE_LOCAL_IMAGE_SERVER_URL=http://127.0.0.1:8000/generate-image",
         "VITE_LOCAL_AUDIO_SERVER_URL=http://127.0.0.1:8001",
         "# --- engine vars (used to spawn the python servers) ---",

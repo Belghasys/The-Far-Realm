@@ -56,7 +56,9 @@ function splitConfig(env) {
 
 function spawnServer(label, script, engineEnv) {
   if (!fs.existsSync(VENV_PY)) {
-    console.warn(`[launcher] venv python missing (${VENV_PY}); skipping ${label}. Game falls back to Gemini.`);
+    // gm-m2 — plus de « falls back to Gemini » : le service d'images Gemini est
+    // décommissionné, sans serveur local la génération est simplement indisponible.
+    console.warn(`[launcher] venv python missing (${VENV_PY}); skipping ${label}. Local generation will be unavailable (no Gemini fallback).`);
     return;
   }
   const scriptPath = path.join(SERVERS_DIR, script);
@@ -87,6 +89,25 @@ function killChildren() {
     }
   }
 }
+
+// ML6 (contre-audit 2026-08-13) — killChildren n'était câblé que sur
+// window-all-closed/before-quit : un crash du main (ou un rejet de serveClient
+// AVANT la création de la fenêtre — window-all-closed ne tire jamais si aucune
+// fenêtre n'a existé) laissait les deux uvicorn zombies avec ~11 Go de VRAM et
+// le port 8000 tenu, bloquant tout relancement.
+process.on('exit', killChildren);
+process.on('SIGINT', () => { killChildren(); process.exit(1); });
+process.on('SIGTERM', () => { killChildren(); process.exit(1); });
+process.on('uncaughtException', (err) => {
+  console.error('[launcher] Uncaught exception — shutting down servers:', err);
+  killChildren();
+  process.exit(1);
+});
+process.on('unhandledRejection', (err) => {
+  console.error('[launcher] Unhandled rejection — shutting down servers:', err);
+  killChildren();
+  process.exit(1);
+});
 
 // Resolve a server's /health (any HTTP response counts as "up"); never rejects.
 function ping(port) {

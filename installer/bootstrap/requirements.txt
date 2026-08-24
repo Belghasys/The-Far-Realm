@@ -17,6 +17,7 @@ diffusers @ git+https://github.com/huggingface/diffusers.git
 transformers>=4.46
 accelerate>=1.0
 bitsandbytes>=0.45        # 4-bit / 8-bit quant (Windows wheels supported)
+torchao>=0.15             # FP8 weight-only du Z-Image (résident sur GPU 16 Go)
 sentencepiece
 pillow
 protobuf

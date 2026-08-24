@@ -19,3 +19,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+────────────────────────────────────────────────────────────────────────────
+
+THIRD-PARTY CONTENT — SRD 5.1 ATTRIBUTION
+
+This work includes material taken from the System Reference Document 5.1
+("SRD 5.1") by Wizards of the Coast LLC, available at
+https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1
+is licensed under the Creative Commons Attribution 4.0 International License,
+available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+The MIT license above applies to the original source code of this project.
+The game-rules data derived from the SRD 5.1 (in particular under data/srd51/
+and the SRD-derived monster statistics) remains governed by the CC-BY-4.0
+attribution requirement stated here.
+
+This project is an independent work. It is not affiliated with, endorsed,
+sponsored, or specifically approved by Wizards of the Coast LLC. All campaign
+settings, characters, and adventures in this project are original creations.

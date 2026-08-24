@@ -11,12 +11,14 @@ des modèles.
   passent par Gemini (`gemini-3.1-flash-live-preview`, `gemini-flash-latest`). Le jeu
   installé a **toujours besoin d'internet + d'une clé API Gemini**. L'installeur la
   *configure* (saisie joueur), il ne la remplace pas.
-- **Ce qui est local** = images (FLUX.2-klein-9B, port 8000) + audio/SFX/musique
+- **Ce qui est local** = images (**Z-Image-Turbo**, port 8000) + audio/SFX/musique
   (Stable Audio 3, port 8001). Si un serveur local est absent/en échec, le client
   bascule automatiquement sur Gemini.
-- **Le téléchargement est lourd** : torch CUDA + diffusers + poids (FLUX.2 + SA3),
-  soit plusieurs dizaines de Go. FLUX.2-klein est *gated* → token HF + acceptation
-  de licence obligatoires.
+- **Le téléchargement est lourd** : torch CUDA + diffusers + poids (Z-Image ~19 Go
+  + SA3), soit plusieurs dizaines de Go. Z-Image-Turbo est **Apache 2.0, non-gated**
+  → le token HF devient OPTIONNEL (requis seulement pour les modèles audio gated,
+  selon la licence Stability). FLUX.2-klein (gated) reste utilisable en remettant
+  son id dans `profiles.json`.
 - **Connexion Firebase** : l'écran de login utilise Firebase Auth (config par défaut
   intégrée). C'est une dépendance cloud supplémentaire conservée telle quelle.
 
@@ -57,16 +59,17 @@ Résultat : `dist-installer\DnD-FarRealm-Setup.exe`.
 
 ## Profils GPU (`bootstrap/profiles.json`)
 
-| Profil | Cible | VRAM | Image (FLUX.2-klein) | Audio |
+| Profil | Cible | VRAM | Image (Z-Image-Turbo, bf16 sans quantization) | Audio |
 |---|---|---|---|---|
-| **balanced** | 5070 Ti / 5080 | ≥14 Go | NF4 4-bit + CPU offload, 1024×576, 4 steps | SFX préchargé |
-| **performance** | 18–24 Go | ≥18 Go | NF4 sans offload, 1280×720, 6 steps | SFX + musique |
-| **ultra** | 5090 | ≥30 Go | bf16 (transformer) + int8 (text encoder), 1344×768, 8 steps | tout résident |
+| **light** | 3060 / 4060 / 4070 | ≥8 Go | CPU offload, 768×432, 8 steps | SFX seulement |
+| **balanced** | 5070 Ti / 5080 | ≥14 Go | CPU offload, 1024×576, 8 steps | SFX préchargé |
+| **performance** | 18–24 Go | ≥18 Go | tout résident, 1280×720, 8 steps | SFX + musique |
+| **ultra** | 5090 | ≥30 Go | tout résident, 1344×768, 9 steps | tout résident |
 
 Détection auto via `nvidia-smi` (plus haut profil compatible), surchargeable dans
-l'assistant. Toutes les dimensions sont des multiples de 16 (exigence FLUX). Valeurs
-volontairement conservatrices et **éditables** ; pousse la résolution d'`ultra` si ton
-5090 le permet.
+l'assistant. Toutes les dimensions sont des multiples de 16. Z-Image-Turbo est
+distillé CFG : `guidance_scale=1.0`, pas de negative prompt — le serveur gère.
+Valeurs **éditables** ; pousse la résolution d'`ultra` si ton 5090 le permet.
 
 ## Changement dans le code source
 

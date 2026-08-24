@@ -1,20 +1,17 @@
 {
-  "version": 1,
-  "_comment": "GPU profiles for DnD: The Far Realm. The installer auto-picks the highest profile whose min_vram_gb fits the detected card, but the player can override it. All image dimensions must be multiples of 16 (FLUX requirement). These are deliberately conservative, tunable defaults — edit freely.",
+  "version": 2,
+  "_comment": "GPU profiles for DnD: The Far Realm. Image model = Z-Image-Turbo (Tongyi/Alibaba): 6B S3-DiT, Apache 2.0, NON-gated (no HF token needed), CFG-distilled ~8 steps, bf16 WITHOUT quantization. The installer auto-picks the highest profile whose min_vram_gb fits the detected card; the player can override. All image dimensions must be multiples of 16. FLUX.2-klein remains loadable by putting its repo id back in `model` (legacy quant fields still honored).",
   "profiles": {
-    "balanced": {
-      "label": "Balanced — RTX 5070 Ti / 5080 (16 GB)",
-      "min_vram_gb": 14,
+    "light": {
+      "label": "Léger — 8-12 Go (RTX 3060/4060/4070)",
+      "min_vram_gb": 8,
       "image": {
         "enabled": true,
-        "model": "black-forest-labs/FLUX.2-klein-9B",
-        "transformer_quant": "nf4",
-        "text_encoder_quant": "int8",
+        "model": "Tongyi-MAI/Z-Image-Turbo",
         "cpu_offload": true,
-        "width": 1024,
-        "height": 576,
-        "steps": 6,
-        "max_sequence_length": 256
+        "width": 768,
+        "height": 432,
+        "steps": 8
       },
       "audio": {
         "enabled": true,
@@ -22,23 +19,41 @@
         "half": true
       },
       "download": {
-        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "image": ["Tongyi-MAI/Z-Image-Turbo"],
+        "audio": ["stabilityai/stable-audio-3-small-sfx"]
+      }
+    },
+    "balanced": {
+      "label": "Balanced — RTX 5070 Ti / 5080 (16 Go)",
+      "min_vram_gb": 14,
+      "image": {
+        "enabled": true,
+        "model": "Tongyi-MAI/Z-Image-Turbo",
+        "cpu_offload": true,
+        "width": 1024,
+        "height": 576,
+        "steps": 8
+      },
+      "audio": {
+        "enabled": true,
+        "preload": ["small-sfx"],
+        "half": true
+      },
+      "download": {
+        "image": ["Tongyi-MAI/Z-Image-Turbo"],
         "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
       }
     },
     "performance": {
-      "label": "Performance — 18-24 GB, sans CPU offload",
+      "label": "Performance — 18-24 Go, tout résident",
       "min_vram_gb": 18,
       "image": {
         "enabled": true,
-        "model": "black-forest-labs/FLUX.2-klein-9B",
-        "transformer_quant": "nf4",
-        "text_encoder_quant": "int8",
+        "model": "Tongyi-MAI/Z-Image-Turbo",
         "cpu_offload": false,
         "width": 1280,
         "height": 720,
-        "steps": 6,
-        "max_sequence_length": 256
+        "steps": 8
       },
       "audio": {
         "enabled": true,
@@ -46,23 +61,20 @@
         "half": true
       },
       "download": {
-        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "image": ["Tongyi-MAI/Z-Image-Turbo"],
         "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
       }
     },
     "ultra": {
-      "label": "Ultra — RTX 5090 (32 GB)",
+      "label": "Ultra — RTX 5090 (32 Go)",
       "min_vram_gb": 30,
       "image": {
         "enabled": true,
-        "model": "black-forest-labs/FLUX.2-klein-9B",
-        "transformer_quant": "none",
-        "text_encoder_quant": "int8",
+        "model": "Tongyi-MAI/Z-Image-Turbo",
         "cpu_offload": false,
         "width": 1344,
         "height": 768,
-        "steps": 8,
-        "max_sequence_length": 512
+        "steps": 9
       },
       "audio": {
         "enabled": true,
@@ -70,7 +82,7 @@
         "half": false
       },
       "download": {
-        "image": ["black-forest-labs/FLUX.2-klein-9B"],
+        "image": ["Tongyi-MAI/Z-Image-Turbo"],
         "audio": ["stabilityai/stable-audio-3-small-sfx", "stabilityai/stable-audio-3-small-music"]
       }
     }

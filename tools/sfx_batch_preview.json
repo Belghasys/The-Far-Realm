@@ -1,0 +1,39 @@
+[
+  {
+    "key": "combat/sword_swing",
+    "prompt": "foley recording of a steel sword blade swung quickly through the air one time, a single short clean cut of air, dry close-mic studio recording",
+    "variants": 2,
+    "duration": 2
+  },
+  {
+    "key": "combat/bow_shoot",
+    "prompt": "foley recording of a wooden bow, string drawn tense then released with a snap, arrow leaving, dry close-mic studio recording",
+    "variants": 2,
+    "duration": 2
+  },
+  {
+    "key": "magic/fire",
+    "prompt": "recording of a large flame bursting to life suddenly, fire crackling and hissing, close-mic, dry",
+    "variants": 2,
+    "duration": 3
+  },
+  {
+    "key": "monsters/beast_growl",
+    "prompt": "close-mic recording of a large predator growling deeply and slowly, raw animal vocalization, dry",
+    "variants": 2,
+    "duration": 3,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "dungeon/door",
+    "prompt": "foley recording of a heavy wooden door creaking open slowly on old iron hinges, dry close-mic studio recording",
+    "variants": 2,
+    "duration": 3
+  },
+  {
+    "key": "footsteps/stone",
+    "prompt": "foley recording of slow footsteps in leather boots on a stone floor, slight echo",
+    "variants": 2,
+    "duration": 3.5
+  }
+]

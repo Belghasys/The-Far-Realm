@@ -33,6 +33,12 @@ dist-ssr
 coverage
 .firebase
 
+# --- Banque audio migree (64 Mo) ---
+# Retirez ces deux lignes si vous voulez que le depot soit auto-suffisant
+# pour un deploiement cloud depuis un clone neuf.
+public/media/sfx/
+public/media/music/
+
 # --- Python ---
 __pycache__/
 **/__pycache__/

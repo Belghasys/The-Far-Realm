@@ -74,7 +74,16 @@ Electron (launcher) · Inno Setup + uv (installeur).
 
 🌍 **Interface entièrement bilingue (Français / English)**, basculable à tout moment.
 
-## 📄 Licence
+## 📄 Licence & attribution
 
 [MIT](LICENSE) — © 2026 Salim Belghazi. Les **poids des modèles d'IA** ne sont pas
 redistribués : ils sont téléchargés depuis Hugging Face sous leurs licences respectives.
+
+Ce travail inclut du contenu tiré du **System Reference Document 5.1 (« SRD 5.1 »)**
+de Wizards of the Coast LLC, disponible sur
+https://dnd.wizards.com/resources/systems-reference-document et publié sous licence
+**Creative Commons Attribution 4.0 International** (CC-BY-4.0).
+
+Projet indépendant : non affilié à, ni approuvé par, Wizards of the Coast.
+Toutes les campagnes, personnages et aventures de ce projet sont des créations
+originales.

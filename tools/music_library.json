@@ -1,0 +1,151 @@
+[
+  {
+    "_comment": "BIBLIOTHÈQUE D'AMBIANCES — 2026-08-22. Un prompt par ambiance du jeu, dérivé des presets de services/lyriaMusic.ts (tempo, densité, luminosité, instrumentation) pour que la piste générée corresponde à ce que le moteur attend. Générer avec : python tools/generate_music.py --batch tools/music_library.json --only-missing",
+    "_regles": "Écrit pour small-music (distillé, 8 steps). RÈGLES qui évitent les ratés : (1) nommer les INSTRUMENTS réels — un modèle de musique dérive vers le synthé quand on lui parle en adjectifs ; (2) donner un TEMPO en BPM ; (3) 'instrumental, no vocals' — une voix chantée sous la narration du MJ est insupportable ; (4) 'seamless loop' car le jeu boucle la piste ; (5) JAMAIS 'sci-fi', 'electronic', 'synthesizer', 'ambient drone' seuls — c'est le vocabulaire qui produit le sifflement de soucoupe.",
+    "mood": "victory",
+    "prompt": "triumphant medieval fantasy fanfare, bright brass section and timpani rolls with soaring string melody, heroic celebratory resolution, orchestral, 110 bpm, instrumental, no vocals",
+    "duration": 30,
+    "variants": 2
+  },
+  {
+    "mood": "rest",
+    "prompt": "peaceful campfire music at night, gentle fingerpicked acoustic guitar and soft wooden flute over quiet sustained strings, warm and restful, slow 65 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 2
+  },
+  {
+    "_comment_suivants": "Les ambiances ci-dessous sont DÉJÀ couvertes par tes fichiers via music_manifest.json. --only-missing les saute. Elles restent ici pour pouvoir générer une variante si une piste ne te convient plus.",
+    "mood": "exploration",
+    "prompt": "ambient fantasy exploration music, harp arpeggios and soft flute over sustained warm strings, mysterious and open landscape, slow 75 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "quest",
+    "prompt": "adventurous fantasy travel theme, hopeful string melody with warm woodwinds and light marching hand percussion, sense of purpose and departure, 88 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "combat",
+    "prompt": "epic orchestral battle music, urgent staccato strings with driving taiko drums and brass stabs, relentless action, 140 bpm, seamless loop, instrumental, no vocals",
+    "duration": 30,
+    "variants": 1
+  },
+  {
+    "mood": "combat_boss",
+    "prompt": "dark epic boss battle orchestra, heavy war drums and ominous low brass with high tremolo strings and choir-like sustained voices, overwhelming stakes, 155 bpm, seamless loop, instrumental",
+    "duration": 30,
+    "variants": 1
+  },
+  {
+    "mood": "tension",
+    "prompt": "suspenseful orchestral underscore, low cello pulse like a slow heartbeat with sparse high violin harmonics and distant timpani, creeping dread, slow 85 bpm, seamless loop, instrumental, no vocals",
+    "duration": 30,
+    "variants": 1
+  },
+  {
+    "mood": "tavern",
+    "prompt": "lively medieval tavern folk music, fiddle and lute and mandolin with tambourine and hand claps, warm cheerful dance tune in a crowded inn, 95 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "dungeon",
+    "prompt": "dark dungeon underscore, deep sustained cellos and double bass with distant metallic scrapes and low ritual drum, damp stone cavern reverb, very slow 70 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "town",
+    "prompt": "pleasant medieval town music, warm acoustic guitar and cheerful flute melody with light hand percussion, busy friendly marketplace, 90 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "dramatic",
+    "prompt": "dramatic cinematic fantasy score, emotional piano theme answered by full string section with slow building intensity, bittersweet and grand, 100 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "stealth",
+    "prompt": "quiet stealth underscore, muted pizzicato strings and soft muffled tom pulses with sparse bass clarinet, careful and watchful, slow 80 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+
+  {
+    "_comment_ajouts": "── 12 AMBIANCES AJOUTÉES le 2026-08-22 ── Elles couvrent des scènes que les 12 d'origine laissaient sans musique propre (une défaite jouait encore la musique de combat ; boutique, rituel, enterrement retombaient sur 'dramatic'). AUCUNE n'a de piste : c'est le gros du travail de génération. Ordre de priorité conseillé : defeat, level_up (une piste existe peut-être déjà : levelup.mp3), shop, travel, horror, sorrow — ce sont les plus fréquentes en session.",
+    "mood": "defeat",
+    "prompt": "somber orchestral defeat theme, descending low strings with a lone mournful French horn over slow fading timpani, the fall of a hero, 60 bpm, instrumental, no vocals",
+    "duration": 30,
+    "variants": 2
+  },
+  {
+    "mood": "level_up",
+    "prompt": "short uplifting fantasy flourish, rising string run into bright harp glissando answered by warm brass, a surge of new power, 100 bpm, instrumental, no vocals",
+    "duration": 20,
+    "variants": 2
+  },
+  {
+    "mood": "shop",
+    "prompt": "cheerful medieval merchant shop music, plucked lute and light hand drum with a curious wandering recorder melody, busy friendly trading, 100 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "travel",
+    "prompt": "sweeping fantasy travelling theme, steady walking rhythm with French horn melody over wide warm strings and light snare, the open road ahead, 105 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 2
+  },
+  {
+    "mood": "wilderness",
+    "prompt": "living forest music, wooden flute melody over gentle harp and soft sustained strings, open air and birdsong feeling, calm 72 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "horror",
+    "prompt": "terrifying orchestral horror underscore, dissonant clustered violins and groaning double bass with breathy wordless choir and distant tolling bell, undead dread, very slow 60 bpm, seamless loop",
+    "duration": 45,
+    "variants": 2
+  },
+  {
+    "mood": "mystery",
+    "prompt": "curious investigation music, pizzicato strings and celesta with questioning clarinet phrases over soft bass pulse, unravelling a secret, 88 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "sacred",
+    "prompt": "sacred temple music, wordless choir and pipe organ over warm sustained strings in a vast stone hall with long reverb, serene divine presence, slow 60 bpm, seamless loop",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "chase",
+    "prompt": "breathless orchestral chase music, fast repeating string ostinato with driving hand drums and urgent brass stabs, running for your life, 150 bpm, seamless loop, instrumental, no vocals",
+    "duration": 30,
+    "variants": 2
+  },
+  {
+    "mood": "ritual",
+    "prompt": "arcane ritual music, low male chanting voices over deep frame drums and bowed metal resonance, a summoning circle at midnight, slow 70 bpm, seamless loop",
+    "duration": 45,
+    "variants": 1
+  },
+  {
+    "mood": "sorrow",
+    "prompt": "grieving fantasy lament, solo cello melody answered by quiet piano over sparse warm strings, a farewell to the fallen, very slow 58 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 2
+  },
+  {
+    "mood": "festival",
+    "prompt": "joyful village festival dance, lively fiddle and bagpipe reel with tambourine and stomping rhythm, feast and celebration, 120 bpm, seamless loop, instrumental, no vocals",
+    "duration": 45,
+    "variants": 1
+  }
+]

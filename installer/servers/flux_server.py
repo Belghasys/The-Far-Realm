@@ -1,5 +1,8 @@
 """
-flux_server.py — FLUX.2-klein-9B local image server (port 8000).
+flux_server.py — local image server (port 8000).
+
+Model family is profile-driven: Z-Image-Turbo (default — 6B, Apache 2.0,
+non-gated, bf16 sans quantization) or FLUX.2-klein-9B (legacy, NF4+int8).
 
 Refactored for the installer: every machine-specific value comes from the
 environment (set by the Electron launcher from config/runtime.env), so the SAME
@@ -17,6 +20,7 @@ import os
 import io
 import base64
 import json
+import threading
 
 import torch
 from fastapi import FastAPI, HTTPException
@@ -26,6 +30,11 @@ from diffusers import Flux2KleinPipeline, Flux2Transformer2DModel
 from diffusers import BitsAndBytesConfig as DiffusersBitsAndBytesConfig
 from transformers import BitsAndBytesConfig as TransformersBitsAndBytesConfig
 from transformers import AutoModelForCausalLM
+
+try:
+    from diffusers import ZImagePipeline
+except ImportError:  # diffusers trop ancien — message clair au chargement
+    ZImagePipeline = None
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOCAL_MODELS_DIR = os.environ.get("LOCAL_MODELS_DIR", os.path.join(HERE, "..", "Local Models"))
@@ -50,15 +59,22 @@ def load_image_profile() -> dict:
 
 
 PROFILE = load_image_profile()
-MODEL_ID = PROFILE.get("model", "black-forest-labs/FLUX.2-klein-9B")
+MODEL_ID = PROFILE.get("model", "Tongyi-MAI/Z-Image-Turbo")
+IS_ZIMAGE = "z-image" in MODEL_ID.lower() or "zimage" in MODEL_ID.lower()
 
-app = FastAPI(title=f"FLUX.2-klein-9B Local Server [{PROFILE_NAME}]")
+app = FastAPI(title=f"Local Image Server [{PROFILE_NAME}]")
+# Audit 2026-08-12 : wildcard + credentials est une combinaison CORS invalide ;
+# aucune requête n'utilise de cookies.
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_credentials=True,
+    CORSMiddleware, allow_origins=["*"], allow_credentials=False,
     allow_methods=["*"], allow_headers=["*"],
 )
 
 pipe = None
+# Audit 2026-08-12 : sérialise le GPU (2 requêtes simultanées → OOM) et protège
+# le chargement (endpoints sync → threadpool).
+GEN_LOCK = threading.Lock()
+LOAD_LOCK = threading.Lock()
 
 
 def _bnb_diffusers(quant: str):
@@ -81,34 +97,88 @@ def get_pipeline():
     global pipe
     if pipe is not None:
         return pipe
+    with LOAD_LOCK:
+        if pipe is not None:
+            return pipe
+        return _load_pipeline()
 
-    t_quant = PROFILE.get("transformer_quant", "nf4")
-    te_quant = PROFILE.get("text_encoder_quant", "nf4")
-    print(f"[flux] Loading {MODEL_ID}  profile={PROFILE_NAME}  transformer={t_quant} text_encoder={te_quant} offload={PROFILE.get('cpu_offload')}")
+
+def _load_pipeline():
+    # ML1 (contre-audit 2026-08-13) — construire dans une variable LOCALE et
+    # n'assigner le global `pipe` qu'après le placement GPU réussi (comme la
+    # copie dev). Avant : le global était publié à moitié chargé, et si
+    # .to("cuda") levait un OOM, `pipe` restait assigné cassé pour toujours
+    # pendant que /health répondait « ok » — le message « will retry on first
+    # request » était mensonger (le fast-path renvoyait la pipeline morte).
+    global pipe
 
     common = dict(cache_dir=CACHE_DIR, local_files_only=OFFLINE, torch_dtype=torch.bfloat16)
 
-    t_cfg = _bnb_diffusers(t_quant)
-    transformer = Flux2Transformer2DModel.from_pretrained(
-        MODEL_ID, subfolder="transformer",
-        **({"quantization_config": t_cfg} if t_cfg else {}), **common,
-    )
+    if IS_ZIMAGE:
+        # Z-Image-Turbo : pipeline entière en bf16, PAS de quantization — le 6B
+        # tient en 12-16 Go avec offload et la qualité reste maximale (la
+        # quantization NF4 est ce qui dégradait klein).
+        if ZImagePipeline is None:
+            raise RuntimeError(
+                "diffusers ne connaît pas ZImagePipeline — update: "
+                "pip install -U git+https://github.com/huggingface/diffusers.git"
+            )
+        print(f"[image] Loading {MODEL_ID}  profile={PROFILE_NAME}  bf16 offload={PROFILE.get('cpu_offload')}")
+        p = ZImagePipeline.from_pretrained(MODEL_ID, **common)
+        # FP8 weight-only (torchao) : transformer 12→~6 Go + TE 8→~4 Go → tout
+        # résident sur un GPU 16 Go, au lieu de l'offload bf16 qui transférait
+        # ~20 Go par image (1-2 min mesurées). DND_ZIMAGE_QUANT=bf16 désactive.
+        quant_mode = os.environ.get("DND_ZIMAGE_QUANT", "auto").lower()
+        want_fp8 = quant_mode == "fp8" or (quant_mode == "auto" and PROFILE.get("cpu_offload", True))
+        if want_fp8:
+            try:
+                from torchao.quantization import quantize_
+                try:
+                    from torchao.quantization import Float8WeightOnlyConfig
+                    fp8_config = Float8WeightOnlyConfig()
+                except ImportError:  # anciennes versions de torchao
+                    from torchao.quantization import float8_weight_only
+                    fp8_config = float8_weight_only()
+                print("[image] Quantizing Z-Image (transformer + text encoder) to FP8 weight-only (torchao)...")
+                quantize_(p.transformer, fp8_config)
+                quantize_(p.text_encoder, fp8_config)
+                try:
+                    p.to("cuda")
+                    print(f"[image] {MODEL_ID} FP8 fully resident on GPU.")
+                    pipe = p
+                    return pipe
+                except torch.cuda.OutOfMemoryError:
+                    torch.cuda.empty_cache()
+                    print("[image] FP8 done but VRAM still tight — keeping CPU offload.")
+            except Exception as quant_error:
+                print(f"[image] FP8 quantization unavailable ({quant_error!r}) — bf16 path.")
+    else:
+        t_quant = PROFILE.get("transformer_quant", "nf4")
+        te_quant = PROFILE.get("text_encoder_quant", "nf4")
+        print(f"[image] Loading {MODEL_ID}  profile={PROFILE_NAME}  transformer={t_quant} text_encoder={te_quant} offload={PROFILE.get('cpu_offload')}")
 
-    te_cfg = _bnb_transformers(te_quant)
-    text_encoder = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, subfolder="text_encoder",
-        **({"quantization_config": te_cfg} if te_cfg else {}), **common,
-    )
+        t_cfg = _bnb_diffusers(t_quant)
+        transformer = Flux2Transformer2DModel.from_pretrained(
+            MODEL_ID, subfolder="transformer",
+            **({"quantization_config": t_cfg} if t_cfg else {}), **common,
+        )
 
-    pipe = Flux2KleinPipeline.from_pretrained(
-        MODEL_ID, transformer=transformer, text_encoder=text_encoder, **common,
-    )
+        te_cfg = _bnb_transformers(te_quant)
+        text_encoder = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID, subfolder="text_encoder",
+            **({"quantization_config": te_cfg} if te_cfg else {}), **common,
+        )
+
+        p = Flux2KleinPipeline.from_pretrained(
+            MODEL_ID, transformer=transformer, text_encoder=text_encoder, **common,
+        )
 
     if PROFILE.get("cpu_offload", True):
-        pipe.enable_model_cpu_offload()
+        p.enable_model_cpu_offload()
     else:
-        pipe.to("cuda")
-    print(f"[flux] {MODEL_ID} loaded.")
+        p.to("cuda")
+    print(f"[image] {MODEL_ID} loaded.")
+    pipe = p
     return pipe
 
 
@@ -128,8 +198,10 @@ class ImageRequest(BaseModel):
     num_inference_steps: int | None = None
 
 
+# Audit 2026-08-12 : endpoints SYNC (def) → threadpool ; la génération GPU ne
+# bloque plus la boucle d'événements et /health répond pendant une image.
 @app.get("/health")
-async def health():
+def health():
     try:
         get_pipeline()
         return {"status": "ok", "model": MODEL_ID, "profile": PROFILE_NAME}
@@ -150,20 +222,28 @@ def _dims(aspect_ratio: str) -> tuple[int, int]:
 
 
 @app.post("/generate-image")
-async def generate_image(request: ImageRequest):
+def generate_image(request: ImageRequest):
     try:
         pipeline = get_pipeline()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Model not loaded: {e}")
     try:
         width, height = _dims(request.aspect_ratio)
-        steps = request.num_inference_steps or PROFILE.get("steps", 4)
-        print(f"[flux] '{request.prompt[:60]}...' {width}x{height} steps={steps}")
-        image = pipeline(
+        steps = request.num_inference_steps or PROFILE.get("steps", 8 if IS_ZIMAGE else 4)
+        # Turbo est distillé CFG → guidance 1.0 ; klein (distillé aussi) → 0.0.
+        guidance = 1.0 if IS_ZIMAGE else 0.0
+        print(f"[image] '{request.prompt[:60]}...' {width}x{height} steps={steps} gs={guidance}")
+        gen_kwargs = dict(
             prompt=request.prompt, width=width, height=height,
-            guidance_scale=0.0, num_inference_steps=steps,
-            max_sequence_length=PROFILE.get("max_sequence_length", 256),
-        ).images[0]
+            guidance_scale=guidance, num_inference_steps=steps,
+        )
+        # max_sequence_length est un paramètre FLUX ; Z-Image gère le prompt
+        # via son encodeur Qwen3 sans cette limite explicite.
+        if not IS_ZIMAGE:
+            gen_kwargs["max_sequence_length"] = PROFILE.get("max_sequence_length", 256)
+        # Verrou GPU : deux requêtes simultanées se sérialisent au lieu d'OOM.
+        with GEN_LOCK:
+            image = pipeline(**gen_kwargs).images[0]
         buffered = io.BytesIO()
         image.save(buffered, format="JPEG", quality=85)
         img_str = base64.b64encode(buffered.getvalue()).decode()

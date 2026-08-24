@@ -1,0 +1,411 @@
+[
+  {
+    "_comment": "REPARATION v7 — 2026-08-22, directives du joueur. LOGIQUE : nommer la SOURCE REELLE que le modele a forcement entendue dans ses donnees (pomme croquee, porte qui s'ouvre, tonnerre, chorale d'eglise, vieil homme qui marmonne, taureau, abeilles) — JAMAIS la creature ni le concept de jeu. La magie s'appuie sur son ELEMENT physique (electricite, vent, tonnerre) ; le SACRE sur les chorales d'eglise. Format d'etiquette : 2-4 mots separes par des virgules. Durees 1.0-2.0 s."
+  },
+  {
+    "key": "dice/roll",
+    "prompt": "Rattle, dice on wood",
+    "variants": 6,
+    "duration": 1.5,
+    "flat": false
+  },
+  {
+    "key": "dungeon/torch_light",
+    "prompt": "Fire crackling, whoosh",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "feedback/quest_complete",
+    "prompt": "Coins dropping, chink",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "footsteps/armor_march",
+    "prompt": "Footsteps, marching",
+    "variants": 4,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "impacts/crit_hit",
+    "prompt": "Thump, heavy blow",
+    "variants": 5,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "impacts/explosion_small",
+    "prompt": "Explosion, blast",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "impacts/glass",
+    "prompt": "Shatter, breaking glass",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "impacts/metal",
+    "prompt": "Clang, metal impact",
+    "variants": 5,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "impacts/stone",
+    "prompt": "Thud, stone",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "impacts/wood",
+    "prompt": "Wood crack, splintering",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "items/armor",
+    "prompt": "Chainmail, metal rattle",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": true
+  },
+  {
+    "key": "items/bag_rustle",
+    "prompt": "Cloth rustle, leather",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": true
+  },
+  {
+    "key": "items/book",
+    "prompt": "Paper page turning",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "items/chest_open",
+    "prompt": "Door opening, creak",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": false
+  },
+  {
+    "key": "items/drink",
+    "prompt": "Swallowing, gulp, drinking",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "items/drop_item",
+    "prompt": "Object dropping, thud",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "items/eat_food",
+    "prompt": "Biting apple, crunch",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "items/gem_clink",
+    "prompt": "Glass marbles, clink",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "items/potion",
+    "prompt": "Cork pop, bottle",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/arcane_zap",
+    "prompt": "Electricity, spark, zap",
+    "variants": 5,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/buff_shimmer",
+    "prompt": "Wind chimes, glass",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "magic/debuff_curse",
+    "prompt": "Dark drone, groan",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "magic/dispel",
+    "prompt": "Wind, fading hiss",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/force_impact",
+    "prompt": "Wind blast, boom",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/heal_divine",
+    "prompt": "Church choir, angelic voices",
+    "variants": 5,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "magic/psychic_pulse",
+    "prompt": "Deep drum, resonance",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/radiant_smite",
+    "prompt": "Church choir and thunder",
+    "variants": 4,
+    "duration": 2.0,
+    "flat": false
+  },
+  {
+    "key": "magic/shield_ward",
+    "prompt": "Metal shield, deep hit",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/teleport",
+    "prompt": "Wind whoosh, vanish",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "magic/thunder_wave",
+    "prompt": "Thunder, thunderstorm",
+    "variants": 3,
+    "duration": 2.0,
+    "flat": false
+  },
+  {
+    "key": "magic/wind_slash",
+    "prompt": "Wind gust, swoosh",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/bat_swarm",
+    "prompt": "Bat wings, squeaking",
+    "variants": 3,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/bird_screech",
+    "prompt": "Hawk screech, eagle",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/demon_snarl",
+    "prompt": "Lion growl, snarl",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "monsters/drake",
+    "prompt": "Dragon roar",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "monsters/ghoul",
+    "prompt": "Zombie groan, undead",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "monsters/harpy",
+    "prompt": "Woman screaming",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/insect_swarm",
+    "prompt": "Bees swarming, buzz",
+    "variants": 3,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/kobold",
+    "prompt": "Small dog barking, yip",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/lich",
+    "prompt": "Old man mumbling, raspy",
+    "variants": 3,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/mimic",
+    "prompt": "Wet chomp, jaws",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/monster_bite",
+    "prompt": "Bone crunch, bite",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/orc",
+    "prompt": "Guttural beast growl",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "monsters/skeleton_rattle",
+    "prompt": "Bone cracking, joints",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "monsters/slime_squish",
+    "prompt": "Wet mud, squelch",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/spider_skitter",
+    "prompt": "Fingernails tapping, scratching",
+    "variants": 4,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "monsters/troll",
+    "prompt": "Bull bellow, roar",
+    "variants": 3,
+    "duration": 2.0,
+    "flat": true
+  },
+  {
+    "key": "monsters/vampire",
+    "prompt": "Snake hiss, growl",
+    "variants": 3,
+    "duration": 1.5,
+    "flat": true
+  },
+  {
+    "key": "ui/close_panel",
+    "prompt": "Paper fold, crumple",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "ui/confirm",
+    "prompt": "Click, latch",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "ui/open_panel",
+    "prompt": "Paper unroll, rustle",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/arrow_impact",
+    "prompt": "Thud, arrow impact",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/knife_draw",
+    "prompt": "Metal scrape, blade",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/knife_slice",
+    "prompt": "Swish, slash",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/spear_thrust",
+    "prompt": "Stab, thrust",
+    "variants": 3,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/sword_unsheathe",
+    "prompt": "Metal scrape, ring",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/weapon_swish",
+    "prompt": "Whoosh, swish",
+    "variants": 4,
+    "duration": 1.0,
+    "flat": false
+  },
+  {
+    "key": "combat/blade_slice",
+    "prompt": "Swish, sword slash",
+    "variants": 5,
+    "duration": 1.0,
+    "flat": false
+  }
+]

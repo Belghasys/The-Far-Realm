@@ -1,0 +1,730 @@
+[
+  {
+    "key": "combat/sword_swing",
+    "prompt": "foley recording of sharp sword swing air swish cutting through air, dry close-mic studio recording",
+    "variants": 6,
+    "duration": 2
+  },
+  {
+    "key": "combat/sword_unsheathe",
+    "prompt": "foley recording of steel sword drawn from metal scabbard, sharp metallic scrape and ring, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "combat/blade_slice",
+    "prompt": "foley recording of blade slicing into flesh, wet cutting impact, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 2
+  },
+  {
+    "key": "combat/knife_slice",
+    "prompt": "foley recording of quick dagger slice, short sharp swish and cut, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "combat/knife_draw",
+    "prompt": "foley recording of small knife drawn quickly from leather sheath, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "combat/bow_shoot",
+    "prompt": "foley recording of bowstring tension and release, arrow flying air swish, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 2
+  },
+  {
+    "key": "combat/crossbow_shoot",
+    "prompt": "foley recording of heavy crossbow mechanical trigger release, bolt air swish, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2
+  },
+  {
+    "key": "combat/arrow_impact",
+    "prompt": "foley recording of arrow thudding hard into wooden target, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "combat/shield_block",
+    "prompt": "foley recording of sword clashing against metal shield, ringing deflection, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 2
+  },
+  {
+    "key": "combat/parry_metal",
+    "prompt": "foley recording of two steel swords clashing, sharp metallic ring, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 2
+  },
+  {
+    "key": "combat/axe_chop",
+    "prompt": "foley recording of heavy battle axe chopping impact with deep thunk, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2
+  },
+  {
+    "key": "combat/hammer_hit",
+    "prompt": "foley recording of massive warhammer slamming with deep metallic clang, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2
+  },
+  {
+    "key": "combat/spear_thrust",
+    "prompt": "foley recording of spear thrusting forward, sharp piercing jab air swish, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "combat/weapon_swish",
+    "prompt": "foley recording of fast weapon swish slicing air, clean air swish, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "magic/fire",
+    "prompt": "fireball ignition surge, crackling flame burst, fantasy spell sound effect, clean and dry",
+    "variants": 6,
+    "duration": 3
+  },
+  {
+    "key": "magic/ice",
+    "prompt": "ice magic crystallizing, frost shards forming, freezing crackle, fantasy spell sound effect, clean and dry",
+    "variants": 5,
+    "duration": 3
+  },
+  {
+    "key": "magic/lightning",
+    "prompt": "lightning bolt strike, sharp electric crack and snap, fantasy spell sound effect, clean and dry",
+    "variants": 5,
+    "duration": 3
+  },
+  {
+    "key": "magic/heal_divine",
+    "prompt": "warm divine healing glow, soft angelic shimmer chime, fantasy spell sound effect, clean and dry",
+    "variants": 5,
+    "duration": 3.5
+  },
+  {
+    "key": "magic/dark_necro",
+    "prompt": "dark necrotic magic, ghostly life drain, sinister hollow surge, fantasy spell sound effect, clean and dry",
+    "variants": 5,
+    "duration": 3.5
+  },
+  {
+    "key": "magic/acid_force",
+    "prompt": "acid splash sizzling, corrosive bubbling hiss, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 3
+  },
+  {
+    "key": "magic/spell_cast",
+    "prompt": "arcane spell casting, magical energy gathering, sparkling release surge, fantasy spell sound effect, clean and dry",
+    "variants": 6,
+    "duration": 3
+  },
+  {
+    "key": "magic/arcane_zap",
+    "prompt": "short arcane energy zap, magic missile dart, fantasy spell sound effect, clean and dry",
+    "variants": 5,
+    "duration": 1.5
+  },
+  {
+    "key": "magic/teleport",
+    "prompt": "magical teleportation, reversed suction surge ending in air pop, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "magic/summon_portal",
+    "prompt": "dark dimensional portal tearing open, deep rumbling surge, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 4
+  },
+  {
+    "key": "magic/buff_shimmer",
+    "prompt": "protective enchantment applying, soft rising magical shimmer, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "magic/debuff_curse",
+    "prompt": "curse taking hold, dissonant magical sting descending, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "magic/thunder_boom",
+    "prompt": "thunderous magical shockwave boom, deep concussive blast, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 3
+  },
+  {
+    "key": "magic/radiant_smite",
+    "prompt": "radiant holy smite, bright searing flash impact, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "magic/poison_cloud",
+    "prompt": "poison gas cloud hissing, toxic vapor bubbling, fantasy spell sound effect, clean and dry",
+    "variants": 3,
+    "duration": 3.5
+  },
+  {
+    "key": "magic/shield_ward",
+    "prompt": "magical barrier snapping into place, energy shield hum, fantasy spell sound effect, clean and dry",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "magic/dispel",
+    "prompt": "magic dissipating, energy fizzling and fading out, fantasy spell sound effect, clean and dry",
+    "variants": 3,
+    "duration": 2.5
+  },
+  {
+    "key": "monsters/beast_growl",
+    "prompt": "close-mic recording of deep beast growl, menacing predator snarl, raw creature vocalization, dry",
+    "variants": 6,
+    "duration": 3,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/wolf_howl",
+    "prompt": "close-mic recording of lone wolf howling at night, distant echo, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 4,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/giant_roar",
+    "prompt": "close-mic recording of gigantic monster roar, massive chest bellow with echo, raw creature vocalization, dry",
+    "variants": 5,
+    "duration": 3.5,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/ogre_grunt",
+    "prompt": "close-mic recording of brutish ogre grunt, heavy dumb snort, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 2,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/goblin_chatter",
+    "prompt": "close-mic recording of goblin cackling and jabbering, high pitched creature giggles, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 3,
+    "negative": "music, melody, human speech, narration"
+  },
+  {
+    "key": "monsters/dragon_roar",
+    "prompt": "close-mic recording of colossal dragon roar, deep guttural rumble with cavern echo, raw creature vocalization, dry",
+    "variants": 5,
+    "duration": 4,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/dragon_breath",
+    "prompt": "close-mic recording of dragon breathing massive jet of fire, roaring flame torrent, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 4
+  },
+  {
+    "key": "monsters/undead_moan",
+    "prompt": "close-mic recording of undead zombie moaning, guttural hollow groan, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 3,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/skeleton_rattle",
+    "prompt": "foley recording of skeleton bones rattling and clacking, dry clatter, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "monsters/shade_ghost",
+    "prompt": "close-mic recording of ghostly ethereal wail, spectral airy whisper passing by, raw creature vocalization, dry",
+    "variants": 5,
+    "duration": 3.5,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/demon_snarl",
+    "prompt": "close-mic recording of demonic infernal snarl, layered guttural growl, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/spider_skitter",
+    "prompt": "foley recording of giant spider legs skittering on stone, fast chitinous clicks, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "monsters/slime_squish",
+    "prompt": "foley recording of slime creature squishing and gurgling, wet gelatinous movement, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "monsters/snake_hiss",
+    "prompt": "close-mic recording of large snake hissing threat, scales sliding, raw creature vocalization, dry",
+    "variants": 3,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "monsters/insect_swarm",
+    "prompt": "foley recording of dense swarm of insects buzzing past, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 3.5
+  },
+  {
+    "key": "monsters/bird_screech",
+    "prompt": "close-mic recording of monstrous bird of prey screeching, raw creature vocalization, dry",
+    "variants": 3,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "monsters/horse_neigh",
+    "prompt": "close-mic recording of horse neighing and snorting, hooves shifting, raw creature vocalization, dry",
+    "variants": 3,
+    "duration": 3,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "monsters/monster_death",
+    "prompt": "close-mic recording of monster dying cry, gurgling collapse to ground, raw creature vocalization, dry",
+    "variants": 5,
+    "duration": 3,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "monsters/monster_bite",
+    "prompt": "close-mic recording of beast jaws snapping bite, crunching teeth impact, raw creature vocalization, dry",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "items/potion",
+    "prompt": "foley recording of glass potion bottle uncorking, liquid gulping swallow, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "items/coins",
+    "prompt": "foley recording of gold coins pouring and jingling, metallic cascade, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2
+  },
+  {
+    "key": "items/book",
+    "prompt": "foley recording of old heavy book opening, pages turning, leather cover, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "items/armor",
+    "prompt": "foley recording of metal armor plates clinking, buckling straps, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "items/chest_open",
+    "prompt": "foley recording of heavy wooden treasure chest creaking open, metal latch, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "items/lock_metal",
+    "prompt": "foley recording of metal lock mechanism clicking and turning, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2
+  },
+  {
+    "key": "items/key_turn",
+    "prompt": "foley recording of old iron key turning in lock with heavy clunk, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2
+  },
+  {
+    "key": "items/scroll",
+    "prompt": "foley recording of parchment scroll unrolling, dry paper rustle, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2
+  },
+  {
+    "key": "items/gem_clink",
+    "prompt": "foley recording of precious gems clinking together, crystalline tinkle, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "items/eat_food",
+    "prompt": "foley recording of biting and chewing crusty bread, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "items/drink",
+    "prompt": "foley recording of gulping drink from metal mug, satisfied swallow, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2.5,
+    "negative": "music, melody, words, talking"
+  },
+  {
+    "key": "items/equip_weapon",
+    "prompt": "foley recording of weapon equipped, leather strap tightening, metal click, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2
+  },
+  {
+    "key": "items/pickup_item",
+    "prompt": "foley recording of small item picked up quickly, short rustle, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1
+  },
+  {
+    "key": "items/drop_item",
+    "prompt": "foley recording of object dropped on wooden floor, dull thud, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "items/bag_rustle",
+    "prompt": "foley recording of rummaging inside leather bag, fabric and buckles, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2.5
+  },
+  {
+    "key": "items/anvil_forge",
+    "prompt": "foley recording of blacksmith hammer striking anvil, ringing forge hits, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 3
+  },
+  {
+    "key": "dungeon/door",
+    "prompt": "foley recording of heavy wooden dungeon door creaking open slowly, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 3
+  },
+  {
+    "key": "dungeon/door_slam",
+    "prompt": "foley recording of heavy wooden door slamming shut, echo, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 2
+  },
+  {
+    "key": "dungeon/gate_metal",
+    "prompt": "foley recording of iron gate grinding open, heavy metal groan, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "dungeon/mechanism_trap",
+    "prompt": "foley recording of hidden trap mechanism triggering, sharp metallic spring snap, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 2
+  },
+  {
+    "key": "dungeon/lever",
+    "prompt": "foley recording of stone lever pulled, ancient mechanism grinding into motion, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 3
+  },
+  {
+    "key": "dungeon/chains",
+    "prompt": "foley recording of heavy iron chains rattling and dragging on stone, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3
+  },
+  {
+    "key": "dungeon/stone_slab",
+    "prompt": "foley recording of massive stone slab sliding, deep grinding rumble, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 4
+  },
+  {
+    "key": "dungeon/secret_passage",
+    "prompt": "foley recording of secret stone wall rumbling open, dust falling, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 4
+  },
+  {
+    "key": "dungeon/rubble_collapse",
+    "prompt": "foley recording of rocks collapsing, debris falling with heavy rumble, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "dungeon/water_drip",
+    "prompt": "foley recording of water dripping in echoing cave, sparse drops, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 5
+  },
+  {
+    "key": "dungeon/torch_light",
+    "prompt": "foley recording of torch igniting with air swish, flame fluttering, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "dice/roll",
+    "prompt": "foley recording of dice rolling and tumbling across wooden table, dry close-mic studio recording",
+    "variants": 6,
+    "duration": 2.5
+  },
+  {
+    "key": "impacts/punch",
+    "prompt": "foley recording of solid punch impact, fist hitting body, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 1
+  },
+  {
+    "key": "impacts/metal",
+    "prompt": "foley recording of heavy metallic clang impact, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 1.5
+  },
+  {
+    "key": "impacts/wood",
+    "prompt": "foley recording of wooden plank impact, splintering crack, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "impacts/glass",
+    "prompt": "foley recording of glass shattering into pieces, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "impacts/stone",
+    "prompt": "foley recording of heavy stone block thudding impact, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "impacts/soft",
+    "prompt": "foley recording of soft dull body thud, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 1
+  },
+  {
+    "key": "impacts/body_fall",
+    "prompt": "foley recording of armored body collapsing heavily to the ground, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2
+  },
+  {
+    "key": "impacts/crit_hit",
+    "prompt": "foley recording of brutal critical hit, crunching blow with sharp accent, dry close-mic studio recording",
+    "variants": 5,
+    "duration": 1.5
+  },
+  {
+    "key": "impacts/explosion_small",
+    "prompt": "foley recording of small explosion burst with debris scatter, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "footsteps/stone",
+    "prompt": "foley recording of slow footsteps walking on stone floor, boots echo, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/wood",
+    "prompt": "foley recording of footsteps on creaky wooden floorboards, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/grass",
+    "prompt": "foley recording of footsteps walking through grass and soft earth, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/snow",
+    "prompt": "foley recording of footsteps crunching in deep snow, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/gravel",
+    "prompt": "foley recording of footsteps crunching on loose gravel, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/water",
+    "prompt": "foley recording of footsteps splashing through shallow water, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/mud",
+    "prompt": "foley recording of footsteps squelching through thick mud, dry close-mic studio recording",
+    "variants": 3,
+    "duration": 3.5
+  },
+  {
+    "key": "footsteps/armor_march",
+    "prompt": "foley recording of armored footsteps marching, rhythmic metal clinking, dry close-mic studio recording",
+    "variants": 4,
+    "duration": 3.5
+  },
+  {
+    "key": "ui/click",
+    "prompt": "soft short interface click, clean short game sound effect",
+    "variants": 4,
+    "duration": 1
+  },
+  {
+    "key": "ui/hover",
+    "prompt": "subtle soft tick, gentle interface blip, clean short game sound effect",
+    "variants": 3,
+    "duration": 1
+  },
+  {
+    "key": "ui/confirm",
+    "prompt": "short positive confirmation chime, clean short game sound effect",
+    "variants": 4,
+    "duration": 1.5
+  },
+  {
+    "key": "ui/error",
+    "prompt": "muted low error buzz, short negative tone, clean short game sound effect",
+    "variants": 3,
+    "duration": 1
+  },
+  {
+    "key": "ui/open_panel",
+    "prompt": "parchment sliding open, soft paper whoosh, clean short game sound effect",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "ui/close_panel",
+    "prompt": "parchment folding closed, soft thump, clean short game sound effect",
+    "variants": 3,
+    "duration": 1.5
+  },
+  {
+    "key": "environment/rain",
+    "prompt": "field recording of steady rain falling on stone rooftops, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/wind",
+    "prompt": "field recording of cold howling wind, strong gusts, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/thunder_distant",
+    "prompt": "field recording of distant thunder rolling across the sky, steady natural ambience",
+    "variants": 3,
+    "duration": 6
+  },
+  {
+    "key": "environment/fire_crackle",
+    "prompt": "field recording of campfire crackling and popping steadily, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/forest",
+    "prompt": "field recording of forest ambience, birds chirping, leaves rustling, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/night_crickets",
+    "prompt": "field recording of quiet night ambience with crickets, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/cave",
+    "prompt": "field recording of deep cave ambience, distant drips, low air rumble, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "environment/tavern_crowd",
+    "prompt": "field recording of medieval tavern crowd murmur, mugs clinking, muffled laughter, steady natural ambience",
+    "variants": 3,
+    "duration": 10,
+    "negative": "music, melody, singing, clear words"
+  },
+  {
+    "key": "environment/market_crowd",
+    "prompt": "field recording of busy medieval market crowd, distant indistinct chatter, steady natural ambience",
+    "variants": 3,
+    "duration": 10,
+    "negative": "music, melody, singing, clear words"
+  },
+  {
+    "key": "environment/river",
+    "prompt": "field recording of river water flowing over rocks, steady natural ambience",
+    "variants": 3,
+    "duration": 10
+  },
+  {
+    "key": "feedback/level_up",
+    "prompt": "triumphant magical ascension chime, rising sparkle cascade, clean short game sound effect",
+    "variants": 4,
+    "duration": 3
+  },
+  {
+    "key": "feedback/quest_complete",
+    "prompt": "bright achievement chime cascade, rewarding sparkle, clean short game sound effect",
+    "variants": 4,
+    "duration": 2.5
+  },
+  {
+    "key": "feedback/death_sting",
+    "prompt": "dark low doom impact, ominous deep hit fading, clean short game sound effect",
+    "variants": 3,
+    "duration": 3
+  },
+  {
+    "key": "feedback/low_health",
+    "prompt": "slow deep heartbeat thumping, tense pulse, clean short game sound effect",
+    "variants": 3,
+    "duration": 4
+  },
+  {
+    "key": "feedback/hurt_male",
+    "prompt": "close-mic recording of male warrior short pain grunt, single short human vocalization, dry",
+    "variants": 4,
+    "duration": 1,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "feedback/hurt_female",
+    "prompt": "close-mic recording of female warrior short pain grunt, single short human vocalization, dry",
+    "variants": 4,
+    "duration": 1,
+    "negative": "music, melody, words, talking, narration"
+  },
+  {
+    "key": "feedback/xp_gain",
+    "prompt": "soft magical sparkle tick, tiny reward glint, clean short game sound effect",
+    "variants": 3,
+    "duration": 1
+  }
+]

@@ -52,7 +52,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Créer un raccourci sur le Bureau"; GroupDescription: "Raccourcis:"
-Name: "downloadnow"; Description: "Télécharger les modèles maintenant (sinon au premier lancement)"; GroupDescription: "Modèles:"
+Name: "downloadnow"; Description: "Télécharger les modèles maintenant (sinon via Réparer/Setup du menu Démarrer — le jeu restera sans images ni musique d'ici là)"; GroupDescription: "Modèles:"
 
 [Files]
 Source: "{#PayloadDir}\app\*";       DestDir: "{app}\app";       Flags: recursesubdirs createallsubdirs ignoreversion

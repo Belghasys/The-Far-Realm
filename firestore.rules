@@ -13,6 +13,18 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && resource.data.hostId == request.auth.uid;
     }
 
+    // Compteurs de quota média + kill-switch : écrits UNIQUEMENT par les
+    // Cloud Functions via l'Admin SDK (qui bypasse ces règles). Aucun client
+    // ne doit pouvoir lire ni remettre à zéro son compteur. Le default-deny
+    // final couvre déjà ce cas — ces blocs le rendent EXPLICITE pour que de
+    // futures éditions des règles ne les ouvrent pas par accident.
+    match /usage/{doc} {
+      allow read, write: if false;
+    }
+    match /config/{doc} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
