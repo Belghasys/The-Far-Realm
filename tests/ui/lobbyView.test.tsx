@@ -119,6 +119,23 @@ describe('LobbyView — contrat à préserver pendant la refonte', () => {
         alerte.mockRestore();
     });
 
+    it('donne une couverture à chaque campagne, et une à chaque famille', () => {
+        const { container } = render(<LobbyView />);
+        const sources = Array.from(container.querySelectorAll('img'))
+            .map(i => i.getAttribute('src') || '');
+
+        // Les deux en-têtes de famille : la plume pour l'écrit, les dés jetés
+        // dans la nébuleuse pour l'improvisé.
+        expect(sources).toContain('/art/covers/_custom.webp');
+        expect(sources).toContain('/art/covers/_improvised.webp');
+
+        // Et une couverture propre par campagne — aucune ne doit retomber sur
+        // le repli, sinon deux aventures se ressemblent dans la grille.
+        const parCampagne = sources.filter(s => s.startsWith('/art/covers/') && !s.includes('/_'));
+        expect(parCampagne).toHaveLength(ADVENTURES.length);
+        expect(new Set(parCampagne).size).toBe(ADVENTURES.length);
+    });
+
     it('réclame la musique de menu au montage et la relâche au démontage', () => {
         const { unmount } = render(<LobbyView />);
         expect(H.menuTheme.enter).toHaveBeenCalled();

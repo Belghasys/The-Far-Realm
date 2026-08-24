@@ -12,6 +12,8 @@ interface Props {
 import { MARTIAL_CLASSES, RACE_DATA, RACES, BACKGROUNDS, FIGHTING_STYLES, DEITIES, CLASS_DATA, BASE_STAT, MAX_POINTS, getWeaponFromInventory, DEFAULT_CHAR } from '../data';
 import { CLASS_SKILLS, CLASS_EXPERTISE, ALL_SKILLS } from '../data/classes';
 import { dispClass, dispRace, dispStyle } from '../data/labels';
+import { CLASS_ART, RACE_ART } from '../theme/art';
+import { T, DISP, onTint } from '../theme/tokens';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../services/skillSystem';
 import { hasFeatSpecial } from '../services/rulesEngine';
@@ -765,6 +767,51 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
           .map(a => ({ a, v: getRacialBonus(r, a) })).filter(x => x.v).map(x => `+${x.v} ${dispAbbr(x.a, language)}`).join(' ');
         const cardCls = (s: boolean) =>
           `text-left rounded-lg border-2 p-3 transition ${s ? 'border-blood bg-blood/5 ring-1 ring-blood/40' : 'border-gray-300 bg-white hover:border-blood/60'}`;
+
+        /**
+         * Carte à portrait — le choix de classe et celui de race.
+         *
+         * Ces deux choix-là sont les seuls de la fiche à avoir une IMAGE, et
+         * c'est mérité : ce sont les seuls que le joueur fait avec les tripes
+         * avant de faire avec les chiffres. Les autres (archétype, sous-race,
+         * historique, style) gardent la carte de texte — leur donner un visuel
+         * de la même force diluerait celui-ci.
+         *
+         * Le portrait est décoratif (`alt` vide) : le nom est juste en dessous,
+         * en toutes lettres, et un lecteur d'écran l'annoncerait deux fois.
+         */
+        const ArtCard = ({ slug, tint, nom, note, desc, choisi, subs, onPick }: {
+          slug: string; tint: string; nom: string; note?: string; desc: string;
+          choisi: boolean; subs?: boolean; onPick: () => void;
+        }) => (
+          <button
+            type="button"
+            onClick={onPick}
+            aria-pressed={choisi}
+            style={{
+              display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0,
+              background: tint, border: `3px solid ${T.ink}`, cursor: 'pointer', overflow: 'hidden',
+              boxShadow: choisi ? `0 0 0 4px ${T.magenta}, 7px 7px 0 ${T.ink}` : `5px 5px 0 rgba(5,0,26,.35)`,
+              transform: choisi ? 'translate(-2px, -2px)' : undefined,
+              transition: 'box-shadow .15s ease-out, transform .15s ease-out',
+            }}
+          >
+            <img
+              src={`/art/${slug}.webp`}
+              srcSet={`/art/${slug}.webp 1x, /art/${slug}@2x.webp 2x`}
+              alt=""
+              loading="lazy"
+              style={{ display: 'block', width: '100%', aspectRatio: '3 / 4', objectFit: 'cover', background: T.ink }}
+            />
+            <span style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '9px 10px 11px', color: onTint(tint) }}>
+              <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+                <span style={{ fontFamily: DISP, fontSize: 12 }}>{nom}</span>
+                {note && <span style={{ fontSize: 10, fontWeight: 700, opacity: .7 }}>{note}</span>}
+              </span>
+              <span style={{ fontSize: 10.5, lineHeight: 1.35, opacity: .78 }}>{desc}</span>
+            </span>
+          </button>
+        );
         const selRace = RACE_DATA[char.race];
         const selClass = CLASS_DATA[char.class];
         return (
@@ -786,15 +833,18 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <Swords className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.class}</h2>
                 <span className="text-xs font-normal normal-case text-gray-500">{tr.classHint}</span>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {Object.entries(CLASS_DATA).map(([c, d]) => (
-                  <button key={c} type="button" onClick={() => handleClassChange(c)} className={cardCls(char.class === c)}>
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="font-bold">{dispClass(c, language)}</span>
-                      <span className="text-[10px] font-mono text-gray-500">d{d.hitDie} · {d.savingThrows.map(s => dispAbbr(s, language)).join('/')}</span>
-                    </div>
-                    <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
-                  </button>
+                  <ArtCard
+                    key={c}
+                    slug={CLASS_ART[c]?.slug || 'classes/fighter'}
+                    tint={CLASS_ART[c]?.tint || T.azure}
+                    nom={dispClass(c, language)}
+                    note={`d${d.hitDie} · ${d.savingThrows.map(s => dispAbbr(s, language)).join('/')}`}
+                    desc={d.desc}
+                    choisi={char.class === c}
+                    onPick={() => handleClassChange(c)}
+                  />
                 ))}
               </div>
               {/* Archétype de niveau 1 (Domaine du Clerc, Patron de l'Occultiste,
@@ -840,18 +890,22 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <UserRound className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.race}</h2>
                 <span className="text-xs font-normal normal-case text-gray-500">{tr.raceHint}</span>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {baseRaces.map(r => {
                   const d = RACE_DATA[r];
                   const hasSubs = RACES.some(x => RACE_DATA[x].subraceOf === r);
                   return (
-                    <button key={r} type="button" onClick={() => pickBaseRace(r)} className={cardCls(selectedBase === r)}>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-bold">{dispRace(r, language)}{hasSubs && <ChevronRight className="inline h-3 w-3 text-gray-400" />}</span>
-                        <span className="text-[10px] font-mono text-green-700">{raceASI(r) || '—'}</span>
-                      </div>
-                      <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
-                    </button>
+                    <ArtCard
+                      key={r}
+                      slug={RACE_ART[r]?.slug || 'races/human'}
+                      tint={RACE_ART[r]?.tint || T.azure}
+                      nom={dispRace(r, language)}
+                      subs={hasSubs}
+                      note={raceASI(r) || '—'}
+                      desc={d.desc}
+                      choisi={selectedBase === r}
+                      onPick={() => pickBaseRace(r)}
+                    />
                   );
                 })}
               </div>

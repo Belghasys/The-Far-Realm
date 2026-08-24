@@ -84,6 +84,18 @@ describe('Fiche — choix de classe et de race', () => {
         expect(screen.getAllByText(/Ascendance draconique/i).length).toBeGreaterThan(0);
     });
 
+    it('donne un portrait à chaque classe et à chaque race de base', () => {
+        const { container } = monter();
+        const sources = Array.from(container.querySelectorAll('img'))
+            .map(i => i.getAttribute('src') || '');
+
+        const classes = sources.filter(s => s.startsWith('/art/classes/'));
+        const races = sources.filter(s => s.startsWith('/art/races/'));
+
+        expect(new Set(classes).size).toBe(12);
+        expect(new Set(races).size).toBe(9);
+    });
+
     it('n’impose pas d’archétype à une classe qui choisit plus tard', () => {
         monter();
         fireEvent.click(screen.getByText('Barbare'));

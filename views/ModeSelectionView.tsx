@@ -33,6 +33,13 @@ import { CLASS_DATA } from '../data';
 const TAVERN_VIDEO_ID = 'VPqWVgsvj1Q';
 
 /**
+ * Position du soleil DANS l'illustration de la compagnie, mesurée au pixel
+ * (tools/build_art.py sert la même image, donc les proportions ne bougent pas).
+ * Le soleil dessiné en CSS s'y superpose au lieu d'en ajouter un second.
+ */
+const SOLEIL = { cx: 49.4, cy: 29.4, diametre: 28.2 };
+
+/**
  * Les rangées d'alter ego dérivent en sens opposés. Les keyframes sont
  * injectées ici plutôt que dans index.css : elles ne servent qu'à cet écran,
  * et une feuille globale qui grossit à chaque écran finit par n'appartenir à
@@ -222,16 +229,6 @@ export function ModeSelectionView() {
                     transform: 'perspective(240px) rotateX(62deg)', transformOrigin: '50% 100%',
                     pointerEvents: 'none',
                 }} />
-                <div aria-hidden="true" style={{
-                    position: 'absolute', right: '6%', top: 28, width: 'min(38vw, 355px)', aspectRatio: '1',
-                    borderRadius: '50%', background: `linear-gradient(${T.acid}, ${T.pink})`, opacity: .85, pointerEvents: 'none',
-                }} />
-                <div aria-hidden="true" style={{
-                    position: 'absolute', right: '6%', top: 28, width: 'min(38vw, 355px)', aspectRatio: '1',
-                    borderRadius: '50%',
-                    background: `repeating-linear-gradient(180deg, transparent 0 14px, ${T.void} 14px 22px)`,
-                    opacity: .9, pointerEvents: 'none',
-                }} />
 
                 <div style={{
                     position: 'relative', maxWidth: 1360, margin: '0 auto',
@@ -283,15 +280,46 @@ export function ModeSelectionView() {
                         }}>{t.basement}</p>
                     </div>
 
-                    <img
-                        src={`/art/${BANNER.cover}.webp`}
-                        srcSet={`/art/${BANNER.cover}.webp 1x, /art/${BANNER.cover}@2x.webp 2x`}
-                        alt=""
-                        style={{
-                            display: 'block', width: '100%', minWidth: 0,
-                            border: `4px solid ${T.cyan}`, boxShadow: `16px 16px 0 ${T.purple}`,
-                        }}
-                    />
+                    {/*
+                        Le soleil dessiné et celui de l'illustration sont
+                        CONCENTRIQUES. Les valeurs ne sont pas au jugé : le
+                        disque de l'image a été mesuré au pixel — centre à
+                        49,4 % de la largeur et 29,4 % de la hauteur, diamètre
+                        28,2 % de la largeur. Le nôtre reprend ce centre avec un
+                        diamètre double, si bien qu'il ne dépasse qu'en halo
+                        au-dessus du cadre et prolonge l'astre au lieu d'en
+                        poser un second à côté.
+                    */}
+                    <div style={{ position: 'relative', minWidth: 0 }}>
+                        <div aria-hidden="true" style={{
+                            position: 'absolute', left: `${SOLEIL.cx}%`, top: `${SOLEIL.cy}%`,
+                            width: `${SOLEIL.diametre * 2.1}%`, aspectRatio: '1',
+                            transform: 'translate(-50%, -50%)',
+                            borderRadius: '50%',
+                            background: `linear-gradient(${T.acid}, ${T.pink})`,
+                            opacity: .8, pointerEvents: 'none', zIndex: 0,
+                        }} />
+                        <div aria-hidden="true" style={{
+                            position: 'absolute', left: `${SOLEIL.cx}%`, top: `${SOLEIL.cy}%`,
+                            width: `${SOLEIL.diametre * 2.1}%`, aspectRatio: '1',
+                            transform: 'translate(-50%, -50%)',
+                            borderRadius: '50%',
+                            // Rayures proportionnelles : elles suivent l'échelle
+                            // du cadre au lieu de se décaler quand il rétrécit.
+                            background: `repeating-linear-gradient(180deg, transparent 0 2.4%, ${T.void} 2.4% 3.8%)`,
+                            opacity: .9, pointerEvents: 'none', zIndex: 0,
+                        }} />
+                        <img
+                            src={`/art/${BANNER.party}.webp`}
+                            srcSet={`/art/${BANNER.party}.webp 1x, /art/${BANNER.party}@2x.webp 2x`}
+                            alt=""
+                            style={{
+                                position: 'relative', zIndex: 1,
+                                display: 'block', width: '100%', minWidth: 0,
+                                border: `4px solid ${T.cyan}`, boxShadow: `16px 16px 0 ${T.purple}`,
+                            }}
+                        />
+                    </div>
                 </div>
 
                 <div style={{ height: 'clamp(48px, 7vw, 92px)' }} />

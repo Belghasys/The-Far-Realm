@@ -11,6 +11,7 @@ import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAI
 import { ensureProgressionState } from '../services/rulesEngine';
 import { getAdventureById } from '../data/adventures';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
+import { T, BODY } from '../theme/tokens';
 import { getAuthoredCampaign } from '../data/campaigns';
 import { buildSlimManifestPayload } from '../services/manifestTokens';
 import { personalizeAuthoredManifest } from '../services/llmService';
@@ -395,17 +396,29 @@ export function CharacterCreationView() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 p-4">
-            <div className="mb-4 flex items-center justify-between gap-4">
+        <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
+            {/* Le hall garde sa charte jusqu'au dernier écran avant la partie ;
+                la fiche elle-même reste sur parchemin, comme en jeu. */}
+            <header style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 16, padding: '18px clamp(16px, 4vw, 40px)', borderBottom: `2px solid ${T.cyan}59`,
+            }}>
                 <button
                     onClick={() => navigate('/lobby')}
-                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 8, background: 'none',
+                        border: 'none', cursor: 'pointer', padding: 0,
+                        fontFamily: BODY, fontSize: 14, color: 'rgba(237,230,216,.65)',
+                    }}
                 >
-                    <ArrowRight className="w-4 h-4 rotate-180" />
-                    <span>{tr.backLobby}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M19 12H5" /><path d="m12 19-7-7 7-7" />
+                    </svg>
+                    {tr.backLobby}
                 </button>
                 <MenuMusicToggle />
-            </div>
+            </header>
+            <div style={{ padding: 'clamp(16px, 3vw, 32px) clamp(12px, 3vw, 32px) 40px' }}>
             <CharacterSheetUI
                 // Remount when a genuinely different seed character loads — the sheet
                 // seeds its editable state from initialChar only once (useState), so
@@ -416,6 +429,7 @@ export function CharacterCreationView() {
                 initialChar={character || undefined}
                 onSave={(char) => startAdventure(char)}
             />
+            </div>
         </div>
     );
 }
