@@ -95,6 +95,42 @@ export function splitChapterPressure(cliffhanger?: string | null): { narrative: 
     return { narrative: full.slice(0, full.length - match[0].length).trim(), cue: match[1].trim() };
 }
 
+/**
+ * Préfixe du fait canon semé à la CRÉATION pour rappeler la scène verrouillée.
+ * Il était permanent : au niveau 9 et au jour 6, « Locked first scene: … »
+ * occupait encore une des quatre premières places des faits canon affichés.
+ */
+export const OPENING_FACT_PREFIX = 'Locked first scene: ';
+
+/** Retire le fait d'ouverture — à appeler au premier déplacement réussi. */
+export function stripOpeningCanonFact(facts?: string[] | null): string[] {
+    return (facts || []).filter(f => !String(f).startsWith(OPENING_FACT_PREFIX));
+}
+
+/**
+ * La partie en est-elle encore À L'OUVERTURE ?
+ *
+ * UNE seule définition, consommée partout (audit 2026-08-24, A2). La condition
+ * vivait recopiée à trois endroits — bloc directeur, prompt système, fait canon
+ * seedé — et TR9 n'en avait corrigé qu'un. Surtout, elle ne regardait que la
+ * SCÈNE : or `set_campaign_position` remet `currentSceneId` à undefined quand on
+ * change de chapitre sans préciser de scène, et « pas de scène » valait donc
+ * « on est à l'ouverture ». Séance du 23/08 : le MJ s'entendait réannoncer les
+ * Quais d'Os alors que le héros était au niveau 9, six jours plus tard.
+ *
+ * On exige désormais que le CHAPITRE corresponde aussi. Une position vide (rien
+ * n'a encore été enregistré) reste l'ouverture — c'est le cas du premier tour.
+ */
+export function isAtOpening(manifest?: AdventureManifest | null, runtime?: CampaignRuntimeState): boolean {
+    const first = manifest?.firstScene;
+    if (!first) return false;
+    const chapterOk = !runtime?.currentChapterId || !first.chapterId
+        || runtime.currentChapterId === first.chapterId;
+    const sceneOk = !runtime?.currentSceneId || !first.sceneId
+        || runtime.currentSceneId === first.sceneId;
+    return chapterOk && sceneOk;
+}
+
 function resolveCurrentChapter(manifest?: AdventureManifest | null, runtime?: CampaignRuntimeState) {
     if (!manifest?.chapters?.length) return null;
     return manifest.chapters.find(chapter => chapter.id === runtime?.currentChapterId)
@@ -294,15 +330,18 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
     // que la narration dément est pire qu'un contexte absent : le modèle
     // apprend à ignorer le bloc entier. On ne l'annonce donc que tant qu'on est
     // RÉELLEMENT dessus.
-    const stillAtOpening = !runtime?.currentSceneId
-        || (manifest?.firstScene?.sceneId && runtime.currentSceneId === manifest.firstScene.sceneId);
-    if (manifest?.firstScene && stillAtOpening && !runtime?.branchHistory?.length && !runtime?.activeBranch) {
+    // Lot 3 — la condition vit maintenant dans isAtOpening(), partagée : elle
+    // exige que le CHAPITRE corresponde aussi, sinon une avance de chapitre sans
+    // sceneId ressuscitait l'ouverture (le fantôme est revenu par ce chemin dès
+    // le lendemain de TR9).
+    const firstScene = manifest?.firstScene;
+    if (firstScene && isAtOpening(manifest, runtime) && !runtime?.branchHistory?.length && !runtime?.activeBranch) {
         // Budgets relevés (lot 2) : le `setup` porte les interdits de révélation
         // de l'ouverture — « NE PAS révéler Séverin comme menace, ni la Couture,
         // ni la nature de navette » — au caractère ~480 d'un texte de 659. La
         // coupe à 220 les emportait dans les TROIS campagnes écrites, ce qui
         // laissait la scène d'ouverture sans aucune garde anti-spoiler.
-        lines.push(`Locked first scene: ${manifest.firstScene.title} @ ${manifest.firstScene.location}; objective ${trimText(manifest.firstScene.objective, INJECTION_BUDGETS.firstSceneObjective)}; setup ${trimText(manifest.firstScene.setup, INJECTION_BUDGETS.firstSceneSetup)}; opening question ${trimText(manifest.firstScene.openingQuestion, INJECTION_BUDGETS.firstSceneQuestion) || 'none'}`);
+        lines.push(`Locked first scene: ${firstScene.title} @ ${firstScene.location}; objective ${trimText(firstScene.objective, INJECTION_BUDGETS.firstSceneObjective)}; setup ${trimText(firstScene.setup, INJECTION_BUDGETS.firstSceneSetup)}; opening question ${trimText(firstScene.openingQuestion, INJECTION_BUDGETS.firstSceneQuestion) || 'none'}`);
     }
 
     if (chapter) {

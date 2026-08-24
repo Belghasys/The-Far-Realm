@@ -56,7 +56,7 @@ import { rollDice, maxRollOfFormula, isSystemLine } from '../services/utils';
 import { foldText } from '../services/skillSystem';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, formatCombatChronicleLine } from '../store/gameStore';
 import { summarizeCurrentChapter } from '../services/llmService';
-import { reconcileMissingDigests } from '../services/chapterChronicle';
+import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../services/chapterChronicle';
 import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDiceRoll, playEndTurn } from '../services/combatSfx';
 import { getCheckModifier } from '../services/skillSystem';
 import { getCasterKit, type MonsterSpell, type CasterKit } from '../data/casterKits';
@@ -1104,6 +1104,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const chapterLog = (rt.campaignLog || [])
         .filter(l => !rt.currentChapterId || !l.chapterId || l.chapterId === rt.currentChapterId)
         .map(l => `[D${l.day}] ${l.text}`);
+      // D2 — FILET DE VOLUME : un chapitre qui dure fait geler un digest sans
+      // attendre l'avance de position. Même cadence que le résumé roulant, et
+      // best-effort : c'est ce qui rend la mémoire longue indépendante de la
+      // discipline du MJ (séance du 23/08 : six jours de jeu sur la position
+      // 1/1a, donc zéro digest et un journal qui s'évinçait en silence).
+      void maybeFreezeChapterVolume();
       void summarizeCurrentChapter(history.slice(-40), chapterLog, useGameStore.getState().character?.name || 'Hero', rt.currentChapterSummary || '')
         .then(text => {
           if (!text) return;

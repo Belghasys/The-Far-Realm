@@ -16,12 +16,44 @@ import { summarizeChapterDigest, summarizeActDigest } from './llmService';
 import { saveService } from './saveService';
 import { log } from './logger';
 
-/** Gèle le digest d'un chapitre clos. Idempotent : true si déjà figé ou rien à
- *  figer ; false seulement si l'appel LLM a échoué (le log reste intact et le
- *  prochain reconcile retentera). */
+/**
+ * Seuil de VOLUME : au-delà de tant de lignes de log dans le chapitre courant,
+ * on gèle un digest sans attendre la clôture du chapitre.
+ *
+ * D2 (audit 2026-08-24) : le digest n'était écrit qu'à `set_campaign_position`.
+ * Une campagne dont la position ne bouge pas — six jours de jeu et neuf niveaux
+ * sur la position 1/1a, séance du 23/08 — n'avait donc AUCUNE mémoire longue
+ * structurée, et le log plafonné à 200 lignes évinçait les plus anciennes en
+ * silence. La marge sous 200 est délibérée : il faut que le résumé arrive AVANT
+ * la perte.
+ */
+export const VOLUME_LINE_THRESHOLD = 60;
+
+/**
+ * Le chapitre courant a-t-il accumulé assez de lignes pour mériter un gel de
+ * volume ? Pure et testable — c'est la décision, pas l'effet.
+ */
+export function chapterVolumeDue(
+    log: Array<{ chapterId?: string }> | undefined | null,
+    chapterId: string | undefined | null,
+    threshold: number = VOLUME_LINE_THRESHOLD,
+): boolean {
+    if (!chapterId) return false;
+    return (log || []).filter(l => l.chapterId === chapterId).length >= threshold;
+}
+
+/** Gèle le digest d'un chapitre clos, ou APPEND un volume au digest existant.
+ *  Idempotent quand il n'y a rien à figer ; false seulement si l'appel LLM a
+ *  échoué (le log reste intact et le prochain reconcile retentera). */
 export async function freezeChapterDigest(chapterId: string, chapterTitle: string): Promise<boolean> {
     const rt = useGameStore.getState().campaignRuntime;
-    if ((rt.chapterDigests || []).some(d => d.chapterId === chapterId)) return true;
+    // Un digest DÉJÀ figé n'est plus un no-op : le chapitre a pu continuer (gel
+    // de volume, ou retour du MJ dans un chapitre déjà clos). On replie alors
+    // l'ancien digest AVEC le débordement, au lieu de sortir en silence en
+    // laissant les nouvelles lignes sans résumé ni purge.
+    const existing = (rt.chapterDigests || []).find(d => d.chapterId === chapterId);
+    const pending = (rt.campaignLog || []).filter(l => l.chapterId === chapterId).length;
+    if (existing && pending === 0) return true;
 
     // Le digest ABSORBE les entrées orphelines (sans chapterId) : elles seraient
     // sinon perdues pour toujours. Mais la SUPPRESSION, elle, ne doit viser que
@@ -31,12 +63,23 @@ export async function freezeChapterDigest(chapterId: string, chapterTitle: strin
     if (!entries.length) return true;
 
     const days = (() => {
-        const ds = entries.map(l => l.day);
+        // Sur un APPEND, la plage doit englober celle du digest déjà figé —
+        // sinon un second volume rétrécirait la chronologie du chapitre.
+        const ds = [
+            ...entries.map(l => l.day),
+            ...(existing ? (String(existing.days).match(/\d+/g) || []).map(Number) : []),
+        ];
+        if (!ds.length) return 'D?';
         const min = Math.min(...ds), max = Math.max(...ds);
         return min === max ? `D${min}` : `D${min}-D${max}`;
     })();
     const heroName = useGameStore.getState().character?.name || 'the hero';
-    const text = await summarizeChapterDigest(chapterTitle, entries.map(l => `[D${l.day}] ${l.text}`), heroName);
+    // Le digest existant entre dans le résumé comme un « déjà établi » : le
+    // passé du chapitre ne s'érode pas, il se condense.
+    const lines = existing
+        ? [`[established so far] ${existing.text}`, ...entries.map(l => `[D${l.day}] ${l.text}`)]
+        : entries.map(l => `[D${l.day}] ${l.text}`);
+    const text = await summarizeChapterDigest(chapterTitle, lines, heroName);
     if (!text) {
         log.warn(`Chapter digest failed for ${chapterId} — log kept, will retry at next reconcile.`);
         return false;
@@ -109,6 +152,30 @@ export async function freezeActDigest(actId: string): Promise<boolean> {
     await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
     log.info(`📚 Act digest folded: ${actId} (${folded.length} chapitres → 1 digest)`);
     return true;
+}
+
+/**
+ * FILET DE VOLUME (D2) — gèle un digest du chapitre EN COURS quand il a trop
+ * duré, sans attendre que le MJ appelle `set_campaign_position`.
+ *
+ * C'est le correctif qui rend A1 non fatal : même si la position reste bloquée
+ * toute une campagne, la mémoire longue existe et le journal ne s'évince plus
+ * en silence. À appeler périodiquement (même cadence que le résumé roulant).
+ */
+export async function maybeFreezeChapterVolume(): Promise<boolean> {
+    const st = useGameStore.getState();
+    const rt = st.campaignRuntime;
+    const chapterId = rt.currentChapterId;
+    if (!chapterVolumeDue(rt.campaignLog, chapterId)) return false;
+    const chapter = (st.adventureManifestData?.chapters || []).find(c => c.id === chapterId);
+    const title = chapter ? `${chapter.id} — ${chapter.title}` : String(chapterId);
+    log.info(`📚 Volume de chapitre atteint (${VOLUME_LINE_THRESHOLD} lignes) — gel anticipé de ${title}`);
+    try {
+        return await freezeChapterDigest(chapterId!, title);
+    } catch (e) {
+        log.warn('Gel de volume échoué (sera retenté) :', e);
+        return false;
+    }
 }
 
 /** Rattrape les digests manquants des chapitres déjà terminés. À appeler au

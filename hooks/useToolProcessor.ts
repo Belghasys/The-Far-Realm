@@ -6,7 +6,7 @@ import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, bui
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/imageReferences';
 import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../types';
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../services/skillSystem';
-import { resolveSceneIndex } from '../services/campaignDirector';
+import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening } from '../services/campaignDirector';
 import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/branchWriterService';
@@ -3175,6 +3175,26 @@ export function useToolProcessor(deps: {
                     const prevChapterId = prevRuntime.currentChapterId;
                     const isAdvance = prevChapterId && prevChapterId !== chapter.id;
 
+                    // GARDE-FOU (A1) — re-poser la scène d'OUVERTURE alors que la
+                    // partie a visiblement avancé est presque toujours une erreur
+                    // de recopie du MJ, et elle rembobine tous les statuts de
+                    // chapitre. Séance du 23/08 : la position est restée sur 1/1a
+                    // pendant six jours-monde et neuf niveaux, vilain déjà mort,
+                    // et le seul appel de la séance l'y a REMISE. On refuse, en
+                    // disant où l'on croit être — le MJ peut toujours insister en
+                    // nommant un autre chapitre.
+                    const looksLikeRewind = isAtOpening(manifest, { ...prevRuntime, currentChapterId: chapter.id, currentSceneId: sceneId } as any)
+                        && !isAtOpening(manifest, prevRuntime)
+                        && (prevRuntime.dayCount || 1) > 1;
+                    if (looksLikeRewind) {
+                        return {
+                            success: false,
+                            rewindRefused: true,
+                            currentChapterId: prevChapterId || null,
+                            error: `Refused: that is the campaign's OPENING scene, and the party is already on day ${prevRuntime.dayCount} at chapter ${prevChapterId || '?'}. Re-posting the opening would rewind every chapter status. If the story genuinely moved BACK to an earlier chapter, pass that chapter's id explicitly; otherwise pass the chapter you are actually in.`,
+                        };
+                    }
+
                     // Statuts : les chapitres avant l'index deviennent completed,
                     // celui-ci active — le contexte directeur suit enfin la trame.
                     useGameStore.getState().setAdventureManifest(useGameStore.getState().adventureManifest, {
@@ -3190,6 +3210,17 @@ export function useToolProcessor(deps: {
                         currentChapterId: chapter.id,
                         currentSceneId: sceneId ?? (prev.currentChapterId === chapter.id ? prev.currentSceneId : undefined),
                         ...(region ? { currentRegion: region } : {}),
+                        // A3 — l'objectif improvisé d'un chapitre survivait à TOUS
+                        // les suivants : il prime sur l'objectif d'auteur dans le
+                        // bloc directeur ET alimente le contrôle de dérive
+                        // narrative, qui ré-ancrait donc le MJ sur un but périmé.
+                        // Il appartient au chapitre qui l'a posé.
+                        ...(isAdvance ? { currentObjective: undefined } : {}),
+                        // A2 — le fait canon d'ouverture, semé à la création,
+                        // occupait une des quatre premières places affichées
+                        // jusqu'au dénouement. Dès qu'on quitte l'ouverture, il a
+                        // dit tout ce qu'il avait à dire.
+                        canonFacts: isAdvance ? stripOpeningCanonFact(prev.canonFacts) : prev.canonFacts,
                         updatedAt: Date.now(),
                     }));
                     appendCampaignLog('note', `Chapter position: now at ${chapter.id} "${chapter.title}"${sceneId ? `, scene ${sceneId}` : ''}${region ? ` (${region})` : ''}`);
