@@ -10,7 +10,9 @@ import { campaignEventLog } from '../services/campaignEventLog';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
 import { ensureProgressionState } from '../services/rulesEngine';
 import { getAdventureById } from '../data/adventures';
+import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { getAuthoredCampaign } from '../data/campaigns';
+import { buildSlimManifestPayload } from '../services/manifestTokens';
 import { personalizeAuthoredManifest } from '../services/llmService';
 
 function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntimeState {
@@ -22,6 +24,32 @@ function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntimeState 
     const objective = lockedScene?.objective || firstChapter?.objective;
     const location = lockedScene?.location || firstChapterScene?.location;
     const title = lockedScene?.title || firstChapterScene?.title || 'Opening scene';
+
+    // ── MÉCHANT : sauvetage des données mortes (contre-audit 2026-08-22) ──────
+    // llmService DEMANDE au générateur `escalationArc` et `weaknesses`, on les
+    // stocke… et RIEN ne les lit jamais : campaignDirector n'injecte que
+    // name/archetype/motivation, et lookup_campaign ne fouille pas le méchant.
+    // Conséquence : une campagne générée par IA n'a AUCUNE condition de victoire
+    // atteignable par le MJ. On les verse donc dans les canaux déjà réinjectés.
+    // ⚠️ UNIQUEMENT si la campagne n'a pas ses propres tableaux : les campagnes
+    // ÉCRITES (Chant Brisé, Hiver sans Aube, Portes de l'Exil) y posent déjà ces
+    // faits AVEC leur calendrier de révélation — les dupliquer les écraserait.
+    const villain: any = (manifest as any).villain || {};
+    const authoredFacts = manifest.initialCanonFacts || [];
+    const authoredSecrets = manifest.initialProtectedSecrets || [];
+    const villainFacts: string[] = [];
+    const villainSecrets: string[] = [];
+    if (!authoredFacts.length && villain.name) {
+        const weaknesses = Array.isArray(villain.weaknesses) ? villain.weaknesses.filter(Boolean) : [];
+        if (weaknesses.length) villainFacts.push(`Faiblesses de ${villain.name} : ${weaknesses.join(' ; ')}`);
+        if (villain.escalationArc) villainFacts.push(`Escalade de ${villain.name} : ${String(villain.escalationArc).slice(0, 400)}`);
+    }
+    if (!authoredSecrets.length && villain.name && villain.secret) {
+        // Porte de révélation synthétisée : sans elle, un secret injecté à
+        // chaque tour finit par fuiter dès le premier chapitre.
+        const gate = Math.max(2, Math.ceil((manifest.chapters?.length || 6) / 2));
+        villainSecrets.push(`Secret de ${villain.name} (NE PAS révéler avant le chapitre ${gate}) : ${String(villain.secret).slice(0, 400)}`);
+    }
 
     return {
         ...DEFAULT_CAMPAIGN_RUNTIME,
@@ -35,14 +63,16 @@ function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntimeState 
             : DEFAULT_CAMPAIGN_RUNTIME.worldClocks,
         canonFacts: [
             ...DEFAULT_CAMPAIGN_RUNTIME.canonFacts,
-            ...(manifest.initialCanonFacts || []),
+            ...authoredFacts,
+            ...villainFacts,
             `Locked first scene: ${title}${location ? ` at ${location}` : ''}${objective ? `; objective: ${objective}` : ''}`,
         ],
         // Seed authored villain secret/weaknesses so the live DM actually knows them
         // (campaignDirector injects protectedSecrets, but never villain.secret).
         protectedSecrets: [
             ...(DEFAULT_CAMPAIGN_RUNTIME.protectedSecrets || []),
-            ...(manifest.initialProtectedSecrets || []),
+            ...authoredSecrets,
+            ...villainSecrets,
         ],
         updatedAt: Date.now(),
     };
@@ -100,15 +130,52 @@ function buildInitialJournal(manifest: AdventureManifest, character: CharacterSh
     // Allies the hero would plausibly already know — skip betrayers/rivals (spoilers).
     const clean = stripUnfilledPlaceholders;
     const knownRoles = new Set(['mentor', 'quest_giver', 'ally']);
+    // CP1 (contre-audit 2026-08-13) — les descriptions d'AUTEUR sont écrites
+    // pour le MJ : elles contiennent les twists (identité du traître, liens au
+    // vilain, notes de mise en scène [entre crochets]). Recopiées telles quelles,
+    // le journal vendait toute l'enquête au premier tour. On retire les segments
+    // [crochets], on coupe à la première phrase, et on écarte toute description
+    // citant le vilain par son nom.
+    const villainName = String(manifest.villain?.name || '').trim();
+    const spoilerSafe = (desc: string): string => {
+        const noNotes = desc.replace(/\[[^\]]*\]/g, ' ').replace(/\s+/g, ' ').trim();
+        const firstSentence = noNotes.split(/(?<=[.!?])\s/)[0] || '';
+        if (villainName && firstSentence.toLowerCase().includes(villainName.toLowerCase())) return '';
+        return firstSentence.slice(0, 180);
+    };
     const npcs = (manifest.supportingCast || [])
         .filter(c => c && knownRoles.has(String(c.role)))
         .slice(0, 4)
-        .map(c => ({ id: uid(), name: clean(c.name), description: clean(`${c.role}${c.description ? ' — ' + c.description : ''}`), location: clean(c.location || location) }));
+        .map(c => {
+            const safeDesc = spoilerSafe(String(c.description || ''));
+            return { id: uid(), name: clean(c.name), description: clean(`${c.role}${safeDesc ? ' — ' + safeDesc : ''}`), location: clean(c.location || location) };
+        });
+    // NF3 — les marchands PRINCIPAUX de la campagne entrent au journal dès le
+    // départ : boutiquiers récurrents que le MJ incarne (open_shop) et qui
+    // portent une quête personnelle à récompense puissante.
+    const merchantNpcs = (manifest.keyMerchants || [])
+        .slice(0, 3)
+        .map(km => ({
+            id: uid(),
+            name: clean(km.name),
+            description: clean(`${km.type}${km.personality ? ' — ' + km.personality : ''}${km.questHook ? ` | Quête : ${km.questHook}` : ''}`),
+            location: clean(km.location || location),
+        }));
 
     return {
         briefing: { prologue: clean(prologue), objective: clean(objective), threat: clean(threat), location: clean(location) },
-        quests: [{ id: uid(), title: clean(fs?.title || ch1?.title || 'Le commencement'), description: clean(objective), status: 'active' }],
-        npcs,
+        // Quête d'ouverture : titrée par l'OBJECTIF de campagne, pas par le titre
+        // de la première scène — « Porte de la Pluie » n'est pas une quête, elle
+        // ne pouvait jamais être close et squattait le journal pour toujours
+        // (audit 2026-08-21). L'objectif, lui, est un but que le MJ peut clore.
+        quests: [{
+            id: uid(),
+            title: clean(objective ? objective.slice(0, 70) : (ch1?.title || 'Le commencement')),
+            description: clean(objective || fs?.title || ch1?.title || ''),
+            status: 'active',
+            createdAt: new Date().toISOString(),
+        }],
+        npcs: [...npcs, ...merchantNpcs],
         locations: location ? [{ id: uid(), name: clean(location), description: clean(scene1?.description || 'Point de départ de ton aventure.') }] : [],
         chronicle: [],
     };
@@ -221,7 +288,7 @@ export function CharacterCreationView() {
             })
             : getAuthoredCampaign(adventureId)
                 // AUTHORED template → fill-only personalization pass (no generation).
-                ? personalizeAuthoredManifest(getAuthoredCampaign(adventureId)!, readyCharacter, language as 'fr' | 'en').catch((err: Error) => {
+                ? personalizeAuthoredManifest(getAuthoredCampaign(adventureId)!, readyCharacter, language as 'fr' | 'en', title).catch((err: Error) => {
                     setGenerationError(err.message || tr.personalizationError);
                     return null;
                 })
@@ -241,7 +308,13 @@ export function CharacterCreationView() {
         }
 
         setGenerationStep(tr.stepInscribing);
-        const manifest = await manifestPromise;
+        const resolved = await manifestPromise;
+        // La passe d'auteur renvoie désormais { manifest, tokenValues } — les
+        // valeurs de jetons sont conservées pour la sauvegarde MINCE (le doc
+        // Firestore ne porte plus le manifeste entier).
+        const isPersonalized = Boolean(resolved && typeof resolved === 'object' && 'tokenValues' in (resolved as object));
+        const manifest = isPersonalized ? (resolved as { manifest: AdventureManifest }).manifest : resolved;
+        const tokenValues = isPersonalized ? (resolved as { tokenValues: Record<string, string> }).tokenValues : null;
         if (!manifest) {
             // Use the functional updater: the .catch handlers above may have already
             // set a SPECIFIC error, but the `generationError` closure here is the stale
@@ -254,10 +327,16 @@ export function CharacterCreationView() {
         const initialRuntime = buildInitialRuntime(lockedManifest);
         const initialJournal = buildInitialJournal(lockedManifest, readyCharacter);
         setAdventureManifest(lockedManifest.fullManifesto, lockedManifest);
+        useGameStore.getState().setManifestTokens(tokenValues);
         setCampaignRuntime(initialRuntime);
         useGameStore.getState().setJournal(initialJournal);
 
 
+        // MV3 (contre-audit) — setActiveSaveId ne dépend PAS du succès de saveGame :
+        // le sortir du try évite qu'un échec réseau laisse activeSaveId à null
+        // (images rangées dans le bucket 'dev', clé d'intro faussée) alors que
+        // l'identité de sauvegarde est déjà posée et que l'autosave recréera tout.
+        setActiveSaveId(newSaveId);
         try {
             await saveService.saveGame({
                 adventure: adventureId,
@@ -265,12 +344,10 @@ export function CharacterCreationView() {
                 character: readyCharacter,
                 transcript: [],
                 playTime: 0,
-                manifest: lockedManifest,
+                manifest: buildSlimManifestPayload(adventureId, lockedManifest, tokenValues) || lockedManifest,
                 campaignRuntime: initialRuntime,
                 journal: initialJournal,
             });
-            setActiveSaveId(newSaveId);
-
         } catch (e) {
             console.error('Failed to create adventure save:', e);
         }
@@ -282,6 +359,7 @@ export function CharacterCreationView() {
     if (isGenerating) {
         return (
             <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')] font-serif relative overflow-hidden">
+                <div className="absolute top-4 right-4 z-20"><MenuMusicToggle /></div>
                 <div className="max-w-2xl w-full text-center space-y-8 z-10">
                     {generationError ? (
                         <div className="bg-red-900/80 border border-red-500 rounded-lg p-6 space-y-4">
@@ -318,13 +396,16 @@ export function CharacterCreationView() {
 
     return (
         <div className="min-h-screen bg-gray-900 p-4">
-            <button
-                onClick={() => navigate('/lobby')}
-                className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-                <ArrowRight className="w-4 h-4 rotate-180" />
-                <span>{tr.backLobby}</span>
-            </button>
+            <div className="mb-4 flex items-center justify-between gap-4">
+                <button
+                    onClick={() => navigate('/lobby')}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                >
+                    <ArrowRight className="w-4 h-4 rotate-180" />
+                    <span>{tr.backLobby}</span>
+                </button>
+                <MenuMusicToggle />
+            </div>
             <CharacterSheetUI
                 // Remount when a genuinely different seed character loads — the sheet
                 // seeds its editable state from initialChar only once (useState), so

@@ -121,7 +121,11 @@ export function useMusicDirector({ enabled, isConnected }: MusicDirectorOptions)
         // Check if it matches a preset name
         const presetNames: MusicMood[] = [
                 'exploration', 'quest', 'combat', 'combat_boss', 'victory', 'tension',
-                'rest', 'tavern', 'dungeon', 'town', 'dramatic', 'stealth'
+                'rest', 'tavern', 'dungeon', 'town', 'dramatic', 'stealth',
+                // Ajouts 2026-08-22 — sans cette liste, ces moods n'étaient pas
+                // reconnus comme presets et partaient en prompt « custom ».
+                'defeat', 'level_up', 'shop', 'travel', 'wilderness', 'horror',
+                'mystery', 'sacred', 'chase', 'ritual', 'sorrow', 'festival',
         ];
 
         const aliases: Record<string, MusicMood> = {
@@ -132,13 +136,45 @@ export function useMusicDirector({ enabled, isConnected }: MusicDirectorOptions)
             social: 'tavern',
             village: 'town',
             city: 'town',
-            travel: 'quest',
             mission: 'quest',
             exploration: 'exploration',
+            // 'travel' est devenu un preset à part entière (il renvoyait à
+            // 'quest') — les synonymes proches y mènent désormais.
+            journey: 'travel',
+            road: 'travel',
+            forest: 'wilderness',
+            nature: 'wilderness',
+            market: 'shop',
+            merchant: 'shop',
+            shopping: 'shop',
+            undead: 'horror',
+            terror: 'horror',
+            investigation: 'mystery',
+            puzzle: 'mystery',
+            temple: 'sacred',
+            church: 'sacred',
+            divine: 'sacred',
+            pursuit: 'chase',
+            escape: 'chase',
+            flee: 'chase',
+            summoning: 'ritual',
+            incantation: 'ritual',
+            funeral: 'sorrow',
+            grief: 'sorrow',
+            mourning: 'sorrow',
+            celebration: 'festival',
+            feast: 'festival',
+            death: 'defeat',
+            defeated: 'defeat',
+            levelup: 'level_up',
         };
 
-        const matchedPreset = presetNames.find(p => cleaned.includes(p))
-            || Object.entries(aliases).find(([key]) => cleaned.includes(key))?.[1];
+        // ML11 (contre-audit) — matcher les noms les plus LONGS d'abord :
+        // « combat_boss » contenait « combat » et jouait la musique de combat
+        // normale — la musique de boss était inatteignable par tag [MUSIC:].
+        const byLengthDesc = (a: string, b: string) => b.length - a.length;
+        const matchedPreset = [...presetNames].sort(byLengthDesc).find(p => cleaned.includes(p))
+            || Object.entries(aliases).sort(([a], [b]) => byLengthDesc(a, b)).find(([key]) => cleaned.includes(key))?.[1];
         if (matchedPreset) {
             if (isCombatLoopMood(matchedPreset) && useGameStore.getState().combatState?.isActive) {
                 if (!combatSessionRef.current) {

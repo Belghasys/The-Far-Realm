@@ -39,9 +39,16 @@ export function AbilityHotbar({ onUseAbility, selectedTargetId, disabled = false
     if (!character || !entries.length) return null;
 
     return (
-        <div className="pointer-events-auto fixed bottom-[5.75rem] left-1/2 z-40 hidden -translate-x-1/2 md:block">
-            <div className="flex items-center gap-1.5 rounded-lg border border-white/12 bg-zinc-950/85 px-2 py-1.5 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl">
-                <span className="px-1 text-[9px] font-bold uppercase tracking-widest text-emerald-300/60">{tr.title}</span>
+        // PL3 — barre LATÉRALE verticale, au lieu de la barre horizontale
+        // centrée qui chevauchait la zone de combat.
+        // 2026-08-22 : passée à DROITE (demande joueur). En combat, la fenêtre
+        // d'initiative occupe déjà ce bord sur ~390 px : on se décale alors vers
+        // la gauche pour ne pas passer dessous.
+        <div className={`pointer-events-auto fixed bottom-[5.75rem] z-40 hidden md:block ${
+            combatState.isActive ? 'right-[33rem]' : 'right-3'
+        }`}>
+            <div className="flex max-h-[62vh] flex-col items-center gap-1.5 overflow-y-auto rounded-lg border border-white/12 bg-zinc-950/85 px-1.5 py-2 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl custom-scrollbar">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-300/60">{tr.title}</span>
                 {entries.map(entry => {
                     const locked = disabled || entry.disabled || !isPlayerTurn;
                     return (

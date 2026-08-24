@@ -1,8 +1,9 @@
 import React from 'react';
-import { Settings, Volume2, Dices, Mic2, MonitorOff, RotateCcw, BookHeart } from 'lucide-react';
+import { Settings, Volume2, Dices, Mic2, MonitorOff, RotateCcw, BookHeart, Sparkles } from 'lucide-react';
 import { GameWindow } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
 import { useSettingsStore, DM_VOICES, DiceSpeed } from '../store/settingsStore';
+import type { ImageQuality } from '../services/runwareImageService';
 import { lyriaMusicService } from '../services/lyriaMusic';
 
 const TRANS = {
@@ -11,6 +12,8 @@ const TRANS = {
         subtitle: 'Audio, dice, DM voice and local media',
         audio: 'Audio',
         musicVolume: 'Music volume',
+        menuMusic: 'Theme on the menu screens',
+        menuMusicHint: 'The looping track on login, mode selection, campaign choice and character creation. In-session music is governed separately, below.',
         sfxVolume: 'Sound effects volume',
         dice: 'Dice',
         diceSpeed: 'Dice animation speed',
@@ -26,6 +29,10 @@ const TRANS = {
         localMusic: 'Music',
         portraits: 'Generated portraits (hero & NPCs)',
         mediaHint: 'Turn these off on a machine without a GPU — the game runs fine without them.',
+        imageQuality: 'Scene image quality',
+        qualityFast: 'Fast — FLUX.2 klein 4B',
+        qualityHigh: 'Quality — FLUX.2 klein 9B',
+        imageQualityHint: 'Quality follows the prompt more closely and renders finer detail, for a slightly longer wait. Applies from the next scene onward.',
         gameplay: 'Story mode',
         storyMode: 'Maximized healing (potions & spells)',
         storyModeHint: 'Story-mode comfort: every potion and healing spell restores its maximum. Attacks and saves stay unchanged.',
@@ -36,6 +43,8 @@ const TRANS = {
         subtitle: 'Audio, dés, voix du MJ et médias locaux',
         audio: 'Audio',
         musicVolume: 'Volume de la musique',
+        menuMusic: 'Thème des écrans de menu',
+        menuMusicHint: "La piste en boucle sur la connexion, le choix du mode, la sélection de campagne et la création. La musique en partie se règle séparément, plus bas.",
         sfxVolume: 'Volume des effets sonores',
         dice: 'Dés',
         diceSpeed: 'Vitesse des animations de dés',
@@ -51,6 +60,10 @@ const TRANS = {
         localMusic: 'Musique',
         portraits: 'Portraits générés (héros & PNJ)',
         mediaHint: "À désactiver sur une machine sans GPU — le jeu fonctionne très bien sans.",
+        imageQuality: 'Qualité des images de scène',
+        qualityFast: 'Rapide — FLUX.2 klein 4B',
+        qualityHigh: 'Qualité — FLUX.2 klein 9B',
+        imageQualityHint: "Le mode Qualité suit mieux le prompt et rend plus de détail, pour une attente un peu plus longue. Prend effet dès la scène suivante.",
         gameplay: 'Mode histoire',
         storyMode: 'Soins maximisés (potions & sorts)',
         storyModeHint: 'Confort du mode histoire : chaque potion et sort de soin rend son maximum. Attaques et sauvegardes inchangées.',
@@ -99,6 +112,8 @@ export function SettingsPanel({ onClose, storyMode, onToggleStoryMode }: Props) 
                 <SectionTitle icon={<Volume2 className="h-4 w-4" />} label={tr.audio} />
                 <VolumeRow label={tr.musicVolume} value={settings.musicVolume} onChange={v => setVolume('musicVolume', v)} />
                 <VolumeRow label={tr.sfxVolume} value={settings.sfxVolume} onChange={v => setVolume('sfxVolume', v)} />
+                <ToggleRow label={tr.menuMusic} checked={settings.menuMusic} onChange={v => settings.setSettings({ menuMusic: v })} />
+                <p className="mt-1 text-[11px] leading-relaxed text-white/40">{tr.menuMusicHint}</p>
             </section>
 
             {/* Dice */}
@@ -147,6 +162,21 @@ export function SettingsPanel({ onClose, storyMode, onToggleStoryMode }: Props) 
                 <ToggleRow label={tr.localMusic} checked={settings.localMusic} onChange={v => settings.setSettings({ localMusic: v })} />
                 <ToggleRow label={tr.portraits} checked={settings.portraits} onChange={v => settings.setSettings({ portraits: v })} />
                 <p className="mt-1 text-[11px] text-white/35">{tr.mediaHint}</p>
+            </section>
+
+            {/* Palier de modèle pour les images de scène (backend cloud) */}
+            <section>
+                <SectionTitle icon={<Sparkles className="h-4 w-4" />} label={tr.imageQuality} />
+                <select
+                    value={settings.imageQuality}
+                    onChange={e => settings.setSettings({ imageQuality: e.target.value as ImageQuality })}
+                    disabled={!settings.localImages}
+                    className="w-full rounded border border-white/10 bg-black/40 px-2.5 py-2 text-sm text-white focus:border-amber-400 focus:outline-none disabled:opacity-40"
+                >
+                    <option value="fast">{tr.qualityFast}</option>
+                    <option value="high">{tr.qualityHigh}</option>
+                </select>
+                <p className="mt-1 text-[11px] text-white/35">{tr.imageQualityHint}</p>
             </section>
         </GameWindow>
     );

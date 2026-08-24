@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { setDiceAnimMs } from '../services/diceTiming';
+import type { ImageQuality } from '../services/runwareImageService';
 
 /**
  * Player-facing app settings (Réglages panel). Persisted to localStorage and
@@ -11,6 +12,12 @@ export type DiceSpeed = 'normal' | 'fast' | 'instant';
 export interface AppSettings {
     /** Background music volume 0..1 (default 0.315 — the historical constant). */
     musicVolume: number;
+    /**
+     * Menu theme on the out-of-game screens (login, mode, lobby, creation).
+     * Separate from `localMusic`, which gates the in-session mood engine: a
+     * player can want the title theme and silence in play, or the reverse.
+     */
+    menuMusic: boolean;
     /** SFX volume 0..1 (default 0.75). */
     sfxVolume: number;
     /** Dice overlay pacing: normal 3s / fast 1.5s / instant 0.3s (still skippable). */
@@ -23,6 +30,13 @@ export interface AppSettings {
     localMusic: boolean;
     /** Generated portraits (hero + NPCs) — requires localImages. */
     portraits: boolean;
+    /**
+     * Scene-image model tier (cloud backend only — the local FLUX server
+     * ignores it). 'fast' = FLUX.2 klein 4B, 'high' = klein 9B: prettier and
+     * better at following the prompt, ~30 % dearer and a touch slower.
+     * See CLOUD_MODELS in services/runwareImageService.ts for the licence note.
+     */
+    imageQuality: ImageQuality;
 }
 
 export const DM_VOICES = ['Charon', 'Puck', 'Kore', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'] as const;
@@ -33,6 +47,7 @@ const STORAGE_KEY = 'dungeonai-settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
     musicVolume: 0.315,
+    menuMusic: true,
     sfxVolume: 0.75,
     diceSpeed: 'normal',
     dmVoice: 'Charon',
@@ -40,6 +55,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     localSfx: true,
     localMusic: true,
     portraits: true,
+    imageQuality: 'fast',
 };
 
 function loadSettings(): AppSettings {

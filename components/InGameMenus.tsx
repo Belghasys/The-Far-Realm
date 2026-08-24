@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
     Ability,
+    ATTUNEMENT_LIMIT,
     CharacterSheet,
     InventoryItem,
     Weapon,
@@ -9,9 +10,11 @@ import {
     getEffectiveAC,
     getEffectiveSpeed,
     getEffectiveStat,
+    getEffectiveMaxHP,
     getPlayerAttackModifier,
     getPlayerDamageBonus,
     getXPProgress,
+    isRangedWeapon,
     isStatModified,
     parseMagicModifier,
 } from '../types';
@@ -19,6 +22,8 @@ import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Sta
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { structureInventoryItem } from '../services/codexService';
 import { ensureProgressionState, featNumericBonus } from '../services/rulesEngine';
+import { getGearAdvantages, SKILL_TRANSLATIONS } from '../services/skillSystem';
+import { getFeatById } from '../data/feats';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
@@ -27,7 +32,7 @@ const TRANS = {
     en: {
         // Equipment slot labels
         head: 'Head', neck: 'Neck', back: 'Back', chest: 'Chest', waist: 'Waist',
-        hands: 'Hands', mainHand: 'Main hand', offHand: 'Off hand', ranged: 'Ranged weapon', ring: 'Ring',
+        hands: 'Hands', mainHand: 'Main hand', offHand: 'Off hand', ranged: 'Ranged weapon', ring: 'Ring', ring2: 'Ring 2',
         legs: 'Legs', feet: 'Feet',
         // Inventory panel
         inventory: 'Inventory',
@@ -41,7 +46,9 @@ const TRANS = {
         noConsumables: 'No consumables available.',
         // Equip warnings
         twoHandedWarn: 'You cannot equip an off-hand item while holding a two-handed weapon.',
-        offHandWarn: 'Off-hand weapons must be light or finesse.',
+        offHandWarn: 'Off-hand weapons must be LIGHT melee weapons (SRD two-weapon fighting).',
+        attunementWarn: 'Attunement limit reached: you can be attuned to at most 3 magic items at once (SRD).',
+        overloaded: 'OVERLOADED (drop or stash gear)',
         // Item lines
         damage: 'damage',
         ac: 'AC',
@@ -58,6 +65,26 @@ const TRANS = {
         use: 'Use',
         mainHandBtn: 'Main',
         offHandBtn: 'Off-hand',
+        rangedBtn: 'Ranged',
+        companionsHeader: '🐾 Companions & bound creatures',
+        lvlShort: 'lvl',
+        hpShort: 'HP',
+        acShort: 'AC',
+        boundTag: '(bound)',
+        familiarHelpHint: 'Help: advantage on the next attack (1/short rest)',
+        mountedOn: '🐎 In the saddle',
+        mountedOff: '🚶 On foot',
+        mountUp: 'Mount up',
+        dismount: 'Dismount',
+        mountedHint: 'Mounted charge active: a melee attack on a distant enemy closes in AND strikes in one action.',
+        dismountedHint: 'No mounted charge while on foot — melee attacks on distant enemies close the distance instead.',
+        dropBtn: 'Drop',
+        dropTitle: 'Throw this item away (it stays in the scene — the DM may make use of it)',
+        dropConfirm: (name: string, qty: number) => `Throw away ${qty > 1 ? `${qty}x ` : ''}${name}? The item will be left behind.`,
+        dropEquippedHint: 'Unequip the item first, then drop it.',
+        advantagesHeader: '⭐ Active advantages',
+        advTagAttack: 'Attack rolls',
+        advTagDefense: 'Defense — attackers have disadvantage',
         unequip: 'Unequip',
         equip: 'Equip',
         // Character sheet
@@ -109,7 +136,7 @@ const TRANS = {
     },
     fr: {
         head: 'Tête', neck: 'Cou', back: 'Dos', chest: 'Torse', waist: 'Taille',
-        hands: 'Mains', mainHand: 'Main directrice', offHand: 'Main gauche', ranged: 'Arme à distance', ring: 'Anneau',
+        hands: 'Mains', mainHand: 'Main directrice', offHand: 'Main gauche', ranged: 'Arme à distance', ring: 'Anneau', ring2: 'Anneau 2',
         legs: 'Jambes', feet: 'Pieds',
         inventory: 'Inventaire',
         visibleItems: 'objets visibles',
@@ -121,7 +148,9 @@ const TRANS = {
         backpackEmpty: 'Ton sac à dos est vide.',
         noConsumables: 'Aucun consommable disponible.',
         twoHandedWarn: "Vous ne pouvez pas équiper un objet en main gauche en tenant une arme à deux mains.",
-        offHandWarn: 'Les armes en main gauche doivent être légères ou avoir la propriété finesse.',
+        offHandWarn: 'Les armes en main gauche doivent être des armes de mêlée LÉGÈRES (combat à deux armes SRD).',
+        attunementWarn: 'Limite d\'harmonisation atteinte : au plus 3 objets magiques harmonisés à la fois (SRD).',
+        overloaded: 'SURCHARGÉ (déposez ou jetez de l\'équipement)',
         damage: 'dégâts',
         ac: 'CA',
         noMechanicalEffect: 'Aucun effet mécanique',
@@ -135,7 +164,28 @@ const TRANS = {
         attack: 'Attaque',
         use: 'Utiliser',
         mainHandBtn: 'Principale',
-        offHandBtn: 'Off-hand',
+        // ui-m2 — « Off-hand » traînait dans la table FRANÇAISE.
+        offHandBtn: 'Main gauche',
+        rangedBtn: 'À distance',
+        companionsHeader: '🐾 Compagnons & créatures liées',
+        lvlShort: 'niv',
+        hpShort: 'PV',
+        acShort: 'CA',
+        boundTag: '(lié)',
+        familiarHelpHint: 'Aide : avantage sur la prochaine attaque (1/repos court)',
+        mountedOn: '🐎 En selle',
+        mountedOff: '🚶 À pied',
+        mountUp: 'Monter en selle',
+        dismount: 'Descendre',
+        mountedHint: 'Charge montée active : une attaque de mêlée sur un ennemi éloigné se rapproche ET frappe en une action.',
+        dismountedHint: 'Pas de charge montée à pied — l\'attaque de mêlée sur un ennemi éloigné devient un rapprochement.',
+        dropBtn: 'Jeter',
+        dropTitle: 'Abandonner cet objet (il reste dans la scène — le MJ peut en faire quelque chose)',
+        dropConfirm: (name: string, qty: number) => `Jeter ${qty > 1 ? `${qty}x ` : ''}${name} ? L'objet sera abandonné sur place.`,
+        dropEquippedHint: "Déséquipe d'abord l'objet, puis jette-le.",
+        advantagesHeader: '⭐ Avantages actifs',
+        advTagAttack: "Jets d'attaque",
+        advTagDefense: 'Défense — attaquants à désavantage',
         unequip: 'Retirer',
         equip: 'Équiper',
         level: 'Niveau',
@@ -185,7 +235,9 @@ const TRANS = {
     },
 } as const;
 
-type Tr = { [K in keyof typeof TRANS['en']]: string };
+// NF1 — certaines clés sont des fonctions (dropConfirm) : le type doit
+// préserver les signatures au lieu d'aplatir tout en `string`.
+type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
 
 /**
  * EN / FR language toggle wired to the zustand store. Highlights the active
@@ -224,6 +276,10 @@ interface Props {
      *  so GameSession can show the dice roll, log it, and inform the DM —
      *  consistent with the in-combat potion flow. */
     onItemUsed?: (info: { name: string; healing: number; formula: string }) => void;
+    /** NF1 — notified when the player throws an item away, so GameSession can
+     *  tell the DM (the item becomes a narrative element: left on the ground,
+     *  lootable by NPCs…). */
+    onItemDropped?: (info: { name: string; quantity: number }) => void;
 }
 
 type InventoryTab = 'equipment' | 'backpack' | 'consumables';
@@ -239,6 +295,7 @@ const EQUIPMENT_SLOTS = [
     { id: 'offHand', labelKey: 'offHand' },
     { id: 'ranged', labelKey: 'ranged' },
     { id: 'ring', labelKey: 'ring' },
+    { id: 'ring2', labelKey: 'ring2' },
     { id: 'legs', labelKey: 'legs' },
     { id: 'feet', labelKey: 'feet' },
 ] as const;
@@ -296,7 +353,11 @@ function itemTags(item: InventoryItem): string[] {
 export function toWeaponOverride(item: InventoryItem): Weapon {
     const structured = structureInventoryItem(item);
     const properties = structured.properties || item.properties || [];
-    const isRanged = Boolean(structured.range || item.range || /bow|crossbow|sling|dart/i.test(item.name));
+    const range = structured.range || item.range;
+    // Une seule règle « à distance » pour tout le jeu (isRangedWeapon) : nom
+    // EN/FR, propriété Munitions/Distance, ou portée listée. Un arc long acheté
+    // en boutique, trouvé en butin ou créé par le MJ est reconnu pareil.
+    const isRanged = isRangedWeapon({ name: item.name, properties, range });
     const magicBonus = parseMagicModifier(item.name, item.effect);
 
     return {
@@ -306,7 +367,13 @@ export function toWeaponOverride(item: InventoryItem): Weapon {
         abilityMod: isRanged ? 'DEX' : 'STR',
         attackBonus: magicBonus,
         magicBonus,
-        properties,
+        // `range` ET la propriété canonique « ranged » voyagent avec l'arme : le
+        // moteur (bandes de distance, Tireur d'élite, Attaque sournoise) et le
+        // contexte MJ lisaient character.weapon et croyaient à une arme de mêlée.
+        properties: isRanged && !properties.some(p => /ammunition|munition|ranged|distance/i.test(String(p)))
+            ? [...properties, 'ranged']
+            : properties,
+        range,
         reach: isRanged ? 30 : 5,
     };
 }
@@ -368,10 +435,9 @@ function inferItemSlot(item: InventoryItem): ItemSlot {
     // équipés ensemble (les armes de jet type dague restent en main directrice).
     if (item.type === 'weapon') {
         const structured = structureInventoryItem(item);
-        const props = (structured.properties || item.properties || []).map(p => String(p).toLowerCase());
-        const isRanged = (Boolean(structured.range || item.range) && !props.some(p => /thrown|jet/.test(p)))
-            || /bow|crossbow|sling|\barc\b|arbal[eè]te|fronde/i.test(item.name);
-        return isRanged ? 'ranged' : 'mainHand';
+        const props = structured.properties || item.properties || [];
+        const range = structured.range || item.range;
+        return isRangedWeapon({ name: item.name, properties: props, range }) ? 'ranged' : 'mainHand';
     }
 
     // Slot-by-NAME — works for ANY type (armor, misc, wondrous) so a misc Belt of
@@ -391,15 +457,27 @@ function inferItemSlot(item: InventoryItem): ItemSlot {
     return 'none';
 }
 
-export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUsed }: Props) {
+export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUsed, onItemDropped }: Props) {
     const language = useGameStore(s => s.language);
     const tr = TRANS[language];
     const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
+    // ui-m6 — avertissements d'équipement en bannière locale (plus d'alert()).
+    const [equipNotice, setEquipNotice] = useState<string | null>(null);
+    const equipNoticeTimer = React.useRef<number | null>(null);
+    const showEquipNotice = (text: string) => {
+        setEquipNotice(text);
+        if (equipNoticeTimer.current) window.clearTimeout(equipNoticeTimer.current);
+        equipNoticeTimer.current = window.setTimeout(() => setEquipNotice(null), 4000);
+    };
     const visibleInventory = useVisibleInventory(character);
     const equippedItems = visibleInventory.filter(item => item.equipped);
     const bagItems = visibleInventory.filter(item => !item.equipped && item.type !== 'consumable');
     const consumables = visibleInventory.filter(item => item.type === 'consumable');
     const totalWeight = visibleInventory.reduce((sum, item) => sum + item.weight * item.quantity, 0);
+    // SRD — capacité de charge = FOR × 15 lb (audit 2026-08-12 : le poids était
+    // affiché mais aucun seuil n'existait).
+    const carryCapacity = getEffectiveStat(character, 'STR') * 15;
+    const overloaded = totalWeight > carryCapacity;
 
     const tabs = [
         { id: 'equipment' as const, label: tr.equipment, count: equippedItems.length },
@@ -433,6 +511,26 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
                 return;
             }
 
+            // SRD — plafond d'HARMONISATION : au plus 3 objets `attunement`
+            // équipés en même temps (le drapeau était décoratif — audit
+            // 2026-08-12).
+            if (current.attunement === true) {
+                const attunedCount = nextInventory.filter(i =>
+                    i.equipped && i.attunement === true && i.id !== current.id).length;
+                if (attunedCount >= ATTUNEMENT_LIMIT) {
+                    showEquipNotice(tr.attunementWarn);
+                    return;
+                }
+            }
+
+            // PL6 — deux anneaux : si 'ring' est déjà occupé par un AUTRE
+            // anneau et que 'ring2' est libre, le nouveau va en 'ring2'.
+            if (requestedSlot === 'ring') {
+                const ringTaken = nextInventory.some(i => i.equipped && i.slot === 'ring' && i.id !== current.id);
+                const ring2Free = !nextInventory.some(i => i.equipped && i.slot === 'ring2' && i.id !== current.id);
+                if (ringTaken && ring2Free) requestedSlot = 'ring2';
+            }
+
             current.slot = requestedSlot;
 
             // Enforce Two-Handed weapon rules
@@ -452,15 +550,19 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
                 if (mainWeapon) {
                     const mainProps = mainWeapon.properties || [];
                     if (mainProps.includes('two-handed')) {
-                        alert(tr.twoHandedWarn);
+                        showEquipNotice(tr.twoHandedWarn);
                         return;
                     }
                 }
-                
+
                 if (current.type === 'weapon') {
+                    // RAW SRD : le combat à deux armes exige une arme de MÊLÉE
+                    // LÉGÈRE. L'ancien test admettait finesse (rapière/fouet
+                    // illégaux) et ne bloquait pas les armes à distance
+                    // (arbalète de poing) — audit 2026-08-12.
                     const offProps = current.properties || [];
-                    if (!offProps.includes('light') && !offProps.includes('finesse')) {
-                        alert(tr.offHandWarn);
+                    if (!offProps.includes('light') || offProps.includes('ammunition')) {
+                        showEquipNotice(tr.offHandWarn);
                         return;
                     }
                 }
@@ -475,7 +577,12 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
         }
 
         nextInventory[targetItemIndex] = current;
-        const mainHandWeapon = nextInventory.find(invItem => invItem.equipped && invItem.slot === 'mainHand' && invItem.type === 'weapon');
+        // L'arme « de référence » de la fiche = main directrice, SINON l'arme à
+        // distance équipée. Un archer pur (arc dans le slot distance, rien en
+        // main) restait « Mains nues / mêlée » pour le moteur ET pour le MJ.
+        // (suite : recalcul CA + weapon ci-dessous)
+        const mainHandWeapon = nextInventory.find(invItem => invItem.equipped && invItem.slot === 'mainHand' && invItem.type === 'weapon')
+            || nextInventory.find(invItem => invItem.equipped && invItem.slot === 'ranged' && invItem.type === 'weapon');
         onUpdateCharacter({
             ...character,
             inventory: nextInventory,
@@ -494,6 +601,22 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
         });
     };
 
+    // NF1 — jeter un objet du SAC (les objets équipés doivent d'abord être
+    // déséquipés : le bouton n'apparaît que sur les objets non équipés).
+    const handleDropItem = (item: InventoryItem) => {
+        if (!onUpdateCharacter) return;
+        if (item.equipped) {
+            showEquipNotice(tr.dropEquippedHint);
+            return;
+        }
+        if (!window.confirm(tr.dropConfirm(item.name, item.quantity))) return;
+        const nextInventory = (character.inventory || [])
+            .map(normalizeInventoryItem)
+            .filter(inventoryItem => inventoryItem.id !== item.id);
+        onUpdateCharacter({ ...character, inventory: nextInventory });
+        onItemDropped?.({ name: item.name, quantity: item.quantity });
+    };
+
     const handleUse = (item: InventoryItem) => {
         if (!onUpdateCharacter) return;
 
@@ -503,7 +626,7 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
 
         const healing = rollHealing(nextInventory[targetIndex], !!character.storyMode);
         const nextHP = healing.total > 0
-            ? Math.min(character.hp.max, character.hp.current + healing.total)
+            ? Math.min(getEffectiveMaxHP(character), character.hp.current + healing.total)
             : character.hp.current;
 
         const target = { ...nextInventory[targetIndex] };
@@ -534,9 +657,9 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
             bodyClassName="min-h-0 flex flex-1 flex-col overflow-hidden"
             footer={
                 <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
-                    <div className="flex items-center gap-2 text-white/60">
-                        <Scale className="h-4 w-4 text-amber-300" />
-                        <span>{totalWeight.toFixed(1)} lb</span>
+                    <div className={`flex items-center gap-2 ${overloaded ? 'text-red-400' : 'text-white/60'}`}>
+                        <Scale className={`h-4 w-4 ${overloaded ? 'text-red-400' : 'text-amber-300'}`} />
+                        <span>{totalWeight.toFixed(1)} / {carryCapacity} lb{overloaded ? ` — ${tr.overloaded}` : ''}</span>
                     </div>
                     <div className="flex items-center gap-2 font-mono text-amber-300">
                         <Coins className="h-4 w-4" />
@@ -546,15 +669,21 @@ export function InventoryPanel({ character, onClose, onUpdateCharacter, onItemUs
             }
         >
             <WindowTabs tabs={tabs} active={activeTab} onChange={setActiveTab} />
+            {/* ui-m6 — bannière d'avertissement d'équipement (ex-alert()). */}
+            {equipNotice && (
+                <div className="mx-4 mt-2 rounded-md border border-amber-400/40 bg-amber-950/40 px-3 py-2 text-xs font-semibold text-amber-200">
+                    ⚠️ {equipNotice}
+                </div>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {activeTab === 'equipment' && (
                     <EquipmentView character={character} inventory={visibleInventory} onToggle={handleEquipToggle} tr={tr} />
                 )}
                 {activeTab === 'backpack' && (
-                    <ItemList list={bagItems} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty={tr.backpackEmpty} tr={tr} />
+                    <ItemList list={bagItems} character={character} onEquip={handleEquipToggle} onUse={handleUse} onDrop={handleDropItem} empty={tr.backpackEmpty} tr={tr} />
                 )}
                 {activeTab === 'consumables' && (
-                    <ItemList list={consumables} character={character} onEquip={handleEquipToggle} onUse={handleUse} empty={tr.noConsumables} tr={tr} />
+                    <ItemList list={consumables} character={character} onEquip={handleEquipToggle} onUse={handleUse} onDrop={handleDropItem} empty={tr.noConsumables} tr={tr} />
                 )}
             </div>
         </GameWindow>
@@ -598,7 +727,7 @@ function EquipmentView({
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <Metric label={tr.ac} value={String(getEffectiveAC(character))} />
                         <Metric label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
-                        <Metric label={tr.hp} value={`${character.hp.current}/${character.hp.max}`} />
+                        <Metric label={tr.hp} value={`${character.hp.current}/${getEffectiveMaxHP(character)}`} />
                     </div>
                     {character.mount && (
                         <div className="mt-2 rounded border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-center text-[11px] text-amber-200/90" title={character.mount.description || character.mount.name}>
@@ -673,6 +802,7 @@ function ItemList({
     character,
     onEquip,
     onUse,
+    onDrop,
     empty,
     tr,
 }: {
@@ -680,6 +810,7 @@ function ItemList({
     character: CharacterSheet;
     onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand' | 'ranged') => void;
     onUse: (item: InventoryItem) => void;
+    onDrop?: (item: InventoryItem) => void;
     empty: string;
     tr: Tr;
 }) {
@@ -690,7 +821,7 @@ function ItemList({
     return (
         <div className="grid grid-cols-1 gap-2">
             {list.map(item => (
-                <InventoryRow key={item.id} item={item} character={character} onEquip={onEquip} onUse={onUse} tr={tr} />
+                <InventoryRow key={item.id} item={item} character={character} onEquip={onEquip} onUse={onUse} onDrop={onDrop} tr={tr} />
             ))}
         </div>
     );
@@ -701,6 +832,7 @@ function InventoryRow({
     character,
     onEquip,
     onUse,
+    onDrop,
     tr,
 }: {
     key?: React.Key;
@@ -708,6 +840,7 @@ function InventoryRow({
     character: CharacterSheet;
     onEquip: (item: InventoryItem, slot?: 'mainHand' | 'offHand' | 'ranged') => void;
     onUse: (item: InventoryItem) => void;
+    onDrop?: (item: InventoryItem) => void;
     tr: Tr;
 }) {
     const stats = item.type === 'weapon' ? attackStats(character, item) : null;
@@ -759,6 +892,19 @@ function InventoryRow({
                         >
                             {tr.offHandBtn}
                         </button>
+                        {/* UI2 — le slot « arme à distance » était inatteignable :
+                            aucun bouton ne passait 'ranged', donc un arc déséquipé
+                            ne pouvait revenir qu'en main directrice (en éjectant
+                            l'épée). L'archer arc + épée devient réalisable. */}
+                        {inferItemSlot(item) === 'ranged' && (
+                            <button
+                                type="button"
+                                onClick={() => onEquip(item, 'ranged')}
+                                className={`rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wide ${item.equipped && item.slot === 'ranged' ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/10 text-white/60 hover:bg-white/10'}`}
+                            >
+                                {tr.rangedBtn}
+                            </button>
+                        )}
                     </>
                 )}
                 {(item.type !== 'weapon' && item.type !== 'consumable' && inferItemSlot(item) !== 'none') && (
@@ -768,6 +914,18 @@ function InventoryRow({
                         className={`rounded-md border px-3 py-2 text-xs font-bold uppercase tracking-wide ${item.equipped ? 'border-amber-400 bg-amber-400 text-black' : 'border-white/10 text-white/60 hover:bg-white/10'}`}
                     >
                         {item.equipped ? tr.unequip : tr.equip}
+                    </button>
+                )}
+                {/* NF1 — jeter : seulement pour les objets NON équipés
+                    (déséquiper d'abord — le bouton n'existe pas sur l'équipé). */}
+                {onDrop && !item.equipped && (
+                    <button
+                        type="button"
+                        onClick={() => onDrop(item)}
+                        title={tr.dropTitle}
+                        className="rounded-md border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-red-300/80 hover:bg-red-500/20"
+                    >
+                        {tr.dropBtn}
                     </button>
                 )}
             </div>
@@ -877,7 +1035,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                             <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600">{tr.hitPoints}</h3>
                             <div className="flex gap-3 text-xs font-bold uppercase text-stone-500">
                                 {(character.tempHP || 0) > 0 && <span>{tr.temp} +{character.tempHP}</span>}
-                                <span>{tr.max} {character.hp.max}</span>
+                                <span>{tr.max} {getEffectiveMaxHP(character)}</span>
                             </div>
                         </div>
                         <div className="flex items-end justify-between gap-4">
@@ -886,7 +1044,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                 <div className="h-4 overflow-hidden rounded-full border border-stone-300 bg-stone-200">
                                     <div
                                         className="h-full bg-red-700 transition-all"
-                                        style={{ width: `${Math.max(0, Math.min(100, (character.hp.current / character.hp.max) * 100))}%` }}
+                                        style={{ width: `${Math.max(0, Math.min(100, (character.hp.current / getEffectiveMaxHP(character)) * 100))}%` }}
                                     />
                                 </div>
                             </div>
@@ -939,9 +1097,24 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                             disabled={!onUpdateCharacter || maxed}
                                             onClick={() => {
                                                 if (!onUpdateCharacter) return;
+                                                const newStats = { ...character.stats, [stat]: Math.min(20, character.stats[stat] + 1) };
+                                                // MV1 (contre-audit) — un +1 CON doit donner ses PV rétroactifs
+                                                // (+1 PV/niveau par point de modificateur), comme au LevelUpModal.
+                                                // Sans cela, le gain était définitivement perdu (le level-up
+                                                // suivant compare des mods déjà égaux).
+                                                let hp = character.hp;
+                                                if (stat === 'CON') {
+                                                    const modBefore = Math.floor((character.stats.CON - 10) / 2);
+                                                    const modAfter = Math.floor((newStats.CON - 10) / 2);
+                                                    const retroHP = (modAfter - modBefore) * Math.max(1, character.level || 1);
+                                                    if (retroHP > 0) {
+                                                        hp = { current: character.hp.current + retroHP, max: character.hp.max + retroHP };
+                                                    }
+                                                }
                                                 onUpdateCharacter({
                                                     ...character,
-                                                    stats: { ...character.stats, [stat]: Math.min(20, character.stats[stat] + 1) },
+                                                    stats: newStats,
+                                                    hp,
                                                     pendingASIPoints: Math.max(0, (character.pendingASIPoints || 0) - 1),
                                                 });
                                             }}
@@ -1043,22 +1216,60 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                 </section>
 
                 <aside className="space-y-4">
+                    {/* ── NF2 — Avantages actifs (équipement, dons, effets) ── */}
+                    {(() => {
+                        const frOf = (en: string) => Object.entries(SKILL_TRANSLATIONS).find(([, e]) => e === en)?.[0] || en;
+                        const labelFor = (tag: string) => tag === 'attack'
+                            ? tr.advTagAttack
+                            : tag === 'defense'
+                                ? tr.advTagDefense
+                                : tag === 'initiative'
+                                    ? 'Initiative'
+                                    : (language === 'fr' ? frOf(tag) : tag).replace(/_/g, ' ');
+                        const gearAdv = getGearAdvantages(character);
+                        const featAdv = (character.feats || []).flatMap(id => {
+                            const feat = getFeatById(id);
+                            return (feat?.mechanical?.advantageOn || []).map(tag => ({
+                                tag, source: language === 'fr' ? feat!.nameFr : feat!.name,
+                            }));
+                        });
+                        const fxAdv = (character.activeEffects || [])
+                            .filter(e => e.grantsAttackAdvantage)
+                            .map(e => ({ tag: 'attack', source: e.name }));
+                        const all = [...gearAdv, ...featAdv, ...fxAdv];
+                        if (!all.length) return null;
+                        return (
+                            <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-sky-800">{tr.advantagesHeader}</h3>
+                                <ul className="space-y-1.5">
+                                    {all.map((adv, i) => (
+                                        <li key={`${adv.tag}-${adv.source}-${i}`} className="flex items-center justify-between gap-2 text-xs text-stone-700">
+                                            <span className="font-semibold capitalize">⭐ {labelFor(adv.tag)}</span>
+                                            <span className="truncate text-stone-500">{adv.source}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        );
+                    })()}
+
                     {/* ── Compagnons & créatures liées : mini-fiches ── */}
                     {(((character.companions || []).length > 0) || character.subclass === 'Beast Master' || character.mount || character.familiar) && (
                         <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                            {/* UI5 — seul bloc du panneau qui restait en français dur. */}
                             <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-emerald-800">
-                                🐾 Compagnons & créatures liées
+                                {tr.companionsHeader}
                             </h3>
                             <div className="space-y-2.5">
                                 {(character.companions || []).map(comp => (
                                     <div key={comp.id} className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="font-bold text-stone-800">{comp.name}</span>
-                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">niv {comp.level ?? 1}</span>
+                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">{tr.lvlShort} {comp.level ?? 1}</span>
                                         </div>
                                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
-                                            <span>PV {comp.hp.current}/{comp.hp.max}</span>
-                                            <span>CA {comp.ac}</span>
+                                            <span>{tr.hpShort} {comp.hp.current}/{comp.hp.max}</span>
+                                            <span>{tr.acShort} {comp.ac}</span>
                                             <span>{comp.attack.name} +{comp.attack.attackBonus}, {comp.attack.damage}</span>
                                         </div>
                                         <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
@@ -1074,12 +1285,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                     return beast ? (
                                         <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                             <div className="flex items-center justify-between gap-2">
-                                                <span className="font-bold text-stone-800">🐺 {beast.name} (lié)</span>
-                                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">4×niv</span>
+                                                <span className="font-bold text-stone-800">🐺 {beast.name} {tr.boundTag}</span>
+                                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">4×{tr.lvlShort}</span>
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
-                                                <span>PV {beastCur}/{beastMax}</span>
-                                                <span>CA {beast.ac}</span>
+                                                <span>{tr.hpShort} {beastCur}/{beastMax}</span>
+                                                <span>{tr.acShort} {beast.ac}</span>
                                                 <span>{beast.attack.name} +{beast.attack.attackBonus}, {beast.attack.damage}</span>
                                             </div>
                                             <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
@@ -1099,13 +1310,35 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                                 <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{character.mount.speed} ft{character.mount.flying ? ' ✈' : ''}</span>
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
-                                                <span>PV {mCur}/{mMax}</span>
-                                                {mt && <span>CA {mt.ac}</span>}
+                                                <span>{tr.hpShort} {mCur}/{mMax}</span>
+                                                {mt && <span>{tr.acShort} {mt.ac}</span>}
                                                 {mt && <span>{mt.attack.name} +{mt.attack.attackBonus}, {mt.attack.damage}</span>}
                                             </div>
                                             <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-stone-200">
                                                 <div className="h-full bg-amber-500" style={{ width: `${Math.max(0, Math.min(100, (mCur / mMax) * 100))}%` }} />
                                             </div>
+                                            {(() => {
+                                                // En selle / à pied — la charge montée n'existe qu'en selle.
+                                                const isMounted = character.mount!.mounted !== false;
+                                                return (
+                                                    <div className="mt-2 flex items-center justify-between gap-2" title={isMounted ? tr.mountedHint : tr.dismountedHint}>
+                                                        <span className={`text-[11px] font-bold ${isMounted ? 'text-amber-700' : 'text-stone-500'}`}>
+                                                            {isMounted ? tr.mountedOn : tr.mountedOff}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const live = useGameStore.getState().character;
+                                                                if (!live?.mount) return;
+                                                                useGameStore.getState().setCharacter({ ...live, mount: { ...live.mount, mounted: !isMounted } });
+                                                            }}
+                                                            className="rounded border border-stone-400 bg-white px-2 py-0.5 text-[11px] font-bold text-stone-700 hover:bg-stone-100"
+                                                        >
+                                                            {isMounted ? tr.dismount : tr.mountUp}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
                                     );
                                 })()}
@@ -1113,7 +1346,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                     <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                         <span className="font-bold text-stone-800">🦉 {character.familiar.name} <span className="font-normal text-stone-500">({character.familiar.kind})</span></span>
                                         {character.familiar.description && <p className="mt-1 text-[11px] italic text-stone-500">{character.familiar.description}</p>}
-                                        <p className="mt-0.5 text-[11px] text-stone-600">Aide : avantage sur la prochaine attaque (1/repos court)</p>
+                                        <p className="mt-0.5 text-[11px] text-stone-600">{tr.familiarHelpHint}</p>
                                     </div>
                                 )}
                             </div>

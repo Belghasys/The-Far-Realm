@@ -5,9 +5,9 @@
 
 import { campaignEventLog } from './campaignEventLog';
 import { log } from './logger';
-import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from './mediaThrottle';
-import { withMusicGpu } from './gpuLock';
+import { isCombatLoopMood } from './mediaThrottle';
 import { getAppSettings } from '../store/settingsStore';
+import { viteEnv } from './modelConfig';
 
 const DB_NAME = 'dungeonai_media_cache';
 const DB_VERSION = 1;
@@ -42,6 +42,23 @@ export type MusicMood =
     | 'town'
     | 'dramatic'
     | 'stealth'
+    // ── 12 ambiances ajoutées le 2026-08-22 ──────────────────────────────
+    // Les 12 d'origine laissaient des scènes ENTIÈRES sans musique propre :
+    // une défaite jouait encore la musique de combat, une boutique, un rituel
+    // ou un enterrement retombaient sur « dramatic ». Chacune correspond à un
+    // moment que le MJ produit réellement en session.
+    | 'defeat'      // le héros tombe, jets de mort, groupe anéanti
+    | 'level_up'    // palier franchi (une piste existait déjà, inutilisée)
+    | 'shop'        // marchandage, échoppe (l'outil open_shop existe)
+    | 'travel'      // route, montage de voyage (≠ exploration statique)
+    | 'wilderness'  // forêt, plaine, nature vivante (≠ donjon)
+    | 'horror'      // épouvante franche : morts-vivants, crypte, cauchemar
+    | 'mystery'     // enquête, indices, bibliothèque, énigme
+    | 'sacred'      // temple, bénédiction, présence divine
+    | 'chase'       // poursuite, fuite, on vous traque
+    | 'ritual'      // incantation, invocation, cercle arcanique
+    | 'sorrow'      // deuil, adieu, mort d'un PNJ
+    | 'festival'    // fête, banquet, liesse populaire
     | 'custom';
 
 interface MusicPreset {
@@ -209,6 +226,140 @@ export const MOOD_PRESETS: Record<Exclude<MusicMood, 'custom'>, MusicPreset> = {
         model: 'pro',
         loop: true,
     },
+
+    // ── Ajouts 2026-08-22 ────────────────────────────────────────────────
+    defeat: {
+        label: 'Defeat',
+        prompts: [
+            { text: 'somber orchestral defeat, the fall of a hero', weight: 2.0 },
+            { text: 'low strings descending, mournful solo horn, fading drums', weight: 1.2 },
+        ],
+        config: { bpm: 60, density: 0.3, brightness: 0.2, guidance: 4.0 },
+        durationSeconds: 30,
+        model: 'clip',
+        loop: false, // sting ponctuel, comme victory
+    },
+    level_up: {
+        label: 'Level Up',
+        prompts: [
+            { text: 'short uplifting fantasy flourish, growing power', weight: 2.0 },
+            { text: 'rising strings and bright harp, warm brass resolution', weight: 1.2 },
+        ],
+        config: { bpm: 100, density: 0.5, brightness: 0.85, guidance: 4.0 },
+        durationSeconds: 30,
+        model: 'clip',
+        loop: false,
+    },
+    shop: {
+        label: 'Shop',
+        prompts: [
+            { text: 'cheerful medieval merchant shop music', weight: 2.0 },
+            { text: 'plucked lute, light hand drum, curious wandering melody', weight: 1.2 },
+        ],
+        config: { bpm: 100, density: 0.45, brightness: 0.7, guidance: 3.8 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    travel: {
+        label: 'Travel',
+        prompts: [
+            { text: 'sweeping fantasy travelling theme, the open road', weight: 2.0 },
+            { text: 'steady walking rhythm, French horn melody, wide strings', weight: 1.3 },
+        ],
+        config: { bpm: 105, density: 0.55, brightness: 0.65, guidance: 3.8 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    wilderness: {
+        label: 'Wilderness',
+        prompts: [
+            { text: 'living forest ambience, natural fantasy wilderness', weight: 2.0 },
+            { text: 'wooden flute, soft strings, gentle harp, open air', weight: 1.2 },
+        ],
+        config: { bpm: 72, density: 0.3, brightness: 0.55, guidance: 3.5 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    horror: {
+        label: 'Horror',
+        prompts: [
+            { text: 'terrifying undead horror underscore', weight: 2.0 },
+            { text: 'dissonant string clusters, breathing choir, dread', weight: 1.5 },
+        ],
+        config: { bpm: 60, density: 0.25, brightness: 0.1, guidance: 4.2 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    mystery: {
+        label: 'Mystery',
+        prompts: [
+            { text: 'curious investigation music, unravelling a secret', weight: 2.0 },
+            { text: 'pizzicato strings, celesta, questioning woodwinds', weight: 1.2 },
+        ],
+        config: { bpm: 88, density: 0.3, brightness: 0.45, guidance: 3.6 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    sacred: {
+        label: 'Sacred',
+        prompts: [
+            { text: 'sacred temple music, divine presence', weight: 2.0 },
+            { text: 'wordless choir, pipe organ, warm sustained strings, hall reverb', weight: 1.4 },
+        ],
+        config: { bpm: 60, density: 0.35, brightness: 0.75, guidance: 4.0 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    chase: {
+        label: 'Chase',
+        prompts: [
+            { text: 'breathless fantasy chase music, running for your life', weight: 2.0 },
+            { text: 'fast ostinato strings, driving hand drums, urgent brass', weight: 1.5 },
+        ],
+        config: { bpm: 150, density: 0.75, brightness: 0.6, guidance: 4.2 },
+        durationSeconds: 30,
+        model: 'clip',
+        loop: true,
+    },
+    ritual: {
+        label: 'Ritual',
+        prompts: [
+            { text: 'arcane ritual music, a summoning circle', weight: 2.0 },
+            { text: 'low chanting voices, frame drums, bowed metal resonance', weight: 1.4 },
+        ],
+        config: { bpm: 70, density: 0.4, brightness: 0.3, guidance: 4.0 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    sorrow: {
+        label: 'Sorrow',
+        prompts: [
+            { text: 'grieving fantasy lament, farewell to the fallen', weight: 2.0 },
+            { text: 'solo cello, quiet piano, sparse warm strings', weight: 1.3 },
+        ],
+        config: { bpm: 58, density: 0.25, brightness: 0.35, guidance: 3.8 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
+    festival: {
+        label: 'Festival',
+        prompts: [
+            { text: 'joyful village festival music, feast and dancing', weight: 2.0 },
+            { text: 'fiddle and bagpipe reel, tambourine, clapping crowd energy', weight: 1.5 },
+        ],
+        config: { bpm: 120, density: 0.7, brightness: 0.8, guidance: 4.0 },
+        durationSeconds: 180,
+        model: 'pro',
+        loop: true,
+    },
 };
 
 const memoryTrackCache = new Map<string, GeneratedTrack>();
@@ -266,7 +417,9 @@ async function openMediaDb(): Promise<IDBDatabase | null> {
     });
 }
 
-async function getCachedTrack(cacheKey: string): Promise<GeneratedTrack | null> {
+// 2026-08-15 — cache de pistes GÉNÉRÉES débranché (les pistes viennent de la
+// bibliothèque pré-enregistrée). Conservé sous préfixe _ sans appelant.
+async function _getCachedTrack(cacheKey: string): Promise<GeneratedTrack | null> {
     if (memoryTrackCache.has(cacheKey)) return memoryTrackCache.get(cacheKey)!;
 
     const db = await openMediaDb();
@@ -288,7 +441,7 @@ async function getCachedTrack(cacheKey: string): Promise<GeneratedTrack | null> 
     });
 }
 
-async function putCachedTrack(track: GeneratedTrack): Promise<void> {
+async function _putCachedTrack(track: GeneratedTrack): Promise<void> {
     memoryTrackCache.set(track.cacheKey, track);
 
     const db = await openMediaDb();
@@ -378,33 +531,15 @@ class LyriaMusicService {
         });
 
         try {
-            const cachedTrack = await getCachedTrack(plan.cacheKey);
-            if (cachedTrack && !combatLoopPlan && this.pendingPhaseRequest) {
-                if (this.phaseTimer) clearTimeout(this.phaseTimer);
-                this.phaseTimer = null;
-                this.pendingPhaseRequest = null;
-            }
-            if (!cachedTrack && !combatLoopPlan) {
-                const waitMs = cooldownRemainingMs(this.lastPhaseGenerationStartedAt);
-                if (waitMs > 0) {
-                    this.queuePhaseRequest(mood, customPrompts, customConfig, waitMs);
-                    campaignEventLog.append('ASSET_THROTTLED', `Music generation queued: ${plan.label}`, {
-                        kind: 'phase_music',
-                        mood,
-                        cooldownMs: MEDIA_GENERATION_COOLDOWN_MS,
-                        waitMs,
-                        policy: 'latest_request_wins',
-                    });
-                    return;
-                }
-                this.lastPhaseGenerationStartedAt = Date.now();
-            }
-
+            // 2026-08-15 — pistes PRÉ-ENREGISTRÉES uniquement : plus de cache
+            // IndexedDB de pistes générées (elles masqueraient les vraies
+            // pistes Lyria), plus de cooldown GPU (un fichier statique n'a pas
+            // besoin de throttle).
             if (combatLoopPlan && this.activeCombatSessionId && !this.combatLoopTrackKey) {
                 this.combatLoopTrackKey = plan.cacheKey;
             }
 
-            const track = cachedTrack || await this.generateTrack(plan);
+            const track = await this.generateTrack(plan);
             if (token !== this.generationToken) return;
             await this.playTrack(track, plan.loop);
             this.currentMood = mood;
@@ -530,55 +665,103 @@ class LyriaMusicService {
         };
     }
 
-    private async generateTrack(plan: MusicPlan): Promise<GeneratedTrack> {
-        const localAudioUrl = import.meta.env.VITE_LOCAL_AUDIO_SERVER_URL;
-        if (localAudioUrl) {
-            log.info(`🎵 Redirecting music generation to local server: ${localAudioUrl}`);
-            try {
-                // GPU coordination: music takes the GPU EXCLUSIVELY — no image or
-                // sfx generation runs while a music track is being generated, so
-                // the heavy combo can never collide on the 16GB VRAM budget.
-                return await withMusicGpu('music', async (signal) => {
-                    const localResponse = await fetch(`${localAudioUrl.replace(/\/$/, '')}/generate-music`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            prompt: plan.prompt,
-                            duration: plan.durationSeconds,
-                        }),
-                        signal,
-                    });
-                    if (!localResponse.ok) {
-                        throw new Error(`Local audio server returned HTTP ${localResponse.status}`);
-                    }
-                    const data = await localResponse.json();
-                    if (data.audio) {
-                        log.info(`🎵 Successfully generated music using local MusicGen server`);
-                        const mimeType = data.audio.split(';')[0]?.split(':')[1] || 'audio/wav';
+    // Résolution d'URL par mood (mise en cache) + avertissement unique par
+    // piste absente — la bibliothèque peut se remplir progressivement.
+    private trackUrlCache = new Map<string, string>();
+    private missingTrackWarned = new Set<string>();
+    /** Manifeste optionnel `music_manifest.json` à la racine du dossier musique :
+     *  { "tavern": "Tavern positive vibes.mp3", "dungeon": ["a.mp3", "b.mp3"] }
+     *  Sans lui, seul un fichier nommé EXACTEMENT <mood>.mp3 était joué — une
+     *  bibliothèque aux noms descriptifs restait donc entièrement muette. */
+    private manifest: Record<string, string[]> | null = null;
+    private manifestLoaded = false;
 
-                        const track: GeneratedTrack = {
-                            cacheKey: plan.cacheKey,
-                            dataUrl: data.audio,
-                            mimeType,
-                            prompt: plan.prompt,
-                            mood: plan.mood,
-                            sourceModel: 'local-musicgen',
-                            durationSeconds: plan.durationSeconds,
-                            structureText: 'Generated locally via MusicGen',
-                            createdAt: Date.now(),
-                        };
-                        await putCachedTrack(track);
-                        return track;
-                    }
-                    throw new Error('Local audio server did not return audio data');
-                });
-            } catch (localError) {
-                log.warn(`⚠️ Local audio server failed:`, localError);
-                throw localError;
+    private async loadManifest(base: string): Promise<Record<string, string[]>> {
+        if (this.manifestLoaded) return this.manifest || {};
+        this.manifestLoaded = true;
+        try {
+            const res = await fetch(`${base}/music_manifest.json`, { signal: AbortSignal.timeout(4_000) });
+            if (res.ok) {
+                const raw = await res.json();
+                const out: Record<string, string[]> = {};
+                for (const [mood, value] of Object.entries(raw || {})) {
+                    if (mood.startsWith('_')) continue; // clés de commentaire
+                    const list = (Array.isArray(value) ? value : [value])
+                        .filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+                    if (list.length) out[mood] = list;
+                }
+                this.manifest = out;
+                log.info(`🎵 Manifeste musique chargé : ${Object.keys(out).length} ambiance(s) mappée(s)`);
+            }
+        } catch {
+            // Pas de manifeste = comportement historique (fichier <mood>.mp3).
+        }
+        return this.manifest || {};
+    }
+
+    /** 2026-08-15 — GÉNÉRATION DÉBRANCHÉE. La musique vient des 30 pistes
+     *  Lyria pré-enregistrées (cf. « Cahier de Thèmes ») servies par
+     *  audio_server /music (DND_MUSIC_DIR). Le moteur de génération
+     *  (/generate-music + SA3) reste sur disque : plus rien ne l'appelle.
+     *  Nom de fichier = clé de mood (exploration.mp3, combat_boss.mp3…) ;
+     *  'custom' (caption libre du MJ, plus générable) → piste 'dramatic'. */
+    private async generateTrack(plan: MusicPlan): Promise<GeneratedTrack> {
+        const key = plan.mood === 'custom' ? 'dramatic' : plan.mood;
+        const base = viteEnv('VITE_MUSIC_LIBRARY_URL', import.meta.env.VITE_MUSIC_LIBRARY_URL, 'http://127.0.0.1:8001/music').replace(/\/$/, '');
+
+        let url = this.trackUrlCache.get(key) || null;
+        if (!url) {
+            // 1) Le manifeste d'abord : il permet de garder les noms d'origine
+            //    des pistes ET d'en proposer plusieurs pour une même ambiance
+            //    (tirage au sort à chaque résolution → moins de répétition).
+            const manifest = await this.loadManifest(base);
+            const mapped = manifest[key] || [];
+            const candidates = mapped.length
+                ? [mapped[Math.floor(Math.random() * mapped.length)], ...mapped]
+                : [];
+            // 2) Puis la convention historique <mood>.<ext>.
+            for (const ext of ['mp3', 'ogg', 'wav']) candidates.push(`${key}.${ext}`);
+
+            for (const name of candidates) {
+                const candidate = `${base}/${encodeURIComponent(name)}`;
+                try {
+                    const head = await fetch(candidate, { method: 'HEAD', signal: AbortSignal.timeout(4_000) });
+                    // `head.ok` NE SUFFIT PAS. Servie par un hébergeur SPA
+                    // (Firebase Hosting et sa réécriture ** -> /index.html),
+                    // une piste absente renvoie la page HTML avec un 200 : le
+                    // premier candidat gagnait toujours et le lecteur tentait
+                    // de décoder du HTML. On exige un type audio.
+                    const type = head.headers.get('content-type') || '';
+                    if (head.ok && /^audio\//i.test(type)) { url = candidate; break; }
+                } catch { /* candidat suivant */ }
             }
         }
+        if (!url) {
+            if (!this.missingTrackWarned.has(key)) {
+                this.missingTrackWarned.add(key);
+                log.warn(`🎵 Piste absente de la bibliothèque : "${key}" — dépose ${key}.mp3 dans le dossier musique (DND_MUSIC_DIR), ou mappe un fichier existant dans music_manifest.json ("${key}": "Mon Titre.mp3").`);
+            }
+            // Piste manquante = SILENCE voulu — mais l'ancienne piste doit
+            // s'arrêter : le throw était avalé en amont et, victory.mp3
+            // manquant, la musique de COMBAT continuait après chaque victoire
+            // (audit 2026-08-20). On coupe en fondu avant de signaler l'échec.
+            void this.stop().catch(() => { /* best-effort */ });
+            throw new Error(`Music track not found in library: ${key}`);
+        }
+        this.trackUrlCache.set(key, url);
 
-        throw new Error('Local MusicGen audio server is not configured.');
+        log.info(`🎵 Pre-recorded track resolved: ${key} → ${url}`);
+        return {
+            cacheKey: plan.cacheKey,
+            dataUrl: url, // une URL http se joue à l'identique dans new Audio(...)
+            mimeType: 'audio/mpeg',
+            prompt: plan.prompt,
+            mood: plan.mood,
+            sourceModel: 'prerecorded-library',
+            durationSeconds: plan.durationSeconds,
+            structureText: `Pre-recorded track: ${key}`,
+            createdAt: Date.now(),
+        };
     }
 
     private async playTrack(track: GeneratedTrack, loop: boolean): Promise<void> {

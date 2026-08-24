@@ -8,6 +8,7 @@ import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { LoadGameMenu } from '../components/LoadGameMenu';
 import { auth } from '../services/firebase';
+import { MenuMusicToggle } from '../components/MenuMusicToggle';
 
 export function ModeSelectionView() {
     const navigate = useNavigate();
@@ -67,10 +68,13 @@ export function ModeSelectionView() {
                 <span>{t.logout}</span>
             </button>
 
-            <div className="absolute top-4 right-4 flex gap-4 bg-gray-800 p-2 rounded-lg border border-gray-600">
-                <button onClick={() => setLanguage('en')} className={`font-bold transition-colors ${language === 'en' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>EN</button>
-                <div className="w-px bg-gray-600 h-6"></div>
-                <button onClick={() => setLanguage('fr')} className={`font-bold transition-colors ${language === 'fr' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>FR</button>
+            <div className="absolute top-4 right-4 flex items-center gap-3">
+                <MenuMusicToggle />
+                <div className="flex gap-4 bg-gray-800 p-2 rounded-lg border border-gray-600">
+                    <button onClick={() => setLanguage('en')} className={`font-bold transition-colors ${language === 'en' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>EN</button>
+                    <div className="w-px bg-gray-600 h-6"></div>
+                    <button onClick={() => setLanguage('fr')} className={`font-bold transition-colors ${language === 'fr' ? 'text-gold' : 'text-gray-500 hover:text-white'}`}>FR</button>
+                </div>
             </div>
 
             <h1 className="text-4xl font-fantasy text-gold mb-12">{t.choosePath}</h1>
@@ -129,6 +133,10 @@ export function ModeSelectionView() {
                                 saveService.setCurrentSave(saveId);
                                 setShowLoadMenu(false);
                                 navigate('/session');
+                            } else {
+                                // MV2 (contre-audit) — sauvegarde corrompue (character absent) :
+                                // sans else, le clic « Continuer » ne faisait RIEN en silence.
+                                alert(t.loadError);
                             }
                         } catch (err) {
                             console.error('Failed to load save:', err);

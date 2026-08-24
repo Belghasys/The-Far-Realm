@@ -8,10 +8,10 @@
 //   level-up while still unchosen).
 
 import React, { useMemo, useState } from 'react';
-import { CharacterSheet, Ability } from '../types';
+import { CharacterSheet, Ability, getRacialBonus } from '../types';
 import { getNewFeaturesAtLevel, asiLevelsBetween, getFeaturesForLevel, CLASS_FEATURES } from '../data/classFeatures';
 import { getSubclassConfig, getSubclassFeaturesForLevel, getNewSubclassFeaturesAtLevel, SUBCLASS_DATA } from '../data/subclasses';
-import { FEATS, getFeatById } from '../data/feats';
+import { FEATS, getFeatById, meetsFeatPrerequisites } from '../data/feats';
 import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus, Award, BookOpen } from 'lucide-react';
 import { ensureProgressionState } from '../services/rulesEngine';
 import { maxSpellLevelForClass, spellsForClass } from '../services/codexService';
@@ -82,14 +82,17 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     const tr = TRANS[language];
     const previousLevel = fromLevel ?? Math.max(1, newLevel - 1);
     // 2 points per crossed ASI level + any points banked from earlier dismissals.
-    const asiBudget = asiLevelsBetween(previousLevel, newLevel).length * 2 + (character.pendingASIPoints || 0);
+    // da-m3 — ASI bonus du Guerrier (6/14) et du Roublard (10) comptés.
+    const asiBudget = asiLevelsBetween(previousLevel, newLevel, character.class).length * 2 + (character.pendingASIPoints || 0);
     const [alloc, setAlloc] = useState<Partial<Record<Ability, number>>>({});
     const [selectedSubclass, setSelectedSubclass] = useState<string | null>(null);
     // A feat trades 2 ASI points for a permanent capability (5e's ASI-or-feat choice).
     const FEAT_COST = 2;
     const [selectedFeat, setSelectedFeat] = useState<string | null>(null);
     const takenFeatIds = new Set(character.feats || []);
-    const availableFeats = FEATS.filter(f => !takenFeatIds.has(f.id));
+    // da-m4 — les dons à prérequis (War Caster, Adepte élémentaire…) exigent
+    // d'être lanceur de sorts : ils n'apparaissent plus pour un Barbare.
+    const availableFeats = FEATS.filter(f => !takenFeatIds.has(f.id) && meetsFeatPrerequisites(f, character));
 
     // ── Nouveaux sorts au passage de niveau (lanceurs) ──────────────────────
     // Budget généreux : 2 choix par niveau gagné pour les full casters/Warlock,
@@ -130,11 +133,15 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
         ? getNewSubclassFeaturesAtLevel(character.class, character.subclass, newLevel)
         : [];
 
+    // UI3 (contre-audit) — le plafond SRD de 20 porte sur le score EFFECTIF :
+    // la stat de base n'inclut PAS le bonus racial (ajouté à la lecture par
+    // getEffectiveStat), donc un Demi-orc pouvait monter à 22 effectif (+6).
+    const effectiveCap = (stat: Ability) => 20 - getRacialBonus(character.race, stat);
     const bumpStat = (stat: Ability, delta: 1 | -1) => {
         const current = alloc[stat] || 0;
         if (delta === 1) {
             if (remaining <= 0) return;
-            if (character.stats[stat] + current >= 20) return; // hard cap 20
+            if (character.stats[stat] + current >= effectiveCap(stat)) return; // hard cap 20 effectif
             setAlloc({ ...alloc, [stat]: current + 1 });
         } else {
             if (current <= 0) return;
@@ -186,7 +193,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     const handleConfirm = () => {
         const updatedStats = { ...character.stats };
         for (const stat of ABILITIES) {
-            updatedStats[stat] = Math.min(20, updatedStats[stat] + (alloc[stat] || 0));
+            updatedStats[stat] = Math.min(effectiveCap(stat), updatedStats[stat] + (alloc[stat] || 0));
         }
 
         const finalSubclass = showSubclassChoice ? (selectedSubclass || undefined) : character.subclass;
@@ -199,7 +206,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
         const features = mergeFeatures(finalSubclass);
         if (featDef) {
             for (const [stat, bonus] of Object.entries(featDef.mechanical.statBonus || {})) {
-                updatedStats[stat as Ability] = Math.min(20, updatedStats[stat as Ability] + (bonus || 0));
+                updatedStats[stat as Ability] = Math.min(effectiveCap(stat as Ability), updatedStats[stat as Ability] + (bonus || 0));
             }
             if (featDef.mechanical.hpPerLevel) {
                 const bonusHP = featDef.mechanical.hpPerLevel * newLevel;
@@ -208,6 +215,18 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
             // Surface the feat on the sheet as a feature (survives mergeFeatures:
             // it is neither a class nor a subclass feature name).
             features.push({ name: `${featDef.name} (Feat)`, description: featDef.description });
+        }
+
+        // RAW (2026-08-13) : si le modificateur de CON augmente (ASI ou don),
+        // les PV max augmentent RÉTROACTIVEMENT de +1 par niveau et par point
+        // de modificateur — avant, monter la CON ne donnait aucun PV.
+        {
+            const conModBefore = Math.floor((character.stats.CON - 10) / 2);
+            const conModAfter = Math.floor((updatedStats.CON - 10) / 2);
+            if (conModAfter > conModBefore) {
+                const retroHP = (conModAfter - conModBefore) * newLevel;
+                hp = { current: hp.current + retroHP, max: hp.max + retroHP };
+            }
         }
 
         // Nouveaux sorts choisis : tours de magie → cantrips ; sorts → connus

@@ -90,6 +90,12 @@ export interface NPC {
     name: string;
     description: string;
     location: string;
+    /**
+     * Époque ms de la mise en scène par le MJ (add_npc / update_npc / open_shop).
+     * Absent = fiche semée à la création, jamais encore rencontrée : le panneau
+     * ne l'affiche pas.
+     */
+    lastSeenAt?: number;
 }
 
 export interface Location {
@@ -125,6 +131,17 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
     const [activeTab, setActiveTab] = useState<JournalTab>(hasBriefing ? 'briefing' : 'quests');
     const activeQuests = quests.filter(quest => quest.status === 'active');
 
+    // Le journal ne liste que les gens RENCONTRÉS. Quatre alliés de la campagne
+    // et jusqu'à trois marchands sont semés dans le journal dès la création du
+    // personnage (CharacterCreationView, règle NF3) : le MJ a besoin de les
+    // connaître dans son contexte directeur, mais le joueur, lui, les
+    // découvrait tous au tour un — accroches de quête comprises.
+    // `lastSeenAt` n'est posé que par add_npc, update_npc et open_shop, c'est-à-dire
+    // exactement quand le MJ met la personne en scène : il fait donc office de
+    // « déjà croisé ». Les fiches semées gardent tout leur texte et
+    // apparaissent intactes le jour de la rencontre.
+    const metNpcs = npcs.filter(npc => Boolean(npc.lastSeenAt));
+
     // Chronique illustrée : images de scène archivées localement.
     const activeSaveId = useGameStore(s => s.activeSaveId);
     const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
@@ -138,7 +155,7 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
     const tabs = [
         ...(hasBriefing ? [{ id: 'briefing' as const, label: tr.tabPrologue, count: 0 }] : []),
         { id: 'quests' as const, label: tr.tabQuests, count: activeQuests.length },
-        { id: 'people' as const, label: tr.tabPeople, count: npcs.length },
+        { id: 'people' as const, label: tr.tabPeople, count: metNpcs.length },
         { id: 'places' as const, label: tr.tabPlaces, count: locations.length },
         { id: 'chronicle' as const, label: tr.tabChronicle, count: chronicle.length },
         { id: 'gallery' as const, label: tr.tabGallery, count: undefined as unknown as number },
@@ -180,7 +197,7 @@ export function JournalPanel({ briefing, quests, npcs, locations = [], chronicle
             <div className="min-h-0 flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {activeTab === 'briefing' && <BriefingView briefing={briefing} tr={tr} />}
                 {activeTab === 'quests' && <QuestList quests={quests} tr={tr} />}
-                {activeTab === 'people' && <PeopleList npcs={npcs} tr={tr} />}
+                {activeTab === 'people' && <PeopleList npcs={metNpcs} tr={tr} />}
                 {activeTab === 'places' && <PlaceList locations={locations} tr={tr} />}
                 {activeTab === 'chronicle' && <ChronicleList entries={chronicle} tr={tr} />}
                 {activeTab === 'gallery' && (

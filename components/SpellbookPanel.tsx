@@ -3,6 +3,8 @@ import { Sparkles, BookOpen, Search, Check, Trash2, RotateCcw, Info } from 'luci
 import { CharacterSheet, getEffectiveStat, SpellEntry } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { spellsForClass, lookupSpell } from '../services/codexService';
+import { playSpellSfx } from '../services/combatSfx';
+import { CLASS_CASTER_ABILITY } from '../services/rulesEngine';
 import { useGameStore } from '../store/gameStore';
 
 type Language = 'en' | 'fr';
@@ -197,7 +199,10 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
     const [schoolFilter, setSchoolFilter] = useState<string>('all');
     const [selected, setSelected] = useState<SpellEntry | null>(null);
 
-    const ability = character.spellcastingAbility || 'INT';
+    // Même règle que le moteur (castSpell) : classe d'abord quand le champ
+    // spellcastingAbility manque — l'ancien défaut 'INT' affichait un DD faux
+    // pour un Clerc/Druide de vieille sauvegarde (audit 2026-08-12).
+    const ability = character.spellcastingAbility || CLASS_CASTER_ABILITY[character.class] || 'INT';
     const mod = Math.floor((getEffectiveStat(character, ability) - 10) / 2);
     const dc = 8 + profBonus(character.level) + mod;
     const attackBonus = profBonus(character.level) + mod;
@@ -243,6 +248,8 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
 
     const handleCast = (name: string, level: number) => {
         if (level === 0) {
+            // SFX déterministe : son élémentaire du tour de magie.
+            playSpellSfx(lookupSpell(name) as any, name);
             onLogMessage?.(language === 'fr'
                 ? `*[SYSTÈME : ${character.name} lance ${name} (tour de magie, à volonté)]*`
                 : `*[SYSTEM: ${character.name} casts ${name} (cantrip, at will)]*`);
@@ -255,6 +262,8 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
                 : `*[SYSTEM: No level ${level}+ slot available for ${name}.]*`);
             return;
         }
+        // SFX déterministe : son élémentaire du sort lancé depuis le grimoire.
+        playSpellSfx(lookupSpell(name) as any, name);
         const pool = slots[key];
         update({ spellSlots: { ...slots, [key]: { ...pool, current: pool.current - 1 } } });
         onLogMessage?.(language === 'fr'

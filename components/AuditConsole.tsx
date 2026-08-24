@@ -10,6 +10,8 @@ const TRANS = {
     resume: '▶ resume',
     pause: '⏸ pause',
     clear: 'clear',
+    exportLog: '💾 export',
+    exportTitle: 'Save the displayed entries to a .txt file (respects the filters).',
     devMode: '🛠 Dev Mode',
     on: 'ON',
     off: 'OFF',
@@ -26,6 +28,8 @@ const TRANS = {
     resume: '▶ reprendre',
     pause: '⏸ pause',
     clear: 'vider',
+    exportLog: '💾 exporter',
+    exportTitle: 'Enregistre les entrées affichées dans un fichier .txt (filtres pris en compte).',
     devMode: '🛠 Mode Dév',
     on: 'ON',
     off: 'OFF',
@@ -115,6 +119,29 @@ function AuditConsoleView() {
           {paused ? tr.resume : tr.pause}
         </button>
         <button onClick={() => { auditBus.clear(); setEntries([]); setSelected(null); }} className="rounded bg-white/10 px-2 py-1 text-white/80">{tr.clear}</button>
+        {/* Export : les entrées AFFICHÉES (filtres compris) dans un .txt —
+            pour transmettre un diagnostic sans recopier la console. */}
+        <button
+          onClick={() => {
+            const lines = filtered.map(e => {
+              const d = new Date(e.ts);
+              const p = (n: number, w = 2) => String(n).padStart(w, '0');
+              const stamp = `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
+              return `[${stamp}] [${e.channel}] ${e.title}${e.detail ? `\n    ${e.detail.replace(/\n/g, '\n    ')}` : ''}`;
+            });
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            const p = (n: number) => String(n).padStart(2, '0');
+            a.href = url;
+            a.download = `dungeonai-audit-${now.getFullYear()}${p(now.getMonth() + 1)}${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}.txt`;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+          }}
+          title={tr.exportTitle}
+          className="rounded bg-white/10 px-2 py-1 text-white/80"
+        >{tr.exportLog}</button>
         <button onClick={() => setDevMode(!devMode)} className={`rounded px-2 py-1 font-bold ${devMode ? 'bg-red-600 text-white' : 'bg-white/10 text-white/80'}`}>
           {tr.devMode} : {devMode ? tr.on : tr.off}
         </button>

@@ -35,8 +35,10 @@ interface State {
  */
 export class ErrorBoundary extends React.Component<Props, State> {
     public state: State;
-    public props: Props;
-    public setState: any;
+    // `declare` : les champs viennent de React.Component — les redéclarer avec
+    // un initialiseur casserait strictPropertyInitialization (ui-m7).
+    declare public props: Props;
+    declare public setState: any;
 
     constructor(props: Props) {
         super(props);

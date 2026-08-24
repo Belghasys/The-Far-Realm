@@ -1,12 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 import { AdventureManifest, CharacterSheet } from '../types';
-import { generateGeminiImage } from './geminiImageService';
-import { requireViteEnv } from './modelConfig';
+import { generateGeminiImage, stripNegations } from './geminiImageService';
+import { requireViteEnv, viteEnv } from './modelConfig';
 import { log } from './logger';
 
 const API_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
-const TTS_MODEL = String(import.meta.env.VITE_TTS_MODEL || 'gemini-3.1-flash-tts-preview').trim();
-const TTS_VOICE = String(import.meta.env.VITE_TTS_VOICE || 'Charon').trim();
+// GM2 — lus via viteEnv (runtime launcher > build Vite > défaut), comme tous
+// les autres services : la lecture directe d'import.meta.env figeait le modèle
+// au build et rendait runtime.env inopérant dans le jeu installé.
+const TTS_MODEL = viteEnv('VITE_TTS_MODEL', import.meta.env.VITE_TTS_MODEL, 'gemini-3.1-flash-tts-preview');
+const TTS_VOICE = viteEnv('VITE_TTS_VOICE', import.meta.env.VITE_TTS_VOICE, 'Charon');
 
 let ai: GoogleGenAI | null = null;
 
@@ -49,9 +52,9 @@ export function buildIntroNarration(character: CharacterSheet, manifest: Adventu
 
     if (language.toLowerCase().startsWith('fr')) {
         return compact([
-            baseIntro || `${character.name} entre dans une histoire qui porte deja la marque de ses choix.`,
-            desire ? `Tout ramene a son desir: ${desire}.` : '',
-            `Puis l'image se fixe sur la premiere scene: ${scene}.`,
+            baseIntro || `${character.name} entre dans une histoire qui porte déjà la marque de ses choix.`,
+            desire ? `Tout ramène à son désir : ${desire}.` : '',
+            `Puis l'image se fixe sur la première scène : ${scene}.`,
         ].filter(Boolean).join(' '), 1100);
     }
 
@@ -65,14 +68,19 @@ export function buildIntroNarration(character: CharacterSheet, manifest: Adventu
 export function buildIntroVisualPrompt(character: CharacterSheet, manifest: AdventureManifest): string {
     const profile = character.storyProfile || {};
     const firstScene = manifest.firstScene;
+    // Contrat Klein (même que buildSceneImagePrompt) : la DESCRIPTION d'abord
+    // (l'attention du text-encoder pique au début), UNE phrase de style à la
+    // fin, AUCUNE négation — en langage naturel, nommer « watermark » peut en
+    // invoquer un. Cap 1100 : le proxy Firebase refuse au-delà de 1200 (l'ancien
+    // cap 1600 faisait échouer l'image d'intro en mode proxy).
     return compact([
-        manifest.cinematicBrief?.visualPrompt,
-        `D&D dark fantasy cinematic key art, 16:9 wide frame, no text, no UI, no watermark.`,
-        `Hero: ${character.name || 'the player character'}, ${character.race} ${character.class}.`,
-        profile.appearance ? `Appearance: ${profile.appearance}.` : '',
-        firstScene ? `Opening location: ${firstScene.location}. Objective: ${firstScene.objective}. Mood: ${firstScene.mood || 'dramatic'}.` : '',
-        manifest.villain?.name ? `A subtle symbol of the antagonist ${manifest.villain.name}, not a full reveal.` : '',
-    ].filter(Boolean).join(' '), 1600);
+        stripNegations(manifest.cinematicBrief?.visualPrompt),
+        `${character.name || 'The hero'}, a ${character.race} ${character.class}${profile.appearance ? ` — ${profile.appearance}` : ''}, stands before ${firstScene?.location || 'a vast shadowed realm'}.`,
+        firstScene?.objective ? `Their quest: ${firstScene.objective}.` : '',
+        `Mood: ${firstScene?.mood || 'dramatic'}.`,
+        manifest.villain?.name ? `Far in the background, a faint ominous emblem of ${manifest.villain.name}.` : '',
+        `Epic wide 16:9 key art, painted dark-fantasy concept art, dramatic cinematic lighting.`,
+    ].filter(Boolean).join(' '), 1100);
 }
 
 export function buildIntroMusicPrompt(manifest: AdventureManifest): string {
@@ -196,9 +204,17 @@ export async function generateIntroCinematicAssets(
     const musicPrompt = buildIntroMusicPrompt(manifest);
     const sceneText = firstSceneText(manifest);
 
+    // PB4 — TIMEOUTS : le voile ne doit jamais rester bloqué sur « Le voile se
+    // rassemble » à cause d'une image ou d'un TTS qui traîne — au-delà, on
+    // continue en dégradé (texte + musique).
+    const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> =>
+        Promise.race([
+            promise,
+            new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)),
+        ]);
     const [imageResult, audioResult] = await Promise.allSettled([
-        generateGeminiImage(visualPrompt, { aspectRatio: '16:9', imageSize: '1K' }),
-        generateIntroNarrationAudio(script),
+        withTimeout(generateGeminiImage(visualPrompt, { aspectRatio: '16:9' }), 45_000, 'intro image'),
+        withTimeout(generateIntroNarrationAudio(script), 30_000, 'intro TTS'),
     ]);
 
     if (imageResult.status === 'rejected') log.warn('Intro image generation failed:', imageResult.reason);

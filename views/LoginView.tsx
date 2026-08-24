@@ -4,6 +4,7 @@ import { Skull } from 'lucide-react';
 import { auth, googleProvider } from '../services/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { LanguageSelector } from '../components/LanguageContext';
+import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {
@@ -90,7 +91,8 @@ export function LoginView() {
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-4 bg-[url('https://www.transparenttextures.com/patterns/black-scales.png')]">
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 flex items-center gap-3">
+                <MenuMusicToggle />
                 <LanguageSelector />
             </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, ExternalLink, Heart, Shield, SkipForward, Skull, Swords, User, XCircle } from 'lucide-react';
-import { getCreature, getCreatureAttacks } from '../data/bestiary';
+import { getCreature, getCreatureAttacks, formatCR } from '../data/bestiary';
 import type { ActiveEffect } from '../types';
 import { CombatActionsPanel } from './CombatActionsPanel';
 import { useGameStore } from '../store/gameStore';
@@ -84,10 +84,28 @@ export interface Combatant {
     dexMod?: number;
     /** Damage types this combatant resists (halved). The player carries racial resistances. */
     resistances?: string[];
+    /** Damage types this combatant is IMMUNE to (0 damage) — audit 2026-08-12 :
+     *  le joueur ne pouvait jamais être immunisé ni vulnérable. */
+    immunities?: string[];
+    /** Damage types this combatant is VULNERABLE to (double damage). */
+    vulnerabilities?: string[];
+    /** Concentration d'un PNJ/monstre lanceur (audit 2026-08-12 : la
+     *  concentration n'existait que pour le héros — le Hold Person d'un ennemi
+     *  ne se brisait jamais). Posé par apply_condition {concentrationBy},
+     *  testé par applyDamageToEncounter (CON save DD max(10, dégâts/2)),
+     *  purgé quand le lanceur tombe à 0 PV. */
+    concentratingOn?: { effectName: string; targetId?: string };
+    /** Usages de sorts LIMITÉS déjà dépensés par ce lanceur ennemi
+     *  (data/casterKits.ts) — nom du sort → nombre d'utilisations. */
+    spellUses?: Record<string, number>;
     /** Explicit XP award (DM-provided via add_enemy_init). Falls back to bestiary → HP estimate. */
     xpValue?: number;
     /** Distance band relative to the player: melee = au contact, near = quelques mètres, far = loin. */
     range?: 'melee' | 'near' | 'far';
+    /** Profil d'attaque d'un ALLIÉ (compagnon, PNJ secouru, invocation) : le
+     *  moteur joue son tour lui-même avec ces chiffres. Sans profil, le tour de
+     *  l'allié dépendait entièrement du MJ et « passait » la plupart du temps. */
+    attack?: { name: string; attackBonus: number; damage: string; damageType: string };
 }
 
 /** Faction of a combatant, back-compatible with the old isPlayer-only model. */
@@ -115,7 +133,7 @@ interface Props {
     onSelectTarget?: (id: string) => void;
     onAttack?: (weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) => void;
     /** Bonus-action attack: off-hand weapon, Berserker Frenzy, or War Priest. */
-    onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest') => void;
+    onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest' | 'martial' | 'shield') => void;
     onCastSpell?: (spellName: string, slotLevel: string | null, targetId: string) => void;
     onDodge?: () => void;
     onUsePotion?: (potionItem: any) => void;
@@ -151,11 +169,11 @@ function duplicateSuffix(index: number): string {
     return suffix;
 }
 
-function combatantMapKey(combatant: Combatant, index: number): string {
+export function combatantMapKey(combatant: Combatant, index: number): string {
     return combatant.id || `${combatant.name}-${index}`;
 }
 
-function buildDisplayNames(combatants: Combatant[]): Map<string, string> {
+export function buildDisplayNames(combatants: Combatant[]): Map<string, string> {
     const enemyCounts = new Map<string, number>();
     for (const combatant of combatants) {
         if (combatant.isPlayer) continue;
@@ -195,6 +213,7 @@ function CombatantPortrait({
             <img
                 src={combatant.portrait}
                 alt={combatant.name}
+                title={combatant.name}
                 onClick={onClick}
                 // AideDD bloque le hotlinking sur le Referer : sans no-referrer,
                 // tous les portraits SRD (aidedd.org/dnd/images/*.jpg) tombaient
@@ -279,7 +298,7 @@ const CombatantRow: React.FC<{
                     onClick={creature?.url ? (e) => {
                         e.stopPropagation();
                         if (onOpenReference) {
-                            onOpenReference(combatant.name, creature.url);
+                            onOpenReference(combatant.name, creature.url || '');
                         } else {
                             window.open(creature.url, '_blank');
                         }
@@ -293,7 +312,7 @@ const CombatantRow: React.FC<{
                                 <div className="flex items-center gap-1 shrink-0 mr-1.5">
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'action'); }}
+                                        onClick={(e) => { e.stopPropagation(); onToggleAction?.(combatant.id, 'action'); }}
                                         title={tr.mainActionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
@@ -301,7 +320,7 @@ const CombatantRow: React.FC<{
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'bonusAction'); }}
+                                        onClick={(e) => { e.stopPropagation(); onToggleAction?.(combatant.id, 'bonusAction'); }}
                                         title={tr.bonusActionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
@@ -309,7 +328,7 @@ const CombatantRow: React.FC<{
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'reaction'); }}
+                                        onClick={(e) => { e.stopPropagation(); onToggleAction?.(combatant.id, 'reaction'); }}
                                         title={tr.reactionTitle}
                                         className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                     >
@@ -318,7 +337,7 @@ const CombatantRow: React.FC<{
                                     {hasExtraAttack && (
                                         <button
                                             type="button"
-                                            onClick={(e) => { e.stopPropagation(); onToggleAction && onToggleAction(combatant.id, 'extraAttack'); }}
+                                            onClick={(e) => { e.stopPropagation(); onToggleAction?.(combatant.id, 'extraAttack'); }}
                                             title={tr.extraAttackTitle}
                                             className="focus:outline-none transition-transform hover:scale-110 active:scale-95 cursor-pointer"
                                         >
@@ -326,7 +345,9 @@ const CombatantRow: React.FC<{
                                         </button>
                                     )}
                                 </div>
-                                <span className={`truncate text-sm font-black uppercase leading-5 ${isTurn ? 'text-amber-200' : 'text-white/85'}`}>
+                                {/* Noms longs : 2 lignes max au lieu d'une coupe sèche,
+                                    + le nom complet en infobulle au survol. */}
+                                <span title={displayName} className={`line-clamp-2 break-words text-sm font-black uppercase leading-4 ${isTurn ? 'text-amber-200' : 'text-white/85'}`}>
                                     {displayName}
                                 </span>
                                 {isSelectedTarget && (
@@ -337,7 +358,7 @@ const CombatantRow: React.FC<{
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/45">
                                 <span>{tr.init} {combatant.initiative}</span>
-                                {creature && <span>CR {creature.cr}</span>}
+                                {creature && <span>CR {formatCR(creature.cr)}</span>}
                                 {primaryAttack && <span className="truncate">{primaryAttack.damage} {primaryAttack.damageType}</span>}
                                 {combatantSide(combatant) === 'enemy' && combatant.range && combatant.range !== 'melee' && (
                                     <span
@@ -387,8 +408,8 @@ const CombatantRow: React.FC<{
                                         title={effect.description || effect.name}
                                         className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                                             isNegative
-                                                ? 'border-red-900/45 bg-red-955/45 text-red-300'
-                                                : 'border-emerald-900/45 bg-emerald-955/45 text-emerald-300'
+                                                ? 'border-red-900/45 bg-red-950/45 text-red-300'
+                                                : 'border-emerald-900/45 bg-emerald-950/45 text-emerald-300'
                                         }`}
                                     >
                                         {effect.name}
@@ -404,8 +425,8 @@ const CombatantRow: React.FC<{
                                         title={`${mod.reason} (${tr.usesRemaining(mod.remainingUses)})`}
                                         className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                                             isNegative
-                                                ? 'border-red-900/45 bg-red-955/45 text-red-300'
-                                                : 'border-amber-900/45 bg-amber-955/45 text-amber-200'
+                                                ? 'border-red-900/45 bg-red-950/45 text-red-300'
+                                                : 'border-amber-900/45 bg-amber-950/45 text-amber-200'
                                         }`}
                                     >
                                         {mod.name} {mod.bonus !== 0 ? `${mod.bonus > 0 ? '+' : ''}${mod.bonus}` : ''}
@@ -429,7 +450,7 @@ const CombatantRow: React.FC<{
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (onOpenReference) {
-                                    onOpenReference(combatant.name, creature.url);
+                                    onOpenReference(combatant.name, creature.url || '');
                                 } else {
                                     window.open(creature.url, '_blank');
                                 }
@@ -493,7 +514,7 @@ export function CombatTracker({
     const recentRolls = combatRolls.slice(-8);
 
     return (
-        <aside className="fixed bottom-28 left-3 right-3 z-50 max-h-[48vh] overflow-hidden rounded-md border border-white/12 bg-zinc-950/92 text-white shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:bottom-auto md:left-auto md:right-4 md:top-4 md:w-[390px] md:max-h-[calc(100vh-2rem)] flex flex-col">
+        <aside className="fixed bottom-28 left-3 right-3 z-50 max-h-[48vh] overflow-hidden rounded-md border border-white/12 bg-zinc-950/92 text-white shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:bottom-auto md:left-auto md:right-4 md:top-4 md:w-[488px] md:max-h-[calc(100vh-2rem)] flex flex-col">
             <div className="border-b border-white/10 bg-black/45 p-3 flex-none">
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
@@ -501,7 +522,10 @@ export function CombatTracker({
                             <Swords className="h-4 w-4 text-red-400" />
                             {tr.combat}
                         </div>
-                        <h2 className="truncate text-lg font-black leading-6 text-white">
+                        <h2
+                            title={current ? displayNames.get(combatantMapKey(current, currentIndex)) || current.name : undefined}
+                            className="truncate text-lg font-black leading-6 text-white"
+                        >
                             {current ? displayNames.get(combatantMapKey(current, currentIndex)) || current.name : tr.initiative}
                         </h2>
                     </div>
@@ -583,7 +607,7 @@ export function CombatTracker({
                     <div className="max-h-[150px] space-y-1 overflow-y-auto custom-scrollbar">
                         {recentRolls.map(r => (
                             <div key={r.id} className={`flex items-baseline justify-between gap-2 rounded px-2 py-1 text-xs ${r.isDM ? 'bg-red-950/40 ring-1 ring-red-500/20' : 'bg-sky-950/30'}`}>
-                                <span className={`truncate ${r.isDM ? 'text-red-100' : 'text-sky-100'}`}>{r.name}{r.formula ? <span className="text-white/35"> · {r.formula}</span> : null}</span>
+                                <span title={`${r.name}${r.formula ? ` · ${r.formula}` : ''}`} className={`truncate ${r.isDM ? 'text-red-100' : 'text-sky-100'}`}>{r.name}{r.formula ? <span className="text-white/35"> · {r.formula}</span> : null}</span>
                                 <span className={`shrink-0 font-mono text-sm font-black ${r.success === true ? 'text-green-400' : r.success === false ? 'text-red-400' : 'text-amber-200'}`}>
                                     {r.total}{r.success === true ? ' ✓' : r.success === false ? ' ✗' : ''}
                                 </span>

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BookOpen, ExternalLink, Search, Shield, Swords, Wand2 } from 'lucide-react';
 import { preloadCodexBestiary, searchCodex } from '../services/codexService';
+import { formatCR } from '../data/bestiary';
 import { CodexEntry, CodexEntryKind } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
@@ -104,7 +105,7 @@ function entrySubtitle(entry: CodexEntry, tr: Tr): string {
     if (entry.kind === 'action') return entry.actionType.replace('_', ' ');
     if (entry.kind === 'item') return entry.itemType;
     if (entry.kind === 'condition') return tr.condition;
-    return `CR ${entry.cr} - ${entry.type}`;
+    return `CR ${formatCR(entry.cr)} - ${entry.type}`;
 }
 
 function sourceLine(entry: CodexEntry): string {

@@ -1,9 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { getPlayerAttackModifier } from '../types';
-import { combatantSide } from './CombatTracker';
+import { getPlayerAttackModifier, getPlayerAttackCount, isRangedWeapon } from '../types';
+import { combatantSide, buildDisplayNames } from './CombatTracker';
 import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield, Flame, Wind, HandHeart, Music2, Zap, Dices, EyeOff, Footprints, Cross, Crosshair, Wand2, PawPrint } from 'lucide-react';
 import { getFeatById } from '../data/feats';
+import { monkMartialArtsDie, getActionCapability, hasFeatSpecial } from '../services/rulesEngine';
+import { lookupSpell, isAreaSpell } from '../services/codexService';
 
 const TRANS = {
     en: {
@@ -12,6 +14,8 @@ const TRANS = {
         warPriest: (name: string, uses: number) => `War Priest: ${name} (${uses})`,
         waitingTurnOf: (name: string) => `Waiting — ${name}'s turn…`,
         waitingUpdate: 'Waiting for the combat update…',
+        incapacitatedBanner: (cond: string) => `${cond} — you cannot act this turn. Your turn will pass automatically.`,
+        dyingBanner: 'Unconscious (0 HP) — death saving throws in progress. You cannot act.',
         combatActionsHeader: '⚔️ Combat Actions (Your Turn)',
         actionAvailable: 'Action Available',
         attack: 'Attack',
@@ -33,6 +37,9 @@ const TRANS = {
         bonusBtnOffhand: 'Bonus 🗡️ Off-hand',
         bonusBtnFrenzy: 'Bonus 🗡️ Frenzy',
         bonusBtnWar: 'Bonus 🗡️ War',
+        bonusBtnShield: 'Bonus 🛡️ Shield bash',
+        shieldBashName: 'Shield bash',
+        shieldBashLabel: (name: string) => `Shield bash: ${name}`,
         afterMainAttack: 'After your main attack',
         bonusUsed: 'Bonus used',
         spell: 'Spell',
@@ -43,6 +50,15 @@ const TRANS = {
         freeCantrip: 'Free (Cantrip)',
         noSlots: 'No slots',
         levelPrefix: 'Level ',
+        pactSlotLabel: 'Pact slot lv.',
+        bandFar: '🏹 FAR',
+        bandNear: '➡ AT RANGE',
+        bonusNeedsMelee: 'Target not in melee reach',
+        advanceBtn: 'Close In 🏃',
+        chargeBtn: 'Charge ⚡',
+        advanceTitle: 'Target out of melee reach — this action closes one distance band (no strike this turn).',
+        chargeTitle: 'Charge: close the distance AND strike in the same action (mount or rage).',
+        aoePickTargets: 'Area — pick specific targets (overrides the list above)',
         player: 'Player',
         enemyHp: (cur: number, max: number) => `Enemy, HP: ${cur}/${max}`,
         castSpell: 'Cast the Spell ✨',
@@ -85,7 +101,48 @@ const TRANS = {
         abilityWildShapeHint: 'Action — beast form: gain 2 × level temporary HP (10 rounds).',
         abilityFamiliar: 'Familiar: Help',
         abilityFamiliarHint: 'Bonus action, 1/short rest — your familiar harries the foe: advantage on your next attack.',
+        abilityDivineSmite: 'Divine Smite',
+        abilityDivineSmiteHint: 'Burn a spell slot — your next weapon hit deals +2d8 radiant (+1d8 per slot level above 1st).',
+        abilityRecklessAttack: 'Reckless Attack',
+        abilityRecklessAttackHint: 'Free — advantage on your melee attacks this turn; attacks against you have advantage until your next turn.',
+        abilityStunningStrike: 'Stunning Strike',
+        abilityStunningStrikeHint: '1 ki — your next weapon hit forces a CON save or the target is stunned.',
+        abilityStepOfWind: 'Step of the Wind',
+        abilityStepOfWindHint: 'Bonus action, 1 ki — Dash and Disengage: reposition freely.',
+        abilityTurnUndead: 'Channel: Turn Undead',
+        abilityTurnUndeadHint: 'Action, 1 Channel Divinity — undead within 30 ft flee (WIS save vs your spell DC).',
+        abilityEldritchMind: 'Pact Focus',
+        abilityEldritchMindHint: 'Bonus action, 1/short rest — your patron sharpens your aim: advantage on your next spell attack.',
+        abilityNaturalRecovery: 'Natural Recovery',
+        abilityNaturalRecoveryHint: 'Recover spell slots (half your level, rounded up) — 1/long rest.',
+        abilityNeedsSlot: 'No spell slot left.',
+        abilityMeleeOnly: 'Melee weapon required.',
+        abilityDivineSense: 'Divine Sense',
+        abilityDivineSenseHint: 'Action — detect celestials, fiends and undead within 60 ft (the DM answers honestly).',
+        abilitySacredWeapon: 'Channel: Sacred Weapon',
+        abilitySacredWeaponHint: 'Action, 1 Channel Divinity — +CHA to your weapon attack rolls for 10 rounds.',
+        abilityVowOfEnmity: 'Channel: Vow of Enmity',
+        abilityVowOfEnmityHint: 'Bonus action, 1 Channel Divinity — advantage on your attacks against your sworn foe (10 rounds).',
+        abilityNaturesWrath: "Channel: Nature's Wrath",
+        abilityNaturesWrathHint: 'Action, 1 Channel Divinity — spectral vines: STR save or the target is restrained.',
+        abilityCavalierChallenge: 'Channel: Cavalier Challenge',
+        abilityCavalierChallengeHint: 'Bonus action, 1 Channel Divinity — challenge a foe: it focuses its attacks on YOU.',
+        abilityDivineIntervention: 'Divine Intervention',
+        abilityDivineInterventionHint: 'Action — d100 ≤ your level: your deity intervenes with a miracle. 1/long rest.',
+        abilityPrimevalAwareness: 'Primeval Awareness',
+        abilityPrimevalAwarenessHint: 'Action, 1 level-1 slot — sense aberrations, celestials, dragons, elementals, fey, fiends and undead within 1 mile.',
+        abilityMetaQuickened: 'Metamagic: Quickened',
+        abilityMetaQuickenedHint: '2 sorcery points — your next spell this turn costs a BONUS ACTION instead of your action.',
+        abilityMetaHeightened: 'Metamagic: Heightened',
+        abilityMetaHeightenedHint: '3 sorcery points — the target of your next save-spell rolls its save with DISADVANTAGE.',
+        abilityWholeness: 'Wholeness of Body',
+        abilityWholenessHint: 'Action — regain 3 × monk level HP. 1/long rest.',
+        bonusBtnMartial: 'Bonus 👊 Strike',
+        martialArtsLabel: 'Martial Arts',
+        unarmedStrike: 'Unarmed Strike',
         allEnemies: 'All enemies (area spell)',
+        allCombatants: 'Whole area — allies included (friendly fire)',
+        polearmButt: 'Butt-end strike (Polearm Master)',
         powerAttackGWM: 'Great Weapon Master: -5 to hit / +10 damage',
         powerAttackSharp: 'Sharpshooter: -5 to hit / +10 damage',
         needsAttackFirst: 'Attack first with your main action.',
@@ -99,6 +156,8 @@ const TRANS = {
         warPriest: (name: string, uses: number) => `Prêtre de guerre : ${name} (${uses})`,
         waitingTurnOf: (name: string) => `En attente — tour de ${name}…`,
         waitingUpdate: 'En attente de la mise à jour du combat…',
+        incapacitatedBanner: (cond: string) => `${cond} — vous ne pouvez pas agir ce tour. Votre tour passera automatiquement.`,
+        dyingBanner: 'Inconscient (0 PV) — jets de mort en cours. Vous ne pouvez pas agir.',
         combatActionsHeader: '⚔️ Actions de Combat (Ton Tour)',
         actionAvailable: 'Action Disponible',
         attack: 'Attaquer',
@@ -120,6 +179,9 @@ const TRANS = {
         bonusBtnOffhand: 'Bonus 🗡️ Off-hand',
         bonusBtnFrenzy: 'Bonus 🗡️ Frénésie',
         bonusBtnWar: 'Bonus 🗡️ Guerre',
+        bonusBtnShield: 'Bonus 🛡️ Coup de bouclier',
+        shieldBashName: 'Coup de bouclier',
+        shieldBashLabel: (name: string) => `Coup de bouclier : ${name}`,
         afterMainAttack: 'Après ton attaque principale',
         bonusUsed: 'Bonus utilisé',
         spell: 'Sortilège',
@@ -130,6 +192,15 @@ const TRANS = {
         freeCantrip: 'Gratuit (Cantrip)',
         noSlots: "Pas d'emplacements",
         levelPrefix: 'Niveau ',
+        pactSlotLabel: 'Pacte — niv.',
+        bandFar: '🏹 LOIN',
+        bandNear: '➡ À DISTANCE',
+        bonusNeedsMelee: 'Cible pas au contact',
+        advanceBtn: 'Se rapprocher 🏃',
+        chargeBtn: 'Charger ⚡',
+        advanceTitle: 'Cible hors de portée de mêlée — cette action te rapproche d\'une bande (pas de frappe ce tour-ci).',
+        chargeTitle: 'Charge : rapprochement ET frappe dans la même action (monture ou rage).',
+        aoePickTargets: 'Zone — choisis des cibles précises (remplace la liste au-dessus)',
         player: 'Joueur',
         enemyHp: (cur: number, max: number) => `Ennemi, PV: ${cur}/${max}`,
         castSpell: 'Lancer le Sort ✨',
@@ -172,7 +243,48 @@ const TRANS = {
         abilityWildShapeHint: 'Action — forme animale : 2 × niveau PV temporaires (10 rounds).',
         abilityFamiliar: 'Familier : Aide',
         abilityFamiliarHint: 'Action bonus, 1/repos court — ton familier harcèle la cible : avantage sur ta prochaine attaque.',
+        abilityDivineSmite: 'Châtiment divin',
+        abilityDivineSmiteHint: 'Brûle un emplacement de sort — ta prochaine attaque réussie inflige +2d8 radiants (+1d8 par niveau au-dessus du 1er).',
+        abilityRecklessAttack: 'Attaque téméraire',
+        abilityRecklessAttackHint: 'Gratuit — avantage sur tes attaques de mêlée ce tour ; les attaques contre toi ont l\'avantage jusqu\'à ton prochain tour.',
+        abilityStunningStrike: 'Frappe étourdissante',
+        abilityStunningStrikeHint: '1 ki — ta prochaine attaque réussie impose une sauvegarde de CON ou la cible est étourdie.',
+        abilityStepOfWind: 'Pas du vent',
+        abilityStepOfWindHint: 'Action bonus, 1 ki — Sprint et Désengagement : tu te repositionnes librement.',
+        abilityTurnUndead: 'Canalisation : Renvoi des morts-vivants',
+        abilityTurnUndeadHint: 'Action, 1 Canalisation — les morts-vivants à 9 m fuient (sauvegarde de SAG contre ton DD de sort).',
+        abilityEldritchMind: 'Focalisation du pacte',
+        abilityEldritchMindHint: 'Action bonus, 1/repos court — ton patron guide ta main : avantage sur ta prochaine attaque de sort.',
+        abilityNaturalRecovery: 'Récupération naturelle',
+        abilityNaturalRecoveryHint: 'Récupère des emplacements de sort (moitié de ton niveau, arrondi au supérieur) — 1/repos long.',
+        abilityNeedsSlot: 'Aucun emplacement de sort.',
+        abilityMeleeOnly: 'Arme de mêlée requise.',
+        abilityDivineSense: 'Perception divine',
+        abilityDivineSenseHint: 'Action — détecte célestes, fiélons et morts-vivants à 18 m (le MJ répond honnêtement).',
+        abilitySacredWeapon: 'Canalisation : Arme sacrée',
+        abilitySacredWeaponHint: "Action, 1 Canalisation — +mod. CHA à tes jets d'attaque d'arme pendant 10 rounds.",
+        abilityVowOfEnmity: 'Canalisation : Vœu d\'inimitié',
+        abilityVowOfEnmityHint: 'Action bonus, 1 Canalisation — avantage sur tes attaques contre ton ennemi juré (10 rounds).',
+        abilityNaturesWrath: 'Canalisation : Courroux de la nature',
+        abilityNaturesWrathHint: 'Action, 1 Canalisation — lianes spectrales : sauvegarde de FOR ou la cible est ENTRAVÉE.',
+        abilityCavalierChallenge: 'Canalisation : Défi du cavalier',
+        abilityCavalierChallengeHint: 'Action bonus, 1 Canalisation — défie un ennemi : il concentre ses assauts sur TOI.',
+        abilityDivineIntervention: 'Intervention divine',
+        abilityDivineInterventionHint: 'Action — d100 ≤ ton niveau : ta divinité intervient par un miracle. 1/repos long.',
+        abilityPrimevalAwareness: 'Conscience primitive',
+        abilityPrimevalAwarenessHint: 'Action, 1 emplacement niv. 1 — perçois aberrations, célestes, dragons, élémentaires, fées, fiélons et morts-vivants à 1,5 km.',
+        abilityMetaQuickened: 'Métamagie : Sort accéléré',
+        abilityMetaQuickenedHint: '2 pts de sorcellerie — ton prochain sort ce tour coûte une ACTION BONUS au lieu de ton action.',
+        abilityMetaHeightened: 'Métamagie : Sort intensifié',
+        abilityMetaHeightenedHint: '3 pts de sorcellerie — la cible de ton prochain sort à sauvegarde jette avec DÉSAVANTAGE.',
+        abilityWholeness: 'Plénitude du corps',
+        abilityWholenessHint: 'Action — regagne 3 × niveau de moine PV. 1/repos long.',
+        bonusBtnMartial: 'Bonus 👊 Frappe',
+        martialArtsLabel: 'Arts martiaux',
+        unarmedStrike: 'Frappe à mains nues',
         allEnemies: 'Tous les ennemis (sort de zone)',
+        allCombatants: 'Toute la zone — alliés compris (tir ami)',
+        polearmButt: 'Coup du talon (Maître d\'armes d\'hast)',
         powerAttackGWM: 'Maître des armes de guerre : -5 au jet / +10 dégâts',
         powerAttackSharp: 'Tireur d\'élite : -5 au jet / +10 dégâts',
         needsAttackFirst: "Attaque d'abord avec ton action principale.",
@@ -184,7 +296,9 @@ const TRANS = {
 
 export type ClassAbilityId = 'rage' | 'secondWind' | 'actionSurge' | 'layOnHands' | 'bardicInspiration' | 'kiFlurry' | 'kiPatientDefense'
     | 'lucky' | 'cunningHide' | 'cunningDash' | 'channelPreserveLife' | 'channelGuidedStrike' | 'sorceryCreateSlot' | 'superiorityStrike' | 'wildShape'
-    | 'familiarHelp';
+    | 'familiarHelp' | 'divineSmite' | 'recklessAttack' | 'stunningStrike' | 'stepOfTheWind' | 'turnUndead' | 'eldritchMind' | 'naturalRecovery'
+    | 'divineSense' | 'sacredWeapon' | 'vowOfEnmity' | 'naturesWrath' | 'cavalierChallenge' | 'divineIntervention'
+    | 'primevalAwareness' | 'metaQuickened' | 'metaHeightened' | 'wholenessOfBody';
 
 export interface ClassAbilityEntry {
     id: ClassAbilityId; label: string; hint: string; uses: string;
@@ -207,7 +321,17 @@ export function buildClassAbilityEntries(character: any, econ: any | null, langu
     const bonusLeft = inCombat ? (econ.bonusMax ?? 1) - (econ.bonusUsed ?? 0) : 1;
     const attacksLeft = inCombat ? (econ.attacksMax ?? 1) - (econ.attacksUsed ?? 0) : 1;
     const attacksUsed = inCombat ? (econ.attacksUsed ?? 0) : 1;
-    const raging = (character.activeEffects || []).some(e => e.name === 'Rage');
+    const raging = (character.activeEffects || []).some((e: any) => e.name === 'Rage');
+    const level = character.level || 1;
+    // Emplacement de sort disponible (Châtiment divin) : niveau le plus bas
+    // d'abord — on ne brûle pas un slot 3 quand un slot 1 suffit.
+    const openSlot = Object.entries(character.spellSlots || {})
+        .map(([key, pool]: [string, any]) => ({ level: Number(String(key).replace(/\D/g, '')) || 1, current: pool?.current ?? 0 }))
+        .filter(s => s.current > 0)
+        .sort((a, b) => a.level - b.level)[0];
+    // isRangedWeapon = la même règle que le moteur. (L'ancien test maison
+    // comptait une dague de JET comme « pas mêlée » → Châtiment divin grisé.)
+    const weaponIsMelee = !isRangedWeapon(character.weapon);
 const out: any[] = [];
 
         if (character.class === 'Barbarian' && (res.rage?.current ?? 0) > 0 && !raging) {
@@ -231,6 +355,27 @@ const out: any[] = [];
                 disabled: false,
             });
         }
+        // Paladin : le CHÂTIMENT DIVIN est la capacité signature de la classe et
+        // n'existait tout simplement pas dans le jeu.
+        if (character.class === 'Paladin' && level >= 2) {
+            const smiteDice = openSlot ? Math.min(5, 1 + openSlot.level) : 2;
+            out.push({
+                id: 'divineSmite', label: tr.abilityDivineSmite, hint: tr.abilityDivineSmiteHint, icon: <Sparkles className="h-3.5 w-3.5" />,
+                uses: openSlot ? `${smiteDice}d8 · niv.${openSlot.level}` : '—',
+                disabled: !openSlot || !weaponIsMelee,
+                disabledReason: !openSlot ? tr.abilityNeedsSlot : tr.abilityMeleeOnly,
+            });
+        }
+        if (character.class === 'Barbarian' && level >= 2) {
+            const reckless = (character.activeEffects || []).some((e: any) => e.grantsAttackAdvantage);
+            out.push({
+                id: 'recklessAttack', label: tr.abilityRecklessAttack, hint: tr.abilityRecklessAttackHint, icon: <Flame className="h-3.5 w-3.5" />,
+                uses: '∞',
+                // Mêlée uniquement (SRD) et inutile si déjà actif ce tour.
+                disabled: attacksLeft <= 0 || !weaponIsMelee || reckless,
+                disabledReason: attacksLeft <= 0 ? tr.actionUsedShort : !weaponIsMelee ? tr.abilityMeleeOnly : undefined,
+            });
+        }
         if (character.class === 'Paladin' && (res.layOnHands?.current ?? 0) > 0) {
             out.push({
                 id: 'layOnHands', label: tr.abilityLayOnHands, hint: tr.abilityLayOnHandsHint, icon: <HandHeart className="h-3.5 w-3.5" />,
@@ -238,6 +383,44 @@ const out: any[] = [];
                 disabled: attacksLeft <= 0 || character.hp.current >= character.hp.max,
                 disabledReason: attacksLeft <= 0 ? tr.actionUsedShort : undefined,
             });
+        }
+        if (character.class === 'Paladin' && (res.divineSense?.current ?? 0) > 0) {
+            out.push({
+                id: 'divineSense', label: tr.abilityDivineSense, hint: tr.abilityDivineSenseHint, icon: <EyeOff className="h-3.5 w-3.5" />,
+                uses: `${res.divineSense.current}/${res.divineSense.max}`,
+                disabled: false,
+            });
+        }
+        // Canalisation divine du Paladin — l'option dépend du SERMENT choisi.
+        if (character.class === 'Paladin' && (res.channelDivinity?.current ?? 0) > 0 && level >= 3) {
+            const channelUses = `${res.channelDivinity.current}/${res.channelDivinity.max}`;
+            if (character.subclass === 'Oath of Devotion' || !character.subclass) {
+                out.push({
+                    id: 'sacredWeapon', label: tr.abilitySacredWeapon, hint: tr.abilitySacredWeaponHint, icon: <Sparkles className="h-3.5 w-3.5" />,
+                    uses: channelUses, disabled: false,
+                });
+            }
+            if (character.subclass === 'Oath of Vengeance') {
+                out.push({
+                    id: 'vowOfEnmity', label: tr.abilityVowOfEnmity, hint: tr.abilityVowOfEnmityHint, icon: <Crosshair className="h-3.5 w-3.5" />,
+                    uses: channelUses, needsTarget: true,
+                    disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+                });
+            }
+            if (character.subclass === 'Oath of the Ancients') {
+                out.push({
+                    id: 'naturesWrath', label: tr.abilityNaturesWrath, hint: tr.abilityNaturesWrathHint, icon: <PawPrint className="h-3.5 w-3.5" />,
+                    uses: channelUses, needsTarget: true,
+                    disabled: attacksLeft <= 0, disabledReason: tr.actionUsedShort,
+                });
+            }
+            if (character.subclass === 'Cavalier') {
+                out.push({
+                    id: 'cavalierChallenge', label: tr.abilityCavalierChallenge, hint: tr.abilityCavalierChallengeHint, icon: <Shield className="h-3.5 w-3.5" />,
+                    uses: channelUses, needsTarget: true,
+                    disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+                });
+            }
         }
         if (character.class === 'Bard' && (res.bardicInspiration?.current ?? 0) > 0) {
             out.push({
@@ -258,6 +441,18 @@ const out: any[] = [];
                 uses: `${res.ki.current} ki`,
                 disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
             });
+            out.push({
+                id: 'stepOfTheWind', label: tr.abilityStepOfWind, hint: tr.abilityStepOfWindHint, icon: <Footprints className="h-3.5 w-3.5" />,
+                uses: `${res.ki.current} ki`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+            if (level >= 5) {
+                out.push({
+                    id: 'stunningStrike', label: tr.abilityStunningStrike, hint: tr.abilityStunningStrikeHint, icon: <Zap className="h-3.5 w-3.5" />,
+                    uses: `${res.ki.current} ki`,
+                    disabled: false,
+                });
+            }
         }
         if (character.class === 'Rogue' && (character.level || 1) >= 2) {
             out.push({
@@ -281,6 +476,68 @@ const out: any[] = [];
             out.push({
                 id: 'channelGuidedStrike', label: tr.abilityGuidedStrike, hint: tr.abilityGuidedStrikeHint, icon: <Crosshair className="h-3.5 w-3.5" />,
                 uses: `${res.channelDivinity.current}/${res.channelDivinity.max}`,
+                disabled: false,
+            });
+            // Renvoi des morts-vivants : la Canalisation divine de BASE du Clerc,
+            // absente jusqu'ici alors que la ressource existait déjà.
+            out.push({
+                id: 'turnUndead', label: tr.abilityTurnUndead, hint: tr.abilityTurnUndeadHint, icon: <Cross className="h-3.5 w-3.5" />,
+                uses: `${res.channelDivinity.current}/${res.channelDivinity.max}`,
+                disabled: attacksLeft <= 0, disabledReason: tr.actionUsedShort,
+            });
+        }
+        if (character.class === 'Cleric' && (res.divineIntervention?.current ?? 0) > 0) {
+            out.push({
+                id: 'divineIntervention', label: tr.abilityDivineIntervention, hint: tr.abilityDivineInterventionHint, icon: <Cross className="h-3.5 w-3.5" />,
+                uses: `${res.divineIntervention.current}/${res.divineIntervention.max}`,
+                disabled: false,
+            });
+        }
+        if (character.class === 'Ranger' && level >= 3) {
+            const hasL1Slot = Object.entries(character.spellSlots || {}).some(([k, p]: [string, any]) => (Number(String(k).replace(/\D/g, '')) || 1) >= 1 && (p?.current ?? 0) > 0);
+            out.push({
+                id: 'primevalAwareness', label: tr.abilityPrimevalAwareness, hint: tr.abilityPrimevalAwarenessHint, icon: <PawPrint className="h-3.5 w-3.5" />,
+                uses: hasL1Slot ? '1 slot' : '—',
+                disabled: !hasL1Slot, disabledReason: tr.abilityNeedsSlot,
+            });
+        }
+        if (character.class === 'Sorcerer' && level >= 3) {
+            const pts = res.sorceryPoints?.current ?? 0;
+            const hasQuickened = (character.activeEffects || []).some((e: any) => e.name === 'Quickened Spell');
+            const hasHeightened = (character.activeEffects || []).some((e: any) => e.name === 'Heightened Spell');
+            out.push({
+                id: 'metaQuickened', label: tr.abilityMetaQuickened, hint: tr.abilityMetaQuickenedHint, icon: <Zap className="h-3.5 w-3.5" />,
+                uses: `${pts} pts`,
+                disabled: pts < 2 || hasQuickened || bonusLeft <= 0,
+                disabledReason: bonusLeft <= 0 ? tr.bonusUsedShort : undefined,
+            });
+            out.push({
+                id: 'metaHeightened', label: tr.abilityMetaHeightened, hint: tr.abilityMetaHeightenedHint, icon: <Wand2 className="h-3.5 w-3.5" />,
+                uses: `${pts} pts`,
+                disabled: pts < 3 || hasHeightened,
+            });
+        }
+        if (character.class === 'Monk' && character.subclass === 'Way of the Open Hand' && (res.wholenessOfBody?.current ?? 0) > 0) {
+            out.push({
+                id: 'wholenessOfBody', label: tr.abilityWholeness, hint: tr.abilityWholenessHint, icon: <HeartPulse className="h-3.5 w-3.5" />,
+                uses: `${res.wholenessOfBody.current}/${res.wholenessOfBody.max}`,
+                disabled: attacksLeft <= 0 || character.hp.current >= character.hp.max,
+                disabledReason: attacksLeft <= 0 ? tr.actionUsedShort : undefined,
+            });
+        }
+        // Occultiste : aucune capacité activable n'existait pour cette classe.
+        if (character.class === 'Warlock' && (res.pactFocus?.current ?? 0) > 0) {
+            out.push({
+                id: 'eldritchMind', label: tr.abilityEldritchMind, hint: tr.abilityEldritchMindHint, icon: <Sparkles className="h-3.5 w-3.5" />,
+                uses: `${res.pactFocus.current}/${res.pactFocus.max}`,
+                disabled: bonusLeft <= 0, disabledReason: tr.bonusUsedShort,
+            });
+        }
+        // Druide : la Récupération naturelle (Cercle de la Terre) n'était nulle part.
+        if (character.class === 'Druid' && (res.naturalRecovery?.current ?? 0) > 0) {
+            out.push({
+                id: 'naturalRecovery', label: tr.abilityNaturalRecovery, hint: tr.abilityNaturalRecoveryHint, icon: <Wand2 className="h-3.5 w-3.5" />,
+                uses: `${res.naturalRecovery.current}/${res.naturalRecovery.max}`,
                 disabled: false,
             });
         }
@@ -319,7 +576,9 @@ const out: any[] = [];
                 disabled: false,
             });
         }
-        const COMBAT_ONLY = new Set(['actionSurge', 'kiFlurry', 'kiPatientDefense', 'cunningDash', 'superiorityStrike']);
+        const COMBAT_ONLY = new Set(['actionSurge', 'kiFlurry', 'kiPatientDefense', 'cunningDash', 'superiorityStrike',
+            'divineSmite', 'recklessAttack', 'stunningStrike', 'stepOfTheWind', 'turnUndead',
+            'vowOfEnmity', 'naturesWrath', 'cavalierChallenge', 'metaQuickened']);
         for (const entry of out) {
             entry.combatOnly = COMBAT_ONLY.has(entry.id);
             if (!inCombat && entry.combatOnly) {
@@ -334,8 +593,9 @@ interface CombatActionsPanelProps {
     selectedTargetId: string;
     onSelectTarget: (id: string) => void;
     onAttack: (weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) => void;
-    /** Bonus-action attack: off-hand weapon, Berserker Frenzy, or War Priest. */
-    onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest') => void;
+    /** Bonus-action attack: off-hand weapon, Berserker Frenzy, War Priest,
+     *  Monk martial arts or shield bash (PB1). */
+    onBonusAttack?: (weaponItem: any, targetId: string, mode: 'offhand' | 'frenzy' | 'warpriest' | 'martial' | 'shield') => void;
     onCastSpell: (spellName: string, slotLevel: string | null, targetId: string) => void;
     onDodge: () => void;
     onUsePotion: (potionItem: any) => void;
@@ -368,6 +628,9 @@ export function CombatActionsPanel({
     const [selectedSpellName, setSelectedSpellName] = useState<string>('');
     const [selectedSpellSlot, setSelectedSpellSlot] = useState<string>('cantrip');
     const [selectedPotionId, setSelectedPotionId] = useState<string>('');
+    // Sort de ZONE : cibles précises cochées (« 2 gobelins sur 4 ») — quand la
+    // liste est non vide, elle remplace le choix du menu déroulant.
+    const [aoeCustomIds, setAoeCustomIds] = useState<string[]>([]);
 
     // ── All hooks run unconditionally (Rules of Hooks). The early returns are
     //    moved BELOW, after every hook; useMemo/useEffect are null-safe on `character`. ──
@@ -390,9 +653,44 @@ export function CombatActionsPanel({
         return equippedWeapons.find(w => w.slot === 'mainHand') || equippedWeapons[0] || null;
     }, [equippedWeapons]);
 
-    const bonusAttack = useMemo((): { mode: 'offhand' | 'frenzy' | 'warpriest'; weapon: any; label: string } | null => {
+    const bonusAttack = useMemo((): { mode: 'offhand' | 'frenzy' | 'warpriest' | 'martial' | 'shield'; weapon: any; label: string } | null => {
         if (offhandWeapon) {
             return { mode: 'offhand', weapon: offhandWeapon, label: tr.offhand(offhandWeapon.name) };
+        }
+        // PB1 — COUP DE BOUCLIER : un bouclier équipé en main gauche offre une
+        // attaque bonus 1d4 contondant + mod de FOR (façon BG3).
+        const shield = (character?.inventory || []).find(item =>
+            item.equipped && item.slot === 'offHand' && (item.armorType === 'shield' || /bouclier|shield/i.test(item.name)));
+        if (shield) {
+            return {
+                mode: 'shield',
+                weapon: {
+                    id: 'shield-bash',
+                    name: tr.shieldBashName,
+                    type: 'weapon',
+                    damageDice: '1d4',
+                    damageType: 'bludgeoning',
+                    properties: [],
+                },
+                label: tr.shieldBashLabel(shield.name),
+            };
+        }
+        // Don Maître d'armes d'hast (2026-08-13, le `special` était du texte
+        // mort) : arme d'hast en main → attaque bonus du TALON, 1d4 contondant.
+        if (character && hasFeatSpecial(character, 'polearm_bonus_attack') && mainHandWeapon
+            && /glaive|hallebarde|halberd|b[âa]ton|quarterstaff|lance\b|spear|pique|pike/i.test(mainHandWeapon.name || '')) {
+            return {
+                mode: 'martial',
+                weapon: {
+                    id: 'polearm-butt-end',
+                    name: tr.polearmButt,
+                    type: 'weapon',
+                    damageDice: '1d4',
+                    damageType: 'bludgeoning',
+                    properties: [],
+                },
+                label: `${tr.polearmButt} (${mainHandWeapon.name})`,
+            };
         }
         const raging = (character?.activeEffects || []).some(e => /rage|fr[ée]n[ée]sie|frenzy/i.test(e.name));
         if (character?.subclass === 'Berserker' && raging && mainHandWeapon) {
@@ -401,6 +699,19 @@ export function CombatActionsPanel({
         const warPriestUses = (character as any)?.resources?.warPriest?.current ?? 0;
         if (character?.subclass === 'War Domain' && warPriestUses > 0 && mainHandWeapon) {
             return { mode: 'warpriest', weapon: mainHandWeapon, label: tr.warPriest(mainHandWeapon.name, warPriestUses) };
+        }
+        // Moine — Arts martiaux (SRD) : après l'action Attaquer, UNE frappe à
+        // mains nues GRATUITE en action bonus (sans ki — le Déluge coûte 1 ki).
+        if (character?.class === 'Monk') {
+            const unarmed = {
+                id: 'unarmed-martial-arts',
+                name: tr.unarmedStrike,
+                type: 'weapon',
+                damageDice: monkMartialArtsDie(character.level || 1),
+                damageType: 'bludgeoning',
+                properties: ['finesse', 'light'],
+            };
+            return { mode: 'martial', weapon: unarmed, label: `${tr.martialArtsLabel} : ${tr.unarmedStrike}` };
         }
         return null;
     }, [offhandWeapon, mainHandWeapon, character, tr]);
@@ -422,6 +733,14 @@ export function CombatActionsPanel({
         return targets.filter(c => combatantSide(c) === 'enemy');
     }, [targets]);
 
+    // Noms désambiguïsés (Gobelin A/B/C…) — même carte que la fenêtre de combat,
+    // pour que deux monstres identiques restent distinguables dans les menus.
+    const displayNames = useMemo(
+        () => buildDisplayNames([...combatState.combatants].sort((a, b) => b.initiative - a.initiative)),
+        [combatState.combatants]
+    );
+    const nameOf = (c: any) => (c.id && displayNames.get(c.id)) || c.name;
+
     // All player spells list
     const playerSpells = useMemo(() => {
         const cantrips = character?.cantrips || [];
@@ -430,7 +749,11 @@ export function CombatActionsPanel({
         const spells = [...new Set([...cantrips, ...known, ...prepared])];
         return {
             cantrips,
+            // cb-m10 — les sorts de RÉACTION (Shield…) ne se lancent pas comme
+            // action depuis le panneau : la réaction automatisée s'en charge au
+            // bon moment (coup ennemi qui toucherait de justesse).
             spells: spells.filter(s => !cantrips.includes(s))
+                .filter(s => !/reaction/i.test(lookupSpell(s)?.castingTime || '')),
         };
     }, [character]);
 
@@ -446,6 +769,11 @@ export function CombatActionsPanel({
     // character peut être null (early-return APRÈS les hooks) — l'accès non-optionnel
     // dans le tableau de deps crashait au démontage de session.
     }, [character?.spellSlots]);
+
+    // Le sort sélectionné est-il un sort de ZONE ? Les options « tous les
+    // ennemis » et les cases multi-cibles ne s'affichent que pour ceux-là
+    // (Boule de feu oui, Soins non).
+    const aoeSpellSelected = useMemo(() => isAreaSpell(lookupSpell(selectedSpellName)), [selectedSpellName]);
 
     // ── Capacités de classe (Rage, Second souffle, Sursaut, Ki, Imposition,
     //    Inspiration bardique) — pilotées par character.resources. Chaque
@@ -464,7 +792,11 @@ export function CombatActionsPanel({
         if (!specials.length) return null;
         const w: any = equippedWeapons.find(x => x.id === selectedWeaponId) || mainHandWeapon;
         const props = ((w?.properties || character.weapon?.properties || []) as any[]).map(p => String(p).toLowerCase());
-        const isRanged = props.some(p => /ammunition|ranged/.test(p)) || (!!(w?.range || character.weapon?.range) && !props.some(p => /thrown/.test(p)));
+        const isRanged = isRangedWeapon({
+            name: w?.name || character.weapon?.name,
+            properties: props,
+            range: w?.range || character.weapon?.range,
+        });
         if (isRanged && specials.includes('ranged_power_attack')) return { label: tr.powerAttackSharp };
         if (!isRanged && specials.includes('heavy_weapon_power_attack') && props.some(p => /heavy|two-handed|lourde/.test(p))) return { label: tr.powerAttackGWM };
         return null;
@@ -480,6 +812,18 @@ export function CombatActionsPanel({
             }
         }
     }, [selectedTargetId, enemies, targets, onSelectTarget]);
+
+    // Une sélection de ZONE (sentinelle ou liste d'ids) n'a de sens que sur
+    // l'onglet Sorts avec un sort de zone : en changeant de sort ou d'onglet,
+    // revenir à une cible simple et vider les cases cochées.
+    useEffect(() => {
+        const isAoESelection = selectedTargetId === 'all_enemies' || selectedTargetId === 'all_combatants'
+            || selectedTargetId.includes(',');
+        if (isAoESelection && (selectedTab !== 'spell' || !aoeSpellSelected)) {
+            onSelectTarget(enemies[0]?.id || targets[0]?.id || '');
+        }
+        if (!aoeSpellSelected && aoeCustomIds.length) setAoeCustomIds([]);
+    }, [aoeSpellSelected, selectedTargetId, selectedTab, enemies, targets, onSelectTarget, aoeCustomIds.length]);
 
     useEffect(() => {
         if (equippedWeapons.length && !selectedWeaponId) {
@@ -521,6 +865,40 @@ export function CombatActionsPanel({
         );
     }
 
+    // C1 — joueur sous condition incapacitante : toutes les actions sont
+    // fermées, avec la raison affichée (le tour saute côté GameSession).
+    const playerRowForCapability = combatState.combatants.find(c => c.isPlayer);
+    const playerCapability = getActionCapability([
+        ...(character.activeEffects || []),
+        ...(((playerRowForCapability?.activeEffects as any) || []) as any[]),
+    ]);
+    if (!playerCapability.canAct) {
+        return (
+            <div className="rounded-md border border-red-500/30 bg-red-950/40 p-4 text-center text-xs text-red-200/80">
+                ⛓️ {tr.incapacitatedBanner(playerCapability.blockedBy || '')}
+            </div>
+        );
+    }
+
+    // CB8 — à 0 PV, le héros est inconscient : panneau fermé, seul le prompt
+    // de jet de mort reste actif.
+    if ((character.hp?.current ?? 1) <= 0) {
+        return (
+            <div className="rounded-md border border-red-500/30 bg-red-950/40 p-4 text-center text-xs text-red-200/80">
+                💀 {tr.dyingBanner}
+            </div>
+        );
+    }
+
+    // CB5 — tranches d'action restantes pour les onglets Sort / Objet / Esquive
+    // (miroir des vérifications faites côté handlers dans GameSession).
+    const liveEcon: any = (combatState.actionEconomy as any)?.['player'] || {};
+    const baseSlice = getPlayerAttackCount(character);
+    const mainSliceFree = ((liveEcon.attacksMax ?? baseSlice) - (liveEcon.attacksUsed ?? 0)) >= baseSlice;
+    const bonusFree = ((liveEcon.bonusMax ?? 1) - (liveEcon.bonusUsed ?? 0)) >= 1;
+    const quickenedArmed = (character.activeEffects || []).some((e: any) => e.name === 'Quickened Spell');
+    const spellActionFree = quickenedArmed ? bonusFree : mainSliceFree;
+
     const handleAttackSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const weapon = equippedWeapons.find(w => w.id === selectedWeaponId);
@@ -530,9 +908,15 @@ export function CombatActionsPanel({
 
     const handleSpellSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedSpellName || !selectedTargetId) return;
+        if (!selectedSpellName) return;
         const isCantrip = selectedSpellSlot === 'cantrip';
-        onCastSpell(selectedSpellName, isCantrip ? null : selectedSpellSlot, selectedTargetId);
+        // Cases multi-cibles cochées (sort de zone) → liste d'ids « a,b,c »
+        // que GameSession résout comme un cast de zone sur CES cibles-là.
+        const effectiveTarget = (aoeSpellSelected && aoeCustomIds.length > 0)
+            ? aoeCustomIds.join(',')
+            : selectedTargetId;
+        if (!effectiveTarget) return;
+        onCastSpell(selectedSpellName, isCantrip ? null : selectedSpellSlot, effectiveTarget);
     };
 
     const handlePotionSubmit = (e: React.FormEvent) => {
@@ -632,7 +1016,7 @@ export function CombatActionsPanel({
                                     className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
                                 >
                                     {equippedWeapons.map(w => {
-                                        const dmg = w.damageDice || w.damage || '1d4';
+                                        const dmg = w.damageDice || (w as any).damage || '1d4';
                                         return (
                                             <option key={w.id} value={w.id}>
                                                 {w.name} ({dmg} {w.damageType || tr.damage})
@@ -653,11 +1037,14 @@ export function CombatActionsPanel({
                                 <select
                                     value={selectedTargetId}
                                     onChange={(e) => onSelectTarget(e.target.value)}
+                                    title={(() => { const t = enemies.find(x => x.id === selectedTargetId); return t ? nameOf(t) : undefined; })()}
                                     className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
                                 >
+                                    {/* NF4 — la bande de distance apparaît dans le
+                                        sélecteur : le joueur sait s'il devra charger. */}
                                     {enemies.map(e => (
-                                        <option key={e.id} value={e.id}>
-                                            {e.name} ({tr.hpLabel}: {e.hp.current}/{e.hp.max}, {tr.acLabel}: {e.ac})
+                                        <option key={e.id} value={e.id} title={nameOf(e)}>
+                                            {nameOf(e)} ({tr.hpLabel}: {e.hp.current}/{e.hp.max}, {tr.acLabel}: {e.ac}{(e as any).range && (e as any).range !== 'melee' ? ` — ${(e as any).range === 'far' ? tr.bandFar : tr.bandNear}` : ''})
                                         </option>
                                     ))}
                                 </select>
@@ -684,16 +1071,43 @@ export function CombatActionsPanel({
                         const econ = (combatState.actionEconomy as any)?.['player'] || {};
                         const attacksUsed = econ.attacksUsed ?? 0;
                         const bonusLeft = (econ.bonusMax ?? 1) - (econ.bonusUsed ?? 0);
+                        // cb-m9 — le bouton Attaque grise quand tous les pips
+                        // verts sont dépensés (le clic n'aboutissait qu'à un
+                        // message système invisible).
+                        const attackPipsLeft = (econ.attacksMax ?? 1) - attacksUsed;
                         const needsMainFirst = bonusAttack ? (bonusAttack.mode !== 'frenzy' && attacksUsed === 0) : false;
-                        const bonusDisabled = disabled || !bonusAttack || enemies.length === 0 || bonusLeft <= 0 || needsMainFirst;
+                        // PL10 — l'attaque BONUS de MÊLÉE est grisée hors contact
+                        // (elle ne sait pas charger). Une arme à DISTANCE ou de
+                        // JET en main secondaire passe : le moteur tire ou
+                        // convertit en rapprochement, comme en main principale.
+                        const selectedEnemyRow: any = enemies.find(e => e.id === selectedTargetId);
+                        const bonusWeaponRanged = !!bonusAttack && (isRangedWeapon(bonusAttack.weapon)
+                            || ((bonusAttack.weapon?.properties || []) as any[]).some((p: any) => /thrown|jet|lanc/i.test(String(p))));
+                        const bonusNeedsMelee = !bonusWeaponRanged && !!selectedEnemyRow && ((selectedEnemyRow.range || 'melee') !== 'melee');
+                        const bonusDisabled = disabled || !bonusAttack || enemies.length === 0 || bonusLeft <= 0 || needsMainFirst || bonusNeedsMelee;
+                        // Affordance : cible hors contact + arme de mêlée → le bouton
+                        // annonce la vraie issue du clic — RAPPROCHEMENT (action
+                        // consommée, pas de frappe) ou CHARGE (monté/enragé : les
+                        // deux). Fini le clic « Attaque » qui ne frappe pas.
+                        const selWeapon: any = equippedWeapons.find(w => w.id === selectedWeaponId) || mainHandWeapon;
+                        const weaponMeleeOnly = !!selWeapon && !isRangedWeapon(selWeapon)
+                            && !((selWeapon.properties || []) as any[]).some((p: any) => /thrown|jet|lanc/i.test(String(p)));
+                        const targetBand = (selectedEnemyRow?.range || 'melee');
+                        const mountSheet: any = (character as any)?.mount;
+                        const mountRow = combatState.combatants.find(c => c.id === 'mount');
+                        const riddenMount = !!mountSheet && mountSheet.mounted !== false && !(mountRow && mountRow.hp.current <= 0);
+                        const raging = character?.class === 'Barbarian' && (character?.activeEffects || []).some((e: any) => e.name === 'Rage');
+                        const willCharge = weaponMeleeOnly && targetBand !== 'melee' && (riddenMount || (targetBand === 'near' && raging));
+                        const willAdvance = weaponMeleeOnly && targetBand !== 'melee' && !willCharge;
                         return (
                             <div className={`grid gap-2 ${bonusAttack ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                 <button
                                     type="submit"
-                                    disabled={disabled || equippedWeapons.length === 0 || enemies.length === 0}
+                                    disabled={disabled || equippedWeapons.length === 0 || enemies.length === 0 || attackPipsLeft <= 0}
+                                    title={attackPipsLeft <= 0 ? tr.actionUsedShort : willCharge ? tr.chargeTitle : willAdvance ? tr.advanceTitle : undefined}
                                     className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                                 >
-                                    {disabled ? tr.resolving : tr.attackBtn}
+                                    {disabled ? tr.resolving : attackPipsLeft <= 0 ? tr.actionUsedShort : willCharge ? tr.chargeBtn : willAdvance ? tr.advanceBtn : tr.attackBtn}
                                 </button>
                                 {bonusAttack && onBonusAttack && (
                                     <div className="flex flex-col">
@@ -701,17 +1115,19 @@ export function CombatActionsPanel({
                                             type="button"
                                             onClick={() => onBonusAttack(bonusAttack.weapon, selectedTargetId, bonusAttack.mode)}
                                             disabled={bonusDisabled}
-                                            title={needsMainFirst
-                                                ? tr.bonusNeedsMain
-                                                : bonusLeft <= 0
-                                                    ? tr.bonusAlreadyUsed
-                                                    : tr.bonusAction(bonusAttack.label)}
+                                            title={bonusNeedsMelee
+                                                ? tr.bonusNeedsMelee
+                                                : needsMainFirst
+                                                    ? tr.bonusNeedsMain
+                                                    : bonusLeft <= 0
+                                                        ? tr.bonusAlreadyUsed
+                                                        : tr.bonusAction(bonusAttack.label)}
                                             className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold uppercase rounded text-sm transition-colors shadow-lg"
                                         >
-                                            {disabled ? tr.resolving : (bonusAttack.mode === 'offhand' ? tr.bonusBtnOffhand : bonusAttack.mode === 'frenzy' ? tr.bonusBtnFrenzy : tr.bonusBtnWar)}
+                                            {disabled ? tr.resolving : (bonusAttack.mode === 'offhand' ? tr.bonusBtnOffhand : bonusAttack.mode === 'frenzy' ? tr.bonusBtnFrenzy : bonusAttack.mode === 'martial' ? tr.bonusBtnMartial : bonusAttack.mode === 'shield' ? tr.bonusBtnShield : tr.bonusBtnWar)}
                                         </button>
                                         <span className="mt-1 text-center text-[9px] uppercase tracking-wide text-white/35">
-                                            {needsMainFirst ? tr.afterMainAttack : bonusLeft <= 0 ? tr.bonusUsed : bonusAttack.label}
+                                            {bonusNeedsMelee ? tr.bonusNeedsMelee : needsMainFirst ? tr.afterMainAttack : bonusLeft <= 0 ? tr.bonusUsed : bonusAttack.label}
                                         </span>
                                     </div>
                                 )}
@@ -776,7 +1192,12 @@ export function CombatActionsPanel({
                                 >
                                     {spellSlotsAvailable.map(s => (
                                         <option key={s.level} value={s.level} disabled={s.current <= 0}>
-                                            {s.level.replace('level', tr.levelPrefix)} ({s.current}/{s.max})
+                                            {/* cb-m11 — les clés sont '1'/'2'/'pact3' : l'ancien
+                                                replace('level', …) n'affichait jamais « Niveau »
+                                                et les slots de pacte sortaient « pact3 » bruts. */}
+                                            {/^pact/i.test(s.level)
+                                                ? `${tr.pactSlotLabel} ${s.level.replace(/\D/g, '') || '1'}`
+                                                : `${tr.levelPrefix}${s.level.replace(/\D/g, '') || s.level}`} ({s.current}/{s.max})
                                         </option>
                                     ))}
                                 </select>
@@ -789,26 +1210,55 @@ export function CombatActionsPanel({
                             <label className="block text-[10px] font-bold uppercase text-gray-400 mb-1">{tr.target}</label>
                             <select
                                 value={selectedTargetId}
-                                onChange={(e) => onSelectTarget(e.target.value)}
-                                className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400"
+                                onChange={(e) => { onSelectTarget(e.target.value); setAoeCustomIds([]); }}
+                                disabled={aoeCustomIds.length > 0}
+                                title={(() => { const t = targets.find(x => x.id === selectedTargetId); return t ? nameOf(t) : undefined; })()}
+                                className="w-full bg-gray-900 border border-gray-700 rounded px-2.5 py-1.5 text-sm text-white focus:outline-none focus:border-amber-400 disabled:opacity-50"
                             >
-                                {enemies.length > 1 && (
+                                {/* Options de ZONE : seulement pour un vrai sort de zone —
+                                    dès 1 ennemi (l'audit les cachait à tort en 1c1). */}
+                                {aoeSpellSelected && enemies.length > 0 && (
                                     <option value="all_enemies">🌐 {tr.allEnemies}</option>
                                 )}
+                                {aoeSpellSelected && enemies.length > 0 && targets.some(t => !t.isPlayer && combatantSide(t) !== 'enemy') && (
+                                    <option value="all_combatants">💥 {tr.allCombatants}</option>
+                                )}
                                 {targets.map(t => (
-                                    <option key={t.id} value={t.id}>
-                                        {t.name} ({t.isPlayer ? tr.player : tr.enemyHp(t.hp.current, t.hp.max)})
+                                    <option key={t.id} value={t.id} title={nameOf(t)}>
+                                        {nameOf(t)} ({t.isPlayer ? tr.player : tr.enemyHp(t.hp.current, t.hp.max)})
                                     </option>
                                 ))}
                             </select>
+                            {aoeSpellSelected && enemies.length > 1 && (
+                                <div className="mt-1.5">
+                                    <div className="mb-1 text-[9px] uppercase tracking-wide text-white/35">{tr.aoePickTargets}</div>
+                                    <div className="flex flex-wrap gap-1">
+                                        {enemies.map(t => {
+                                            const checked = aoeCustomIds.includes(t.id);
+                                            return (
+                                                <button
+                                                    key={t.id}
+                                                    type="button"
+                                                    title={nameOf(t)}
+                                                    onClick={() => setAoeCustomIds(prev => checked ? prev.filter(id => id !== t.id) : [...prev, t.id])}
+                                                    className={`max-w-[130px] truncate rounded border px-1.5 py-0.5 text-[10px] transition-colors ${checked ? 'border-amber-400 bg-amber-500/25 text-amber-100' : 'border-white/15 bg-white/5 text-white/60 hover:border-white/35'}`}
+                                                >
+                                                    {checked ? '☑' : '☐'} {nameOf(t)}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-end">
                             <button
                                 type="submit"
-                                disabled={disabled || !selectedSpellName || !selectedTargetId || (!playerSpells.cantrips.includes(selectedSpellName) && spellSlotsAvailable.every(s => s.current <= 0))}
+                                disabled={disabled || !spellActionFree || !selectedSpellName || !selectedTargetId || (!playerSpells.cantrips.includes(selectedSpellName) && spellSlotsAvailable.every(s => s.current <= 0))}
+                                title={!spellActionFree ? (quickenedArmed ? tr.bonusUsedShort : tr.actionUsedShort) : undefined}
                                 className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                             >
-                                {disabled ? tr.resolving : tr.castSpell}
+                                {disabled ? tr.resolving : !spellActionFree ? (quickenedArmed ? tr.bonusUsedShort : tr.actionUsedShort) : tr.castSpell}
                             </button>
                         </div>
                     </div>
@@ -838,12 +1288,14 @@ export function CombatActionsPanel({
                         )}
                     </div>
 
+                    {/* PL1 — la potion est une ACTION BONUS. */}
                     <button
                         type="submit"
-                        disabled={disabled || potions.length === 0}
+                        disabled={disabled || potions.length === 0 || !bonusFree}
+                        title={!bonusFree ? tr.bonusUsedShort : undefined}
                         className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg animate-pulse"
                     >
-                        {disabled ? tr.resolving : tr.useItem}
+                        {disabled ? tr.resolving : !bonusFree ? tr.bonusUsedShort : tr.useItem}
                     </button>
                 </form>
             )}
@@ -856,10 +1308,11 @@ export function CombatActionsPanel({
                     <button
                         type="button"
                         onClick={onDodge}
-                        disabled={disabled}
+                        disabled={disabled || !mainSliceFree}
+                        title={!mainSliceFree ? tr.actionUsedShort : undefined}
                         className="w-full py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold uppercase rounded text-sm transition-colors shadow-lg"
                     >
-                        {disabled ? tr.resolving : tr.activateDodge}
+                        {disabled ? tr.resolving : !mainSliceFree ? tr.actionUsedShort : tr.activateDodge}
                     </button>
                 </div>
             )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat, getRacialBonus, DRACONIC_ANCESTRIES } from '../types';
+import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat,
+    getEffectiveMaxHP, getRacialBonus, racialHPBonusPerLevel, DRACONIC_ANCESTRIES } from '../types';
 import { Shield, Heart, Swords, Backpack, Plus, Minus, RefreshCw, UserRound, ScrollText, Sparkles, ChevronLeft, ChevronRight, Eye, Target, CheckCircle2, WandSparkles, Coins, ShoppingCart, Trash2 } from 'lucide-react';
 
 interface Props {
@@ -12,10 +13,12 @@ import { MARTIAL_CLASSES, RACE_DATA, RACES, BACKGROUNDS, FIGHTING_STYLES, DEITIE
 import { CLASS_SKILLS, CLASS_EXPERTISE, ALL_SKILLS } from '../data/classes';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../services/skillSystem';
+import { hasFeatSpecial } from '../services/rulesEngine';
 import { SRD51_SPELLS } from '../data/srd51/spells';
 import { WEAPON_TABLE, WeaponTemplate } from '../data/weapons';
 import { ARMOR_CATALOG, ArmorTemplate, parsePriceToGp, startingGoldFor, getDefaultLoadout, weaponTemplateToItem, armorTemplateToItem } from '../data/equipment';
 import { useGameStore } from '../store/gameStore';
+import { HeroPortraitForge } from './HeroPortraitForge';
 
 type Lang = 'en' | 'fr';
 
@@ -313,6 +316,10 @@ const POINT_BUY_COST: Record<number, number> = {
 // buy (MAX_POINTS); Story = a more generous 37 for a lower-stakes power fantasy.
 // The per-stat ceiling stays 15 either way, so Story just allows more well-
 // rounded heroes, never scores above the point-buy table.
+// UI1 (contre-audit) — 54 était EXACTEMENT le coût de 15 partout : combiné à
+// l'exigence « dépenser tout », le mode Histoire IMPOSAIT 15/15/15/15/15/15
+// (somme des mods +12 vs +5 en normal). 37 rend un vrai choix, conforme aux
+// libellés affichés (« 37 points généreux »).
 const STORY_MAX_POINTS = 54;
 
 function pointBuyCost(score: number): number {
@@ -342,7 +349,11 @@ function defaultCasterState(cls: string): Partial<CharacterSheet> {
   const spells = spellsForClass(cls, 1).slice(0, config.spells).map(spell => spell.name);
   return {
     cantrips,
-    knownSpells: config.mode === 'known' ? spells : [],
+    // UI2 (contre-audit) — les lanceurs « prepared » (Clerc/Druide/Mage) doivent
+    // aussi CONNAÎTRE leurs sorts : l'onglet Grimoire ne lit que knownSpells, et
+    // avec knownSpells vide, les 4 sorts de création saturaient maxPrepared (3 au
+    // niv. 1) sans pouvoir être dépréparés — plus aucun sort préparable ensuite.
+    knownSpells: spells,
     preparedSpells: config.mode === 'prepared' ? spells : [],
     spellcastingAbility: config.ability,
     spellcastingFocus: config.focus,
@@ -410,8 +421,8 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     const classInfo = CLASS_DATA[char.class] || CLASS_DATA['Fighter'];
     const conMod = getMod(getEffectiveStat(char, 'CON'));
 
-    // HP: Max Hit Die + CON Mod
-    const maxHP = Math.max(1, classInfo.hitDie + conMod);
+    // HP: Max Hit Die + CON Mod (+ Robustesse naine du Nain des collines — DA5)
+    const maxHP = Math.max(1, classInfo.hitDie + conMod + racialHPBonusPerLevel(char));
     const ac = getBaseACFromArmor(char);
 
     setChar(prev => {
@@ -460,7 +471,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     const raceInfo = RACE_DATA[race];
     const styleInfo = FIGHTING_STYLES.find(s => s.name === style);
 
-    const features = [];
+    const features: { name: string; description: string }[] = [];
     if (classInfo) {
       features.push(...classInfo.features.filter(feature => feature.level <= c.level).map(feature => ({
         name: feature.name,
@@ -597,11 +608,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
   const toggleEquip = (item: any) => {
     setChar(prev => {
       const willEquip = !item.equipped;
-      const slot = item.type === 'armor' ? (item.armorType === 'shield' ? 'offHand' : 'chest') : 'mainHand';
+      const slot = (item.type === 'armor' ? (item.armorType === 'shield' ? 'offHand' : 'chest') : 'mainHand') as CharacterSheet['inventory'][number]['slot'];
       const inv = prev.inventory.map(i => {
-        if (i.id === item.id) return { ...i, equipped: willEquip, slot: willEquip ? slot : 'none' };
+        if (i.id === item.id) return { ...i, equipped: willEquip, slot: willEquip ? slot : ('none' as const) };
         // Enforce one item per conflicting slot when equipping.
-        if (willEquip && i.equipped && i.slot === slot) return { ...i, equipped: false, slot: 'none' };
+        if (willEquip && i.equipped && i.slot === slot) return { ...i, equipped: false, slot: 'none' as const };
         return i;
       });
       return { ...prev, inventory: inv, weapon: getWeaponFromInventory(inv) };
@@ -686,7 +697,8 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
     setChar(prev => ({
       ...prev,
-      knownSpells: casterConfig.mode === 'known' ? next : [],
+      // UI2 — connu dans les deux modes ; préparé seulement en mode « prepared ».
+      knownSpells: next,
       preparedSpells: casterConfig.mode === 'prepared' ? next : [],
     }));
   };
@@ -710,7 +722,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     STR: getEffectiveStat(char, 'STR'), DEX: getEffectiveStat(char, 'DEX'), CON: getEffectiveStat(char, 'CON'),
     INT: getEffectiveStat(char, 'INT'), WIS: getEffectiveStat(char, 'WIS'), CHA: getEffectiveStat(char, 'CHA'),
   };
-  const passive = passivePerception(effStats, char.level, char.proficiencies || [], char.expertise || []);
+  const passive = passivePerception(effStats, char.level, char.proficiencies || [], char.expertise || [], hasFeatSpecial(char, 'passive_senses_plus_5') ? 5 : 0);
 
   return (
     <div className="bg-parchment text-black p-6 rounded-lg border-8 border-double border-gray-800 shadow-2xl max-w-5xl mx-auto font-fantasy h-full overflow-y-auto">
@@ -1071,6 +1083,15 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 />
               </label>
             </div>
+
+            {/* Le portrait forgé ici devient la référence visuelle du héros dans
+                toutes les images de scène (voir services/imageReferences.ts). */}
+            <HeroPortraitForge
+              character={char}
+              language={language}
+              onUpdateProfile={updateProfile}
+              disabled={readOnly}
+            />
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -1234,7 +1255,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             </div>
             <div className="flex flex-col items-center">
               <Heart className="w-8 h-8 text-blood" />
-              <span className="text-3xl font-bold mt-1">{char.hp.current} <span className="text-lg text-gray-500">/ {char.hp.max}</span></span>
+              <span className="text-3xl font-bold mt-1">{char.hp.current} <span className="text-lg text-gray-500">/ {getEffectiveMaxHP(char)}</span></span>
               <span className="text-xs uppercase tracking-widest text-gray-500">{tr.hitPoints}</span>
             </div>
             <div className="flex flex-col items-center">
@@ -1593,7 +1614,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               </div>
               <div className="rounded border border-gray-300 bg-parchment/60 p-3">
                 <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.mechanics}</div>
-                <p className="mt-1 text-sm">{language === 'fr' ? 'PV' : 'HP'} {char.hp.current}/{char.hp.max} / {language === 'fr' ? 'CA' : 'AC'} {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
+                <p className="mt-1 text-sm">{language === 'fr' ? 'PV' : 'HP'} {char.hp.current}/{getEffectiveMaxHP(char)} / {language === 'fr' ? 'CA' : 'AC'} {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
                 <p className="text-sm">{tr.weapon} {char.weapon?.name || tr.unarmed} ({char.weapon?.damage || '1d4'})</p>
                 <p className={pointsRemaining === 0 ? 'text-sm text-green-700' : 'text-sm text-blood'}>{tr.pointBuy} {pointsRemaining === 0 ? tr.complete : `${pointsRemaining} ${tr.remaining}`}</p>
               </div>

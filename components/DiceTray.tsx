@@ -1,6 +1,8 @@
 import React, { useState, forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
 import { Swords, Dices } from 'lucide-react';
-import { localSfxService } from '../services/localSfxService';
+// 2026-08-15 — localSfxService (génération Stable Audio) débranché : la banque
+// sfxLibrary est la seule source de SFX. Le service reste sur disque.
+import { sfxLibrary } from '../services/sfxLibrary';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {
@@ -11,6 +13,11 @@ const TRANS = {
         skillTitle: 'Skill rolls',
         combatEmpty: 'Attacks, damage and saving throws will appear here.',
         skillEmpty: 'Skill checks will appear here.',
+        rollsTitle: 'Rolls',
+        tabAll: 'All',
+        tabCombat: 'Combat',
+        tabSkill: 'Skills',
+        allEmpty: 'Every roll (attacks, damage, saves, checks) will appear here.',
     },
     fr: {
         success: '✓ Réussite',
@@ -19,6 +26,11 @@ const TRANS = {
         skillTitle: 'Jets de compétence',
         combatEmpty: "Attaques, dégâts et sauvegardes s'afficheront ici.",
         skillEmpty: "Les jets de compétence s'afficheront ici.",
+        rollsTitle: 'Jets',
+        tabAll: 'Tous',
+        tabCombat: 'Combat',
+        tabSkill: 'Compétences',
+        allEmpty: "Tous les jets (attaques, dégâts, sauvegardes, tests) s'afficheront ici.",
     },
 } as const;
 
@@ -66,7 +78,7 @@ function RollRow({ entry, tr }: { key?: React.Key; entry: LogEntry; tr: Tr }) {
             `}
         >
             <div className="flex justify-between items-center gap-2">
-                <span className={`font-bold text-xs truncate ${entry.isDM ? 'text-red-400' : 'text-gold'}`}>
+                <span title={entry.name} className={`font-bold text-xs truncate ${entry.isDM ? 'text-red-400' : 'text-gold'}`}>
                     {entry.name}
                 </span>
                 <span className={`
@@ -104,7 +116,7 @@ function RollWindow({
     logs: LogEntry[];
     emptyIcon: string;
     emptyText: string;
-    bottomRef?: React.RefObject<HTMLDivElement>;
+    bottomRef?: React.RefObject<HTMLDivElement | null>;
     tr: Tr;
 }) {
     return (
@@ -156,7 +168,8 @@ export const DiceTray = forwardRef<DiceTrayRef, DiceTrayProps>((_props, ref) => 
             });
         }
         // Trigger local sound effect
-        void localSfxService.playSfxForLog(entry);
+        // Banque : 6 vrais sons de dés (dice/roll_01-06) au lieu d'une génération GPU par jet.
+        void sfxLibrary.playKey('dice/roll');
     };
 
     useImperativeHandle(ref, () => ({
@@ -164,39 +177,57 @@ export const DiceTray = forwardRef<DiceTrayRef, DiceTrayProps>((_props, ref) => 
         addLogNoMirror: (entry) => writeLog(entry, false),
     }));
 
+    // PL15 — UN SEUL panneau à onglets (Tous / Combat / Compétences) : les
+    // jets étaient éclatés en deux fenêtres empilées + le HUD, illisible.
+    const [tab, setTab] = useState<'all' | 'combat' | 'skill'>('all');
     const combatLogs = logs.filter(log => COMBAT_TYPES.includes(log.type));
     const skillLogs = logs.filter(log => log.type === 'check');
+    const visibleLogs = tab === 'all' ? logs : tab === 'combat' ? combatLogs : skillLogs;
 
     useEffect(() => {
         combatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [combatLogs.length]);
+    }, [visibleLogs.length, tab]);
 
-    useEffect(() => {
-        skillBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [skillLogs.length]);
+    const tabs: { id: 'all' | 'combat' | 'skill'; label: string; count: number }[] = [
+        { id: 'all', label: tr.tabAll, count: logs.length },
+        { id: 'combat', label: tr.tabCombat, count: combatLogs.length },
+        { id: 'skill', label: tr.tabSkill, count: skillLogs.length },
+    ];
 
     return (
         <div className="flex h-full flex-col gap-2 bg-black/80 p-2 font-sans">
-            <RollWindow
-                title={tr.combatTitle}
-                icon={<Swords className="h-3.5 w-3.5" />}
-                accent="text-red-300/85"
-                logs={combatLogs}
-                emptyIcon="⚔️"
-                emptyText={tr.combatEmpty}
-                bottomRef={combatBottomRef}
-                tr={tr}
-            />
-            <RollWindow
-                title={tr.skillTitle}
-                icon={<Dices className="h-3.5 w-3.5" />}
-                accent="text-sky-300/85"
-                logs={skillLogs}
-                emptyIcon="🎲"
-                emptyText={tr.skillEmpty}
-                bottomRef={skillBottomRef}
-                tr={tr}
-            />
+            <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-gray-700 bg-black/60">
+                <div className="flex items-center gap-1 border-b border-gray-700 px-2 py-1.5">
+                    <span className="mr-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-300/85">
+                        <Dices className="h-3.5 w-3.5" /> {tr.rollsTitle}
+                    </span>
+                    {tabs.map(t => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setTab(t.id)}
+                            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                                tab === t.id
+                                    ? 'bg-amber-400 text-black'
+                                    : 'text-white/45 hover:bg-white/10 hover:text-white/80'
+                            }`}
+                        >
+                            {t.label} <span className="font-mono opacity-60">{t.count}</span>
+                        </button>
+                    ))}
+                </div>
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2 custom-scrollbar">
+                    {visibleLogs.length === 0 ? (
+                        <div className="mt-4 flex flex-col items-center gap-1 text-center text-gray-500">
+                            <div className="text-xl opacity-30">{tab === 'skill' ? '🎲' : tab === 'combat' ? '⚔️' : '🎲'}</div>
+                            <p className="text-[11px] italic">{tab === 'skill' ? tr.skillEmpty : tab === 'combat' ? tr.combatEmpty : tr.allEmpty}</p>
+                        </div>
+                    ) : (
+                        visibleLogs.map(l => <RollRow key={l.id} entry={l} tr={tr} />)
+                    )}
+                    <div ref={combatBottomRef} />
+                </div>
+            </div>
         </div>
     );
 });

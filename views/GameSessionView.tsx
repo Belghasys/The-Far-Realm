@@ -4,6 +4,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GameSession } from '../components/GameSession';
 import { IntroCinematic } from '../components/IntroCinematic';
 import { useGameStore } from '../store/gameStore';
+import { ensureProgressionState } from '../services/rulesEngine';
 
 export function GameSessionView() {
     const navigate = useNavigate();
@@ -60,6 +61,19 @@ export function GameSessionView() {
     useEffect(() => {
         if (!character) navigate('/mode');
     }, [character, navigate]);
+
+    // Migration des anciennes fiches à l'entrée en session : matérialise les
+    // ressources de classe ajoutées depuis (Focalisation du pacte de
+    // l'Occultiste, Récupération naturelle du Druide…). Sans ça, un
+    // personnage sauvegardé n'aurait JAMAIS vu les nouvelles capacités.
+    useEffect(() => {
+        if (!character) return;
+        const ensured = ensureProgressionState(character);
+        const before = Object.keys(character.resources || {}).sort().join(',');
+        const after = Object.keys(ensured.resources || {}).sort().join(',');
+        if (before !== after) useGameStore.getState().setCharacter(ensured);
+    }, [character]);
+
     if (!character) return null;
 
     return (

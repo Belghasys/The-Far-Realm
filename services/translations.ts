@@ -510,6 +510,18 @@ export const translations = {
             en: "You are stable but unconscious. Your turn passes.",
             fr: "Vous êtes stable mais inconscient. Vous passez votre tour."
         }
+    },
+
+    // ===== SETTINGS / AUDIO CONTROLS =====
+    settings: {
+        muteMusic: {
+            en: "Mute the theme",
+            fr: "Couper la musique"
+        },
+        unmuteMusic: {
+            en: "Play the theme",
+            fr: "Remettre la musique"
+        }
     }
 };
 

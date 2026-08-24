@@ -3,6 +3,7 @@ import { Loader2, Play, SkipForward, Volume2 } from 'lucide-react';
 import { AdventureManifest, CharacterSheet } from '../types';
 import { generateIntroCinematicAssets, IntroCinematicAssets } from '../services/introCinematicService';
 import { lyriaMusicService } from '../services/lyriaMusic';
+import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
 import { log } from '../services/logger';
 
 const TRANS = {
@@ -52,6 +53,14 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
 
     const load = async () => {
       setIsLoading(true);
+      // PB4 — une musique GÉNÉRIQUE démarre DÈS l'ouverture du voile, sans
+      // attendre l'image/TTS (elle sera affinée avec le vrai prompt ensuite).
+      lyriaMusicService
+        .setMood('dramatic', [
+          { text: 'cinematic fantasy opening, gentle orchestral underscore, mysterious and hopeful', weight: 1.2 },
+        ])
+        .catch(error => log.warn('Intro warmup music failed:', error));
+
       const nextAssets = await generateIntroCinematicAssets(character, manifest, language);
       if (cancelled) return;
       setAssets(nextAssets);
@@ -62,6 +71,20 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
           { text: 'cinematic fantasy opening, gentle orchestral underscore', weight: 0.8 },
         ])
         .catch(error => log.warn('Intro music failed:', error));
+
+      // PB4 — pré-génération des PORTRAITS des PNJ clés et des marchands
+      // pendant que le joueur écoute l'intro (file séquentielle du
+      // portraitService, cache IndexedDB, silencieux en cas d'échec) : les
+      // visages sont prêts dès la première rencontre.
+      try {
+        const cast: { name?: string; detail?: string }[] = [
+          ...((manifest.supportingCast || []).slice(0, 4).map(c => ({ name: c.name, detail: c.description }))),
+          ...(((manifest.keyMerchants || []).slice(0, 3)).map(m => ({ name: m.name, detail: `${m.type} merchant${m.personality ? `, ${m.personality}` : ''}` }))),
+        ];
+        for (const npc of cast) {
+          if (npc.name) portraitService.request(npcPortraitKey(npc.name), portraitPrompt(npc.name, npc.detail));
+        }
+      } catch { /* pré-génération best-effort */ }
     };
 
     void load();

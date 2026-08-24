@@ -1,47 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, MessageCircle, Send, Mail, ArrowRight, Book } from 'lucide-react';
+import { Share2, MessageCircle, Send, Mail, ArrowRight, Book, PenLine, Layers, Clock, Gauge } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useGameStore } from '../store/gameStore';
+import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { saveService } from '../services/saveService';
 import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
-import { ADVENTURES as ADVENTURE_OPTIONS } from '../data/adventures';
-
-const ADVENTURES = [
-    {
-        id: 'lost_mines', title: "Lost Mine of Phandelver", desc: "Level 1-5. A classic start.",
-        lore: "Une mine naine légendaire perdue dans les âges. Gobelins, bandits et une mystérieuse araignée noire vous attendent.", minLevel: 1, maxLevel: 5
-    },
-    {
-        id: 'dragon_heist', title: "Waterdeep: Dragon Heist", desc: "Level 1-5. Urban intrigue.",
-        lore: "Course au trésor dans les rues de Waterdeep. Guildes rivales, nobles corrompus et 500 000 pièces d'or à trouver.", minLevel: 1, maxLevel: 5
-    },
-    {
-        id: 'strahd', title: "Curse of Strahd", desc: "Level 1-10. Gothic Horror.",
-        lore: "Un vampire maudit règne sur la vallée de Barovia. Échappez aux brumes... si vous le pouvez.", minLevel: 1, maxLevel: 10
-    },
-    {
-        id: 'tomb_annihilation', title: "Tomb of Annihilation", desc: "Level 1-11. Jungle survival.",
-        lore: "Jungle de Chult, dinosaures et pièges mortels. Un artefact dévore les âmes des morts.", minLevel: 1, maxLevel: 11
-    },
-    {
-        id: 'storm_kings', title: "Storm King's Thunder", desc: "Level 1-11. Giants uprising.",
-        lore: "L'ordonnancement des géants est brisé. Ils descendent des montagnes et menacent la Côte des Épées.", minLevel: 5, maxLevel: 11
-    },
-    {
-        id: 'avernus', title: "Baldur's Gate: Descent", desc: "Level 1-13. Hellish war.",
-        lore: "Baldur's Gate tombe en enfer. Littéralement. Descendez aux Enfers pour sauver une cité.", minLevel: 1, maxLevel: 13
-    },
-    {
-        id: 'out_abyss', title: "Out of the Abyss", desc: "Level 1-15. Underdark escape.",
-        lore: "Emprisonné dans l'Outreterre par les drows. Survivez et évadez-vous des profondeurs.", minLevel: 1, maxLevel: 15
-    },
-    {
-        id: 'mad_mage', title: "Dungeon of the Mad Mage", desc: "Level 5-20. Mega dungeon.",
-        lore: "23 niveaux sous Waterdeep. Halaster le Mage Fou vous attend. Le plus grand donjon du monde.", minLevel: 5, maxLevel: 20
-    }
-];
+import { ADVENTURES as ADVENTURE_OPTIONS, localizeAdventure, type AdventureDifficulty, type LocalizedAdventure } from '../data/adventures';
 
 const TRANS = {
     en: {
@@ -55,6 +21,20 @@ const TRANS = {
         saveCorrupted: "Save data is corrupted. Please create a new character.",
         noSaves: "No saved games found. Create a new hero!",
         loadFailed: "Failed to load: ",
+        authored: "Hand-written campaign",
+        generated: "Improvised by the DM",
+        levels: "Levels",
+        chapters: "chapters",
+        acts: "acts",
+        sessions: "sessions",
+        difficulty: "Demand",
+        gentle: "Forgiving",
+        standard: "Standard",
+        harsh: "Punishing",
+        sectionAuthored: "Original campaigns",
+        sectionAuthoredSub: "Written chapter by chapter for this game. The DM follows a real plot — named characters who remember you, planted secrets, an ending that was decided in advance. It does not make it up as it goes.",
+        sectionClassics: "The great classics",
+        sectionClassicsSub: "The archetypes of the genre: the haunted mine, the city of intrigue, the endless dungeon. Here the DM receives a premise and builds the story around your choices — no two runs are alike.",
     },
     fr: {
         back: "Retour",
@@ -67,13 +47,145 @@ const TRANS = {
         saveCorrupted: "Les données de sauvegarde sont corrompues. Veuillez créer un nouveau personnage.",
         noSaves: "Aucune partie sauvegardée trouvée. Créez un nouveau héros !",
         loadFailed: "Échec du chargement : ",
+        authored: "Campagne d'auteur",
+        generated: "Improvisée par le MJ",
+        levels: "Niveaux",
+        chapters: "chapitres",
+        acts: "actes",
+        sessions: "séances",
+        difficulty: "Exigence",
+        gentle: "Indulgente",
+        standard: "Standard",
+        harsh: "Impitoyable",
+        sectionAuthored: "Campagnes d'auteur",
+        sectionAuthoredSub: "Écrites chapitre par chapitre pour ce jeu. Le MJ suit une vraie trame — des personnages nommés qui se souviennent de vous, des secrets posés à l'avance, une fin déjà décidée. Il n'invente pas au fil de la partie.",
+        sectionClassics: "Les grands classiques",
+        sectionClassicsSub: "Les archétypes du genre : la mine hantée, la cité en intrigue, le donjon sans fin. Ici le MJ reçoit une prémisse et bâtit l'histoire autour de vos choix — deux parties ne se ressemblent jamais.",
     },
 } as const;
+
+/** Un seul accent de couleur par niveau d'exigence — lisible en un coup d'œil. */
+const DIFFICULTY_TONE: Record<AdventureDifficulty, string> = {
+    gentle: 'text-emerald-400',
+    standard: 'text-gray-300',
+    harsh: 'text-red-400',
+};
+
+type Labels = typeof TRANS['fr'] | typeof TRANS['en'];
+
+/** Ligne « icône · libellé · valeur » du pied de carte. */
+function Fact({ icon, label, value, tone = 'text-gray-300' }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    tone?: string;
+}) {
+    return (
+        <div className="flex items-center gap-2 min-w-0">
+            <span className="text-gray-600 shrink-0">{icon}</span>
+            {label && <span className="text-gray-500 shrink-0">{label}</span>}
+            <span className={`font-semibold truncate ${tone}`}>{value}</span>
+        </div>
+    );
+}
+
+/** En-tête d'une famille de campagnes + sa grille. */
+function AdventureSection({ icon, title, subtitle, accent, rule, children }: {
+    icon: React.ReactNode;
+    title: string;
+    subtitle: string;
+    accent: string;
+    rule: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="mb-12 last:mb-0">
+            <div className={`flex items-center gap-3 pb-3 mb-3 border-b ${rule}`}>
+                {icon}
+                <h2 className={`text-xl font-fantasy tracking-wide ${accent}`}>{title}</h2>
+            </div>
+            <p className="text-gray-500 text-sm leading-relaxed mb-6 max-w-3xl">{subtitle}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
+        </section>
+    );
+}
+
+function AdventureCard({ adv, tr, picked, onPick }: {
+    adv: LocalizedAdventure;
+    tr: Labels;
+    picked: boolean;
+    onPick: () => void;
+}) {
+    // Les campagnes d'auteur gardent un liseré or au repos : la distinction
+    // reste lisible même quand on a fait défiler loin de l'en-tête de section.
+    const idle = adv.authored
+        ? 'border-gold/30 bg-gray-800 hover:border-gold/60'
+        : 'border-gray-700 bg-gray-800 hover:border-gray-500';
+
+    return (
+        <div
+            onClick={onPick}
+            className={`cursor-pointer p-6 rounded-lg border-2 transition-all hover:scale-[1.02] flex flex-col ${picked ? 'border-red-600 bg-red-900/20 shadow-[0_0_20px_rgba(220,38,38,0.3)]' : idle}`}
+        >
+            <div className="flex justify-between items-start mb-4 gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                    {adv.authored
+                        ? <PenLine className={`w-8 h-8 shrink-0 ${picked ? 'text-red-500' : 'text-gold/70'}`} />
+                        : <Book className={`w-8 h-8 shrink-0 ${picked ? 'text-red-500' : 'text-gray-500'}`} />}
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${adv.authored ? 'text-gold/80' : 'text-gray-500'}`}>
+                        {adv.authored ? tr.authored : tr.generated}
+                    </span>
+                </div>
+                {picked && <div className="bg-red-600 text-xs px-2 py-1 rounded font-bold uppercase shrink-0">{tr.selected}</div>}
+            </div>
+
+            <h3 className="text-2xl font-bold font-fantasy mb-1">{adv.title}</h3>
+            <p className="text-gray-300 font-serif leading-relaxed text-sm mb-3">{adv.desc}</p>
+
+            <p className="text-gray-500 font-serif italic text-xs leading-relaxed mb-3">{adv.lore}</p>
+            <p className="text-gray-400 font-serif text-[13px] leading-relaxed mb-4">{adv.premise}</p>
+
+            <div className="flex flex-wrap gap-1.5 mb-4">
+                {adv.tags.map(tag => (
+                    <span key={tag} className="text-[10px] uppercase tracking-wide px-2 py-1 rounded border border-gray-600 text-gray-400">
+                        {tag}
+                    </span>
+                ))}
+            </div>
+
+            {/* Les quatre chiffres qui font vraiment choisir. */}
+            <div className="mt-auto grid grid-cols-2 gap-x-4 gap-y-2 pt-3 border-t border-gray-700/70 text-xs">
+                <Fact icon={<Gauge className="w-3.5 h-3.5" />} label={tr.levels} value={`${adv.minLevel}–${adv.maxLevel}`} />
+                <Fact icon={<Clock className="w-3.5 h-3.5" />} label={tr.sessions} value={adv.sessions} />
+                <Fact
+                    icon={<Layers className="w-3.5 h-3.5" />}
+                    label={tr.difficulty}
+                    value={tr[adv.difficulty]}
+                    tone={DIFFICULTY_TONE[adv.difficulty]}
+                />
+                {adv.chapters !== undefined && (
+                    <Fact
+                        icon={<Book className="w-3.5 h-3.5" />}
+                        label=""
+                        value={adv.acts
+                            ? `${adv.chapters} ${tr.chapters} · ${adv.acts} ${tr.acts}`
+                            : `${adv.chapters} ${tr.chapters}`}
+                    />
+                )}
+            </div>
+        </div>
+    );
+}
 
 export function LobbyView() {
     const navigate = useNavigate();
     const { user, gameMode, sessionId, isHost, selectedAdventure, setSelectedAdventure, setActiveSaveId, loadSaveState, language } = useGameStore();
     const tr = TRANS[language];
+
+    // Une seule passe de localisation, puis on scinde par famille.
+    const localized = ADVENTURE_OPTIONS.map(option => localizeAdventure(option, language));
+    const authored = localized.filter(a => a.authored);
+    const classics = localized.filter(a => !a.authored);
 
     const shareUrl = `${window.location.origin}?session=${sessionId}`;
 
@@ -108,13 +220,16 @@ export function LobbyView() {
     return (
         <div className="min-h-screen bg-gray-900 text-white p-8 overflow-y-auto">
             <div className="max-w-6xl mx-auto">
-                <button
-                    onClick={() => navigate('/mode')}
-                    className="mb-4 flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-                >
-                    <ArrowRight className="w-4 h-4 rotate-180" />
-                    <span>{tr.back}</span>
-                </button>
+                <div className="mb-4 flex items-center justify-between gap-4">
+                    <button
+                        onClick={() => navigate('/mode')}
+                        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                    >
+                        <ArrowRight className="w-4 h-4 rotate-180" />
+                        <span>{tr.back}</span>
+                    </button>
+                    <MenuMusicToggle />
+                </div>
 
                 <h1 className="text-4xl font-fantasy text-gold mb-8 border-b border-gray-700 pb-4">{tr.selectAdventure}</h1>
 
@@ -146,23 +261,45 @@ export function LobbyView() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {ADVENTURE_OPTIONS.map(adv => (
-                        <div
+                {/* Deux familles de produits, pas deux étiquettes sur la même
+                    grille : une campagne écrite chapitre par chapitre et une
+                    prémisse improvisée par le MJ ne se choisissent pas de la
+                    même façon. Les campagnes d'auteur passent en premier. */}
+                <AdventureSection
+                    icon={<PenLine className="w-5 h-5 text-gold" />}
+                    title={tr.sectionAuthored}
+                    subtitle={tr.sectionAuthoredSub}
+                    accent="text-gold"
+                    rule="border-gold/30"
+                >
+                    {authored.map(adv => (
+                        <AdventureCard
                             key={adv.id}
-                            onClick={() => setSelectedAdventure(adv.id)}
-                            className={`cursor-pointer p-6 rounded-lg border-2 transition-all hover:scale-[1.02] ${selectedAdventure === adv.id ? 'border-red-600 bg-red-900/20 shadow-[0_0_20px_rgba(220,38,38,0.3)]' : 'border-gray-700 bg-gray-800 hover:border-gray-500'}`}
-                        >
-                            <div className="flex justify-between items-start mb-4">
-                                <Book className={`w-8 h-8 ${selectedAdventure === adv.id ? 'text-red-500' : 'text-gray-500'}`} />
-                                {selectedAdventure === adv.id && <div className="bg-red-600 text-xs px-2 py-1 rounded font-bold uppercase">{tr.selected}</div>}
-                            </div>
-                            <h3 className="text-2xl font-bold font-fantasy mb-2">{adv.title}</h3>
-                            <p className="text-gray-400 font-serif leading-relaxed text-sm">{adv.desc}</p>
-                            <p className="text-gray-500 font-serif italic text-xs mt-2 leading-relaxed">{adv.lore}</p>
-                        </div>
+                            adv={adv}
+                            tr={tr}
+                            picked={selectedAdventure === adv.id}
+                            onPick={() => setSelectedAdventure(adv.id)}
+                        />
                     ))}
-                </div>
+                </AdventureSection>
+
+                <AdventureSection
+                    icon={<Book className="w-5 h-5 text-gray-400" />}
+                    title={tr.sectionClassics}
+                    subtitle={tr.sectionClassicsSub}
+                    accent="text-gray-300"
+                    rule="border-gray-700"
+                >
+                    {classics.map(adv => (
+                        <AdventureCard
+                            key={adv.id}
+                            adv={adv}
+                            tr={tr}
+                            picked={selectedAdventure === adv.id}
+                            onPick={() => setSelectedAdventure(adv.id)}
+                        />
+                    ))}
+                </AdventureSection>
 
                 <div className="mt-12 flex justify-between items-center">
                     <button onClick={handleContinueLatest} className="text-gray-400 hover:text-white underline">
