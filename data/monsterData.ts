@@ -1,7 +1,7 @@
 // AUTO-GENERATED from dnd_monsters.csv
 import { CreatureStats } from './bestiary';
 
-export const CSV_MONSTERS: Record<string, CreatureStats> = {
+export const CSV_MONSTERS: Record<string, CreatureStats> =  {
     "aboleth": {
         "id": "aboleth",
         "name": "Aboleth",
@@ -11,7 +11,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 135,
-            "dice": "22d8+9"
+            "dice": "18d10+36"
         },
         "ac": 17,
         "speed": 30,
@@ -37,18 +37,27 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., swim 40 ft.",
         "skill": "History +12, Perception +10",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=aboleth",
-        "imageUrl": "https://www.aidedd.org/dnd/images/aboleth.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/aboleth.jpg",
+        "saves": {
+            "CON": 6,
+            "INT": 8,
+            "WIS": 6
+        },
+        "senses": [
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "thug": {
         "id": "thug",
         "name": "Thug",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 11,
         "speed": 30,
@@ -85,7 +94,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 11500,
         "hp": {
             "base": 195,
-            "dice": "32d8+13"
+            "dice": "17d12+85"
         },
         "ac": 19,
         "speed": 30,
@@ -111,7 +120,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +11, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-black-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-black-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-black-dragon.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 10,
+            "WIS": 6,
+            "CHA": 8
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_blue_dragon": {
         "id": "adult_blue_dragon",
@@ -122,7 +145,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 15000,
         "hp": {
             "base": 225,
-            "dice": "37d8+15"
+            "dice": "18d12+108"
         },
         "ac": 19,
         "speed": 30,
@@ -148,7 +171,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 30 ft., fly 80 ft.",
         "skill": "Perception +12, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-blue-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-blue-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-blue-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 11,
+            "WIS": 7,
+            "CHA": 9
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_brass_dragon": {
         "id": "adult_brass_dragon",
@@ -159,7 +196,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 172,
-            "dice": "28d8+11"
+            "dice": "15d12+75"
         },
         "ac": 18,
         "speed": 30,
@@ -185,7 +222,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 30 ft., fly 80 ft.",
         "skill": "History +7, Perception +11, Persuasion +8, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-brass-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-brass-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-brass-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 10,
+            "WIS": 6,
+            "CHA": 8
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_bronze_dragon": {
         "id": "adult_bronze_dragon",
@@ -196,7 +247,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 13000,
         "hp": {
             "base": 212,
-            "dice": "35d8+14"
+            "dice": "17d12+102"
         },
         "ac": 19,
         "speed": 30,
@@ -222,7 +273,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +7, Perception +12, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-bronze-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-bronze-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-bronze-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 11,
+            "WIS": 7,
+            "CHA": 9
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_copper_dragon": {
         "id": "adult_copper_dragon",
@@ -233,7 +298,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 11500,
         "hp": {
             "base": 184,
-            "dice": "30d8+12"
+            "dice": "16d12+80"
         },
         "ac": 18,
         "speed": 30,
@@ -259,7 +324,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Deception +8, Perception +12, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-copper-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-copper-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-copper-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 10,
+            "WIS": 7,
+            "CHA": 8
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_gold_dragon": {
         "id": "adult_gold_dragon",
@@ -270,7 +349,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 18000,
         "hp": {
             "base": 256,
-            "dice": "42d8+17"
+            "dice": "19d12+133"
         },
         "ac": 19,
         "speed": 30,
@@ -296,7 +375,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +8, Perception +14, Persuasion +13, Stealth +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-gold-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-gold-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-gold-dragon.jpg",
+        "saves": {
+            "DEX": 8,
+            "CON": 13,
+            "WIS": 8,
+            "CHA": 13
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_green_dragon": {
         "id": "adult_green_dragon",
@@ -307,7 +400,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 13000,
         "hp": {
             "base": 207,
-            "dice": "34d8+13"
+            "dice": "18d12+90"
         },
         "ac": 19,
         "speed": 30,
@@ -333,7 +426,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Deception +8, Insight +7, Perception +12, Persuasion +8, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-green-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-green-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-green-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 10,
+            "WIS": 7,
+            "CHA": 8
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_red_dragon": {
         "id": "adult_red_dragon",
@@ -344,7 +454,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 18000,
         "hp": {
             "base": 256,
-            "dice": "42d8+17"
+            "dice": "19d12+133"
         },
         "ac": 19,
         "speed": 30,
@@ -370,7 +480,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Perception +13, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-red-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-red-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-red-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 13,
+            "WIS": 7,
+            "CHA": 11
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_silver_dragon": {
         "id": "adult_silver_dragon",
@@ -381,7 +505,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 15000,
         "hp": {
             "base": 243,
-            "dice": "40d8+16"
+            "dice": "18d12+126"
         },
         "ac": 19,
         "speed": 30,
@@ -407,7 +531,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft.",
         "skill": "Arcana +8, History +8, Perception +11, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-silver-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-silver-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-silver-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 12,
+            "WIS": 6,
+            "CHA": 10
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "adult_white_dragon": {
         "id": "adult_white_dragon",
@@ -418,7 +556,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 200,
-            "dice": "33d8+13"
+            "dice": "16d12+96"
         },
         "ac": 18,
         "speed": 30,
@@ -444,7 +582,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 30 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +11, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=adult-white-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/adult-white-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/adult-white-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 11,
+            "WIS": 6,
+            "CHA": 6
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "air_elemental": {
         "id": "air_elemental",
@@ -455,7 +607,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 90,
-            "dice": "15d8+6"
+            "dice": "12d10+24"
         },
         "ac": 15,
         "speed": 30,
@@ -481,18 +633,41 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 90 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=air-elemental",
-        "imageUrl": "https://www.aidedd.org/dnd/images/air-elemental.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/air-elemental.jpg",
+        "resistances": [
+            "lightning",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "satyr": {
         "id": "satyr",
         "name": "Satyr",
         "type": "fey",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 31,
-            "dice": "5d8+2"
+            "dice": "7d8"
         },
         "ac": 14,
         "speed": 30,
@@ -506,9 +681,9 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         },
         "attacks": [
             {
-                "name": "Basic Attack",
-                "attackBonus": 1,
-                "damage": "1d8+1",
+                "name": "Ram",
+                "attackBonus": 3,
+                "damage": "2d4+1",
                 "damageType": "bludgeoning",
                 "reach": 5
             }
@@ -529,7 +704,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 51,
-            "dice": "8d8+3"
+            "dice": "6d10+18"
         },
         "ac": 13,
         "speed": 30,
@@ -566,7 +741,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 367,
-            "dice": "61d8+24"
+            "dice": "21d20+147"
         },
         "ac": 22,
         "speed": 30,
@@ -592,7 +767,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +16, Stealth +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-black-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-black-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-black-dragon.jpg",
+        "saves": {
+            "DEX": 9,
+            "CON": 14,
+            "WIS": 9,
+            "CHA": 11
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_blue_dragon": {
         "id": "ancient_blue_dragon",
@@ -603,7 +792,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 50000,
         "hp": {
             "base": 481,
-            "dice": "80d8+32"
+            "dice": "26d20+208"
         },
         "ac": 22,
         "speed": 30,
@@ -629,7 +818,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 40 ft., fly 80 ft.",
         "skill": "Perception +17, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-blue-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-blue-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-blue-dragon.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 15,
+            "WIS": 10,
+            "CHA": 12
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_brass_dragon": {
         "id": "ancient_brass_dragon",
@@ -640,7 +843,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 25000,
         "hp": {
             "base": 297,
-            "dice": "49d8+19"
+            "dice": "17d20+119"
         },
         "ac": 20,
         "speed": 30,
@@ -666,7 +869,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 40 ft., fly 80 ft.",
         "skill": "History +9, Perception +14, Persuasion +10, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-brass-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-brass-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-brass-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 13,
+            "WIS": 8,
+            "CHA": 10
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_bronze_dragon": {
         "id": "ancient_bronze_dragon",
@@ -677,7 +894,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 41000,
         "hp": {
             "base": 444,
-            "dice": "74d8+29"
+            "dice": "24d20+192"
         },
         "ac": 22,
         "speed": 30,
@@ -703,7 +920,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +10, Perception +17, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-bronze-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-bronze-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-bronze-dragon.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 15,
+            "WIS": 10,
+            "CHA": 12
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_copper_dragon": {
         "id": "ancient_copper_dragon",
@@ -714,7 +945,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 350,
-            "dice": "58d8+23"
+            "dice": "20d20+140"
         },
         "ac": 21,
         "speed": 30,
@@ -740,7 +971,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Deception +11, Perception +17, Stealth +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-copper-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-copper-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-copper-dragon.jpg",
+        "saves": {
+            "DEX": 8,
+            "CON": 14,
+            "WIS": 10,
+            "CHA": 11
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_gold_dragon": {
         "id": "ancient_gold_dragon",
@@ -751,7 +996,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 62000,
         "hp": {
             "base": 546,
-            "dice": "91d8+36"
+            "dice": "28d20+252"
         },
         "ac": 22,
         "speed": 30,
@@ -777,7 +1022,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +10, Perception +17, Persuasion +16, Stealth +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-gold-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-gold-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-gold-dragon.jpg",
+        "saves": {
+            "DEX": 9,
+            "CON": 16,
+            "WIS": 10,
+            "CHA": 16
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_green_dragon": {
         "id": "ancient_green_dragon",
@@ -788,7 +1047,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 41000,
         "hp": {
             "base": 385,
-            "dice": "64d8+25"
+            "dice": "22d20+154"
         },
         "ac": 21,
         "speed": 30,
@@ -814,7 +1073,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Deception +11, Insight +10, Perception +17, Persuasion +11, Stealth +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-green-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-green-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-green-dragon.jpg",
+        "saves": {
+            "DEX": 8,
+            "CON": 14,
+            "WIS": 10,
+            "CHA": 11
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_red_dragon": {
         "id": "ancient_red_dragon",
@@ -825,7 +1101,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 62000,
         "hp": {
             "base": 546,
-            "dice": "91d8+36"
+            "dice": "28d20+252"
         },
         "ac": 22,
         "speed": 30,
@@ -851,7 +1127,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Perception +16, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-red-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-red-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-red-dragon.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 16,
+            "WIS": 9,
+            "CHA": 13
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_shadow": {
         "id": "ancient_shadow",
@@ -862,7 +1152,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 13,
         "speed": 30,
@@ -899,7 +1189,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 50000,
         "hp": {
             "base": 487,
-            "dice": "81d8+32"
+            "dice": "25d20+225"
         },
         "ac": 22,
         "speed": 30,
@@ -925,7 +1215,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft.",
         "skill": "Arcana +11, History +11, Perception +16, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-silver-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-silver-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-silver-dragon.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 16,
+            "WIS": 9,
+            "CHA": 13
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "ancient_white_dragon": {
         "id": "ancient_white_dragon",
@@ -936,7 +1240,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 25000,
         "hp": {
             "base": 333,
-            "dice": "55d8+22"
+            "dice": "18d20+144"
         },
         "ac": 20,
         "speed": 30,
@@ -962,7 +1266,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +13, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ancient-white-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-white-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ancient-white-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 14,
+            "WIS": 7,
+            "CHA": 8
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "androsphinx": {
         "id": "androsphinx",
@@ -973,7 +1291,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 18000,
         "hp": {
             "base": 199,
-            "dice": "33d8+13"
+            "dice": "19d10+95"
         },
         "ac": 17,
         "speed": 30,
@@ -999,7 +1317,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 60 ft.",
         "skill": "Arcana +9, Perception +10, Religion +15",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=androsphinx",
-        "imageUrl": "https://www.aidedd.org/dnd/images/androsphinx.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/androsphinx.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 11,
+            "INT": 9,
+            "WIS": 10
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "animated_armor": {
         "id": "animated_armor",
@@ -1010,7 +1350,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d8+6"
         },
         "ac": 18,
         "speed": 30,
@@ -1036,7 +1376,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "25 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=animated-armor",
-        "imageUrl": "https://www.aidedd.org/dnd/images/animated-armor.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/animated-armor.jpg",
+        "immunities": [
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "deafened",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "ankheg": {
         "id": "ankheg",
@@ -1047,7 +1404,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d10+6"
         },
         "ac": 14,
         "speed": 30,
@@ -1073,7 +1430,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ankheg",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ankheg.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ankheg.jpg",
+        "senses": [
+            "darkvision 60 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "ankylosaurus": {
         "id": "ankylosaurus",
@@ -1084,7 +1445,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 68,
-            "dice": "11d8+4"
+            "dice": "8d12+16"
         },
         "ac": 15,
         "speed": 30,
@@ -1121,7 +1482,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d10+20"
         },
         "ac": 17,
         "speed": 30,
@@ -1154,11 +1515,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Cockatrice",
         "type": "monstrosity",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "6d6+6"
         },
         "ac": 11,
         "speed": 30,
@@ -1184,18 +1545,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=cockatrice",
-        "imageUrl": "https://www.aidedd.org/dnd/images/cockatrice.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/cockatrice.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "mud_mephit": {
         "id": "mud_mephit",
         "name": "Mud Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "6d6+6"
         },
         "ac": 11,
         "speed": 30,
@@ -1232,7 +1596,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 8400,
         "hp": {
             "base": 99,
-            "dice": "16d8+6"
+            "dice": "18d8+18"
         },
         "ac": 12,
         "speed": 30,
@@ -1258,7 +1622,16 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Arcana +13, History +13",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=archmage",
-        "imageUrl": "https://www.aidedd.org/dnd/images/archmage.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/archmage.jpg",
+        "saves": {
+            "INT": 9,
+            "WIS": 6
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ]
     },
     "assassin": {
         "id": "assassin",
@@ -1269,7 +1642,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 78,
-            "dice": "13d8+5"
+            "dice": "12d8+24"
         },
         "ac": 15,
         "speed": 30,
@@ -1295,7 +1668,14 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Acrobatics +6, Deception +3, Perception +3, Stealth +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=assassin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/assassin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/assassin.jpg",
+        "saves": {
+            "DEX": 6,
+            "INT": 4
+        },
+        "resistances": [
+            "poison"
+        ]
     },
     "astral_dreadnought": {
         "id": "astral_dreadnought",
@@ -1306,7 +1686,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 297,
-            "dice": "49d8+19"
+            "dice": "17d20+119"
         },
         "ac": 20,
         "speed": 30,
@@ -1343,7 +1723,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 38,
-            "dice": "6d8+2"
+            "dice": "4d10+16"
         },
         "ac": 11,
         "speed": 30,
@@ -1380,7 +1760,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 10,
-            "dice": "1d8+0"
+            "dice": "3d6"
         },
         "ac": 9,
         "speed": 30,
@@ -1406,7 +1786,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=awakened-shrub",
-        "imageUrl": "https://www.aidedd.org/dnd/images/awakened-shrub.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/awakened-shrub.jpg",
+        "resistances": [
+            "piercing"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ]
     },
     "awakened_tree": {
         "id": "awakened_tree",
@@ -1417,7 +1803,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 59,
-            "dice": "9d8+3"
+            "dice": "7d12+14"
         },
         "ac": 13,
         "speed": 30,
@@ -1443,18 +1829,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=awakened-tree",
-        "imageUrl": "https://www.aidedd.org/dnd/images/awakened-tree.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/awakened-tree.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ]
     },
     "rust_monster": {
         "id": "rust_monster",
         "name": "Rust Monster",
         "type": "monstrosity",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 14,
         "speed": 30,
@@ -1480,7 +1873,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=rust-monster",
-        "imageUrl": "https://www.aidedd.org/dnd/images/rust-monster.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/rust-monster.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "azer": {
         "id": "azer",
@@ -1491,7 +1887,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d8+12"
         },
         "ac": 17,
         "speed": 30,
@@ -1517,7 +1913,17 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=azer",
-        "imageUrl": "https://www.aidedd.org/dnd/images/azer.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/azer.jpg",
+        "saves": {
+            "CON": 4
+        },
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ]
     },
     "baboon": {
         "id": "baboon",
@@ -1528,7 +1934,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 3,
-            "dice": "1d8+0"
+            "dice": "1d6"
         },
         "ac": 12,
         "speed": 30,
@@ -1565,7 +1971,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 3,
-            "dice": "1d8+0"
+            "dice": "1d4+1"
         },
         "ac": 10,
         "speed": 30,
@@ -1591,7 +1997,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., burrow 5 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=badger",
-        "imageUrl": "https://www.aidedd.org/dnd/images/badger.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/badger.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "balor": {
         "id": "balor",
@@ -1602,7 +2011,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 22000,
         "hp": {
             "base": 262,
-            "dice": "43d8+17"
+            "dice": "21d12+126"
         },
         "ac": 19,
         "speed": 30,
@@ -1628,7 +2037,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=balor",
-        "imageUrl": "https://www.aidedd.org/dnd/images/balor.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/balor.jpg",
+        "saves": {
+            "STR": 14,
+            "CON": 12,
+            "WIS": 9,
+            "CHA": 12
+        },
+        "resistances": [
+            "cold",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "bandit_captain": {
         "id": "bandit_captain",
@@ -1639,7 +2071,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 65,
-            "dice": "10d8+4"
+            "dice": "10d8+20"
         },
         "ac": 15,
         "speed": 30,
@@ -1665,7 +2097,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Athletics +4, Deception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bandit-captain",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bandit-captain.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bandit-captain.jpg",
+        "saves": {
+            "STR": 4,
+            "DEX": 5,
+            "WIS": 2
+        }
     },
     "banshee": {
         "id": "banshee",
@@ -1676,7 +2113,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "13d8"
         },
         "ac": 12,
         "speed": 30,
@@ -1713,7 +2150,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 110,
-            "dice": "18d8+7"
+            "dice": "13d8+52"
         },
         "ac": 15,
         "speed": 30,
@@ -1739,7 +2176,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Deception +5, Insight +5, Perception +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=barbed-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/barbed-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/barbed-devil.jpg",
+        "saves": {
+            "STR": 6,
+            "CON": 7,
+            "WIS": 5,
+            "CHA": 5
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "barghest": {
         "id": "barghest",
@@ -1750,7 +2209,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 90,
-            "dice": "15d8+6"
+            "dice": "12d10+24"
         },
         "ac": 17,
         "speed": 30,
@@ -1787,7 +2246,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 68,
-            "dice": "11d8+4"
+            "dice": "8d10+24"
         },
         "ac": 15,
         "speed": 30,
@@ -1824,7 +2283,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d8+16"
         },
         "ac": 15,
         "speed": 30,
@@ -1850,7 +2309,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=basilisk",
-        "imageUrl": "https://www.aidedd.org/dnd/images/basilisk.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/basilisk.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "bat": {
         "id": "bat",
@@ -1861,7 +2323,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 12,
         "speed": 30,
@@ -1887,7 +2349,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "5 ft., fly 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bat",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bat.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bat.jpg",
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "bearded_devil": {
         "id": "bearded_devil",
@@ -1898,7 +2363,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d8+16"
         },
         "ac": 13,
         "speed": 30,
@@ -1924,7 +2389,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bearded-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bearded-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bearded-devil.jpg",
+        "saves": {
+            "STR": 5,
+            "CON": 4,
+            "WIS": 2
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "behir": {
         "id": "behir",
@@ -1935,7 +2421,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 168,
-            "dice": "28d8+11"
+            "dice": "16d12+64"
         },
         "ac": 17,
         "speed": 30,
@@ -1961,7 +2447,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft., climb 40 ft.",
         "skill": "Perception +6, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=behir",
-        "imageUrl": "https://www.aidedd.org/dnd/images/behir.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/behir.jpg",
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "darkvision 90 ft."
+        ]
     },
     "belaphoss": {
         "id": "belaphoss",
@@ -1972,7 +2464,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 25000,
         "hp": {
             "base": 262,
-            "dice": "43d8+17"
+            "dice": "21d12+126"
         },
         "ac": 19,
         "speed": 30,
@@ -2009,7 +2501,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d8+27"
         },
         "ac": 13,
         "speed": 30,
@@ -2042,11 +2534,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Worg",
         "type": "monstrosity",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d10+4"
         },
         "ac": 13,
         "speed": 30,
@@ -2072,7 +2564,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=worg",
-        "imageUrl": "https://www.aidedd.org/dnd/images/worg.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/worg.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "black_dragon_wyrmling": {
         "id": "black_dragon_wyrmling",
@@ -2083,7 +2578,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d8+6"
         },
         "ac": 17,
         "speed": 30,
@@ -2109,7 +2604,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft., swim 30 ft.",
         "skill": "Perception +4, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=black-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/black-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/black-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 3,
+            "WIS": 2,
+            "CHA": 3
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "black_pudding": {
         "id": "black_pudding",
@@ -2120,7 +2628,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "10d10+30"
         },
         "ac": 7,
         "speed": 30,
@@ -2146,18 +2654,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., climb 20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=black-pudding",
-        "imageUrl": "https://www.aidedd.org/dnd/images/black-pudding.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/black-pudding.jpg",
+        "immunities": [
+            "acid",
+            "cold",
+            "lightning",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "prone"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "swarm_of_rats": {
         "id": "swarm_of_rats",
         "name": "Swarm Of Rats",
         "type": "swarm",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 24,
-            "dice": "4d8+1"
+            "dice": "7d8-7"
         },
         "ac": 10,
         "speed": 30,
@@ -2183,18 +2707,36 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-rats",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-rats.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-rats.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ],
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "swarm_of_ravens": {
         "id": "swarm_of_ravens",
         "name": "Swarm Of Ravens",
         "type": "swarm",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 24,
-            "dice": "4d8+1"
+            "dice": "7d8-7"
         },
         "ac": 12,
         "speed": 30,
@@ -2220,7 +2762,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., fly 50 ft.",
         "skill": "Perception +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-ravens",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-ravens.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-ravens.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ]
     },
     "blue_dragon_wyrmling": {
         "id": "blue_dragon_wyrmling",
@@ -2231,7 +2788,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d8+16"
         },
         "ac": 17,
         "speed": 30,
@@ -2257,18 +2814,31 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 15 ft., fly 60 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=blue-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/blue-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/blue-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 4,
+            "WIS": 2,
+            "CHA": 4
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "blink_dog": {
         "id": "blink_dog",
         "name": "Blink Dog",
         "type": "fey",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d8+4"
         },
         "ac": 13,
         "speed": 30,
@@ -2305,7 +2875,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 142,
-            "dice": "23d8+9"
+            "dice": "15d10+60"
         },
         "ac": 19,
         "speed": 30,
@@ -2331,7 +2901,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 40 ft.",
         "skill": "Deception +7, Insight +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bone-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bone-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bone-devil.jpg",
+        "saves": {
+            "INT": 5,
+            "WIS": 6,
+            "CHA": 7
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "brass_dragon_wyrmling": {
         "id": "brass_dragon_wyrmling",
@@ -2342,7 +2933,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "3d8+3"
         },
         "ac": 16,
         "speed": 30,
@@ -2368,7 +2959,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 15 ft., fly 60 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=brass-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/brass-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/brass-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 3,
+            "WIS": 2,
+            "CHA": 3
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "bronze_dragon_wyrmling": {
         "id": "bronze_dragon_wyrmling",
@@ -2379,7 +2983,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 17,
         "speed": 30,
@@ -2405,7 +3009,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft., swim 30 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bronze-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bronze-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bronze-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 4,
+            "WIS": 2,
+            "CHA": 4
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "brown_bear": {
         "id": "brown_bear",
@@ -2416,7 +3033,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 34,
-            "dice": "5d8+2"
+            "dice": "4d10+12"
         },
         "ac": 11,
         "speed": 30,
@@ -2453,7 +3070,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 16,
         "speed": 30,
@@ -2479,7 +3096,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Stealth +6, Survival +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bugbear",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bugbear.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bugbear.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "bulette": {
         "id": "bulette",
@@ -2490,7 +3110,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 94,
-            "dice": "15d8+6"
+            "dice": "9d10+45"
         },
         "ac": 17,
         "speed": 30,
@@ -2516,18 +3136,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 40 ft.",
         "skill": "Perception +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=bulette",
-        "imageUrl": "https://www.aidedd.org/dnd/images/bulette.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/bulette.jpg",
+        "senses": [
+            "darkvision 60 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "darkmantle": {
         "id": "darkmantle",
         "name": "Darkmantle",
         "type": "monstrosity",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d6+5"
         },
         "ac": 11,
         "speed": 30,
@@ -2553,7 +3177,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., fly 30 ft.",
         "skill": "Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=darkmantle",
-        "imageUrl": "https://www.aidedd.org/dnd/images/darkmantle.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/darkmantle.jpg",
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "cat": {
         "id": "cat",
@@ -2564,7 +3191,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 12,
         "speed": 30,
@@ -2601,7 +3228,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 12,
         "speed": 30,
@@ -2638,7 +3265,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "10d8+40"
         },
         "ac": 16,
         "speed": 30,
@@ -2664,7 +3291,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=chain-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/chain-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/chain-devil.jpg",
+        "saves": {
+            "CON": 7,
+            "WIS": 4,
+            "CHA": 5
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "chimera": {
         "id": "chimera",
@@ -2675,7 +3323,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 114,
-            "dice": "19d8+7"
+            "dice": "12d10+48"
         },
         "ac": 14,
         "speed": 30,
@@ -2701,7 +3349,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "Perception +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=chimera",
-        "imageUrl": "https://www.aidedd.org/dnd/images/chimera.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/chimera.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "chuul": {
         "id": "chuul",
@@ -2712,7 +3363,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 93,
-            "dice": "15d8+6"
+            "dice": "11d10+33"
         },
         "ac": 16,
         "speed": 30,
@@ -2738,7 +3389,16 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=chuul",
-        "imageUrl": "https://www.aidedd.org/dnd/images/chuul.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/chuul.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "clay_golem": {
         "id": "clay_golem",
@@ -2749,7 +3409,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 133,
-            "dice": "22d8+8"
+            "dice": "14d10+56"
         },
         "ac": 14,
         "speed": 30,
@@ -2775,7 +3435,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=clay-golem",
-        "imageUrl": "https://www.aidedd.org/dnd/images/clay-golem.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/clay-golem.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "acid",
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "cloaker": {
         "id": "cloaker",
@@ -2786,7 +3467,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 78,
-            "dice": "13d8+5"
+            "dice": "12d10+12"
         },
         "ac": 14,
         "speed": 30,
@@ -2812,7 +3493,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., fly 40 ft.",
         "skill": "Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=cloaker",
-        "imageUrl": "https://www.aidedd.org/dnd/images/cloaker.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/cloaker.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "cloud_giant": {
         "id": "cloud_giant",
@@ -2823,7 +3507,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 200,
-            "dice": "33d8+13"
+            "dice": "16d12+96"
         },
         "ac": 14,
         "speed": 30,
@@ -2849,18 +3533,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Insight +7, Perception +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=cloud-giant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/cloud-giant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/cloud-giant.jpg",
+        "saves": {
+            "CON": 10,
+            "WIS": 7,
+            "CHA": 7
+        }
     },
     "giant_bat": {
         "id": "giant_bat",
         "name": "Giant Bat",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d10"
         },
         "ac": 13,
         "speed": 30,
@@ -2886,7 +3575,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-bat",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-bat.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-bat.jpg",
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "commoner": {
         "id": "commoner",
@@ -2897,7 +3589,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d8"
         },
         "ac": 10,
         "speed": 30,
@@ -2930,11 +3622,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Gnoll",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 15,
         "speed": 30,
@@ -2960,7 +3652,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gnoll",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gnoll.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gnoll.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "copper_dragon_wyrmling": {
         "id": "copper_dragon_wyrmling",
@@ -2971,7 +3666,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d8+4"
         },
         "ac": 16,
         "speed": 30,
@@ -2997,7 +3692,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft., fly 60 ft.",
         "skill": "Perception +4, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=copper-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/copper-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/copper-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 3,
+            "WIS": 2,
+            "CHA": 3
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "couatl": {
         "id": "couatl",
@@ -3008,7 +3716,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 97,
-            "dice": "16d8+6"
+            "dice": "13d8+39"
         },
         "ac": 19,
         "speed": 30,
@@ -3034,7 +3742,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 90 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=couatl",
-        "imageUrl": "https://www.aidedd.org/dnd/images/couatl.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/couatl.jpg",
+        "saves": {
+            "CON": 5,
+            "WIS": 7,
+            "CHA": 6
+        },
+        "resistances": [
+            "radiant",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "psychic"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "crab": {
         "id": "crab",
@@ -3045,7 +3770,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 11,
         "speed": 30,
@@ -3071,7 +3796,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 20 ft.",
         "skill": "Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=crab",
-        "imageUrl": "https://www.aidedd.org/dnd/images/crab.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/crab.jpg",
+        "senses": [
+            "blindsight 30 ft."
+        ]
     },
     "crawling_claw": {
         "id": "crawling_claw",
@@ -3082,7 +3810,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 12,
         "speed": 30,
@@ -3115,11 +3843,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Gray Ooze",
         "type": "ooze",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "3d8+9"
         },
         "ac": 8,
         "speed": 30,
@@ -3145,7 +3873,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., climb 10 ft.",
         "skill": "Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gray-ooze",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gray-ooze.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gray-ooze.jpg",
+        "resistances": [
+            "acid",
+            "cold",
+            "fire"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "deafened",
+            "exhaustion",
+            "frightened",
+            "prone"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "cult_fanatic": {
         "id": "cult_fanatic",
@@ -3156,7 +3900,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d8+6"
         },
         "ac": 13,
         "speed": 30,
@@ -3189,11 +3933,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Lizardfolk",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d8+4"
         },
         "ac": 15,
         "speed": 30,
@@ -3230,7 +3974,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 138,
-            "dice": "23d8+9"
+            "dice": "12d12+60"
         },
         "ac": 14,
         "speed": 30,
@@ -3267,7 +4011,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 187,
-            "dice": "31d8+12"
+            "dice": "15d10+105"
         },
         "ac": 18,
         "speed": 30,
@@ -3300,11 +4044,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Magma Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d6+5"
         },
         "ac": 11,
         "speed": 30,
@@ -3330,7 +4074,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 30 ft.",
         "skill": "Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=magma-mephit",
-        "imageUrl": "https://www.aidedd.org/dnd/images/magma-mephit.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/magma-mephit.jpg",
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "vulnerabilities": [
+            "cold"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "death_dog": {
         "id": "death_dog",
@@ -3341,7 +4098,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d8+12"
         },
         "ac": 12,
         "speed": 30,
@@ -3367,18 +4124,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +5, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=death-dog",
-        "imageUrl": "https://www.aidedd.org/dnd/images/death-dog.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/death-dog.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "piercer": {
         "id": "piercer",
         "name": "Piercer",
         "type": "monstrosity",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "3d8+9"
         },
         "ac": 15,
         "speed": 30,
@@ -3415,7 +4175,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d8"
         },
         "ac": 13,
         "speed": 30,
@@ -3448,11 +4208,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Reef Shark",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d8+4"
         },
         "ac": 12,
         "speed": 30,
@@ -3478,7 +4238,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 40 ft.",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=reef-shark",
-        "imageUrl": "https://www.aidedd.org/dnd/images/reef-shark.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/reef-shark.jpg",
+        "senses": [
+            "blindsight 30 ft."
+        ]
     },
     "deva": {
         "id": "deva",
@@ -3489,7 +4252,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "16d8+64"
         },
         "ac": 17,
         "speed": 30,
@@ -3515,7 +4278,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 90 ft.",
         "skill": "Insight +9, Perception +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=deva",
-        "imageUrl": "https://www.aidedd.org/dnd/images/deva.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/deva.jpg",
+        "saves": {
+            "WIS": 9,
+            "CHA": 9
+        },
+        "resistances": [
+            "radiant",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "devilroot": {
         "id": "devilroot",
@@ -3526,7 +4307,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 105,
-            "dice": "17d8+7"
+            "dice": "14d8+42"
         },
         "ac": 15,
         "speed": 30,
@@ -3559,11 +4340,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Sahuagin",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "4d8+4"
         },
         "ac": 12,
         "speed": 30,
@@ -3589,7 +4370,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 40 ft.",
         "skill": "Perception +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=sahuagin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/sahuagin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/sahuagin.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "dire_wolf": {
         "id": "dire_wolf",
@@ -3600,7 +4384,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 37,
-            "dice": "6d8+2"
+            "dice": "5d10+10"
         },
         "ac": 14,
         "speed": 30,
@@ -3637,7 +4421,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 161,
-            "dice": "26d8+10"
+            "dice": "14d10+84"
         },
         "ac": 17,
         "speed": 30,
@@ -3663,18 +4447,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 90 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=djinni",
-        "imageUrl": "https://www.aidedd.org/dnd/images/djinni.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/djinni.jpg",
+        "saves": {
+            "DEX": 6,
+            "WIS": 7,
+            "CHA": 9
+        },
+        "immunities": [
+            "lightning",
+            "thunder"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "smoke_mephit": {
         "id": "smoke_mephit",
         "name": "Smoke Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d6+5"
         },
         "ac": 12,
         "speed": 30,
@@ -3711,7 +4507,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d8+16"
         },
         "ac": 14,
         "speed": 30,
@@ -3737,18 +4533,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Deception +6, Insight +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=doppelganger",
-        "imageUrl": "https://www.aidedd.org/dnd/images/doppelganger.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/doppelganger.jpg",
+        "conditionImmunities": [
+            "charmed"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "swarm_of_bats": {
         "id": "swarm_of_bats",
         "name": "Swarm Of Bats",
         "type": "swarm",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 12,
         "speed": 30,
@@ -3774,7 +4576,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-bats",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-bats.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-bats.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ],
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "dragon_turtle": {
         "id": "dragon_turtle",
@@ -3785,7 +4605,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 18000,
         "hp": {
             "base": 341,
-            "dice": "56d8+22"
+            "dice": "22d20+110"
         },
         "ac": 20,
         "speed": 30,
@@ -3811,18 +4631,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=dragon-turtle",
-        "imageUrl": "https://www.aidedd.org/dnd/images/dragon-turtle.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/dragon-turtle.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 11,
+            "WIS": 7
+        },
+        "resistances": [
+            "fire"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "swarm_of_insects": {
         "id": "swarm_of_insects",
         "name": "Swarm Of Insects",
         "type": "swarm",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 12,
         "speed": 30,
@@ -3848,7 +4679,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., climb 20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-insects",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-insects.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-insects.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ],
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "drider": {
         "id": "drider",
@@ -3859,7 +4708,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 123,
-            "dice": "20d8+8"
+            "dice": "13d10+52"
         },
         "ac": 19,
         "speed": 30,
@@ -3885,18 +4734,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "Perception +5, Stealth +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=drider",
-        "imageUrl": "https://www.aidedd.org/dnd/images/drider.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/drider.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "swarm_of_rot_grubs": {
         "id": "swarm_of_rot_grubs",
         "name": "Swarm Of Rot Grubs",
         "type": "swarm",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 8,
         "speed": 30,
@@ -3933,7 +4785,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 162,
-            "dice": "27d8+10"
+            "dice": "25d8+50"
         },
         "ac": 16,
         "speed": 30,
@@ -3970,7 +4822,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 11500,
         "hp": {
             "base": 143,
-            "dice": "23d8+9"
+            "dice": "22d8+44"
         },
         "ac": 16,
         "speed": 30,
@@ -4007,7 +4859,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "10d8"
         },
         "ac": 12,
         "speed": 30,
@@ -4044,7 +4896,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 11,
         "speed": 30,
@@ -4081,7 +4933,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 11,
         "speed": 30,
@@ -4107,7 +4959,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +4, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=dryad",
-        "imageUrl": "https://www.aidedd.org/dnd/images/dryad.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/dryad.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "duergar": {
         "id": "duergar",
@@ -4118,7 +4973,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d8+8"
         },
         "ac": 16,
         "speed": 30,
@@ -4132,10 +4987,17 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         },
         "attacks": [
             {
-                "name": "Basic Attack",
-                "attackBonus": 2,
+                "name": "War Pick",
+                "attackBonus": 4,
                 "damage": "1d8+2",
-                "damageType": "bludgeoning",
+                "damageType": "piercing",
+                "reach": 5
+            },
+            {
+                "name": "Javelin",
+                "attackBonus": 4,
+                "damage": "1d6+2",
+                "damageType": "piercing",
                 "reach": 5
             }
         ],
@@ -4144,7 +5006,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "25 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=duergar",
-        "imageUrl": "https://www.aidedd.org/dnd/images/duergar.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/duergar.jpg",
+        "resistances": [
+            "poison"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "eagle": {
         "id": "eagle",
@@ -4155,7 +5023,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 3,
-            "dice": "1d8+0"
+            "dice": "1d6"
         },
         "ac": 12,
         "speed": 30,
@@ -4169,10 +5037,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         },
         "attacks": [
             {
-                "name": "Basic Attack",
-                "attackBonus": 0,
-                "damage": "1d8+0",
-                "damageType": "bludgeoning",
+                "name": "Talons",
+                "attackBonus": 4,
+                "damage": "1d4+2",
+                "damageType": "slashing",
                 "reach": 5
             }
         ],
@@ -4192,7 +5060,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 126,
-            "dice": "21d8+8"
+            "dice": "12d10+60"
         },
         "ac": 17,
         "speed": 30,
@@ -4218,7 +5086,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=earth-elemental",
-        "imageUrl": "https://www.aidedd.org/dnd/images/earth-elemental.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/earth-elemental.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "vulnerabilities": [
+            "thunder"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "efreeti": {
         "id": "efreeti",
@@ -4229,7 +5119,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 200,
-            "dice": "33d8+13"
+            "dice": "16d10+112"
         },
         "ac": 17,
         "speed": 30,
@@ -4255,7 +5145,18 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=efreeti",
-        "imageUrl": "https://www.aidedd.org/dnd/images/efreeti.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/efreeti.jpg",
+        "saves": {
+            "INT": 7,
+            "WIS": 6,
+            "CHA": 7
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "elephant": {
         "id": "elephant",
@@ -4266,7 +5167,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 76,
-            "dice": "12d8+5"
+            "dice": "8d12+24"
         },
         "ac": 12,
         "speed": 30,
@@ -4299,11 +5200,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Warhorse Skeleton",
         "type": "undead",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "3d10+6"
         },
         "ac": 13,
         "speed": 30,
@@ -4329,7 +5230,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=warhorse-skeleton",
-        "imageUrl": "https://www.aidedd.org/dnd/images/warhorse-skeleton.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/warhorse-skeleton.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "vulnerabilities": [
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "erinyes": {
         "id": "erinyes",
@@ -4340,7 +5254,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 8400,
         "hp": {
             "base": 153,
-            "dice": "25d8+10"
+            "dice": "18d8+72"
         },
         "ac": 18,
         "speed": 30,
@@ -4366,7 +5280,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=erinyes",
-        "imageUrl": "https://www.aidedd.org/dnd/images/erinyes.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/erinyes.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 8,
+            "WIS": 6,
+            "CHA": 8
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "ettercap": {
         "id": "ettercap",
@@ -4377,7 +5313,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 44,
-            "dice": "7d8+2"
+            "dice": "8d8+8"
         },
         "ac": 13,
         "speed": 30,
@@ -4403,7 +5339,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "Perception +3, Stealth +4, Survival +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ettercap",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ettercap.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ettercap.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ettin": {
         "id": "ettin",
@@ -4414,7 +5353,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "10d10+30"
         },
         "ac": 12,
         "speed": 30,
@@ -4440,7 +5379,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ettin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ettin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ettin.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "fire_elemental": {
         "id": "fire_elemental",
@@ -4451,7 +5393,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 102,
-            "dice": "17d8+6"
+            "dice": "12d10+36"
         },
         "ac": 13,
         "speed": 30,
@@ -4477,7 +5419,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=fire-elemental",
-        "imageUrl": "https://www.aidedd.org/dnd/images/fire-elemental.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/fire-elemental.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "fire_giant": {
         "id": "fire_giant",
@@ -4488,7 +5452,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 162,
-            "dice": "27d8+10"
+            "dice": "13d12+78"
         },
         "ac": 18,
         "speed": 30,
@@ -4514,7 +5478,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Athletics +11, Perception +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=fire-giant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/fire-giant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/fire-giant.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 10,
+            "CHA": 5
+        },
+        "immunities": [
+            "fire"
+        ]
     },
     "fire_snake": {
         "id": "fire_snake",
@@ -4525,7 +5497,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 14,
         "speed": 30,
@@ -4558,11 +5530,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Zombie",
         "type": "undead",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "3d8+9"
         },
         "ac": 8,
         "speed": 30,
@@ -4588,18 +5560,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=zombie",
-        "imageUrl": "https://www.aidedd.org/dnd/images/zombie.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/zombie.jpg",
+        "saves": {
+            "WIS": 0
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ice_mephit": {
         "id": "ice_mephit",
         "name": "Ice Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 21,
-            "dice": "3d8+1"
+            "dice": "6d6"
         },
         "ac": 11,
         "speed": 30,
@@ -4625,7 +5609,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 30 ft.",
         "skill": "Perception +2, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ice-mephit",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ice-mephit.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ice-mephit.jpg",
+        "immunities": [
+            "cold",
+            "poison"
+        ],
+        "vulnerabilities": [
+            "bludgeoning",
+            "fire"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "flameskull": {
         "id": "flameskull",
@@ -4636,7 +5634,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 40,
-            "dice": "6d8+2"
+            "dice": "9d4+18"
         },
         "ac": 13,
         "speed": 30,
@@ -4673,7 +5671,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 93,
-            "dice": "15d8+6"
+            "dice": "11d8+44"
         },
         "ac": 9,
         "speed": 30,
@@ -4699,7 +5697,27 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=flesh-golem",
-        "imageUrl": "https://www.aidedd.org/dnd/images/flesh-golem.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/flesh-golem.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "lightning",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "flind": {
         "id": "flind",
@@ -4710,7 +5728,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 127,
-            "dice": "21d8+8"
+            "dice": "15d8+60"
         },
         "ac": 16,
         "speed": 30,
@@ -4743,11 +5761,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Steam Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 21,
-            "dice": "3d8+1"
+            "dice": "6d6"
         },
         "ac": 10,
         "speed": 30,
@@ -4773,18 +5791,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=steam-mephit",
-        "imageUrl": "https://www.aidedd.org/dnd/images/steam-mephit.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/steam-mephit.jpg",
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ape": {
         "id": "ape",
         "name": "Ape",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d8+6"
         },
         "ac": 12,
         "speed": 30,
@@ -4817,11 +5845,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Axe Beak",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 11,
         "speed": 30,
@@ -4858,7 +5886,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 0,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 11,
         "speed": 30,
@@ -4884,7 +5912,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 20 ft.",
         "skill": "Perception +1, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=frog",
-        "imageUrl": "https://www.aidedd.org/dnd/images/frog.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/frog.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "froghemoth": {
         "id": "froghemoth",
@@ -4895,7 +5926,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 184,
-            "dice": "30d8+12"
+            "dice": "16d12+80"
         },
         "ac": 14,
         "speed": 30,
@@ -4932,7 +5963,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 138,
-            "dice": "23d8+9"
+            "dice": "12d12+60"
         },
         "ac": 15,
         "speed": 30,
@@ -4958,7 +5989,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Athletics +9, Perception +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=frost-giant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/frost-giant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/frost-giant.jpg",
+        "saves": {
+            "CON": 8,
+            "WIS": 3,
+            "CHA": 4
+        },
+        "immunities": [
+            "cold"
+        ]
     },
     "galeb_duhr": {
         "id": "galeb_duhr",
@@ -4969,7 +6008,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "9d8+45"
         },
         "ac": 16,
         "speed": 30,
@@ -5006,7 +6045,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "7d8+21"
         },
         "ac": 15,
         "speed": 30,
@@ -5032,18 +6071,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gargoyle",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gargoyle.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gargoyle.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "black_bear": {
         "id": "black_bear",
         "name": "Black Bear",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d8+6"
         },
         "ac": 11,
         "speed": 30,
@@ -5080,7 +6135,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d8+27"
         },
         "ac": 15,
         "speed": 30,
@@ -5113,11 +6168,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Crocodile",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 12,
         "speed": 30,
@@ -5154,7 +6209,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 84,
-            "dice": "14d8+5"
+            "dice": "8d10+40"
         },
         "ac": 6,
         "speed": 30,
@@ -5180,7 +6235,18 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "15 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gelatinous-cube",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gelatinous-cube.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gelatinous-cube.jpg",
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "deafened",
+            "exhaustion",
+            "frightened",
+            "prone"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "ghast": {
         "id": "ghast",
@@ -5191,7 +6257,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 36,
-            "dice": "6d8+2"
+            "dice": "8d8"
         },
         "ac": 13,
         "speed": 30,
@@ -5217,7 +6283,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ghast",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ghast.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ghast.jpg",
+        "resistances": [
+            "necrotic"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned",
+            "charmed",
+            "exhaustion"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ghost": {
         "id": "ghost",
@@ -5228,7 +6308,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "10d8"
         },
         "ac": 11,
         "speed": 30,
@@ -5254,7 +6334,35 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 40 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ghost",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ghost.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ghost.jpg",
+        "resistances": [
+            "acid",
+            "fire",
+            "lightning",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "cold",
+            "necrotic",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ghoul": {
         "id": "ghoul",
@@ -5265,7 +6373,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 12,
         "speed": 30,
@@ -5291,7 +6399,18 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ghoul",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ghoul.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ghoul.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned",
+            "charmed",
+            "exhaustion"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "giant_ape": {
         "id": "giant_ape",
@@ -5302,7 +6421,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 157,
-            "dice": "26d8+10"
+            "dice": "15d12+60"
         },
         "ac": 12,
         "speed": 30,
@@ -5335,11 +6454,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Draft Horse",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 10,
         "speed": 30,
@@ -5376,7 +6495,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 42,
-            "dice": "7d8+2"
+            "dice": "5d10+15"
         },
         "ac": 12,
         "speed": 30,
@@ -5390,10 +6509,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         },
         "attacks": [
             {
-                "name": "Basic Attack",
-                "attackBonus": 3,
-                "damage": "1d8+3",
-                "damageType": "bludgeoning",
+                "name": "Tusk",
+                "attackBonus": 5,
+                "damage": "2d6+3",
+                "damageType": "slashing",
                 "reach": 5
             }
         ],
@@ -5409,11 +6528,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Giant Goat",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 11,
         "speed": 30,
@@ -5450,7 +6569,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 60,
-            "dice": "10d8+4"
+            "dice": "8d12+8"
         },
         "ac": 12,
         "speed": 30,
@@ -5476,18 +6595,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-constrictor-snake",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-constrictor-snake.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-constrictor-snake.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "giant_lizard": {
         "id": "giant_lizard",
         "name": "Giant Lizard",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 12,
         "speed": 30,
@@ -5513,7 +6635,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-lizard",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-lizard.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-lizard.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "giant_crocodile": {
         "id": "giant_crocodile",
@@ -5524,7 +6649,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "9d12+27"
         },
         "ac": 14,
         "speed": 30,
@@ -5561,7 +6686,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d10+4"
         },
         "ac": 13,
         "speed": 30,
@@ -5598,7 +6723,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 42,
-            "dice": "7d8+2"
+            "dice": "5d12+10"
         },
         "ac": 14,
         "speed": 30,
@@ -5635,7 +6760,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d6+1"
         },
         "ac": 13,
         "speed": 30,
@@ -5661,18 +6786,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-fire-beetle",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-fire-beetle.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-fire-beetle.jpg",
+        "senses": [
+            "blindsight 30 ft."
+        ]
     },
     "giant_owl": {
         "id": "giant_owl",
         "name": "Giant Owl",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 12,
         "speed": 30,
@@ -5698,18 +6826,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "5 ft., fly 60 ft.",
         "skill": "Perception +5, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-owl",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-owl.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-owl.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "giant_two_headed_goat": {
         "id": "giant_two_headed_goat",
         "name": "Giant Two Headed Goat",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 11,
         "speed": 30,
@@ -5746,7 +6877,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 12,
         "speed": 30,
@@ -5779,11 +6910,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Mummified Warrior",
         "type": "undead",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d8+6"
         },
         "ac": 8,
         "speed": 30,
@@ -5820,7 +6951,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d10+8"
         },
         "ac": 11,
         "speed": 30,
@@ -5846,18 +6977,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., swim 60 ft.",
         "skill": "Perception +4, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-octopus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-octopus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-octopus.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "warhorse": {
         "id": "warhorse",
         "name": "Warhorse",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 11,
         "speed": 30,
@@ -5894,7 +7028,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "7d10+14"
         },
         "ac": 15,
         "speed": 30,
@@ -5920,18 +7054,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-scorpion",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-scorpion.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-scorpion.jpg",
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "dretch": {
         "id": "dretch",
         "name": "Dretch",
         "type": "fiend",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 18,
-            "dice": "3d8+1"
+            "dice": "4d6+4"
         },
         "ac": 11,
         "speed": 30,
@@ -5957,7 +7094,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=dretch",
-        "imageUrl": "https://www.aidedd.org/dnd/images/dretch.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/dretch.jpg",
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "giant_shark": {
         "id": "giant_shark",
@@ -5968,7 +7119,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 126,
-            "dice": "21d8+8"
+            "dice": "11d12+55"
         },
         "ac": 13,
         "speed": 30,
@@ -5994,7 +7145,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 50 ft.",
         "skill": "Perception +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-shark",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-shark.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-shark.jpg",
+        "senses": [
+            "blindsight 60 ft."
+        ]
     },
     "giant_spider": {
         "id": "giant_spider",
@@ -6005,7 +7159,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d10+4"
         },
         "ac": 14,
         "speed": 30,
@@ -6031,7 +7185,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-spider",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-spider.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-spider.jpg",
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "giant_toad": {
         "id": "giant_toad",
@@ -6042,7 +7200,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d10+6"
         },
         "ac": 11,
         "speed": 30,
@@ -6068,18 +7226,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-toad",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-toad.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-toad.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "giant_frog": {
         "id": "giant_frog",
         "name": "Giant Frog",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 18,
-            "dice": "3d8+1"
+            "dice": "4d8"
         },
         "ac": 11,
         "speed": 30,
@@ -6105,7 +7266,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Perception +2, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-frog",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-frog.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-frog.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "giant_vulture": {
         "id": "giant_vulture",
@@ -6116,7 +7280,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "3d10+6"
         },
         "ac": 10,
         "speed": 30,
@@ -6149,11 +7313,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Jackalwere",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 18,
-            "dice": "3d8+1"
+            "dice": "4d8"
         },
         "ac": 12,
         "speed": 30,
@@ -6186,11 +7350,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Kuo Toa",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 18,
-            "dice": "3d8+1"
+            "dice": "4d8"
         },
         "ac": 13,
         "speed": 30,
@@ -6227,7 +7391,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d8+27"
         },
         "ac": 9,
         "speed": 30,
@@ -6241,10 +7405,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         },
         "attacks": [
             {
-                "name": "Basic Attack",
-                "attackBonus": 0,
-                "damage": "1d8+0",
-                "damageType": "bludgeoning",
+                "name": "Bites",
+                "attackBonus": 2,
+                "damage": "5d6",
+                "damageType": "piercing",
                 "reach": 5
             }
         ],
@@ -6253,7 +7417,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., swim 10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gibbering-mouther",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gibbering-mouther.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gibbering-mouther.jpg",
+        "conditionImmunities": [
+            "prone"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "glabrezu": {
         "id": "glabrezu",
@@ -6264,7 +7434,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 157,
-            "dice": "26d8+10"
+            "dice": "15d10+75"
         },
         "ac": 17,
         "speed": 30,
@@ -6290,7 +7460,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=glabrezu",
-        "imageUrl": "https://www.aidedd.org/dnd/images/glabrezu.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/glabrezu.jpg",
+        "saves": {
+            "STR": 9,
+            "CON": 9,
+            "WIS": 7,
+            "CHA": 7
+        },
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "gladiator": {
         "id": "gladiator",
@@ -6301,7 +7494,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 112,
-            "dice": "18d8+7"
+            "dice": "15d8+45"
         },
         "ac": 16,
         "speed": 30,
@@ -6327,18 +7520,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Athletics +10, Intimidation +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gladiator",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gladiator.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gladiator.jpg",
+        "saves": {
+            "STR": 7,
+            "DEX": 5,
+            "CON": 6
+        }
     },
     "violet_fungus": {
         "id": "violet_fungus",
         "name": "Violet Fungus",
         "type": "plant",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 18,
-            "dice": "3d8+1"
+            "dice": "4d8"
         },
         "ac": 5,
         "speed": 30,
@@ -6364,7 +7562,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "5 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=violet-fungus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/violet-fungus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/violet-fungus.jpg",
+        "conditionImmunities": [
+            "blinded",
+            "blinded",
+            "frightened"
+        ],
+        "senses": [
+            "blindsight 30 ft. (blind beyond this radius)"
+        ]
     },
     "gnoll_pack_lord": {
         "id": "gnoll_pack_lord",
@@ -6375,7 +7581,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 49,
-            "dice": "8d8+3"
+            "dice": "9d8+9"
         },
         "ac": 15,
         "speed": 30,
@@ -6408,11 +7614,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Dust Mephit",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 17,
-            "dice": "2d8+1"
+            "dice": "5d6"
         },
         "ac": 12,
         "speed": 30,
@@ -6438,7 +7644,19 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 30 ft.",
         "skill": "Perception +2, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=dust-mephit",
-        "imageUrl": "https://www.aidedd.org/dnd/images/dust-mephit.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/dust-mephit.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "goat": {
         "id": "goat",
@@ -6449,7 +7667,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d8"
         },
         "ac": 10,
         "speed": 30,
@@ -6482,11 +7700,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Flying Sword",
         "type": "construct",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 17,
-            "dice": "2d8+1"
+            "dice": "5d6"
         },
         "ac": 17,
         "speed": 30,
@@ -6512,7 +7730,26 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 50 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=flying-sword",
-        "imageUrl": "https://www.aidedd.org/dnd/images/flying-sword.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/flying-sword.jpg",
+        "saves": {
+            "DEX": 4
+        },
+        "immunities": [
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "blinded",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "gold_dragon_wyrmling": {
         "id": "gold_dragon_wyrmling",
@@ -6523,7 +7760,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 60,
-            "dice": "10d8+4"
+            "dice": "8d8+24"
         },
         "ac": 17,
         "speed": 30,
@@ -6549,7 +7786,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft., swim 30 ft.",
         "skill": "Perception +4, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gold-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gold-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gold-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 5,
+            "WIS": 2,
+            "CHA": 5
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "gorgon": {
         "id": "gorgon",
@@ -6560,7 +7810,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 114,
-            "dice": "19d8+7"
+            "dice": "12d10+48"
         },
         "ac": 19,
         "speed": 30,
@@ -6586,7 +7836,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gorgon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gorgon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gorgon.jpg",
+        "conditionImmunities": [
+            "petrified"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "green_dragon_wyrmling": {
         "id": "green_dragon_wyrmling",
@@ -6597,7 +7853,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 38,
-            "dice": "6d8+2"
+            "dice": "7d8+7"
         },
         "ac": 17,
         "speed": 30,
@@ -6623,7 +7879,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft., swim 30 ft.",
         "skill": "Perception +4, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=green-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/green-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/green-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 3,
+            "WIS": 2,
+            "CHA": 3
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "green_hag": {
         "id": "green_hag",
@@ -6634,7 +7906,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 82,
-            "dice": "13d8+5"
+            "dice": "11d8+33"
         },
         "ac": 17,
         "speed": 30,
@@ -6660,7 +7932,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Arcana +3, Deception +4, Perception +4, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=green-hag",
-        "imageUrl": "https://www.aidedd.org/dnd/images/green-hag.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/green-hag.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "grell": {
         "id": "grell",
@@ -6671,7 +7946,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 55,
-            "dice": "9d8+3"
+            "dice": "10d8+10"
         },
         "ac": 12,
         "speed": 30,
@@ -6708,7 +7983,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "6d8"
         },
         "ac": 14,
         "speed": 30,
@@ -6734,7 +8009,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=grick",
-        "imageUrl": "https://www.aidedd.org/dnd/images/grick.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/grick.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "griffon": {
         "id": "griffon",
@@ -6745,7 +8028,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 59,
-            "dice": "9d8+3"
+            "dice": "7d10+21"
         },
         "ac": 12,
         "speed": 30,
@@ -6771,18 +8054,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 80 ft.",
         "skill": "Perception +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=griffon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/griffon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/griffon.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "deep_gnome_svirfneblin": {
         "id": "deep_gnome_svirfneblin",
         "name": "Deep Gnome Svirfneblin",
         "type": "humanoid",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "3d6+6"
         },
         "ac": 15,
         "speed": 30,
@@ -6808,18 +8094,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "Investigation +3, Perception +2, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=deep-gnome-svirfneblin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/deep-gnome-svirfneblin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/deep-gnome-svirfneblin.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "giant_sea_horse": {
         "id": "giant_sea_horse",
         "name": "Giant Sea Horse",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "3d10"
         },
         "ac": 13,
         "speed": 30,
@@ -6856,7 +8145,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 127,
-            "dice": "21d8+8"
+            "dice": "15d10+45"
         },
         "ac": 18,
         "speed": 30,
@@ -6882,7 +8171,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=guardian-naga",
-        "imageUrl": "https://www.aidedd.org/dnd/images/guardian-naga.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/guardian-naga.jpg",
+        "saves": {
+            "DEX": 8,
+            "CON": 7,
+            "INT": 7,
+            "WIS": 8,
+            "CHA": 8
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "gynosphinx": {
         "id": "gynosphinx",
@@ -6893,7 +8199,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "16d10+48"
         },
         "ac": 17,
         "speed": 30,
@@ -6919,7 +8225,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 60 ft.",
         "skill": "Arcana +12, History +12, Perception +8, Religion +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=gynosphinx",
-        "imageUrl": "https://www.aidedd.org/dnd/images/gynosphinx.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/gynosphinx.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "half_ogre": {
         "id": "half_ogre",
@@ -6930,7 +8252,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 30,
-            "dice": "5d8+2"
+            "dice": "4d10+8"
         },
         "ac": 12,
         "speed": 30,
@@ -6967,7 +8289,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 65,
-            "dice": "10d8+4"
+            "dice": "10d8+20"
         },
         "ac": 18,
         "speed": 30,
@@ -6993,7 +8315,14 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Athletics +5, Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=half-red-dragon-veteran",
-        "imageUrl": "https://www.aidedd.org/dnd/images/half-red-dragon-veteran.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/half-red-dragon-veteran.jpg",
+        "resistances": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "harpy": {
         "id": "harpy",
@@ -7004,7 +8333,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 38,
-            "dice": "6d8+2"
+            "dice": "7d8+7"
         },
         "ac": 11,
         "speed": 30,
@@ -7041,7 +8370,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 13,
         "speed": 30,
@@ -7078,7 +8407,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "7d8+14"
         },
         "ac": 15,
         "speed": 30,
@@ -7104,7 +8433,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft.",
         "skill": "Perception +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=hell-hound",
-        "imageUrl": "https://www.aidedd.org/dnd/images/hell-hound.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/hell-hound.jpg",
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "helmed_horror": {
         "id": "helmed_horror",
@@ -7115,7 +8450,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 60,
-            "dice": "10d8+4"
+            "dice": "8d8+24"
         },
         "ac": 20,
         "speed": 30,
@@ -7152,7 +8487,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "13d10+65"
         },
         "ac": 16,
         "speed": 30,
@@ -7178,7 +8513,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=hezrou",
-        "imageUrl": "https://www.aidedd.org/dnd/images/hezrou.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/hezrou.jpg",
+        "saves": {
+            "STR": 7,
+            "CON": 8,
+            "WIS": 4
+        },
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "hill_giant": {
         "id": "hill_giant",
@@ -7189,7 +8546,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 105,
-            "dice": "17d8+7"
+            "dice": "10d12+40"
         },
         "ac": 13,
         "speed": 30,
@@ -7226,7 +8583,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 19,
-            "dice": "3d8+1"
+            "dice": "3d10+3"
         },
         "ac": 11,
         "speed": 30,
@@ -7259,11 +8616,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Reef Manta Ray",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "2d10+2"
         },
         "ac": 12,
         "speed": 30,
@@ -7300,7 +8657,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d8+12"
         },
         "ac": 17,
         "speed": 30,
@@ -7337,7 +8694,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 15,
         "speed": 30,
@@ -7374,7 +8731,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "2d4"
         },
         "ac": 13,
         "speed": 30,
@@ -7400,7 +8757,17 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=homunculus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/homunculus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/homunculus.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "hook_horror": {
         "id": "hook_horror",
@@ -7411,7 +8778,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d10+20"
         },
         "ac": 15,
         "speed": 30,
@@ -7448,7 +8815,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 178,
-            "dice": "29d8+11"
+            "dice": "17d10+85"
         },
         "ac": 18,
         "speed": 30,
@@ -7474,7 +8841,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=horned-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/horned-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/horned-devil.jpg",
+        "saves": {
+            "STR": 10,
+            "DEX": 7,
+            "WIS": 7,
+            "CHA": 7
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "hunter_shark": {
         "id": "hunter_shark",
@@ -7485,7 +8874,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 12,
         "speed": 30,
@@ -7511,7 +8900,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 40 ft.",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=hunter-shark",
-        "imageUrl": "https://www.aidedd.org/dnd/images/hunter-shark.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/hunter-shark.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "hydra": {
         "id": "hydra",
@@ -7522,7 +8914,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 172,
-            "dice": "28d8+11"
+            "dice": "15d12+75"
         },
         "ac": 15,
         "speed": 30,
@@ -7548,7 +8940,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Perception +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=hydra",
-        "imageUrl": "https://www.aidedd.org/dnd/images/hydra.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/hydra.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "hyena": {
         "id": "hyena",
@@ -7559,7 +8954,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "1d8+1"
         },
         "ac": 11,
         "speed": 30,
@@ -7596,7 +8991,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 11500,
         "hp": {
             "base": 180,
-            "dice": "30d8+12"
+            "dice": "19d10+76"
         },
         "ac": 18,
         "speed": 30,
@@ -7622,18 +9017,40 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ice-devil",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ice-devil.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ice-devil.jpg",
+        "saves": {
+            "DEX": 7,
+            "CON": 9,
+            "WIS": 7,
+            "CHA": 9
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "scout": {
         "id": "scout",
         "name": "Scout",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "3d8+3"
         },
         "ac": 13,
         "speed": 30,
@@ -7670,7 +9087,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 10,
-            "dice": "1d8+0"
+            "dice": "3d4+3"
         },
         "ac": 13,
         "speed": 30,
@@ -7696,7 +9113,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 40 ft.",
         "skill": "Deception +4, Insight +3, Persuasion +4, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=imp",
-        "imageUrl": "https://www.aidedd.org/dnd/images/imp.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/imp.jpg",
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "invisible_stalker": {
         "id": "invisible_stalker",
@@ -7707,7 +9140,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 104,
-            "dice": "17d8+6"
+            "dice": "16d8+32"
         },
         "ac": 14,
         "speed": 30,
@@ -7733,7 +9166,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft., fly 50 ft. (hover)",
         "skill": "Perception +8, Stealth +10",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=invisible-stalker",
-        "imageUrl": "https://www.aidedd.org/dnd/images/invisible-stalker.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/invisible-stalker.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "iron_golem": {
         "id": "iron_golem",
@@ -7744,7 +9198,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 15000,
         "hp": {
             "base": 210,
-            "dice": "35d8+14"
+            "dice": "20d10+100"
         },
         "ac": 20,
         "speed": 30,
@@ -7770,7 +9224,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=iron-golem",
-        "imageUrl": "https://www.aidedd.org/dnd/images/iron-golem.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/iron-golem.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "jackal": {
         "id": "jackal",
@@ -7781,7 +9256,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 3,
-            "dice": "1d8+0"
+            "dice": "1d6"
         },
         "ac": 12,
         "speed": 30,
@@ -7814,11 +9289,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Shadow",
         "type": "undead",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 16,
-            "dice": "2d8+1"
+            "dice": "3d8+3"
         },
         "ac": 12,
         "speed": 30,
@@ -7844,18 +9319,48 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Stealth +4 (+6 in dim light or darkness)",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=shadow",
-        "imageUrl": "https://www.aidedd.org/dnd/images/shadow.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/shadow.jpg",
+        "resistances": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "vulnerabilities": [
+            "radiant"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "camel": {
         "id": "camel",
         "name": "Camel",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 15,
-            "dice": "2d8+1"
+            "dice": "2d10+4"
         },
         "ac": 9,
         "speed": 30,
@@ -7892,7 +9397,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 90,
-            "dice": "15d8+6"
+            "dice": "12d12+12"
         },
         "ac": 12,
         "speed": 30,
@@ -7918,7 +9423,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 60 ft.",
         "skill": "Perception +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=killer-whale",
-        "imageUrl": "https://www.aidedd.org/dnd/images/killer-whale.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/killer-whale.jpg",
+        "senses": [
+            "blindsight 120 ft."
+        ]
     },
     "knight": {
         "id": "knight",
@@ -7929,7 +9437,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "8d8+16"
         },
         "ac": 18,
         "speed": 30,
@@ -7955,18 +9463,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=knight",
-        "imageUrl": "https://www.aidedd.org/dnd/images/knight.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/knight.jpg",
+        "saves": {
+            "CON": 4,
+            "WIS": 2
+        }
     },
     "cow": {
         "id": "cow",
         "name": "Cow",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 15,
-            "dice": "2d8+1"
+            "dice": "2d10+4"
         },
         "ac": 10,
         "speed": 30,
@@ -7999,11 +9511,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Orc",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 15,
-            "dice": "2d8+1"
+            "dice": "2d8+6"
         },
         "ac": 13,
         "speed": 30,
@@ -8029,7 +9541,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Intimidation +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=orc",
-        "imageUrl": "https://www.aidedd.org/dnd/images/orc.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/orc.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "kraken": {
         "id": "kraken",
@@ -8040,7 +9555,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 50000,
         "hp": {
             "base": 472,
-            "dice": "78d8+31"
+            "dice": "27d20+189"
         },
         "ac": 18,
         "speed": 30,
@@ -8066,18 +9581,41 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=kraken",
-        "imageUrl": "https://www.aidedd.org/dnd/images/kraken.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/kraken.jpg",
+        "saves": {
+            "STR": 17,
+            "DEX": 7,
+            "CON": 14,
+            "INT": 13,
+            "WIS": 11
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "lightning"
+        ],
+        "conditionImmunities": [
+            "frightened",
+            "paralyzed"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "aarakocra": {
         "id": "aarakocra",
         "name": "Aarakocra",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 12,
         "speed": 30,
@@ -8114,7 +9652,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 97,
-            "dice": "16d8+6"
+            "dice": "13d8+39"
         },
         "ac": 13,
         "speed": 30,
@@ -8151,7 +9689,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 65,
-            "dice": "10d8+4"
+            "dice": "10d8+20"
         },
         "ac": 11,
         "speed": 30,
@@ -8188,7 +9726,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 18000,
         "hp": {
             "base": 228,
-            "dice": "38d8+15"
+            "dice": "24d8+120"
         },
         "ac": 18,
         "speed": 30,
@@ -8225,7 +9763,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 97,
-            "dice": "16d8+6"
+            "dice": "13d10+26"
         },
         "ac": 13,
         "speed": 30,
@@ -8251,7 +9789,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Deception +7, Insight +4, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=lamia",
-        "imageUrl": "https://www.aidedd.org/dnd/images/lamia.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/lamia.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "lemure": {
         "id": "lemure",
@@ -8262,7 +9803,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 7,
         "speed": 30,
@@ -8288,7 +9829,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "15 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=lemure",
-        "imageUrl": "https://www.aidedd.org/dnd/images/lemure.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/lemure.jpg",
+        "resistances": [
+            "cold"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "lich": {
         "id": "lich",
@@ -8299,7 +9855,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 135,
-            "dice": "22d8+9"
+            "dice": "18d8+54"
         },
         "ac": 17,
         "speed": 30,
@@ -8325,7 +9881,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Arcana +19, History +12, Insight +9, Perception +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=lich",
-        "imageUrl": "https://www.aidedd.org/dnd/images/lich.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/lich.jpg",
+        "saves": {
+            "CON": 10,
+            "INT": 12,
+            "WIS": 9
+        },
+        "resistances": [
+            "cold",
+            "lightning",
+            "necrotic",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ],
+        "legendaryActions": 4
     },
     "lion": {
         "id": "lion",
@@ -8336,7 +9919,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d10+4"
         },
         "ac": 12,
         "speed": 30,
@@ -8373,7 +9956,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 10,
         "speed": 30,
@@ -8399,7 +9982,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., climb 20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=lizard",
-        "imageUrl": "https://www.aidedd.org/dnd/images/lizard.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/lizard.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "lizard_king_queen": {
         "id": "lizard_king_queen",
@@ -8410,7 +9996,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 78,
-            "dice": "13d8+5"
+            "dice": "12d8+24"
         },
         "ac": 15,
         "speed": 30,
@@ -8443,11 +10029,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Constrictor Snake",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d10+2"
         },
         "ac": 12,
         "speed": 30,
@@ -8473,7 +10059,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=constrictor-snake",
-        "imageUrl": "https://www.aidedd.org/dnd/images/constrictor-snake.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/constrictor-snake.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "lizardfolk_shaman": {
         "id": "lizardfolk_shaman",
@@ -8484,7 +10073,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 13,
         "speed": 30,
@@ -8521,7 +10110,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 40,
-            "dice": "6d8+2"
+            "dice": "9d8"
         },
         "ac": 12,
         "speed": 30,
@@ -8547,18 +10136,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Arcana +6, History +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=mage",
-        "imageUrl": "https://www.aidedd.org/dnd/images/mage.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/mage.jpg",
+        "saves": {
+            "INT": 6,
+            "WIS": 4
+        }
     },
     "drow": {
         "id": "drow",
         "name": "Drow",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 15,
         "speed": 30,
@@ -8584,7 +10177,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +2, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=drow",
-        "imageUrl": "https://www.aidedd.org/dnd/images/drow.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/drow.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "mammoth": {
         "id": "mammoth",
@@ -8595,7 +10191,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 126,
-            "dice": "21d8+8"
+            "dice": "11d12+55"
         },
         "ac": 13,
         "speed": 30,
@@ -8628,11 +10224,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Elk",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d10+2"
         },
         "ac": 10,
         "speed": 30,
@@ -8669,7 +10265,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 68,
-            "dice": "11d8+4"
+            "dice": "8d10+24"
         },
         "ac": 14,
         "speed": 30,
@@ -8695,7 +10291,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 50 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=manticore",
-        "imageUrl": "https://www.aidedd.org/dnd/images/manticore.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/manticore.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "marilith": {
         "id": "marilith",
@@ -8706,7 +10305,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 15000,
         "hp": {
             "base": 189,
-            "dice": "31d8+12"
+            "dice": "18d10+90"
         },
         "ac": 18,
         "speed": 30,
@@ -8732,7 +10331,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=marilith",
-        "imageUrl": "https://www.aidedd.org/dnd/images/marilith.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/marilith.jpg",
+        "saves": {
+            "STR": 9,
+            "CON": 10,
+            "WIS": 8,
+            "CHA": 10
+        },
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "medusa": {
         "id": "medusa",
@@ -8743,7 +10365,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 127,
-            "dice": "21d8+8"
+            "dice": "17d8+51"
         },
         "ac": 15,
         "speed": 30,
@@ -8769,18 +10391,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Deception +5, Insight +4, Perception +4, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=medusa",
-        "imageUrl": "https://www.aidedd.org/dnd/images/medusa.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/medusa.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "giant_badger": {
         "id": "giant_badger",
         "name": "Giant Badger",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d8+4"
         },
         "ac": 10,
         "speed": 30,
@@ -8806,7 +10431,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-badger",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-badger.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-badger.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "merrow": {
         "id": "merrow",
@@ -8817,7 +10445,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 13,
         "speed": 30,
@@ -8843,7 +10471,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=merrow",
-        "imageUrl": "https://www.aidedd.org/dnd/images/merrow.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/merrow.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "mezzoloth": {
         "id": "mezzoloth",
@@ -8854,7 +10485,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d8+30"
         },
         "ac": 18,
         "speed": 30,
@@ -8891,7 +10522,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "9d8+18"
         },
         "ac": 12,
         "speed": 30,
@@ -8917,7 +10548,16 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "15 ft.",
         "skill": "Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=mimic",
-        "imageUrl": "https://www.aidedd.org/dnd/images/mimic.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/mimic.jpg",
+        "immunities": [
+            "acid"
+        ],
+        "conditionImmunities": [
+            "prone"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "mindwitness": {
         "id": "mindwitness",
@@ -8928,7 +10568,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d10+20"
         },
         "ac": 15,
         "speed": 30,
@@ -8965,7 +10605,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 76,
-            "dice": "12d8+5"
+            "dice": "9d10+27"
         },
         "ac": 14,
         "speed": 30,
@@ -8991,7 +10631,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=minotaur",
-        "imageUrl": "https://www.aidedd.org/dnd/images/minotaur.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/minotaur.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "minotaur_skeleton": {
         "id": "minotaur_skeleton",
@@ -9002,7 +10645,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d10+18"
         },
         "ac": 12,
         "speed": 30,
@@ -9028,7 +10671,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=minotaur-skeleton",
-        "imageUrl": "https://www.aidedd.org/dnd/images/minotaur-skeleton.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/minotaur-skeleton.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "vulnerabilities": [
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "moloch": {
         "id": "moloch",
@@ -9039,7 +10695,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 253,
-            "dice": "42d8+16"
+            "dice": "22d10+132"
         },
         "ac": 19,
         "speed": 30,
@@ -9072,11 +10728,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Giant Crab",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 15,
         "speed": 30,
@@ -9102,18 +10758,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-crab",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-crab.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-crab.jpg",
+        "senses": [
+            "blindsight 30 ft."
+        ]
     },
     "giant_wasp": {
         "id": "giant_wasp",
         "name": "Giant Wasp",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 12,
         "speed": 30,
@@ -9146,11 +10805,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Kenku",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 13,
         "speed": 30,
@@ -9183,11 +10842,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Kobold Inventor",
         "type": "humanoid",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d6+3"
         },
         "ac": 12,
         "speed": 30,
@@ -9224,7 +10883,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "9d8+18"
         },
         "ac": 11,
         "speed": 30,
@@ -9250,7 +10909,32 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=mummy",
-        "imageUrl": "https://www.aidedd.org/dnd/images/mummy.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/mummy.jpg",
+        "saves": {
+            "WIS": 2
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "mummy_lord": {
         "id": "mummy_lord",
@@ -9261,7 +10945,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 13000,
         "hp": {
             "base": 97,
-            "dice": "16d8+6"
+            "dice": "13d8+39"
         },
         "ac": 17,
         "speed": 30,
@@ -9287,7 +10971,36 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "History +5, Religion +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=mummy-lord",
-        "imageUrl": "https://www.aidedd.org/dnd/images/mummy-lord.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/mummy-lord.jpg",
+        "saves": {
+            "CON": 8,
+            "INT": 5,
+            "WIS": 9,
+            "CHA": 8
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ],
+        "legendaryActions": 5
     },
     "nalfeshnee": {
         "id": "nalfeshnee",
@@ -9298,7 +11011,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 184,
-            "dice": "30d8+12"
+            "dice": "16d10+96"
         },
         "ac": 18,
         "speed": 30,
@@ -9324,7 +11037,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=nalfeshnee",
-        "imageUrl": "https://www.aidedd.org/dnd/images/nalfeshnee.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/nalfeshnee.jpg",
+        "saves": {
+            "CON": 11,
+            "INT": 9,
+            "WIS": 6,
+            "CHA": 7
+        },
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "narzugon": {
         "id": "narzugon",
@@ -9335,7 +11071,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 112,
-            "dice": "18d8+7"
+            "dice": "15d8+45"
         },
         "ac": 20,
         "speed": 30,
@@ -9368,11 +11104,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Panther",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 12,
         "speed": 30,
@@ -9405,11 +11141,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Pteranodon",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 13,
         "speed": 30,
@@ -9442,11 +11178,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Riding Horse",
         "type": "beast",
         "size": "large",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d10+2"
         },
         "ac": 10,
         "speed": 30,
@@ -9483,7 +11219,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 112,
-            "dice": "18d8+7"
+            "dice": "15d8+45"
         },
         "ac": 17,
         "speed": 30,
@@ -9509,7 +11245,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Deception +7, Insight +6, Perception +6, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=night-hag",
-        "imageUrl": "https://www.aidedd.org/dnd/images/night-hag.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/night-hag.jpg",
+        "resistances": [
+            "cold",
+            "fire",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "charmed"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "nightmare": {
         "id": "nightmare",
@@ -9520,7 +11269,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 68,
-            "dice": "11d8+4"
+            "dice": "8d10+24"
         },
         "ac": 13,
         "speed": 30,
@@ -9546,7 +11295,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "60 ft., fly 90 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=nightmare",
-        "imageUrl": "https://www.aidedd.org/dnd/images/nightmare.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/nightmare.jpg",
+        "immunities": [
+            "fire"
+        ]
     },
     "nilbog": {
         "id": "nilbog",
@@ -9557,7 +11309,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "2d6"
         },
         "ac": 13,
         "speed": 30,
@@ -9590,11 +11342,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Skeleton",
         "type": "undead",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d8+4"
         },
         "ac": 13,
         "speed": 30,
@@ -9620,7 +11372,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=skeleton",
-        "imageUrl": "https://www.aidedd.org/dnd/images/skeleton.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/skeleton.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "vulnerabilities": [
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "poisoned",
+            "exhaustion"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "nothic": {
         "id": "nothic",
@@ -9631,7 +11396,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d8+18"
         },
         "ac": 15,
         "speed": 30,
@@ -9664,11 +11429,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Troglodyte",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "2d8+4"
         },
         "ac": 11,
         "speed": 30,
@@ -9705,7 +11470,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 123,
-            "dice": "20d8+8"
+            "dice": "13d10+52"
         },
         "ac": 18,
         "speed": 30,
@@ -9738,11 +11503,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Bandit",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 12,
         "speed": 30,
@@ -9779,7 +11544,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 8,
         "speed": 30,
@@ -9805,7 +11570,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., climb 10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ochre-jelly",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ochre-jelly.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ochre-jelly.jpg",
+        "resistances": [
+            "acid"
+        ],
+        "immunities": [
+            "lightning",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "blinded",
+            "exhaustion",
+            "frightened",
+            "prone"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "octopus": {
         "id": "octopus",
@@ -9816,7 +11599,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 3,
-            "dice": "1d8+0"
+            "dice": "1d6"
         },
         "ac": 12,
         "speed": 30,
@@ -9842,7 +11625,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "5 ft., swim 30 ft.",
         "skill": "Perception +2, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=octopus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/octopus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/octopus.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "ogre": {
         "id": "ogre",
@@ -9853,7 +11639,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 59,
-            "dice": "9d8+3"
+            "dice": "7d10+21"
         },
         "ac": 11,
         "speed": 30,
@@ -9879,7 +11665,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ogre",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ogre.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ogre.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "ogre_zombie": {
         "id": "ogre_zombie",
@@ -9890,7 +11679,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 85,
-            "dice": "14d8+5"
+            "dice": "9d10+36"
         },
         "ac": 8,
         "speed": 30,
@@ -9916,7 +11705,19 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=ogre-zombie",
-        "imageUrl": "https://www.aidedd.org/dnd/images/ogre-zombie.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/ogre-zombie.jpg",
+        "saves": {
+            "WIS": 0
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "oni": {
         "id": "oni",
@@ -9927,7 +11728,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 110,
-            "dice": "18d8+7"
+            "dice": "13d10+39"
         },
         "ac": 16,
         "speed": 30,
@@ -9953,18 +11754,27 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 30 ft.",
         "skill": "Arcana +5, Deception +8, Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=oni",
-        "imageUrl": "https://www.aidedd.org/dnd/images/oni.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/oni.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 6,
+            "WIS": 4,
+            "CHA": 5
+        },
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "boar": {
         "id": "boar",
         "name": "Boar",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 11,
         "speed": 30,
@@ -10001,7 +11811,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d8+18"
         },
         "ac": 16,
         "speed": 30,
@@ -10038,7 +11848,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 90000,
         "hp": {
             "base": 405,
-            "dice": "67d8+27"
+            "dice": "30d12+210"
         },
         "ac": 17,
         "speed": 30,
@@ -10075,7 +11885,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 42,
-            "dice": "7d8+2"
+            "dice": "5d8+20"
         },
         "ac": 18,
         "speed": 30,
@@ -10112,7 +11922,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 114,
-            "dice": "19d8+7"
+            "dice": "12d10+48"
         },
         "ac": 14,
         "speed": 30,
@@ -10138,7 +11948,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=otyugh",
-        "imageUrl": "https://www.aidedd.org/dnd/images/otyugh.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/otyugh.jpg",
+        "saves": {
+            "CON": 7
+        },
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "owl": {
         "id": "owl",
@@ -10149,7 +11965,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 11,
         "speed": 30,
@@ -10175,7 +11991,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "5 ft., fly 60 ft.",
         "skill": "Perception +3, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=owl",
-        "imageUrl": "https://www.aidedd.org/dnd/images/owl.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/owl.jpg",
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "owlbear": {
         "id": "owlbear",
@@ -10186,7 +12005,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 59,
-            "dice": "9d8+3"
+            "dice": "7d10+21"
         },
         "ac": 13,
         "speed": 30,
@@ -10212,18 +12031,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=owlbear",
-        "imageUrl": "https://www.aidedd.org/dnd/images/owlbear.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/owlbear.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "bullywug": {
         "id": "bullywug",
         "name": "Bullywug",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 15,
         "speed": 30,
@@ -10260,7 +12082,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 59,
-            "dice": "9d8+3"
+            "dice": "7d10+21"
         },
         "ac": 12,
         "speed": 30,
@@ -10286,7 +12108,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "60 ft., fly 90 ft.",
         "skill": "Perception +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=pegasus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/pegasus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/pegasus.jpg",
+        "saves": {
+            "DEX": 4,
+            "WIS": 4,
+            "CHA": 3
+        }
     },
     "peryton": {
         "id": "peryton",
@@ -10297,7 +12124,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d8+6"
         },
         "ac": 13,
         "speed": 30,
@@ -10334,7 +12161,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d10+5"
         },
         "ac": 13,
         "speed": 30,
@@ -10360,18 +12187,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=phase-spider",
-        "imageUrl": "https://www.aidedd.org/dnd/images/phase-spider.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/phase-spider.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "dolphin": {
         "id": "dolphin",
         "name": "Dolphin",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 12,
         "speed": 30,
@@ -10408,7 +12238,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 25000,
         "hp": {
             "base": 300,
-            "dice": "50d8+20"
+            "dice": "24d10+168"
         },
         "ac": 19,
         "speed": 30,
@@ -10434,7 +12264,28 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=pit-fiend",
-        "imageUrl": "https://www.aidedd.org/dnd/images/pit-fiend.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/pit-fiend.jpg",
+        "saves": {
+            "DEX": 8,
+            "CON": 13,
+            "WIS": 10
+        },
+        "resistances": [
+            "cold",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "planetar": {
         "id": "planetar",
@@ -10445,7 +12296,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 15000,
         "hp": {
             "base": 200,
-            "dice": "33d8+13"
+            "dice": "16d10+112"
         },
         "ac": 19,
         "speed": 30,
@@ -10471,7 +12322,26 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 120 ft.",
         "skill": "Perception +11",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=planetar",
-        "imageUrl": "https://www.aidedd.org/dnd/images/planetar.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/planetar.jpg",
+        "saves": {
+            "CON": 12,
+            "WIS": 11,
+            "CHA": 12
+        },
+        "resistances": [
+            "radiant",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ]
     },
     "plesiosaurus": {
         "id": "plesiosaurus",
@@ -10482,7 +12352,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 68,
-            "dice": "11d8+4"
+            "dice": "8d10+24"
         },
         "ac": 13,
         "speed": 30,
@@ -10515,11 +12385,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Giant Poisonous Snake",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 14,
         "speed": 30,
@@ -10545,7 +12415,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-poisonous-snake",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-poisonous-snake.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-poisonous-snake.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "polar_bear": {
         "id": "polar_bear",
@@ -10556,7 +12429,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 42,
-            "dice": "7d8+2"
+            "dice": "5d10+15"
         },
         "ac": 12,
         "speed": 30,
@@ -10589,11 +12462,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Giant Wolf Spider",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 13,
         "speed": 30,
@@ -10619,7 +12492,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft.",
         "skill": "Perception +3, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-wolf-spider",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-wolf-spider.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-wolf-spider.jpg",
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "priest": {
         "id": "priest",
@@ -10630,7 +12507,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 13,
         "speed": 30,
@@ -10663,11 +12540,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Grimlock",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 11,
         "speed": 30,
@@ -10693,7 +12570,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Athletics +5, Perception +3, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=grimlock",
-        "imageUrl": "https://www.aidedd.org/dnd/images/grimlock.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/grimlock.jpg",
+        "conditionImmunities": [
+            "blinded"
+        ],
+        "senses": [
+            "blindsight 30 ft. or 10 ft. while deafened (blind beyond this radius)"
+        ]
     },
     "purple_worm": {
         "id": "purple_worm",
@@ -10704,7 +12587,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 13000,
         "hp": {
             "base": 247,
-            "dice": "41d8+16"
+            "dice": "15d20+90"
         },
         "ac": 18,
         "speed": 30,
@@ -10730,7 +12613,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft., burrow 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=purple-worm",
-        "imageUrl": "https://www.aidedd.org/dnd/images/purple-worm.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/purple-worm.jpg",
+        "saves": {
+            "CON": 11,
+            "WIS": 4
+        },
+        "senses": [
+            "blindsight 30 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "quasit": {
         "id": "quasit",
@@ -10741,7 +12632,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "3d4"
         },
         "ac": 13,
         "speed": 30,
@@ -10767,7 +12658,24 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=quasit",
-        "imageUrl": "https://www.aidedd.org/dnd/images/quasit.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/quasit.jpg",
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "quetzalcoatlus": {
         "id": "quetzalcoatlus",
@@ -10778,7 +12686,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 30,
-            "dice": "5d8+2"
+            "dice": "4d12+4"
         },
         "ac": 13,
         "speed": 30,
@@ -10815,7 +12723,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 13,
         "speed": 30,
@@ -10841,7 +12749,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=quipper",
-        "imageUrl": "https://www.aidedd.org/dnd/images/quipper.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/quipper.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "rakshasa": {
         "id": "rakshasa",
@@ -10852,7 +12763,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 110,
-            "dice": "18d8+7"
+            "dice": "13d8+52"
         },
         "ac": 16,
         "speed": 30,
@@ -10878,7 +12789,18 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Deception +10, Insight +8",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=rakshasa",
-        "imageUrl": "https://www.aidedd.org/dnd/images/rakshasa.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/rakshasa.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "vulnerabilities": [
+            "piercing"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "rat": {
         "id": "rat",
@@ -10889,7 +12811,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 10,
         "speed": 30,
@@ -10915,7 +12837,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=rat",
-        "imageUrl": "https://www.aidedd.org/dnd/images/rat.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/rat.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "raven": {
         "id": "raven",
@@ -10926,7 +12851,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 12,
         "speed": 30,
@@ -10963,7 +12888,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d8+30"
         },
         "ac": 17,
         "speed": 30,
@@ -10989,18 +12914,31 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft., fly 60 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=red-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/red-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/red-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 5,
+            "WIS": 2,
+            "CHA": 4
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "guard": {
         "id": "guard",
         "name": "Guard",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 16,
         "speed": 30,
@@ -11037,7 +12975,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 195,
-            "dice": "32d8+13"
+            "dice": "17d12+85"
         },
         "ac": 17,
         "speed": 30,
@@ -11063,7 +13001,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 20 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=remorhaz",
-        "imageUrl": "https://www.aidedd.org/dnd/images/remorhaz.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/remorhaz.jpg",
+        "immunities": [
+            "cold",
+            "fire"
+        ],
+        "senses": [
+            "darkvision 60 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "revenant": {
         "id": "revenant",
@@ -11074,7 +13020,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "16d8+64"
         },
         "ac": 13,
         "speed": 30,
@@ -11111,7 +13057,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d10+12"
         },
         "ac": 11,
         "speed": 30,
@@ -11144,11 +13090,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Hobgoblin",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 18,
         "speed": 30,
@@ -11174,7 +13120,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=hobgoblin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/hobgoblin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/hobgoblin.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "roc": {
         "id": "roc",
@@ -11185,7 +13134,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 7200,
         "hp": {
             "base": 248,
-            "dice": "41d8+16"
+            "dice": "16d20+80"
         },
         "ac": 15,
         "speed": 30,
@@ -11211,7 +13160,13 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 120 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=roc",
-        "imageUrl": "https://www.aidedd.org/dnd/images/roc.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/roc.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 9,
+            "WIS": 4,
+            "CHA": 3
+        }
     },
     "roper": {
         "id": "roper",
@@ -11222,7 +13177,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 93,
-            "dice": "15d8+6"
+            "dice": "11d10+33"
         },
         "ac": 20,
         "speed": 30,
@@ -11248,7 +13203,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., climb 10 ft.",
         "skill": "Perception +6, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=roper",
-        "imageUrl": "https://www.aidedd.org/dnd/images/roper.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/roper.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "rug_of_smothering": {
         "id": "rug_of_smothering",
@@ -11259,7 +13217,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d10"
         },
         "ac": 12,
         "speed": 30,
@@ -11285,18 +13243,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=rug-of-smothering",
-        "imageUrl": "https://www.aidedd.org/dnd/images/rug-of-smothering.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/rug-of-smothering.jpg",
+        "immunities": [
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "charmed",
+            "blinded",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "merfolk": {
         "id": "merfolk",
         "name": "Merfolk",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 11,
         "speed": 30,
@@ -11333,7 +13307,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "7d10+14"
         },
         "ac": 12,
         "speed": 30,
@@ -11366,11 +13340,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Mule",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 10,
         "speed": 30,
@@ -11407,7 +13381,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 90,
-            "dice": "15d8+6"
+            "dice": "12d10+24"
         },
         "ac": 15,
         "speed": 30,
@@ -11433,7 +13407,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=salamander",
-        "imageUrl": "https://www.aidedd.org/dnd/images/salamander.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/salamander.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire"
+        ],
+        "vulnerabilities": [
+            "cold"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "scorpion": {
         "id": "scorpion",
@@ -11444,7 +13432,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 11,
         "speed": 30,
@@ -11470,7 +13458,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=scorpion",
-        "imageUrl": "https://www.aidedd.org/dnd/images/scorpion.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/scorpion.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "sea_hag": {
         "id": "sea_hag",
@@ -11481,7 +13472,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 52,
-            "dice": "8d8+3"
+            "dice": "7d8+21"
         },
         "ac": 14,
         "speed": 30,
@@ -11507,7 +13498,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=sea-hag",
-        "imageUrl": "https://www.aidedd.org/dnd/images/sea-hag.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/sea-hag.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "sea_horse": {
         "id": "sea_horse",
@@ -11518,7 +13512,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 0,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 11,
         "speed": 30,
@@ -11555,7 +13549,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 66,
-            "dice": "11d8+4"
+            "dice": "12d8+12"
         },
         "ac": 13,
         "speed": 30,
@@ -11592,7 +13586,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "16d10+48"
         },
         "ac": 15,
         "speed": 30,
@@ -11618,7 +13612,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., swim 20 ft.",
         "skill": "Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=shambling-mound",
-        "imageUrl": "https://www.aidedd.org/dnd/images/shambling-mound.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/shambling-mound.jpg",
+        "resistances": [
+            "cold",
+            "fire"
+        ],
+        "immunities": [
+            "lightning"
+        ],
+        "conditionImmunities": [
+            "blinded",
+            "blinded",
+            "exhaustion"
+        ],
+        "senses": [
+            "blindsight 60 ft. (blind beyond this radius)"
+        ]
     },
     "shield_guardian": {
         "id": "shield_guardian",
@@ -11629,7 +13638,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 142,
-            "dice": "23d8+9"
+            "dice": "15d10+60"
         },
         "ac": 17,
         "speed": 30,
@@ -11655,7 +13664,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=shield-guardian",
-        "imageUrl": "https://www.aidedd.org/dnd/images/shield-guardian.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/shield-guardian.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "shrieker": {
         "id": "shrieker",
@@ -11666,7 +13689,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 13,
-            "dice": "2d8+0"
+            "dice": "3d8"
         },
         "ac": 5,
         "speed": 30,
@@ -11692,7 +13715,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=shrieker",
-        "imageUrl": "https://www.aidedd.org/dnd/images/shrieker.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/shrieker.jpg",
+        "conditionImmunities": [
+            "blinded",
+            "blinded",
+            "frightened"
+        ],
+        "senses": [
+            "blindsight 30 ft. (blind beyond this radius)"
+        ]
     },
     "sibriex": {
         "id": "sibriex",
@@ -11703,7 +13734,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 20000,
         "hp": {
             "base": 150,
-            "dice": "25d8+10"
+            "dice": "12d12+72"
         },
         "ac": 19,
         "speed": 30,
@@ -11740,7 +13771,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d8+18"
         },
         "ac": 17,
         "speed": 30,
@@ -11766,18 +13797,31 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=silver-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/silver-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/silver-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 5,
+            "WIS": 2,
+            "CHA": 4
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "pony": {
         "id": "pony",
         "name": "Pony",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 10,
         "speed": 30,
@@ -11810,11 +13854,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Tribal Warrior",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 12,
         "speed": 30,
@@ -11851,7 +13895,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 14,
         "speed": 30,
@@ -11884,11 +13928,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Wolf",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 11,
-            "dice": "1d8+0"
+            "dice": "2d8+2"
         },
         "ac": 13,
         "speed": 30,
@@ -11925,7 +13969,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 33000,
         "hp": {
             "base": 243,
-            "dice": "40d8+16"
+            "dice": "18d10+144"
         },
         "ac": 21,
         "speed": 30,
@@ -11951,7 +13995,32 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft., fly 150 ft.",
         "skill": "Perception +14",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=solar",
-        "imageUrl": "https://www.aidedd.org/dnd/images/solar.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/solar.jpg",
+        "saves": {
+            "INT": 14,
+            "WIS": 14,
+            "CHA": 17
+        },
+        "resistances": [
+            "radiant",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "poisoned"
+        ],
+        "senses": [
+            "truesight 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "spectator": {
         "id": "spectator",
@@ -11962,7 +14031,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 39,
-            "dice": "6d8+2"
+            "dice": "6d8+12"
         },
         "ac": 14,
         "speed": 30,
@@ -11999,7 +14068,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "5d8"
         },
         "ac": 12,
         "speed": 30,
@@ -12025,7 +14094,35 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 50 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=specter",
-        "imageUrl": "https://www.aidedd.org/dnd/images/specter.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/specter.jpg",
+        "resistances": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "spider": {
         "id": "spider",
@@ -12036,7 +14133,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 12,
         "speed": 30,
@@ -12062,7 +14159,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., climb 20 ft.",
         "skill": "Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=spider",
-        "imageUrl": "https://www.aidedd.org/dnd/images/spider.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/spider.jpg",
+        "senses": [
+            "darkvision 30 ft."
+        ]
     },
     "spirit_naga": {
         "id": "spirit_naga",
@@ -12073,7 +14173,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d10+20"
         },
         "ac": 15,
         "speed": 30,
@@ -12099,7 +14199,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=spirit-naga",
-        "imageUrl": "https://www.aidedd.org/dnd/images/spirit-naga.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/spirit-naga.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 5,
+            "WIS": 5,
+            "CHA": 6
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "spy": {
         "id": "spy",
@@ -12110,7 +14226,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "6d8"
         },
         "ac": 12,
         "speed": 30,
@@ -12143,11 +14259,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Acolyte",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 9,
-            "dice": "1d8+0"
+            "dice": "2d8"
         },
         "ac": 10,
         "speed": 30,
@@ -12184,7 +14300,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 126,
-            "dice": "21d8+8"
+            "dice": "11d12+55"
         },
         "ac": 17,
         "speed": 30,
@@ -12210,7 +14326,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Athletics +12, Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=stone-giant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/stone-giant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/stone-giant.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 8,
+            "WIS": 4
+        },
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "stone_giant_dreamwalker": {
         "id": "stone_giant_dreamwalker",
@@ -12221,7 +14345,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 161,
-            "dice": "26d8+10"
+            "dice": "14d12+70"
         },
         "ac": 18,
         "speed": 30,
@@ -12258,7 +14382,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 178,
-            "dice": "29d8+11"
+            "dice": "17d10+85"
         },
         "ac": 17,
         "speed": 30,
@@ -12284,7 +14408,27 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=stone-golem",
-        "imageUrl": "https://www.aidedd.org/dnd/images/stone-golem.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/stone-golem.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison",
+            "psychic"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "frightened",
+            "paralyzed",
+            "petrified",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "storm_giant": {
         "id": "storm_giant",
@@ -12295,7 +14439,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 230,
-            "dice": "38d8+15"
+            "dice": "20d12+100"
         },
         "ac": 16,
         "speed": 30,
@@ -12321,7 +14465,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft., swim 50 ft.",
         "skill": "Arcana +8, Athletics +14, History +8, Perception +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=storm-giant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/storm-giant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/storm-giant.jpg",
+        "saves": {
+            "STR": 14,
+            "CON": 10,
+            "WIS": 9,
+            "CHA": 9
+        },
+        "resistances": [
+            "cold"
+        ],
+        "immunities": [
+            "lightning",
+            "thunder"
+        ]
     },
     "succubus": {
         "id": "succubus",
@@ -12332,7 +14489,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 66,
-            "dice": "11d8+4"
+            "dice": "12d8+12"
         },
         "ac": 15,
         "speed": 30,
@@ -12358,18 +14515,30 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft.",
         "skill": "Deception +9, Insight +5, Perception +5, Persuasion +9, Stealth +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=succubus",
-        "imageUrl": "https://www.aidedd.org/dnd/images/succubus.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/succubus.jpg",
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "poison",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "cultist": {
         "id": "cultist",
         "name": "Cultist",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 9,
-            "dice": "1d8+0"
+            "dice": "2d8"
         },
         "ac": 12,
         "speed": 30,
@@ -12406,7 +14575,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 36,
-            "dice": "6d8+2"
+            "dice": "8d8"
         },
         "ac": 14,
         "speed": 30,
@@ -12432,7 +14601,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-poisonous-snakes",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-poisonous-snakes.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-poisonous-snakes.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ],
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "swarm_of_quippers": {
         "id": "swarm_of_quippers",
@@ -12443,7 +14630,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 28,
-            "dice": "4d8+1"
+            "dice": "8d8-8"
         },
         "ac": 13,
         "speed": 30,
@@ -12469,18 +14656,36 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., swim 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=swarm-of-quippers",
-        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-quippers.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/swarm-of-quippers.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing",
+            "slashing"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "prone",
+            "restrained",
+            "stunned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "giant_weasel": {
         "id": "giant_weasel",
         "name": "Giant Weasel",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 9,
-            "dice": "1d8+0"
+            "dice": "2d8"
         },
         "ac": 13,
         "speed": 30,
@@ -12506,18 +14711,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +3, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-weasel",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-weasel.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-weasel.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "magmin": {
         "id": "magmin",
         "name": "Magmin",
         "type": "elemental",
         "size": "small",
-        "cr": 1,
+        "cr": 0.5,
         "xp": 100,
         "hp": {
             "base": 9,
-            "dice": "1d8+0"
+            "dice": "2d6+2"
         },
         "ac": 14,
         "speed": 30,
@@ -12543,18 +14751,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=magmin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/magmin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/magmin.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "noble": {
         "id": "noble",
         "name": "Noble",
         "type": "humanoid",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 9,
-            "dice": "1d8+0"
+            "dice": "2d8"
         },
         "ac": 15,
         "speed": 30,
@@ -12591,7 +14810,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 95,
-            "dice": "15d8+6"
+            "dice": "10d8+50"
         },
         "ac": 14,
         "speed": 30,
@@ -12628,7 +14847,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 155000,
         "hp": {
             "base": 676,
-            "dice": "112d8+45"
+            "dice": "33d20+330"
         },
         "ac": 25,
         "speed": 30,
@@ -12654,7 +14873,31 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=tarrasque",
-        "imageUrl": "https://www.aidedd.org/dnd/images/tarrasque.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/tarrasque.jpg",
+        "saves": {
+            "INT": 5,
+            "WIS": 9,
+            "CHA": 9
+        },
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "fire",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "frightened",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "tiger": {
         "id": "tiger",
@@ -12665,7 +14908,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 37,
-            "dice": "6d8+2"
+            "dice": "5d10+10"
         },
         "ac": 12,
         "speed": 30,
@@ -12691,18 +14934,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft.",
         "skill": "Perception +3, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=tiger",
-        "imageUrl": "https://www.aidedd.org/dnd/images/tiger.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/tiger.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "blood_hawk": {
         "id": "blood_hawk",
         "name": "Blood Hawk",
         "type": "beast",
         "size": "small",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "2d6"
         },
         "ac": 12,
         "speed": 30,
@@ -12739,7 +14985,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 138,
-            "dice": "23d8+9"
+            "dice": "12d12+60"
         },
         "ac": 16,
         "speed": 30,
@@ -12765,18 +15011,25 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=treant",
-        "imageUrl": "https://www.aidedd.org/dnd/images/treant.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/treant.jpg",
+        "resistances": [
+            "bludgeoning",
+            "piercing"
+        ],
+        "vulnerabilities": [
+            "fire"
+        ]
     },
     "giant_rat": {
         "id": "giant_rat",
         "name": "Giant Rat",
         "type": "beast",
         "size": "small",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "2d6"
         },
         "ac": 12,
         "speed": 30,
@@ -12802,7 +15055,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-rat",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-rat.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-rat.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "triceratops": {
         "id": "triceratops",
@@ -12813,7 +15069,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 95,
-            "dice": "15d8+6"
+            "dice": "10d12+30"
         },
         "ac": 13,
         "speed": 30,
@@ -12846,11 +15102,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Goblin",
         "type": "humanoid",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "2d6"
         },
         "ac": 15,
         "speed": 30,
@@ -12876,7 +15132,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=goblin",
-        "imageUrl": "https://www.aidedd.org/dnd/images/goblin.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/goblin.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "troll": {
         "id": "troll",
@@ -12887,7 +15146,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 84,
-            "dice": "14d8+5"
+            "dice": "8d10+40"
         },
         "ac": 15,
         "speed": 30,
@@ -12913,18 +15172,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=troll",
-        "imageUrl": "https://www.aidedd.org/dnd/images/troll.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/troll.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "pseudodragon": {
         "id": "pseudodragon",
         "name": "Pseudodragon",
         "type": "dragon",
         "size": "tiny",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "2d4+2"
         },
         "ac": 13,
         "speed": 30,
@@ -12950,7 +15212,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "15 ft., fly 60 ft.",
         "skill": "Perception +3, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=pseudodragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/pseudodragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/pseudodragon.jpg",
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "tyrannosaurus_rex": {
         "id": "tyrannosaurus_rex",
@@ -12961,7 +15227,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "13d12+52"
         },
         "ac": 13,
         "speed": 30,
@@ -12998,7 +15264,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 93,
-            "dice": "15d8+6"
+            "dice": "11d10+33"
         },
         "ac": 18,
         "speed": 30,
@@ -13035,7 +15301,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d10+18"
         },
         "ac": 12,
         "speed": 30,
@@ -13061,7 +15327,19 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=unicorn",
-        "imageUrl": "https://www.aidedd.org/dnd/images/unicorn.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/unicorn.jpg",
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "paralyzed",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ],
+        "legendaryActions": 3
     },
     "vampire": {
         "id": "vampire",
@@ -13072,7 +15350,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10000,
         "hp": {
             "base": 144,
-            "dice": "24d8+9"
+            "dice": "17d8+68"
         },
         "ac": 16,
         "speed": 30,
@@ -13098,7 +15376,22 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +7, Stealth +9",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=vampire",
-        "imageUrl": "https://www.aidedd.org/dnd/images/vampire.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/vampire.jpg",
+        "saves": {
+            "DEX": 9,
+            "WIS": 7,
+            "CHA": 9
+        },
+        "resistances": [
+            "necrotic",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ],
+        "legendaryActions": 3
     },
     "vampire_spawn": {
         "id": "vampire_spawn",
@@ -13109,7 +15402,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 82,
-            "dice": "13d8+5"
+            "dice": "11d8+33"
         },
         "ac": 15,
         "speed": 30,
@@ -13135,18 +15428,31 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +3, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=vampire-spawn",
-        "imageUrl": "https://www.aidedd.org/dnd/images/vampire-spawn.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/vampire-spawn.jpg",
+        "saves": {
+            "DEX": 6,
+            "WIS": 3
+        },
+        "resistances": [
+            "necrotic",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "winged_kobold": {
         "id": "winged_kobold",
         "name": "Winged Kobold",
         "type": "humanoid",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 7,
-            "dice": "1d8+0"
+            "dice": "3d6-3"
         },
         "ac": 13,
         "speed": 30,
@@ -13183,7 +15489,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 27,
-            "dice": "4d8+1"
+            "dice": "5d8+5"
         },
         "ac": 13,
         "speed": 30,
@@ -13220,7 +15526,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "9d8+18"
         },
         "ac": 17,
         "speed": 30,
@@ -13253,11 +15559,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Flying Snake",
         "type": "beast",
         "size": "tiny",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "2d4"
         },
         "ac": 14,
         "speed": 30,
@@ -13283,18 +15589,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., fly 60 ft., swim 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=flying-snake",
-        "imageUrl": "https://www.aidedd.org/dnd/images/flying-snake.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/flying-snake.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "kobold": {
         "id": "kobold",
         "name": "Kobold",
         "type": "humanoid",
         "size": "small",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "2d6-2"
         },
         "ac": 12,
         "speed": 30,
@@ -13320,7 +15629,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=kobold",
-        "imageUrl": "https://www.aidedd.org/dnd/images/kobold.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/kobold.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "vrock": {
         "id": "vrock",
@@ -13331,7 +15643,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 104,
-            "dice": "17d8+6"
+            "dice": "11d10+44"
         },
         "ac": 15,
         "speed": 30,
@@ -13357,7 +15669,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 60 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=vrock",
-        "imageUrl": "https://www.aidedd.org/dnd/images/vrock.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/vrock.jpg",
+        "saves": {
+            "DEX": 5,
+            "WIS": 4,
+            "CHA": 2
+        },
+        "resistances": [
+            "cold",
+            "fire",
+            "lightning",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "vulture": {
         "id": "vulture",
@@ -13368,7 +15702,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "1d8+1"
         },
         "ac": 10,
         "speed": 30,
@@ -13401,11 +15735,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Mastiff",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "1d8+1"
         },
         "ac": 12,
         "speed": 30,
@@ -13442,7 +15776,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 114,
-            "dice": "19d8+7"
+            "dice": "12d10+48"
         },
         "ac": 14,
         "speed": 30,
@@ -13468,7 +15802,29 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 90 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=water-elemental",
-        "imageUrl": "https://www.aidedd.org/dnd/images/water-elemental.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/water-elemental.jpg",
+        "resistances": [
+            "acid",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "water_weird": {
         "id": "water_weird",
@@ -13479,7 +15835,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "9d10+9"
         },
         "ac": 13,
         "speed": 30,
@@ -13516,7 +15872,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 10,
         "hp": {
             "base": 1,
-            "dice": "1d8+0"
+            "dice": "1d4-1"
         },
         "ac": 13,
         "speed": 30,
@@ -13553,7 +15909,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 135,
-            "dice": "22d8+9"
+            "dice": "18d8+54"
         },
         "ac": 10,
         "speed": 30,
@@ -13579,7 +15935,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft. (40 ft., climb 30 ft. in bear or hybrid form)",
         "skill": "Perception +7",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=werebear",
-        "imageUrl": "https://www.aidedd.org/dnd/images/werebear.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/werebear.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ]
     },
     "wereboar": {
         "id": "wereboar",
@@ -13590,7 +15951,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 78,
-            "dice": "13d8+5"
+            "dice": "12d8+24"
         },
         "ac": 10,
         "speed": 30,
@@ -13616,7 +15977,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft. (40 ft. in boar form)",
         "skill": "Perception +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=wereboar",
-        "imageUrl": "https://www.aidedd.org/dnd/images/wereboar.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/wereboar.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ]
     },
     "wererat": {
         "id": "wererat",
@@ -13627,7 +15993,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 33,
-            "dice": "5d8+2"
+            "dice": "6d8+6"
         },
         "ac": 12,
         "speed": 30,
@@ -13653,7 +16019,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +2, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=wererat",
-        "imageUrl": "https://www.aidedd.org/dnd/images/wererat.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/wererat.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ]
     },
     "weretiger": {
         "id": "weretiger",
@@ -13664,7 +16035,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 120,
-            "dice": "20d8+8"
+            "dice": "16d8+48"
         },
         "ac": 12,
         "speed": 30,
@@ -13690,7 +16061,15 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft. (40 ft. in tiger form)",
         "skill": "Perception +5, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=weretiger",
-        "imageUrl": "https://www.aidedd.org/dnd/images/weretiger.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/weretiger.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "werewolf": {
         "id": "werewolf",
@@ -13701,7 +16080,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 58,
-            "dice": "9d8+3"
+            "dice": "9d8+18"
         },
         "ac": 11,
         "speed": 30,
@@ -13727,7 +16106,12 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft. (40 ft. in wolf form)",
         "skill": "Perception +4, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=werewolf",
-        "imageUrl": "https://www.aidedd.org/dnd/images/werewolf.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/werewolf.jpg",
+        "resistances": [
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ]
     },
     "white_dragon_wyrmling": {
         "id": "white_dragon_wyrmling",
@@ -13738,7 +16122,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 32,
-            "dice": "5d8+2"
+            "dice": "5d8+10"
         },
         "ac": 16,
         "speed": 30,
@@ -13764,7 +16148,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., burrow 15 ft., fly 60 ft., swim 30 ft.",
         "skill": "Perception +4, Stealth +2",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=white-dragon-wyrmling",
-        "imageUrl": "https://www.aidedd.org/dnd/images/white-dragon-wyrmling.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/white-dragon-wyrmling.jpg",
+        "saves": {
+            "DEX": 2,
+            "CON": 4,
+            "WIS": 2,
+            "CHA": 2
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 10 ft.",
+            "darkvision 60 ft."
+        ]
     },
     "wight": {
         "id": "wight",
@@ -13775,7 +16172,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 45,
-            "dice": "7d8+3"
+            "dice": "6d8+18"
         },
         "ac": 14,
         "speed": 30,
@@ -13801,18 +16198,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft.",
         "skill": "Perception +3, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=wight",
-        "imageUrl": "https://www.aidedd.org/dnd/images/wight.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/wight.jpg",
+        "resistances": [
+            "necrotic",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "poisoned"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "wild_dog": {
         "id": "wild_dog",
         "name": "Wild Dog",
         "type": "beast",
         "size": "medium",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 5,
-            "dice": "1d8+0"
+            "dice": "1d8+1"
         },
         "ac": 12,
         "speed": 30,
@@ -13849,7 +16262,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 26,
-            "dice": "4d8+1"
+            "dice": "4d10+4"
         },
         "ac": 12,
         "speed": 30,
@@ -13886,7 +16299,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 450,
         "hp": {
             "base": 22,
-            "dice": "3d8+1"
+            "dice": "9d4"
         },
         "ac": 19,
         "speed": 30,
@@ -13912,18 +16325,44 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 50 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=will-o--wisp",
-        "imageUrl": "https://www.aidedd.org/dnd/images/will-o--wisp.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/will-o--wisp.jpg",
+        "resistances": [
+            "acid",
+            "cold",
+            "fire",
+            "necrotic",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "lightning",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "poisoned",
+            "prone",
+            "restrained",
+            "unconscious"
+        ],
+        "senses": [
+            "darkvision 120 ft."
+        ]
     },
     "giant_centipede": {
         "id": "giant_centipede",
         "name": "Giant Centipede",
         "type": "beast",
         "size": "small",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d6+1"
         },
         "ac": 13,
         "speed": 30,
@@ -13949,7 +16388,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., climb 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=giant-centipede",
-        "imageUrl": "https://www.aidedd.org/dnd/images/giant-centipede.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/giant-centipede.jpg",
+        "senses": [
+            "blindsight 30 ft."
+        ]
     },
     "winter_wolf": {
         "id": "winter_wolf",
@@ -13960,7 +16402,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 75,
-            "dice": "12d8+5"
+            "dice": "10d10+20"
         },
         "ac": 13,
         "speed": 30,
@@ -13986,18 +16428,21 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "50 ft.",
         "skill": "Perception +5, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=winter-wolf",
-        "imageUrl": "https://www.aidedd.org/dnd/images/winter-wolf.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/winter-wolf.jpg",
+        "immunities": [
+            "cold"
+        ]
     },
     "twig_blight": {
         "id": "twig_blight",
         "name": "Twig Blight",
         "type": "plant",
         "size": "small",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 4,
-            "dice": "1d8+0"
+            "dice": "1d6+1"
         },
         "ac": 13,
         "speed": 30,
@@ -14030,11 +16475,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Poisonous Snake",
         "type": "beast",
         "size": "tiny",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 13,
         "speed": 30,
@@ -14060,7 +16505,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "30 ft., swim 30 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=poisonous-snake",
-        "imageUrl": "https://www.aidedd.org/dnd/images/poisonous-snake.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/poisonous-snake.jpg",
+        "senses": [
+            "blindsight 10 ft."
+        ]
     },
     "wraith": {
         "id": "wraith",
@@ -14071,7 +16519,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 67,
-            "dice": "11d8+4"
+            "dice": "9d8+27"
         },
         "ac": 13,
         "speed": 30,
@@ -14097,7 +16545,34 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "0 ft., fly 60 ft. (hover)",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=wraith",
-        "imageUrl": "https://www.aidedd.org/dnd/images/wraith.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/wraith.jpg",
+        "resistances": [
+            "acid",
+            "cold",
+            "fire",
+            "lightning",
+            "thunder",
+            "slashing",
+            "piercing",
+            "bludgeoning"
+        ],
+        "immunities": [
+            "necrotic",
+            "poison"
+        ],
+        "conditionImmunities": [
+            "charmed",
+            "exhaustion",
+            "grappled",
+            "paralyzed",
+            "petrified",
+            "poisoned",
+            "prone",
+            "restrained"
+        ],
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "wyvern": {
         "id": "wyvern",
@@ -14108,7 +16583,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 110,
-            "dice": "18d8+7"
+            "dice": "13d10+39"
         },
         "ac": 13,
         "speed": 30,
@@ -14134,7 +16609,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., fly 80 ft.",
         "skill": "Perception +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=wyvern",
-        "imageUrl": "https://www.aidedd.org/dnd/images/wyvern.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/wyvern.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "xorn": {
         "id": "xorn",
@@ -14145,7 +16623,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1800,
         "hp": {
             "base": 73,
-            "dice": "12d8+4"
+            "dice": "7d8+42"
         },
         "ac": 19,
         "speed": 30,
@@ -14171,18 +16649,26 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "20 ft., burrow 20 ft.",
         "skill": "Perception +6, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=xorn",
-        "imageUrl": "https://www.aidedd.org/dnd/images/xorn.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/xorn.jpg",
+        "resistances": [
+            "slashing",
+            "piercing"
+        ],
+        "senses": [
+            "darkvision 60 ft.",
+            "tremorsense 60 ft."
+        ]
     },
     "sprite": {
         "id": "sprite",
         "name": "Sprite",
         "type": "fey",
         "size": "tiny",
-        "cr": 1,
+        "cr": 0.25,
         "xp": 50,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 15,
         "speed": 30,
@@ -14215,11 +16701,11 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "name": "Stirge",
         "type": "beast",
         "size": "tiny",
-        "cr": 1,
+        "cr": 0.125,
         "xp": 25,
         "hp": {
             "base": 2,
-            "dice": "1d8+0"
+            "dice": "1d4"
         },
         "ac": 14,
         "speed": 30,
@@ -14245,7 +16731,10 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "10 ft., fly 40 ft.",
         "skill": "",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=stirge",
-        "imageUrl": "https://www.aidedd.org/dnd/images/stirge.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/stirge.jpg",
+        "senses": [
+            "darkvision 60 ft."
+        ]
     },
     "yeti": {
         "id": "yeti",
@@ -14256,7 +16745,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 51,
-            "dice": "8d8+3"
+            "dice": "6d10+18"
         },
         "ac": 12,
         "speed": 30,
@@ -14293,7 +16782,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 127,
-            "dice": "21d8+8"
+            "dice": "15d10+45"
         },
         "ac": 18,
         "speed": 30,
@@ -14319,7 +16808,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +6, Stealth +5",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-black-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-black-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-black-dragon.jpg",
+        "saves": {
+            "DEX": 5,
+            "CON": 6,
+            "WIS": 3,
+            "CHA": 5
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_blue_dragon": {
         "id": "young_blue_dragon",
@@ -14330,7 +16832,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 152,
-            "dice": "25d8+10"
+            "dice": "16d10+64"
         },
         "ac": 18,
         "speed": 30,
@@ -14356,7 +16858,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 20 ft., fly 80 ft.",
         "skill": "Perception +9, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-blue-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-blue-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-blue-dragon.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 8,
+            "WIS": 5,
+            "CHA": 7
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_brass_dragon": {
         "id": "young_brass_dragon",
@@ -14367,7 +16882,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 110,
-            "dice": "18d8+7"
+            "dice": "13d10+39"
         },
         "ac": 17,
         "speed": 30,
@@ -14393,7 +16908,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 20 ft., fly 80 ft.",
         "skill": "Perception +6, Persuasion +5, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-brass-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-brass-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-brass-dragon.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 6,
+            "WIS": 3,
+            "CHA": 5
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_bronze_dragon": {
         "id": "young_bronze_dragon",
@@ -14404,7 +16932,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 142,
-            "dice": "23d8+9"
+            "dice": "15d10+60"
         },
         "ac": 18,
         "speed": 30,
@@ -14430,7 +16958,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +4, Perception +7, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-bronze-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-bronze-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-bronze-dragon.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 7,
+            "WIS": 4,
+            "CHA": 6
+        },
+        "immunities": [
+            "lightning"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_copper_dragon": {
         "id": "young_copper_dragon",
@@ -14441,7 +16982,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 119,
-            "dice": "19d8+7"
+            "dice": "14d10+42"
         },
         "ac": 17,
         "speed": 30,
@@ -14467,7 +17008,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Deception +5, Perception +7, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-copper-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-copper-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-copper-dragon.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 6,
+            "WIS": 4,
+            "CHA": 5
+        },
+        "immunities": [
+            "acid"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_gold_dragon": {
         "id": "young_gold_dragon",
@@ -14478,7 +17032,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 178,
-            "dice": "29d8+11"
+            "dice": "17d10+85"
         },
         "ac": 18,
         "speed": 30,
@@ -14504,7 +17058,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Insight +5, Perception +9, Persuasion +9, Stealth +6",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-gold-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-gold-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-gold-dragon.jpg",
+        "saves": {
+            "DEX": 6,
+            "CON": 9,
+            "WIS": 5,
+            "CHA": 9
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_green_dragon": {
         "id": "young_green_dragon",
@@ -14515,7 +17082,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 3900,
         "hp": {
             "base": 136,
-            "dice": "22d8+9"
+            "dice": "16d10+48"
         },
         "ac": 18,
         "speed": 30,
@@ -14541,7 +17108,23 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft., swim 40 ft.",
         "skill": "Deception +5, Perception +7, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-green-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-green-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-green-dragon.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 6,
+            "WIS": 4,
+            "CHA": 5
+        },
+        "immunities": [
+            "poison"
+        ],
+        "conditionImmunities": [
+            "poisoned"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_red_dragon": {
         "id": "young_red_dragon",
@@ -14552,7 +17135,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5900,
         "hp": {
             "base": 178,
-            "dice": "29d8+11"
+            "dice": "17d10+85"
         },
         "ac": 18,
         "speed": 30,
@@ -14578,7 +17161,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., climb 40 ft., fly 80 ft.",
         "skill": "Perception +8, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-red-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-red-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-red-dragon.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 9,
+            "WIS": 4,
+            "CHA": 8
+        },
+        "immunities": [
+            "fire"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_silver_dragon": {
         "id": "young_silver_dragon",
@@ -14589,7 +17185,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 5000,
         "hp": {
             "base": 168,
-            "dice": "28d8+11"
+            "dice": "16d10+80"
         },
         "ac": 18,
         "speed": 30,
@@ -14615,7 +17211,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., fly 80 ft.",
         "skill": "Arcana +6, History +6, Perception +8, Stealth +4",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-silver-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-silver-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-silver-dragon.jpg",
+        "saves": {
+            "DEX": 4,
+            "CON": 9,
+            "WIS": 4,
+            "CHA": 8
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "young_white_dragon": {
         "id": "young_white_dragon",
@@ -14626,7 +17235,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2300,
         "hp": {
             "base": 133,
-            "dice": "22d8+8"
+            "dice": "14d10+56"
         },
         "ac": 17,
         "speed": 30,
@@ -14652,7 +17261,20 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "speedStr": "40 ft., burrow 20 ft., fly 80 ft., swim 40 ft.",
         "skill": "Perception +6, Stealth +3",
         "url": "https://www.aidedd.org/dnd/monstres.php?vo=young-white-dragon",
-        "imageUrl": "https://www.aidedd.org/dnd/images/young-white-dragon.jpg"
+        "imageUrl": "https://www.aidedd.org/dnd/images/young-white-dragon.jpg",
+        "saves": {
+            "DEX": 3,
+            "CON": 7,
+            "WIS": 3,
+            "CHA": 4
+        },
+        "immunities": [
+            "cold"
+        ],
+        "senses": [
+            "blindsight 30 ft.",
+            "darkvision 120 ft."
+        ]
     },
     "yuan_ti_abomination": {
         "id": "yuan_ti_abomination",
@@ -14663,7 +17285,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 2900,
         "hp": {
             "base": 127,
-            "dice": "21d8+8"
+            "dice": "15d10+45"
         },
         "ac": 15,
         "speed": 30,
@@ -14700,7 +17322,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 700,
         "hp": {
             "base": 66,
-            "dice": "11d8+4"
+            "dice": "12d8+12"
         },
         "ac": 12,
         "speed": 30,
@@ -14737,7 +17359,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 1100,
         "hp": {
             "base": 71,
-            "dice": "11d8+4"
+            "dice": "13d8+13"
         },
         "ac": 14,
         "speed": 30,
@@ -14774,7 +17396,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 200,
         "hp": {
             "base": 40,
-            "dice": "6d8+2"
+            "dice": "9d8"
         },
         "ac": 11,
         "speed": 30,
@@ -14811,7 +17433,7 @@ export const CSV_MONSTERS: Record<string, CreatureStats> = {
         "xp": 90000,
         "hp": {
             "base": 580,
-            "dice": "96d8+38"
+            "dice": "40d10+360"
         },
         "ac": 21,
         "speed": 30,

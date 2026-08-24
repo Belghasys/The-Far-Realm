@@ -2,25 +2,48 @@
 // Single source of truth for dice rolls and grid coordinate helpers.
 // Every service/component should import from here to avoid duplication.
 
+// ========== TRANSCRIPT ==========
+
+/** UI3 — détection UNIFIÉE des lignes système du transcript, symétrique FR/EN :
+ *  « [SYSTEM: …] », « [SYSTÈME : …] », « [SYSTEME] »… L'ancien regex EN-only du
+ *  Chronicle laissait les lignes françaises (SpellbookPanel) polluer le fil,
+ *  tandis que les mêmes événements étaient invisibles en anglais. */
+export function isSystemLine(text: string): boolean {
+    return /\[\s*SYST[EÈ]ME?\s*(?::|\])/i.test(String(text || ''));
+}
+
 // ========== DICE ==========
 
 /** Roll a dice formula like "2d6+3" or "1d8" and return total, individual rolls, and modifier. */
 export function rollDice(formula: string): { total: number; rolls: number[]; modifier: number } {
-    const match = String(formula ?? '').match(/(\d+)d(\d+)([+-]\d+)?/i);
-    if (!match) {
+    const text = String(formula ?? '');
+    // TOUS les groupes de dés, pas seulement le premier : les formules
+    // composées ("3d4+3+1d4+1" pour un Projectile magique monté en niveau,
+    // "1d8+3+1d6" pour une arme à rider élémentaire) perdaient silencieusement
+    // tout ce qui suivait le premier groupe.
+    const groups = [...text.matchAll(/(\d+)\s*d\s*(\d+)/gi)];
+    if (!groups.length) {
         // Flat value with no dice (e.g. "5", "+3") — return it directly instead of 0,
         // so flat magic damage and flat healing (e.g. Aid's "5") aren't silently dropped.
-        const flat = parseInt(String(formula ?? '').replace(/[^\d+-]/g, ''), 10);
+        const flat = parseInt(text.replace(/[^\d+-]/g, ''), 10);
         return Number.isFinite(flat) ? { total: flat, rolls: [], modifier: flat } : { total: 0, rolls: [], modifier: 0 };
     }
 
-    const count = parseInt(match[1]);
-    const sides = parseInt(match[2]);
-    const modifier = match[3] ? parseInt(match[3]) : 0;
-
     const rolls: number[] = [];
-    for (let i = 0; i < count; i++) {
-        rolls.push(Math.floor(Math.random() * sides) + 1);
+    for (const group of groups) {
+        const count = Math.min(100, Math.max(0, parseInt(group[1], 10) || 0));
+        const sides = Math.max(1, parseInt(group[2], 10) || 1);
+        for (let i = 0; i < count; i++) {
+            rolls.push(Math.floor(Math.random() * sides) + 1);
+        }
+    }
+
+    // Les modificateurs plats sont ce qui reste une fois les groupes de dés
+    // retirés ("+3", "-1"…), additionnés.
+    const flatText = text.replace(/(\d+)\s*d\s*(\d+)/gi, ' ');
+    let modifier = 0;
+    for (const m of flatText.matchAll(/([+-]\s*\d+)/g)) {
+        modifier += Number(m[1].replace(/\s+/g, ''));
     }
 
     const total = rolls.reduce((a, b) => a + b, 0) + modifier;

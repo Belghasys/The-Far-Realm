@@ -470,14 +470,23 @@ export function getNewFeaturesAtLevel(className: string, level: number): Feature
 
 // Check if level grants ASI
 const ASI_LEVELS = [4, 8, 12, 16, 19];
-export function isASILevel(level: number): boolean {
-    return ASI_LEVELS.includes(level);
+// da-m3 — ASI bonus par classe (SRD) : le Guerrier en gagne aux niveaux 6 et
+// 14, le Roublard au niveau 10.
+const CLASS_EXTRA_ASI: Record<string, number[]> = {
+    Fighter: [6, 14],
+    Rogue: [10],
+};
+export function asiLevelsFor(className?: string): number[] {
+    return [...ASI_LEVELS, ...(CLASS_EXTRA_ASI[String(className || '')] || [])].sort((a, b) => a - b);
+}
+export function isASILevel(level: number, className?: string): boolean {
+    return asiLevelsFor(className).includes(level);
 }
 
 /** ASI levels crossed by a level-up from `from` (exclusive) to `to` (inclusive).
  *  A big XP grant can jump several levels at once — each crossed ASI level counts. */
-export function asiLevelsBetween(from: number, to: number): number[] {
-    return ASI_LEVELS.filter(l => l > from && l <= to);
+export function asiLevelsBetween(from: number, to: number, className?: string): number[] {
+    return asiLevelsFor(className).filter(l => l > from && l <= to);
 }
 
 // Get sneak attack dice for rogue

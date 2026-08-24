@@ -1,5 +1,7 @@
-// D&D 5e 2024 Weapon Table
-// Source: Système de Référence de Jeu (SRD) 5.2 / Player's Handbook 2024
+// D&D 5e Weapon Table — chiffres conformes SRD 5.1 (le reste du projet est
+// SRD 5.1). da-m11 : l'en-tête annonçait « SRD 5.2 / PHB 2024 » à tort ; le
+// champ masteryMove (concept 2024) est conservé à titre de saveur optionnelle,
+// il n'est branché à aucune règle du moteur.
 // Used as a reference index for the Gemini DM tool: lookup_weapon()
 
 export interface WeaponTemplate {
@@ -179,9 +181,12 @@ export const WEAPON_TABLE: Record<string, WeaponTemplate> = {
         weightKg: 3, price: '20 po', category: 'martial_melee'
     },
     'lance_darcon': {
+        // DM7 (contre-audit) — SRD 5.1 : 1d12, Reach + Special (désavantage à
+        // 5 ft, une main quand monté) — PAS Heavy/Two-Handed (valeurs 2024) :
+        // un paladin monté doit pouvoir jouer lance + bouclier.
         name: "Lance", nameFr: "Lance d'arçon",
-        damage: '1d10', damageType: 'piercing',
-        properties: ['Reach', 'Two-Handed', 'Heavy'], masteryMove: 'Topple',
+        damage: '1d12', damageType: 'piercing',
+        properties: ['Reach', 'Special'], masteryMove: 'Topple',
         weightKg: 3, price: '10 po', category: 'martial_melee'
     },
     'maillet_darmes': {
@@ -204,11 +209,11 @@ export const WEAPON_TABLE: Record<string, WeaponTemplate> = {
         weightKg: 2, price: '15 po', category: 'martial_melee'
     },
     'pic_de_guerre': {
+        // DM17 — SRD 5.1 : 1d8 fixe, aucune propriété (Versatile 1d10 = 2024).
         name: 'War Pick', nameFr: 'Pic de guerre',
         damage: '1d8', damageType: 'piercing',
-        properties: ['Versatile'], masteryMove: 'Sap',
-        weightKg: 1, price: '5 po', category: 'martial_melee',
-        versatile: '1d10'
+        properties: [], masteryMove: 'Sap',
+        weightKg: 1, price: '5 po', category: 'martial_melee'
     },
     'pique': {
         name: 'Pike', nameFr: 'Pique',
@@ -223,11 +228,12 @@ export const WEAPON_TABLE: Record<string, WeaponTemplate> = {
         weightKg: 1, price: '25 po', category: 'martial_melee'
     },
     'trident': {
+        // DM6 — SRD 5.1 : 1d6 / versatile 1d8 (1d8/1d10 = valeurs 2024).
         name: 'Trident', nameFr: 'Trident',
-        damage: '1d8', damageType: 'piercing',
+        damage: '1d6', damageType: 'piercing',
         properties: ['Thrown', 'Versatile'], masteryMove: 'Topple',
         weightKg: 2, price: '5 po', category: 'martial_melee',
-        range: '6/18', versatile: '1d10'
+        range: '6/18', versatile: '1d8'
     },
 
     // ========== ARMES DE GUERRE À DISTANCE ==========
@@ -293,4 +299,43 @@ export function weaponSummary(w: WeaponTemplate): string {
     const rangeStr = w.range ? `, Portée: ${w.range}m` : '';
     const versStr = w.versatile ? `, Deux-mains: ${w.versatile}` : '';
     return `${w.nameFr} (${w.name}): ${w.damage} ${w.damageType}${versStr} | Propriétés: ${props}${rangeStr} | Maîtrise: ${w.masteryMove} | Prix: ${w.price}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Maîtrise des armes par classe (audit 2026-08-12 : le bonus de maîtrise était
+// ajouté SANS CONDITION dans getPlayerAttackModifier — un Mage à la grande
+// hache touchait avec maîtrise complète).
+// ═══════════════════════════════════════════════════════════════════════════
+import { CLASS_DATA } from './classes';
+
+const foldWeaponName = (s: string) =>
+    String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+/** Retrouve le gabarit SRD d'une arme par nom EN ou FR (accents/casse ignorés,
+ *  tolère un suffixe magique : « Arc long +1 »). */
+export function findWeaponTemplate(name: string): WeaponTemplate | null {
+    const n = foldWeaponName(name);
+    if (!n) return null;
+    for (const t of Object.values(WEAPON_TABLE)) {
+        if (foldWeaponName(t.name) === n || foldWeaponName(t.nameFr) === n) return t;
+    }
+    for (const t of Object.values(WEAPON_TABLE)) {
+        if (n.includes(foldWeaponName(t.nameFr)) || n.includes(foldWeaponName(t.name))) return t;
+    }
+    return null;
+}
+
+/** SRD — la classe maîtrise-t-elle cette arme ? Lit CLASS_DATA.profs
+ *  (« Simple Weapons », « Martial Weapons », ou armes nommées : Rogue →
+ *  Rapiers/Longswords…, Mage → Daggers/Quarterstaffs…). Arme inconnue du
+ *  catalogue (homebrew du MJ) → true, on ne punit pas l'improvisation. */
+export function isProficientWithWeapon(className: string, weaponName: string): boolean {
+    const profs = (CLASS_DATA[className]?.profs || []).map(p => p.toLowerCase());
+    if (!profs.length) return true;
+    const tpl = findWeaponTemplate(weaponName);
+    if (!tpl) return true;
+    if (tpl.category.startsWith('simple') && profs.some(p => p.includes('simple weapons'))) return true;
+    if (tpl.category.startsWith('martial') && profs.some(p => p.includes('martial weapons'))) return true;
+    const en = tpl.name.toLowerCase();
+    return profs.some(p => p.includes(en));
 }

@@ -1,4 +1,5 @@
-import { Item, Weapon } from '../types';
+import { Item, Weapon, isRangedWeapon } from '../types';
+import { getWeapon as getWeaponTemplate } from './weapons';
 
 export const FIGHTING_STYLES = [
     { name: "Archery", desc: "+2 bonus to attack rolls you make with ranged weapons." },
@@ -10,7 +11,8 @@ export const FIGHTING_STYLES = [
 ];
 
 // Finesse weapons - use higher of STR or DEX
-export const FINESSE_WEAPONS = ['Shortsword', 'Dagger', 'Rapier', 'Scimitar', 'Whip'];
+// da-m6 — Dart est finesse en SRD (l'heuristique legacy l'oubliait).
+export const FINESSE_WEAPONS = ['Shortsword', 'Dagger', 'Rapier', 'Scimitar', 'Whip', 'Dart'];
 
 const ARMOR_STATS: Record<string, Pick<Item, 'armorType' | 'baseAC' | 'maxDexBonus' | 'acBonus' | 'stealthDisadvantage'>> = {
     'robes': { armorType: 'light', baseAC: 10 },
@@ -33,15 +35,32 @@ function normalizeWeaponName(name: string): string {
     return singulars[cleaned] || cleaned;
 }
 
+// Armes à distance en EN **et en FR** : le MJ et la boutique nomment les objets
+// en français ("Arc long", "Arbalète lourde"), et sans ces alias l'arme était
+// classée en mêlée (pas de DEX, pas de portée, pas de style Archerie).
+const RANGED_WEAPON_WORDS = ['bow', 'crossbow', 'sling', 'arc ', 'arc long', 'arc court', 'arbalete', 'arbalète', 'fronde'];
+// da-m6 — glaive, hallebarde, pique et maul sont à deux mains en SRD.
+const TWO_HANDED_WORDS = ['longbow', 'shortbow', 'light crossbow', 'heavy crossbow', 'greatsword', 'greataxe', 'arc long', 'arc court', 'arbalete legere', 'arbalète légère', 'arbalete lourde', 'arbalète lourde', 'epee a deux mains', 'épée à deux mains', 'hache a deux mains', 'hache à deux mains', 'glaive', 'halberd', 'hallebarde', 'pike', 'pique', 'maul', 'maillet d\'armes'];
+
+function looksRanged(lower: string): boolean {
+    // `arc` seul est trop court (arcane, marc…) : on borne le mot.
+    return RANGED_WEAPON_WORDS.some(value => lower.includes(value)) || /\barcs?\b/.test(lower);
+}
+
 function inferWeaponProperties(name: string, effect = ''): string[] {
     const baseName = normalizeWeaponName(name);
     const lower = `${baseName} ${effect}`.toLowerCase();
     const properties = new Set<string>();
     if (FINESSE_WEAPONS.includes(baseName)) properties.add('finesse');
-    if (['dagger', 'handaxe', 'shortsword', 'scimitar', 'dart'].some(value => lower.includes(value))) properties.add('light');
-    if (['longbow', 'shortbow', 'light crossbow', 'greatsword', 'greataxe'].some(value => lower.includes(value))) properties.add('two-handed');
-    if (lower.includes('thrown') || ['javelin', 'dagger', 'handaxe', 'dart'].some(value => lower.includes(value))) properties.add('thrown');
-    if (lower.includes('bow') || lower.includes('crossbow') || lower.includes('sling')) properties.add('ranged');
+    if (['dagger', 'handaxe', 'shortsword', 'scimitar', 'dart', 'dague', 'hachette', 'epee courte', 'épée courte'].some(value => lower.includes(value))) properties.add('light');
+    if (TWO_HANDED_WORDS.some(value => lower.includes(value))) properties.add('two-handed');
+    if (lower.includes('thrown') || ['javelin', 'dagger', 'handaxe', 'dart', 'javeline', 'dague', 'hachette'].some(value => lower.includes(value))) properties.add('thrown');
+    if (looksRanged(lower)) {
+        properties.add('ranged');
+        // Propriété SRD canonique : c'est elle que lit le moteur (Tireur d'élite,
+        // bandes de distance, tir à bout portant).
+        properties.add('ammunition');
+    }
     return Array.from(properties);
 }
 
@@ -49,13 +68,15 @@ function inferWeaponRange(name: string, effect = ''): string | undefined {
     const rangeMatch = effect.match(/(\d+\s*\/\s*\d+)/);
     if (rangeMatch) return rangeMatch[1].replace(/\s+/g, '');
     const lower = name.toLowerCase();
-    if (lower.includes('longbow')) return '150/600';
-    if (lower.includes('shortbow')) return '80/320';
-    if (lower.includes('light crossbow')) return '80/320';
-    if (lower.includes('javelin')) return '30/120';
-    if (lower.includes('dagger') || lower.includes('dart')) return '20/60';
-    if (lower.includes('handaxe')) return '20/60';
-    if (lower.includes('sling')) return '30/120';
+    if (lower.includes('longbow') || lower.includes('arc long')) return '150/600';
+    if (lower.includes('shortbow') || lower.includes('arc court')) return '80/320';
+    if (lower.includes('heavy crossbow') || lower.includes('arbalète lourde') || lower.includes('arbalete lourde')) return '100/400';
+    if (lower.includes('hand crossbow') || lower.includes('arbalète de poing') || lower.includes('arbalete de poing')) return '30/120';
+    if (lower.includes('crossbow') || lower.includes('arbalète') || lower.includes('arbalete')) return '80/320';
+    if (lower.includes('javelin') || lower.includes('javeline')) return '30/120';
+    if (lower.includes('dagger') || lower.includes('dart') || lower.includes('dague') || lower.includes('fléchette') || lower.includes('flechette')) return '20/60';
+    if (lower.includes('handaxe') || lower.includes('hachette')) return '20/60';
+    if (lower.includes('sling') || lower.includes('fronde')) return '30/120';
     return undefined;
 }
 
@@ -65,6 +86,30 @@ function inferDamageType(effect = ''): Item['damageType'] {
     if (lower.includes('pierce')) return 'piercing';
     if (lower.includes('bludgeon')) return 'bludgeoning';
     return undefined;
+}
+
+/**
+ * Complète une arme reçue « nue » (butin/objet créé par le MJ, ancien save) :
+ * dés, type de dégâts, propriétés et PORTÉE. On consulte d'abord la table SRD
+ * (noms EN **et** FR : « Arc long » → Longbow) avant de retomber sur les
+ * heuristiques de nom. Sans ça, un arc offert par le MJ n'avait ni portée ni
+ * propriété « ammunition » et le moteur le traitait comme une arme de mêlée.
+ */
+export function enrichWeaponItem(item: Item): Item {
+    if (item.type !== 'weapon') return item;
+    const template = getWeaponTemplate(item.name);
+    const merged: Item = {
+        ...item,
+        damageDice: item.damageDice || template?.damage,
+        damageType: (item.damageType || template?.damageType) as Item['damageType'],
+        properties: item.properties?.length
+            ? item.properties
+            : template
+                ? [...template.properties.map(p => p.toLowerCase()), ...(template.category.includes('ranged') ? ['ranged'] : [])]
+                : undefined,
+        range: item.range || template?.range,
+    };
+    return normalizeStartingItem(merged);
 }
 
 function normalizeStartingItem(item: Item): Item {
@@ -329,12 +374,14 @@ export const getStartingEquipment = (cls: string, bg: string, style: string): It
 
 // Extract weapon from inventory for character.weapon field
 export const getWeaponFromInventory = (inventory: Item[]): Weapon => {
-    const equippedWeapon = inventory.find(i => i.type === 'weapon' && i.equipped && i.slot === 'mainHand');
+    // Main directrice d'abord, sinon l'arme du slot DISTANCE (archer pur).
+    const equippedWeapon = inventory.find(i => i.type === 'weapon' && i.equipped && i.slot === 'mainHand')
+        || inventory.find(i => i.type === 'weapon' && i.equipped && i.slot === 'ranged');
 
     if (equippedWeapon) {
         const structured = normalizeStartingItem(equippedWeapon);
         const properties = structured.properties || [];
-        const isRanged = properties.includes('ranged') || Boolean(structured.range);
+        const isRanged = isRangedWeapon({ name: structured.name, properties, range: structured.range });
         const damageType = structured.damageType || inferDamageType(structured.effect) || 'bludgeoning';
 
         return {
@@ -352,6 +399,29 @@ export const getWeaponFromInventory = (inventory: Item[]): Weapon => {
     return { name: 'Unarmed', damage: '1d4', damageType: 'bludgeoning', abilityMod: 'STR', attackBonus: 2 };
 };
 
+/**
+ * Migration des sauvegardes : ré-hydrate TOUTES les armes de l'inventaire
+ * (portée + propriétés depuis la table SRD) et recalcule l'arme de référence de
+ * la fiche. Les anciens saves stockaient un arc sans `range` ni `ammunition` :
+ * le moteur, la fiche et le MJ le prenaient pour une arme de mêlée.
+ */
+export function repairCharacterWeapons<T extends { inventory?: Item[]; weapon?: Weapon }>(character: T): T {
+    if (!character?.inventory?.length) return character;
+    const inventory = character.inventory.map(item => {
+        if (item.type !== 'weapon') return item;
+        const enriched = enrichWeaponItem(item);
+        // Une arme à distance équipée « en main » migre vers l'emplacement dédié
+        // pour cohabiter avec l'arme de mêlée (et être vue comme telle).
+        const wantsRangedSlot = enriched.equipped && enriched.slot === 'mainHand'
+            && isRangedWeapon({ name: enriched.name, properties: enriched.properties, range: enriched.range });
+        return wantsRangedSlot ? { ...enriched, slot: 'ranged' as const } : enriched;
+    });
+    // Si rien n'est équipé, on garde l'arme existante de la fiche (ne pas la
+    // remplacer par « Mains nues »).
+    const hasEquippedWeapon = inventory.some(i => i.type === 'weapon' && i.equipped && (i.slot === 'mainHand' || i.slot === 'ranged'));
+    return { ...character, inventory, weapon: hasEquippedWeapon ? getWeaponFromInventory(inventory) : character.weapon };
+}
+
 export const defaultInventory = getStartingEquipment('Fighter', 'Soldier', 'Dueling');
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -361,7 +431,7 @@ export const defaultInventory = getStartingEquipment('Fighter', 'Soldier', 'Duel
 //  Gold = SRD "starting wealth by class" (averaged) + a background/archetype bonus.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { WEAPON_TABLE, WeaponTemplate } from './weapons';
+import { WEAPON_TABLE, type WeaponTemplate } from './weapons';
 
 const _id = () => Math.random().toString(36).substr(2, 9);
 
@@ -414,15 +484,20 @@ export const ARMOR_CATALOG: ArmorTemplate[] = [
 ];
 
 export function weaponTemplateToItem(w: WeaponTemplate, opts: { equipped?: boolean; slot?: Item['slot'] } = {}): Item {
+    const props = w.properties.map(p => p.toLowerCase());
+    // Une arme de la catégorie « ranged » (arc, arbalète, fronde) porte
+    // explicitement la propriété `ranged` : plus aucun consommateur n'a besoin
+    // de deviner à partir du nom, et l'arme part dans le bon emplacement.
     const isRanged = w.category.includes('ranged');
+    if (isRanged && !props.includes('ranged')) props.push('ranged');
     return {
         id: _id(), name: w.name, quantity: 1, type: 'weapon',
         weight: Math.round(w.weightKg * 2.2),
-        slot: opts.slot ?? (opts.equipped ? 'mainHand' : 'none'),
+        slot: opts.slot ?? (opts.equipped ? (isRanged ? 'ranged' : 'mainHand') : 'none'),
         equipped: !!opts.equipped,
         effect: `${w.damage} ${w.damageType}`,
         damageDice: w.damage, damageType: w.damageType,
-        properties: w.properties.map(p => p.toLowerCase()),
+        properties: props,
         range: w.range,
     };
 }
@@ -486,7 +561,9 @@ export function getDefaultLoadout(cls: string, bg: string): Item[] {
     const kit = DEFAULT_KIT[cls] || { weapon: 'dague' };
     const items = getBasePackage(cls, bg);
     const w = WEAPON_TABLE[kit.weapon];
-    if (w) items.push(weaponTemplateToItem(w, { equipped: true, slot: 'mainHand' }));
+    // Pas de slot forcé : une arme à distance part dans l'emplacement DISTANCE
+    // (le Rôdeur commence avec son arc réellement reconnu comme tel).
+    if (w) items.push(weaponTemplateToItem(w, { equipped: true }));
     if (kit.armor) { const a = ARMOR_CATALOG.find(x => x.key === kit.armor); if (a) items.push(armorTemplateToItem(a, true)); }
     if (kit.shield) { const s = ARMOR_CATALOG.find(x => x.key === 'shield'); if (s) items.push(armorTemplateToItem(s, true)); }
     return items.map(normalizeStartingItem);

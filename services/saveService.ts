@@ -2,6 +2,7 @@ import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, Timestamp, query, 
 import { getAuth } from 'firebase/auth';
 import { db } from './firebase';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet } from '../types';
+import type { SlimManifestPayload } from './manifestTokens';
 import type { CampaignEvent } from './campaignEventLog';
 
 // Minimal Combatant interface for GameSave, as requested
@@ -14,10 +15,16 @@ interface Combatant {
     ac?: number;
 }
 
+/** Version du schéma de sauvegarde. INCRÉMENTER à chaque changement de forme,
+ *  et ajouter l'étape correspondante dans SAVE_MIGRATIONS. */
+export const SAVE_SCHEMA_VERSION = 2;
+
 export interface GameSave {
     id: string;
     createdAt: Date;
     updatedAt: Date;
+    /** Schéma de la sauvegarde (absent = v1, avant 2026-08-12). */
+    saveVersion?: number;
     adventure: string;
     adventureTitle: string;
 
@@ -45,7 +52,10 @@ export interface GameSave {
         enemyIntents?: Record<string, string>;
     };
     // Parsed Adventure Manifest
-    manifest?: AdventureManifest;
+    /** Manifeste complet (aventures générées / anciennes sauvegardes) ou forme
+     *  MINCE {authoredRef, tokenValues, chapterStatuses} pour les campagnes
+     *  d'auteur — réhydratée au chargement (hydrateManifestPayload). */
+    manifest?: AdventureManifest | SlimManifestPayload;
 
     // Durable campaign director state: chapter, scene, branches, clocks, canon
     campaignRuntime?: CampaignRuntimeState;
@@ -53,8 +63,12 @@ export interface GameSave {
     // Full journal (briefing/prologue, quests, NPCs, locations, chronicle)
     journal?: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
-        quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
+        // OU1 — steps : la checklist vivante d'update_quest_step doit survivre
+        // au rechargement (elle était jetée par les mappings de sauvegarde).
+        // createdAt/completedAt sont des ISO strings depuis add_quest ; le type
+        // annonçait `number` alors que rien n'en écrivait jamais un.
+        quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed'; steps?: { id: string; text: string; done: boolean }[]; createdAt?: string | number | null; completedAt?: string | number | null }[];
+        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number; createdAt?: number | null }[];
         locations: { id: string; name: string; description: string }[];
         chronicle?: { id: string; title: string; description: string; timestamp: number }[];
     };
@@ -110,8 +124,18 @@ class SaveService {
 
     // Recursive function to remove undefined values before Firestore sync.
     private sanitize(obj: any): any {
+        // PL5 — les FONCTIONS sont éliminées partout : un objet fonction a un
+        // prototype non-plain et passait par la branche « untouched » ci-dessous
+        // → « Unsupported field value: a function » et TOUTES les sauvegardes
+        // échouaient (ex. resolveToolCall attaché à un prompt loggé).
+        if (typeof obj === 'function') {
+            console.warn('💾 sanitize: fonction éliminée du payload de sauvegarde');
+            return null;
+        }
         if (Array.isArray(obj)) {
-            return obj.map(v => this.sanitize(v));
+            // SP8 — un `undefined` DANS un tableau ferait rejeter toute l'écriture
+            // par Firestore (« Unsupported field value ») : on le convertit en null.
+            return obj.map(v => v === undefined ? null : this.sanitize(v));
         } else if (obj !== null && typeof obj === 'object') {
             // Only recurse into PLAIN objects. Non-plain instances (Firestore
             // Timestamp, Date, GeoPoint…) must be passed through untouched —
@@ -124,7 +148,7 @@ class SaveService {
             }
             return Object.fromEntries(
                 Object.entries(obj)
-                    .filter(([_, v]) => v !== undefined)
+                    .filter(([_, v]) => v !== undefined && typeof v !== 'function')
                     .map(([k, v]) => [k, this.sanitize(v)])
             );
         }
@@ -140,6 +164,7 @@ class SaveService {
         this.userId = null;
         this.currentSaveId = null;
         this.pendingUpdates = {};
+        this.criticalOverlay = {};
         this.pendingJournal = null;
         if (this.updateDebounceTimer) {
             clearTimeout(this.updateDebounceTimer);
@@ -161,6 +186,48 @@ class SaveService {
             throw new Error('User not authenticated');
         }
         return user.uid;
+    }
+
+    // ========== SCHEMA VERSION & MIGRATIONS (audit 2026-08-12) ==========
+    // Avant : AUCUN versionnage — chaque changement de forme était absorbé par
+    // des défauts défensifs éparpillés (gameStore.repairCharacterWeapons, garde
+    // « ghost combat », normalizeRuntime…) sans aucun moyen de détecter une
+    // sauvegarde incompatible. Désormais : chaque écriture estampille
+    // `saveVersion`, et le chargement fait passer la donnée par la chaîne de
+    // migrations AVANT qu'elle n'atteigne le store.
+
+    /** Migration v1→v2 : formalise les shims historiques (idempotents). */
+    private static migrateV1toV2(save: any): any {
+        // Les quêtes anciennes n'avaient pas de champ `steps` structuré.
+        if (save?.journal?.quests) {
+            save.journal.quests = save.journal.quests.map((q: any) =>
+                q && q.steps === undefined ? { ...q, steps: [] } : q);
+        }
+        return save;
+    }
+
+    /** Chaîne ordonnée : la clé N migre une sauvegarde v(N) vers v(N+1). */
+    private static readonly SAVE_MIGRATIONS: Record<number, (save: any) => any> = {
+        1: SaveService.migrateV1toV2,
+    };
+
+    /** Applique les migrations manquantes ; jette si la sauvegarde vient d'une
+     *  version PLUS RÉCENTE que l'app (au lieu de la corrompre en silence). */
+    migrateSaveData(data: any): any {
+        const from = Number(data?.saveVersion) || 1;
+        if (from > SAVE_SCHEMA_VERSION) {
+            throw new Error(`Save schema v${from} is newer than this app (v${SAVE_SCHEMA_VERSION}). Update the game before loading this save.`);
+        }
+        let migrated = data;
+        for (let v = from; v < SAVE_SCHEMA_VERSION; v++) {
+            const step = SaveService.SAVE_MIGRATIONS[v];
+            if (step) migrated = step(migrated);
+        }
+        if (from < SAVE_SCHEMA_VERSION) {
+            migrated.saveVersion = SAVE_SCHEMA_VERSION;
+            console.log(`🔁 Save migrated v${from} → v${SAVE_SCHEMA_VERSION}`);
+        }
+        return migrated;
     }
 
     // Save game state (manual save - overwrites previous manual save)
@@ -188,7 +255,7 @@ class SaveService {
                 const now = Timestamp.now();
                 if (immediate) {
                     // Omit createdAt → merge:true keeps whatever is already stored.
-                    await setDoc(saveRef, this.sanitize({ ...gameState, updatedAt: now }), { merge: true });
+                    await setDoc(saveRef, this.sanitize({ ...gameState, saveVersion: SAVE_SCHEMA_VERSION, updatedAt: now }), { merge: true });
                     this.reportSync(true);
                     return saveId;
                 }
@@ -197,6 +264,7 @@ class SaveService {
 
                 const payload = this.sanitize({
                     ...gameState,
+                    saveVersion: SAVE_SCHEMA_VERSION,
                     createdAt,
                     updatedAt: now,
                 });
@@ -226,7 +294,7 @@ class SaveService {
             return null;
         }
 
-        const data = saveDoc.data();
+        const data = this.migrateSaveData(saveDoc.data());
         return {
             ...data,
             id: saveDoc.id,
@@ -245,8 +313,10 @@ class SaveService {
         return snapshot.docs.map(doc => {
             const data = doc.data();
             const transcript = data.transcript || [];
+            // Contre-audit 2026-08-13 (SP1) — un enregistrement au `text` absent/null ne
+            // doit pas faire échouer le listing de TOUTES les sauvegardes.
             const lastMessage = transcript.length > 0
-                ? transcript[transcript.length - 1].text.substring(0, 50) + '...'
+                ? String(transcript[transcript.length - 1]?.text ?? '').substring(0, 50) + '...'
                 : 'No messages';
 
             return {
@@ -300,6 +370,11 @@ class SaveService {
     private currentSaveId: string | null = null;
     private updateDebounceTimer: NodeJS.Timeout | null = null;
     private pendingUpdates: Partial<CharacterSheet> = {};
+    // Audit 2026-08-12 — champs critiques (PV/XP…) écrits en immédiat, ré-appliqués
+    // PAR-DESSUS toute fiche complète fusionnée ensuite : une fiche périmée passée à
+    // updateCharacter() 500 ms après un updateCharacterCritical() re-poussait
+    // l'ancien PV dans Firestore. Vidé à chaque flush réussi.
+    private criticalOverlay: Partial<CharacterSheet> = {};
 
     // Set the current save ID for real-time updates
     setCurrentSave(saveId: string) {
@@ -318,8 +393,9 @@ class SaveService {
             return;
         }
 
-        // Merge with pending updates
-        this.pendingUpdates = { ...this.pendingUpdates, ...character };
+        // Merge with pending updates — les valeurs critiques récentes GAGNENT
+        // sur une fiche complète potentiellement périmée (voir criticalOverlay).
+        this.pendingUpdates = { ...this.pendingUpdates, ...character, ...this.criticalOverlay };
 
         // Clear existing timer
         if (this.updateDebounceTimer) {
@@ -330,23 +406,33 @@ class SaveService {
         this.updateDebounceTimer = setTimeout(async () => {
             this.writeQueue.enqueue(async () => {
                 if (!this.currentSaveId) return;
+                // Contre-audit 2026-08-13 (SP3 + garde objet vide) — capturer le batch
+                // AVANT l'écriture : (a) les updates arrivées pendant le setDoc en vol ne
+                // sont plus effacées par le `= {}` post-await ; (b) un batch VIDE n'écrit
+                // plus `character: {}` — avec merge:true, Firestore REMPLACERAIT toute la
+                // map `character` par une map vide (fiche effacée côté serveur).
+                const batch = { ...this.pendingUpdates, ...this.criticalOverlay };
+                if (Object.keys(batch).length === 0) return;
+                this.pendingUpdates = {};
                 try {
                     const userId = this.getCurrentUserId();
                     const saveRef = doc(db, 'users', userId, 'saves', this.currentSaveId);
 
                     await setDoc(saveRef, this.sanitize({
-                        character: this.pendingUpdates,
+                        character: batch,
                         updatedAt: Timestamp.now(),
                     }), { merge: true });
 
                     console.log('✅ Character synced:', {
-                        xp: this.pendingUpdates.xp,
-                        hp: this.pendingUpdates.hp,
-                        gold: this.pendingUpdates.gold,
+                        xp: batch.xp,
+                        hp: batch.hp,
+                        gold: batch.gold,
                     });
-                    this.pendingUpdates = {};
+                    this.criticalOverlay = {};
                     this.reportSync(true);
                 } catch (error) {
+                    // Ré-injecte le batch (sous les updates plus récentes) pour le prochain flush.
+                    this.pendingUpdates = { ...batch, ...this.pendingUpdates };
                     console.error('❌ Character sync failed:', error);
                     this.reportSync(false);
                 }
@@ -363,6 +449,7 @@ class SaveService {
             clearTimeout(this.updateDebounceTimer);
         }
         this.pendingUpdates = {};
+        this.criticalOverlay = {};
 
         return this.writeQueue.enqueue(async () => {
             try {
@@ -397,23 +484,29 @@ class SaveService {
         }
 
         return this.writeQueue.enqueue(async () => {
+            // Même patron que le flush débouncé : capture avant écriture + garde vide
+            // (une écriture `character: {}` avec merge:true effacerait la fiche).
+            const batch = { ...this.pendingUpdates, ...this.criticalOverlay };
+            if (Object.keys(batch).length === 0) return;
+            this.pendingUpdates = {};
             try {
                 const userId = this.getCurrentUserId();
                 const saveRef = doc(db, 'users', userId, 'saves', this.currentSaveId!);
 
                 await setDoc(saveRef, this.sanitize({
-                    character: this.pendingUpdates,
+                    character: batch,
                     updatedAt: Timestamp.now(),
                 }), { merge: true });
 
                     console.log('📤 Character flushed:', {
-                    level: this.pendingUpdates.level,
-                    xp: this.pendingUpdates.xp,
-                    hp: this.pendingUpdates.hp,
+                    level: batch.level,
+                    xp: batch.xp,
+                    hp: batch.hp,
                 });
-                this.pendingUpdates = {};
+                this.criticalOverlay = {};
                 this.reportSync(true);
             } catch (error) {
+                this.pendingUpdates = { ...batch, ...this.pendingUpdates };
                 console.error('❌ Character flush failed:', error);
                 this.reportSync(false);
             }
@@ -452,22 +545,25 @@ class SaveService {
         // Also merge with pending updates to ensure consistency
         this.pendingUpdates = { ...this.pendingUpdates, ...updates };
 
+        const characterPatch: Partial<CharacterSheet> = {};
+        if (updates.hp !== undefined) characterPatch.hp = updates.hp;
+        if (updates.tempHP !== undefined) characterPatch.tempHP = updates.tempHP;
+        if (updates.xp !== undefined) characterPatch.xp = updates.xp;
+        if (updates.level !== undefined) characterPatch.level = updates.level;
+        if (updates.deathSaves !== undefined) characterPatch.deathSaves = updates.deathSaves;
+        if (updates.activeEffects !== undefined) characterPatch.activeEffects = updates.activeEffects;
+        if (updates.resources !== undefined) characterPatch.resources = updates.resources;
+        if (updates.spellSlots !== undefined) characterPatch.spellSlots = updates.spellSlots;
+        if (updates.hitDice !== undefined) characterPatch.hitDice = updates.hitDice;
+        if (updates.storyModifiers !== undefined) characterPatch.storyModifiers = updates.storyModifiers;
+        // Ces valeurs restent prioritaires sur toute fiche complète fusionnée
+        // plus tard (fenêtre de 500 ms du debounce) — audit 2026-08-12.
+        this.criticalOverlay = { ...this.criticalOverlay, ...characterPatch };
+
         return this.writeQueue.enqueue(async () => {
             try {
                 const userId = this.getCurrentUserId();
                 const saveRef = doc(db, 'users', userId, 'saves', this.currentSaveId!);
-
-                const characterPatch: Partial<CharacterSheet> = {};
-                if (updates.hp !== undefined) characterPatch.hp = updates.hp;
-                if (updates.tempHP !== undefined) characterPatch.tempHP = updates.tempHP;
-                if (updates.xp !== undefined) characterPatch.xp = updates.xp;
-                if (updates.level !== undefined) characterPatch.level = updates.level;
-                if (updates.deathSaves !== undefined) characterPatch.deathSaves = updates.deathSaves;
-                if (updates.activeEffects !== undefined) characterPatch.activeEffects = updates.activeEffects;
-                if (updates.resources !== undefined) characterPatch.resources = updates.resources;
-                if (updates.spellSlots !== undefined) characterPatch.spellSlots = updates.spellSlots;
-                if (updates.hitDice !== undefined) characterPatch.hitDice = updates.hitDice;
-                if (updates.storyModifiers !== undefined) characterPatch.storyModifiers = updates.storyModifiers;
 
                 await setDoc(saveRef, this.sanitize({
                     character: characterPatch,
@@ -488,8 +584,12 @@ class SaveService {
     private journalDebounceTimer: NodeJS.Timeout | null = null;
     private pendingJournal: {
         briefing?: { prologue: string; objective?: string; threat?: string; location?: string };
-        quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed' }[];
-        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number }[];
+        // OU1 — steps : la checklist vivante d'update_quest_step doit survivre
+        // au rechargement (elle était jetée par les mappings de sauvegarde).
+        // createdAt/completedAt sont des ISO strings depuis add_quest ; le type
+        // annonçait `number` alors que rien n'en écrivait jamais un.
+        quests: { id: string; title: string; description: string; status: 'active' | 'completed' | 'failed'; steps?: { id: string; text: string; done: boolean }[]; createdAt?: string | number | null; completedAt?: string | number | null }[];
+        npcs: { id: string; name: string; description: string; location: string; disposition?: number; knownFacts?: string[]; lastSeenAt?: number; createdAt?: number | null }[];
         locations: { id: string; name: string; description: string }[];
         chronicle: { id: string; title: string; description: string; timestamp: number }[];
     } | null = null;

@@ -218,11 +218,19 @@ getBestiary().then(monsters => {
 // French to English fallback mapping for common creatures
 const FRENCH_BESTIARY_DICT: Record<string, string> = {
     'loup': 'wolf',
-    'ours': 'bear',
+    // DA3 — 'bear' et 'horse' n'existent pas dans CSV_MONSTERS : getCreature('Ours')
+    // rendait null. On pointe vers les IDs réels.
+    'ours': 'brown_bear',
+    'ours brun': 'brown_bear',
+    'ours noir': 'black_bear',
+    'ours polaire': 'polar_bear',
     'araignée': 'giant_spider',
     'araignee': 'giant_spider',
     'rat': 'giant_rat',
-    'cheval': 'horse',
+    'cheval': 'riding_horse',
+    'cheval de selle': 'riding_horse',
+    'cheval de guerre': 'warhorse',
+    'destrier': 'warhorse',
     'gobelin': 'goblin',
     'orque': 'orc',
     'bandit': 'bandit',
@@ -233,7 +241,11 @@ const FRENCH_BESTIARY_DICT: Record<string, string> = {
     'squelette': 'skeleton',
     'zombie': 'zombie',
     'goule': 'ghoul',
-    'spectre': 'wraith',
+    // DM5 (contre-audit) — « Spectre » FR = specter SRD (CR 1, 22 PV), PAS la
+    // wraith (CR 5, 67 PV) : un groupe niveau 2 affrontait deux CR 5.
+    'spectre': 'specter',
+    'âme en peine': 'wraith',
+    'ame en peine': 'wraith',
     'ours-hibou': 'owlbear',
     'hibours': 'owlbear',
     'mimique': 'mimic',
@@ -241,6 +253,14 @@ const FRENCH_BESTIARY_DICT: Record<string, string> = {
     'chien de l\'enfer': 'hell_hound',
     'dragon': 'young_red_dragon'
 };
+
+// DA1 — affichage des CR fractionnaires (0.125/0.25/0.5 → « 1/8 »/« 1/4 »/« 1/2 »).
+export function formatCR(cr: number): string {
+    if (cr === 0.125) return '1/8';
+    if (cr === 0.25) return '1/4';
+    if (cr === 0.5) return '1/2';
+    return String(cr);
+}
 
 // Get creature by name (case insensitive, robust fuzzy matching)
 export function getCreature(name: string): CreatureStats | null {
@@ -256,21 +276,48 @@ export function getCreature(name: string): CreatureStats | null {
     let key = baseName.replace(/\s+/g, '_');
     if (BESTIARY[key]) return BESTIARY[key];
 
-    // 4. Try English lookup from French lookup table
-    for (const [fr, en] of Object.entries(FRENCH_BESTIARY_DICT)) {
-        if (baseName.includes(fr)) {
-            if (BESTIARY[en]) return BESTIARY[en];
+    // Correspondance en MOTS ENTIERS uniquement : le test par sous-chaîne brute
+    // détournait les noms custom du MJ — « Croc de Fer » contient « roc » et
+    // devenait silencieusement un Roc du bestiaire (mauvais PV, mauvaise CA,
+    // mauvaises attaques). « Chef cultiste des Trois » doit toujours matcher
+    // « cultist », mais par frontière de mot, pas par inclusion aveugle.
+    const wordMatch = (needle: string): boolean => {
+        const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^\\p{L}])${escaped}([^\\p{L}]|$)`, 'iu').test(baseName);
+    };
+
+    // DM16 (contre-audit) — dragons nommés en FRANÇAIS : le fallback générique
+    // 'dragon' → young_red_dragon capturait « Dragon blanc ancien » (mauvaise
+    // couleur, mauvais âge, mauvais souffle). Résolution couleur + âge d'abord.
+    if (wordMatch('dragon')) {
+        const DRAGON_COLORS: Record<string, string> = {
+            'rouge': 'red', 'blanc': 'white', 'blanche': 'white', 'noir': 'black', 'noire': 'black',
+            'bleu': 'blue', 'bleue': 'blue', 'vert': 'green', 'verte': 'green',
+            'airain': 'brass', 'bronze': 'bronze', 'cuivre': 'copper', 'or': 'gold', 'argent': 'silver',
+            'red': 'red', 'white': 'white', 'black': 'black', 'blue': 'blue', 'green': 'green',
+            'brass': 'brass', 'copper': 'copper', 'gold': 'gold', 'silver': 'silver',
+        };
+        const color = Object.keys(DRAGON_COLORS).find(c => wordMatch(c));
+        if (color) {
+            const en = DRAGON_COLORS[color];
+            let dragonKey: string;
+            if (wordMatch('dragonnet') || wordMatch('wyrmling')) dragonKey = `${en}_dragon_wyrmling`;
+            else if (wordMatch('ancien') || wordMatch('ancienne') || wordMatch('ancient')) dragonKey = `ancient_${en}_dragon`;
+            else if (wordMatch('adulte') || wordMatch('adult')) dragonKey = `adult_${en}_dragon`;
+            else dragonKey = `young_${en}_dragon`;
+            if (BESTIARY[dragonKey]) return BESTIARY[dragonKey];
         }
     }
 
-    // 5. Fuzzy Substring Matching against Bestiary keys
+    // 4. Try English lookup from French lookup table
+    for (const [fr, en] of Object.entries(FRENCH_BESTIARY_DICT)) {
+        if (wordMatch(fr) && BESTIARY[en]) return BESTIARY[en];
+    }
+
+    // 5. Fuzzy whole-word matching against Bestiary keys
     for (const bestiaryKey of Object.keys(BESTIARY)) {
-        // e.g if they type "huge giant spider of doom", it contains "giant_spider" (replace _ with space)
-        if (baseName.includes(bestiaryKey.replace(/_/g, ' '))) {
-            return BESTIARY[bestiaryKey];
-        }
-        // e.g if bestiary key is "cultist" and they typed "cultist of the dead three"
-        if (baseName.includes(bestiaryKey)) {
+        // e.g. "huge giant spider of doom" contains the words "giant spider"
+        if (wordMatch(bestiaryKey.replace(/_/g, ' '))) {
             return BESTIARY[bestiaryKey];
         }
     }

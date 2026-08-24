@@ -250,12 +250,13 @@ export function getCheckModifier(params: {
 }
 
 /** Passive Perception = 10 + WIS mod + proficiency (doubled if expertise). */
-export function passivePerception(effectiveStats: Record<string, number>, level: number, proficiencies: string[] = [], expertise: string[] = []): number {
+export function passivePerception(effectiveStats: Record<string, number>, level: number, proficiencies: string[] = [], expertise: string[] = [], flatBonus = 0): number {
     const wisMod = Math.floor(((effectiveStats['WIS'] ?? 10) - 10) / 2);
     const prof = proficiencyBonus(level);
     const isProf = proficiencies.some(p => p.toLowerCase() === 'perception');
     const isExpert = expertise.some(e => e.toLowerCase() === 'perception');
-    return 10 + wisMod + (isProf ? prof : 0) + (isExpert ? prof : 0);
+    // flatBonus : Observant (+5) et équivalents — 2026-08-13.
+    return 10 + wisMod + (isProf ? prof : 0) + (isExpert ? prof : 0) + flatBonus;
 }
 
 // Roll with advantage/disadvantage
@@ -271,4 +272,97 @@ export function rollWithAdvantage(advantage: boolean, disadvantage: boolean): { 
     }
     // Normal or both cancel out
     return { roll: roll1, rolls: [roll1] };
+}
+
+// ═══════════════ NF2 — avantages accordés par l'ÉQUIPEMENT ═══════════════
+
+export interface GearAdvantage {
+    /** Tag canonique : nom de compétence EN ('Stealth'), 'attack' ou 'initiative'. */
+    tag: string;
+    /** Objet qui l'accorde (affichage fiche + raison du jet). */
+    source: string;
+}
+
+const NFD_MARKS = /[\u0300-\u036f]/g;
+/** Canonicalisation accent-insensible partag\u00e9e (minuscules + NFD sans diacritiques).
+ *  Export\u00e9e : c'est LA copie de r\u00e9f\u00e9rence \u2014 ne pas red\u00e9clarer localement. */
+export const foldText = (value: string) => String(value || '').toLowerCase().normalize('NFD').replace(NFD_MARKS, '');
+
+/** NF2 — avantages accordés par l'équipement PORTÉ (bottes elfiques → avantage
+ *  Discrétion), reflétés automatiquement dans les jets de compétence et
+ *  d'attaque. Deux canaux :
+ *  1. le champ structuré `advantageOn: ['stealth']` de l'objet (précis) ;
+ *  2. le TEXTE de l'objet (« avantage aux tests de Discrétion », « advantage
+ *     on Stealth checks ») pour les objets improvisés par le MJ. */
+export function getGearAdvantages(character: { inventory?: any[] }): GearAdvantage[] {
+    const out: GearAdvantage[] = [];
+    const seen = new Set<string>();
+    const push = (tag: string, source: string) => {
+        const key = `${tag}|${source}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        out.push({ tag, source });
+    };
+
+    for (const item of character.inventory || []) {
+        // PL14 — un BIJOU/TALISMAN de type 'misc' (pierre de chance…) n'est pas
+        // équipable : il agit tant qu'il est PORTÉ (dans l'inventaire). Les
+        // armes/armures/objets à emplacement exigent toujours d'être équipés.
+        const carriedTrinket = item?.type === 'misc';
+        if (!item?.equipped && !carriedTrinket) continue;
+        const source = String(item.name || 'Item');
+
+        for (const rawTag of (item.advantageOn || []) as string[]) {
+            const canonical = canonicalSkillName(String(rawTag));
+            push(SKILL_ABILITIES[canonical] ? canonical : foldText(String(rawTag)), source);
+        }
+
+        const text = foldText(`${item.name || ''} ${item.effect || ''} ${item.description || ''}`);
+        // PL11 — objets DÉFENSIFS (cape de déplacement…) : « les attaques
+        // contre vous/le porteur ont un désavantage » → tag 'defense', lu par
+        // le moteur d'attaque quand le joueur est la CIBLE.
+        if (/(desavantage|disadvantage)/.test(text)
+            && /(contre (vous|le porteur|lui)|against (you|the wearer|the bearer)|pour (vous|me|le) toucher|to hit (you|the wearer))/.test(text)) {
+            push('defense', source);
+        }
+        // RE1 (contre-audit) — purger les propositions NÉGATIVES avant le scan :
+        // « aucun désavantage de discrétion » (Mithral) contenait la sous-chaîne
+        // « avantage » + « discretion » et accordait l'AVANTAGE en Discrétion ;
+        // « attack rolls against you have disadvantage » (cape) donnait au
+        // porteur l'avantage sur SES attaques. On retire toute la clause (entre
+        // ponctuations) contenant dés/disadvantage — la détection `defense`
+        // ci-dessus lit, elle, le texte BRUT et reste intacte.
+        const purged = text.replace(/[^.;,()]*(desavantage|disadvantage)[^.;,()]*/g, ' ');
+        if (!/avantage|advantage/.test(purged)) continue;
+        // SK1 — correspondance en MOTS ENTIERS : « nature » matchait « naturel »,
+        // « histoire » n'importe quel lore.
+        const hasWord = (needle: string): boolean => {
+            const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            return new RegExp(`(^|[^\\p{L}])${escaped}([^\\p{L}]|$)`, 'iu').test(purged);
+        };
+        for (const [fr, en] of Object.entries(SKILL_TRANSLATIONS)) {
+            if (hasWord(foldText(fr)) || hasWord(en.toLowerCase())) push(en, source);
+        }
+        if (/jets? d'attaque|attack rolls?/.test(purged)) push('attack', source);
+        if (hasWord('initiative')) push('initiative', source);
+    }
+    return out;
+}
+
+/** Premier objet équipé accordant l'avantage sur ce tag (ou null). */
+export function gearAdvantageFor(character: { inventory?: any[] }, tag: string): GearAdvantage | null {
+    const canonical = SKILL_ABILITIES[canonicalSkillName(tag)] ? canonicalSkillName(tag) : foldText(tag);
+    return getGearAdvantages(character).find(a => a.tag === canonical || foldText(a.tag) === foldText(tag)) || null;
+}
+
+/** SRD : une armure marquée `stealthDisadvantage` (écailles, pagne de mailles,
+ *  harnois…) impose le DÉSAVANTAGE aux tests de Discrétion tant qu'elle est
+ *  portée. Le drapeau existait sur 8 armures mais n'était lu par AUCUN jet
+ *  (affichage seulement) — audit 2026-08-12. Retourne l'armure fautive ou null. */
+export function armorStealthPenalty(character: { inventory?: any[] }): { source: string } | null {
+    for (const item of character.inventory || []) {
+        if (!item?.equipped) continue;
+        if (item.stealthDisadvantage === true) return { source: String(item.name || 'Armor') };
+    }
+    return null;
 }

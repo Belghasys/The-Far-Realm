@@ -274,10 +274,12 @@ export const SRD51_CONDITIONS: ConditionEntry[] = [
         name: 'Stunned',
         aliases: ['etourdi', 'étourdi', 'sonne', 'sonné'],
         summary: 'A stunned creature is incapacitated and barely responsive.',
-        effects: ['No actions or reactions.', 'Speed becomes 0.', 'Strength and Dexterity saves have disadvantage.'],
+        // cb-m2 — RAW : les sauvegardes de FOR/DEX échouent AUTOMATIQUEMENT
+        // (pas un simple désavantage).
+        effects: ['No actions or reactions.', 'Speed becomes 0.', 'Strength and Dexterity saves fail automatically.'],
         movement: 'zero',
         actionRestrictions: ['No actions or reactions.'],
-        savingThrows: { STR: 'disadvantage', DEX: 'disadvantage' },
+        savingThrows: { STR: 'auto_fail', DEX: 'auto_fail' },
         attackRolls: { againstCreature: 'advantage' },
         source: SRD_SOURCE,
     },
@@ -342,6 +344,54 @@ export const SRD51_CONDITIONS: ConditionEntry[] = [
         summary: 'An invisible creature is unseen without special senses or magic.',
         effects: ['Attacks by the creature have advantage.', 'Attacks against it have disadvantage.'],
         attackRolls: { madeByCreature: 'advantage', againstCreature: 'disadvantage' },
+        source: SRD_SOURCE,
+    },
+    // Audit 2026-08-12 — les 3 conditions SRD manquantes (12/15 avant).
+    {
+        kind: 'condition',
+        id: 'deafened',
+        name: 'Deafened',
+        aliases: ['assourdi', 'sourd', 'assourdie'],
+        summary: 'A deafened creature cannot hear.',
+        effects: ['Automatically fails any ability check that requires hearing.'],
+        source: SRD_SOURCE,
+    },
+    {
+        kind: 'condition',
+        id: 'petrified',
+        name: 'Petrified',
+        aliases: ['petrifie', 'pétrifié', 'change en pierre', 'changé en pierre', 'statufie', 'statufié'],
+        summary: 'A petrified creature is transformed into solid stone.',
+        effects: [
+            'Incapacitated: no actions or reactions; cannot move or speak.',
+            'Attacks against the creature have advantage.',
+            'Strength and Dexterity saves fail automatically.',
+            'Resistance to all damage; immune to poison and disease.',
+        ],
+        movement: 'zero',
+        actionRestrictions: ['No actions or reactions.'],
+        savingThrows: { STR: 'auto_fail', DEX: 'auto_fail' },
+        attackRolls: { againstCreature: 'advantage' },
+        source: SRD_SOURCE,
+    },
+    {
+        kind: 'condition',
+        id: 'exhaustion',
+        name: 'Exhaustion',
+        aliases: ['epuisement', 'épuisement', 'epuise', 'épuisé', 'fatigue extreme', 'fatigue extrême'],
+        summary: 'Cumulative levels of exhaustion degrade a creature until death at level 6.',
+        effects: [
+            'Level 1: disadvantage on ability checks.',
+            'Level 2: speed halved.',
+            'Level 3: disadvantage on attack rolls and saving throws.',
+            'Level 4: hit point maximum halved.',
+            'Level 5: speed reduced to 0.',
+            'Level 6: death.',
+            'A long rest with food and drink removes one level.',
+        ],
+        // Niveaux non suivis par le moteur : on applique la base niveau 1
+        // (désavantage aux tests, via deriveRollContext) — pas le désavantage
+        // d'attaque du niveau 3, qui serait faux aux niveaux 1-2.
         source: SRD_SOURCE,
     },
 ];

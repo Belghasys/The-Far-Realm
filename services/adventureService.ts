@@ -1,5 +1,5 @@
 import { AdventureManifest, CharacterSheet } from '../types';
-import { CreatureStats } from '../data/bestiary';
+import { CreatureStats, formatCR } from '../data/bestiary';
 import { log } from './logger';
 
 /**
@@ -9,7 +9,7 @@ import { log } from './logger';
 export async function getLightweightBestiary(): Promise<string> {
     const { CSV_MONSTERS } = await import('../data/monsterData');
     return Object.values(CSV_MONSTERS)
-        .map(m => `${m.id}: ${m.name} (CR: ${m.cr})`)
+        .map(m => `${m.id}: ${m.name} (CR: ${formatCR(m.cr)})`)
         .join('\n');
 }
 
@@ -40,7 +40,7 @@ export class AdventureService {
 
         // 2. Generate the raw manifest from Gemini — up to 2 attempts
         const MAX_RETRIES = 2;
-        let rawManifest = '';
+        let rawManifest: string;
         let manifest: AdventureManifest | null = null;
         let lastError: unknown;
         const { generateAdventureManifest } = await import('./llmService');
@@ -132,6 +132,8 @@ export class AdventureService {
             selectedMonsterIds: Array.isArray(input.selectedMonsterIds) ? input.selectedMonsterIds.map(String).slice(0, 40) : [],
             supportingCast: Array.isArray(input.supportingCast) ? input.supportingCast : [],
             rewardTable: Array.isArray(input.rewardTable) ? input.rewardTable : [],
+            // NF3 — marchands principaux générés avec l'histoire.
+            keyMerchants: Array.isArray(input.keyMerchants) ? input.keyMerchants.slice(0, 4) : [],
             fullManifesto,
         };
     }

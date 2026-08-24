@@ -156,6 +156,12 @@ function toMonsterRef(creature: CreatureStats): CodexMonsterRef {
         immunities: creature.immunities?.map(normalizeDamageType).filter(Boolean) as CodexDamageType[] | undefined,
         vulnerabilities: creature.vulnerabilities?.map(normalizeDamageType).filter(Boolean) as CodexDamageType[] | undefined,
         conditionImmunities: creature.conditionImmunities,
+        // Audit 2026-08-12 — le ref ne portait NI stats NI saves : tout monstre
+        // résolu via lookupMonster sauvegardait à +0 plat (un Liche à +0 SAG).
+        // Les moteurs testent `'saves' in x` puis `'stats' in x` — les deux
+        // doivent voyager avec le ref.
+        stats: creature.stats,
+        saves: creature.saves,
         portrait: creature.imageUrl,
         source: {
             ...BESTIARY_SOURCE,
@@ -168,20 +174,49 @@ function allMonsterRefs(): CodexMonsterRef[] {
     return Object.values(bestiarySnapshot()).map(toMonsterRef);
 }
 
+// TP1 (contre-audit 2026-08-13) — résolution EXACTE d'abord, sous-chaîne ensuite.
+// Le premier match par inclusion masquait des entrées existantes : « Heal » →
+// Healing Word, « Harm » → Charm Person, alias FR « Éclair » → Guiding Bolt.
+// Même patron que lookupItem (exact → alias exact → inclusion).
+function exactThenFuzzy<T extends { id: string; name: string; aliases?: string[] }>(
+    entries: readonly T[],
+    name: string,
+    fuzzy: (entry: T, needle: string) => boolean,
+): T | null {
+    if (!name) return null;
+    const needle = slug(name);
+    const exact = entries.find(e =>
+        e.id === needle
+        || slug(e.name) === needle
+        || (e.aliases || []).some(a => slug(a) === needle));
+    if (exact) return exact;
+    return entries.find(e => fuzzy(e, name)) || null;
+}
+
 export function lookupSpell(name: string): SpellEntry | null {
-    return SRD51_SPELLS.find(spell => textIncludes(spell, name) || spell.id === slug(name)) || null;
+    return exactThenFuzzy(SRD51_SPELLS, name, (spell, n) => textIncludes(spell, n));
+}
+
+/** Sort de ZONE ? Détecté sur les champs structurés (target/mechanics) : cône,
+ *  rayon, cube, ligne, sphère, « each creature », marqueur 'Area spell.'. Sert
+ *  au panneau de combat pour ne proposer « tous les ennemis » que sur les
+ *  vrais sorts de zone (Boule de feu oui, Soins non). */
+export function isAreaSpell(spell: Pick<SpellEntry, 'target' | 'mechanics'> | null | undefined): boolean {
+    if (!spell) return false;
+    const hay = `${spell.target || ''} | ${(spell.mechanics || []).join(' ')}`;
+    return /\b(cone|c[ôo]ne|radius|rayon|sphere|sph[eè]re|cube|line|ligne|square|carr[ée]|area spell|zone|each creature|chaque cr[ée]ature)\b/i.test(hay);
 }
 
 export function lookupRule(name: string): RuleEntry | null {
-    return SRD51_RULES.find(rule => textIncludes(rule, name) || rule.id === slug(name)) || null;
+    return exactThenFuzzy(SRD51_RULES, name, (rule, n) => textIncludes(rule, n));
 }
 
 export function lookupAction(name: string) {
-    return SRD51_ACTIONS.find(action => textIncludes(action, name) || action.id === slug(name)) || null;
+    return exactThenFuzzy(SRD51_ACTIONS, name, (action, n) => textIncludes(action, n));
 }
 
 export function lookupCondition(name: string): ConditionEntry | null {
-    return SRD51_CONDITIONS.find(condition => textIncludes(condition, name) || condition.id === slug(name)) || null;
+    return exactThenFuzzy(SRD51_CONDITIONS, name, (condition, n) => textIncludes(condition, n));
 }
 
 export function lookupItem(name: string): ItemEntry | null {
@@ -215,9 +250,17 @@ export function lookupMonster(name: string): CodexMonsterRef | null {
     const exact = Object.values(monsters).find(creature => slug(creature.name) === clean);
     if (exact) return toMonsterRef(exact);
 
+    // Correspondance en MOTS ENTIERS de slug : l'inclusion brute détournait les
+    // noms custom — « Croc de Fer » (croc_de_fer) contient « roc » et héritait
+    // des stats/attaques du Roc du bestiaire.
+    const containsWholeWord = (haystack: string, needle: string): boolean => {
+        if (!needle) return false;
+        const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i').test(haystack);
+    };
     const fuzzy = Object.values(monsters).find(creature => {
         const creatureKey = slug(creature.name);
-        return clean.includes(creatureKey) || creatureKey.includes(clean);
+        return containsWholeWord(clean, creatureKey) || containsWholeWord(creatureKey, clean);
     });
 
     return fuzzy ? toMonsterRef(fuzzy) : null;
@@ -383,6 +426,24 @@ export function calculateEncounterBudget(level: number, partySize: number, diffi
     const safeLevel = Math.max(1, Math.min(20, Math.trunc(level || 1)));
     const safePartySize = Math.max(1, Math.min(8, Math.trunc(partySize || 1)));
     return XP_THRESHOLDS_BY_LEVEL[difficulty][safeLevel - 1] * safePartySize;
+}
+
+/** Pression SRD de la rencontre EN COURS : somme des XP de base des ennemis
+ *  vivants × multiplicateur de nombre, face au plafond « deadly » du groupe.
+ *  Garde-fou d'add_enemy_init (un mage niv 1 recevait 4 loups = 4× le seuil
+ *  mortel) et jauge du contexte directeur. Le plafond tolère +25 % au-delà de
+ *  « deadly » : les campagnes scriptent des combats mortels, pas des exécutions. */
+export function assessEncounterPressure(enemyXPs: number[], partyLevel: number, partySize: number): {
+    count: number; baseXP: number; multiplier: number; adjustedXP: number;
+    deadlyBudget: number; cap: number; overCap: boolean;
+} {
+    const xs = enemyXPs.filter(x => Number.isFinite(x) && x > 0);
+    const baseXP = xs.reduce((sum, x) => sum + x, 0);
+    const multiplier = encounterMultiplier(xs.length);
+    const adjustedXP = Math.round(baseXP * multiplier);
+    const deadlyBudget = calculateEncounterBudget(partyLevel, partySize, 'deadly');
+    const cap = Math.round(deadlyBudget * 1.25);
+    return { count: xs.length, baseXP, multiplier, adjustedXP, deadlyBudget, cap, overCap: adjustedXP > cap };
 }
 
 function monsterMatchesTheme(monster: CodexMonsterRef, request: EncounterBuildRequest): boolean {

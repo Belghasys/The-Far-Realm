@@ -2,6 +2,8 @@ import { Combatant, combatantSide, isHero } from '../components/CombatTracker';
 export { combatantSide, isHero } from '../components/CombatTracker';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
 import { getFeatById } from '../data/feats';
+import { CLASS_DATA } from '../data/classes';
+import { gearAdvantageFor, foldText } from './skillSystem';
 import { getSneakAttackDice } from '../data/classFeatures';
 import { RACE_DATA } from '../data/races';
 import {
@@ -16,10 +18,12 @@ import {
     getCombatAC,
     getEffectiveAC,
     getEffectiveStat,
+    getEffectiveMaxHP,
     getPlayerAttackModifier,
     getPlayerDamageBonus,
     getPlayerAttackCount,
     getDraconicDamageType,
+    isRangedWeapon,
     Item
 } from '../types';
 import { getEnemyXP } from './xpSystem';
@@ -92,6 +96,10 @@ export interface RollContextInput {
     targetEffects?: ActiveEffect[];
     coverBonus?: number;
     isMeleeAttack?: boolean;
+    /** CB7 — caractéristique de la sauvegarde quand l'appelant la connaît déjà
+     *  (request_roll) : l'inférence textuelle rate les noms français
+     *  (« Sauvegarde de Force » ne contient pas « STR »). */
+    saveAbility?: Ability;
 }
 
 export interface RollContextResult {
@@ -129,6 +137,11 @@ export interface TurnEconomy {
     attacksUsed?: number;
     bonusMax?: number;
     bonusUsed?: number;
+    /** cb-m6 — drapeau partagé des riders « 1×/tour » (Sneak Attack, Frappe
+     *  divine, Furie divine, Colossus Slayer, Attaquant sauvage) : l'attaque
+     *  BONUS de Frénésie ne touche pas attacksUsed, le rider s'appliquait donc
+     *  sur la bonus PUIS à nouveau sur la première attaque principale. */
+    onceRiderUsed?: boolean;
 }
 
 export interface CombatLogEntry {
@@ -160,6 +173,20 @@ export interface AttackResolution {
     targetHP: { current: number; max: number };
     state: EncounterState;
     log: CombatLogEntry;
+    /** Ids des effets à USAGE UNIQUE dépensés par ce coup (Châtiment divin :
+     *  l'emplacement de sort est brûlé pour UN coup, pas pour le round entier).
+     *  L'appelant les retire de la fiche — le moteur ne possède pas le
+     *  personnage et ne peut pas les consommer lui-même. */
+    consumedEffectIds?: string[];
+    /** Réaction défensive auto-déclenchée par le moteur sur ce coup (SRD) :
+     *  Esquive instinctive (Roublard 5+) ou Déviation de projectiles (Moine 3+). */
+    reaction?: 'uncanny_dodge' | 'deflect_missiles';
+    /** Réduction totale lancée pour la Déviation (1d10+DEX+niveau). */
+    reactionAmount?: number;
+    /** Rage implacable (Barbare 11+) : le joueur est resté à 1 PV au lieu de 0. */
+    relentless?: boolean;
+    /** Le moteur a jugé ce coup en mêlée (false = tir/jet à distance). */
+    isMeleeAttack?: boolean;
 }
 
 export interface SpellCastResult {
@@ -170,12 +197,30 @@ export interface SpellCastResult {
     consumedSlot?: number;
     prompt?: RollPromptState;
     healing?: number;
+    /** CB1 — false quand le soin vise une AUTRE cible que le lanceur : la
+     *  fiche du lanceur n'a PAS été soignée, l'appelant applique `healing`
+     *  à la cible réelle (ligne de combat, compagnon…). */
+    healingTargetsSelf?: boolean;
     damageFormula?: string;
     damageType?: CodexDamageType;
     conditionOnFailure?: string;
     activeEffect?: ActiveEffect;
     storyModifier?: StoryRollModifier;
     concentrationReplaced?: string[];
+    /**
+     * Sort à TOUCHE AUTOMATIQUE (Projectile magique…) : il inflige des dégâts
+     * sans jet d'attaque ni sauvegarde. L'appelant applique directement ces
+     * dégâts via applyAutoDamageSpell — sans ça le sort ne faisait rien du tout.
+     */
+    autoDamage?: {
+        damageFormula: string;
+        damageType?: CodexDamageType;
+        target?: string;
+        targetId?: string;
+    };
+    /** Métamagie Sort accéléré consommée par CE lancement : l'appelant dépense
+     *  l'ACTION BONUS au lieu de l'action principale. */
+    quickened?: boolean;
     summary: string;
 }
 
@@ -352,7 +397,8 @@ function syncCurrentTurn(state: EncounterState): EncounterState {
 }
 
 function normalizeAdvantage(value: unknown): AdvantageMode {
-    const text = String(value || '').toLowerCase();
+    // ou-m8 — normalisation NFD : « désavantage » accentué devenait 'normal'.
+    const text = String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     if (text === 'dis' || text.includes('disadvantage') || text.includes('desavantage')) return 'disadvantage';
     if (text === 'adv' || text.includes('advantage')) return 'advantage';
     return 'normal';
@@ -448,8 +494,16 @@ function damageAdjustment(target: Combatant, amount: number, damageType?: string
     const type = normalizeDamageType(damageType);
     if (!type) return { amountApplied: Math.max(0, amount), mitigation: 'normal' };
 
-    // Combatant-level resistances first — this is how the PLAYER's racial
-    // resistances (Dwarf poison, Tiefling fire, Dragonborn ancestry…) take effect.
+    // Combatant-level mitigations first — this is how the PLAYER's racial
+    // resistances (Dwarf poison, Tiefling fire, Dragonborn ancestry…) take
+    // effect, et désormais aussi immunités/vulnérabilités (audit 2026-08-12 :
+    // le joueur ne pouvait jamais être immunisé ni vulnérable).
+    if (target.immunities?.some(r => normalizeDamageType(r) === type)) {
+        return { amountApplied: 0, mitigation: 'immune' };
+    }
+    if (target.vulnerabilities?.some(r => normalizeDamageType(r) === type)) {
+        return { amountApplied: Math.max(0, amount * 2), mitigation: 'vulnerable' };
+    }
     if (target.resistances?.some(r => normalizeDamageType(r) === type)) {
         return { amountApplied: Math.floor(Math.max(0, amount) / 2), mitigation: 'resistant' };
     }
@@ -500,6 +554,99 @@ function conditionFromEffect(effect: ActiveEffect): ConditionEntry | null {
     return lookupCondition(effect.name);
 }
 
+export interface ActionCapability {
+    canAct: boolean;
+    canReact: boolean;
+    /** Nom de la condition qui prive d'action (Paralyzed, Stunned, Unconscious, Incapacitated). */
+    blockedBy?: string;
+}
+
+/** Les états incapacitants doivent réellement priver d'action : la table SRD
+ *  porte `actionRestrictions` mais rien ne la lisait — un ennemi sous Hold
+ *  Person attaquait normalement à son tour. Point unique de vérité, consommé
+ *  par le tour automatisé des PNJ ET par l'UI d'actions du joueur. */
+export function getActionCapability(effects: ActiveEffect[] | undefined | null): ActionCapability {
+    for (const effect of effects || []) {
+        const condition = conditionFromEffect(effect);
+        if (!condition?.actionRestrictions?.length) continue;
+        // « No actions or reactions. » — Charmed ne matche pas (sa restriction
+        // ne vise que le charmeur) et continue d'agir.
+        if (condition.actionRestrictions.some(r => /no action/i.test(r))) {
+            return { canAct: false, canReact: false, blockedBy: condition.name };
+        }
+    }
+    return { canAct: true, canReact: true };
+}
+
+// ═══════════════ PASSIFS DE CLASSE (SRD) — appliqués par le moteur ═══════════
+// Un seul point de vérité, consommé par request_roll, environmental_damage et
+// les jets internes : sans ça, l'Aura de protection du paladin, le Touche-à-tout
+// du barde ou le Sens du danger du barbare n'étaient que du texte sur la fiche.
+
+/** Bonus/avantage de classe sur une SAUVEGARDE du joueur. */
+export function classSavePassives(character: CharacterSheet, ability: Ability): { bonus: number; advantage: boolean; reasons: string[] } {
+    const reasons: string[] = [];
+    let bonus = 0;
+    let advantage = false;
+    const lvl = character.level || 1;
+    // Paladin 6+ — Aura de protection : +mod. CHA (min +1) à TOUTES ses sauvegardes.
+    if (character.class === 'Paladin' && lvl >= 6) {
+        const cha = Math.max(1, abilityMod(getEffectiveStat(character, 'CHA')));
+        bonus += cha;
+        reasons.push(`Aura of Protection +${cha}`);
+    }
+    // Barbare 2+ — Sens du danger : avantage aux sauvegardes de DEX.
+    if (character.class === 'Barbarian' && lvl >= 2 && ability === 'DEX') {
+        advantage = true;
+        reasons.push('Danger Sense: advantage on DEX saves');
+    }
+    return { bonus, advantage, reasons };
+}
+
+/** Bonus de classe sur un TEST de caractéristique non maîtrisé. */
+export function classCheckPassives(character: CharacterSheet, ability: Ability, proficient: boolean): { bonus: number; reasons: string[] } {
+    const reasons: string[] = [];
+    let bonus = 0;
+    if (proficient) return { bonus, reasons };
+    const lvl = character.level || 1;
+    const halfProfDown = Math.floor(proficiencyBonus(lvl) / 2);
+    const halfProfUp = Math.ceil(proficiencyBonus(lvl) / 2);
+    // Barde 2+ — Touche-à-tout : +½ maîtrise (arrondi bas) aux tests non maîtrisés.
+    if (character.class === 'Bard' && lvl >= 2) {
+        bonus += halfProfDown;
+        reasons.push(`Jack of All Trades +${halfProfDown}`);
+    }
+    // Champion 7+ — Athlète remarquable : +½ maîtrise (arrondi haut) aux tests FOR/DEX/CON.
+    if (character.subclass === 'Champion' && lvl >= 7 && (ability === 'STR' || ability === 'DEX' || ability === 'CON')) {
+        bonus += halfProfUp;
+        reasons.push(`Remarkable Athlete +${halfProfUp}`);
+    }
+    return { bonus, reasons };
+}
+
+/** Esquive totale (SRD) : Roublard 7+, Moine 7+, Rôdeur Hunter 15+ — une
+ *  sauvegarde de DEX réussie contre un effet « moitié dégâts » annule TOUT
+ *  (et l'échec n'inflige que la moitié). */
+export function hasEvasion(character: CharacterSheet): boolean {
+    const lvl = character.level || 1;
+    if (character.class === 'Rogue' && lvl >= 7) return true;
+    if (character.class === 'Monk' && lvl >= 7) return true;
+    if (character.class === 'Ranger' && character.subclass === 'Hunter' && lvl >= 15) return true;
+    return false;
+}
+
+/** Dés d'arme SUPPLÉMENTAIRES sur un critique (Barbare — Critique brutal). */
+export function brutalCriticalDice(character: CharacterSheet): number {
+    if (character.class !== 'Barbarian') return 0;
+    const lvl = character.level || 1;
+    return lvl >= 17 ? 3 : lvl >= 13 ? 2 : lvl >= 9 ? 1 : 0;
+}
+
+/** Dé de Chant reposant du barde (d6 → d12 avec le niveau). */
+export function songOfRestDie(level: number): number {
+    return level >= 17 ? 12 : level >= 13 ? 10 : level >= 9 ? 8 : 6;
+}
+
 function inferSaveAbility(prompt: RollPromptState): Ability | null {
     const haystack = `${prompt.name} ${prompt.formula}`.toUpperCase();
     return (['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as Ability[]).find(ability => haystack.includes(ability)) || null;
@@ -531,6 +678,22 @@ export function deriveRollContext(prompt: RollPromptState, input: RollContextInp
             }
         }
 
+        // Effets NON-conditions qui pèsent sur l'avantage (Attaque téméraire) :
+        // la table SRD ne couvre que les états, un trait de classe doit le dire
+        // explicitement, sinon son avantage — et son revers — restent cosmétiques.
+        for (const effect of input.actorEffects || []) {
+            if (effect.grantsAttackAdvantage) {
+                nextPrompt.advantage = mergeAdvantage(nextPrompt.advantage, 'advantage');
+                reasons.push(`${effect.name}: advantage on the attack`);
+            }
+        }
+        for (const effect of input.targetEffects || []) {
+            if (effect.grantsAttackersAdvantage) {
+                nextPrompt.advantage = mergeAdvantage(nextPrompt.advantage, 'advantage');
+                reasons.push(`${effect.name}: attacks against the target have advantage`);
+            }
+        }
+
         const coverBonus = Math.max(0, Math.min(5, Number(input.coverBonus || 0)));
         if (coverBonus > 0) {
             nextPrompt.dc += coverBonus;
@@ -540,7 +703,7 @@ export function deriveRollContext(prompt: RollPromptState, input: RollContextInp
     }
 
     if (prompt.type === 'SAVE') {
-        const ability = inferSaveAbility(prompt);
+        const ability = input.saveAbility || inferSaveAbility(prompt);
         if (ability) {
             for (const condition of actorConditions) {
                 const mode = condition.savingThrows?.[ability];
@@ -560,6 +723,19 @@ export function deriveRollContext(prompt: RollPromptState, input: RollContextInp
             if (condition.id === 'poisoned') {
                 nextPrompt.advantage = mergeAdvantage(nextPrompt.advantage, 'disadvantage');
                 reasons.push('Poisoned: ability checks have disadvantage');
+            }
+            // RAW (audit 2026-08-12) : Effrayé impose aussi le désavantage aux
+            // TESTS tant que la source de la peur est en vue ; l'Épuisement
+            // (niveau 1+) impose le désavantage aux tests de caractéristique.
+            // (Entravé/Aveuglé ne modifient PAS les tests en SRD — ne pas les
+            // ajouter ici.)
+            if (condition.id === 'frightened') {
+                nextPrompt.advantage = mergeAdvantage(nextPrompt.advantage, 'disadvantage');
+                reasons.push('Frightened: ability checks have disadvantage (source of fear in sight)');
+            }
+            if (condition.id === 'exhaustion') {
+                nextPrompt.advantage = mergeAdvantage(nextPrompt.advantage, 'disadvantage');
+                reasons.push('Exhaustion: ability checks have disadvantage');
             }
         }
     }
@@ -659,8 +835,14 @@ export function applyStoryModifiersToPrompt(
 }
 
 export function parseD20Formula(formula: string, dmBonus = 0): { modifier: number; label: string } {
-    const match = String(formula || '1d20').match(/1d20\s*([+-]\s*\d+)?/i);
-    const modifier = match?.[1] ? Number(match[1].replace(/\s+/g, '')) : 0;
+    // cb-m13 — somme TOUS les modificateurs : « 1d20+3+2 » perdait le +2.
+    const after = String(formula || '1d20').replace(/^\s*1d20/i, '');
+    let modifier = 0;
+    const modRegex = /([+-])\s*(\d+)/g;
+    let modMatch;
+    while ((modMatch = modRegex.exec(after)) !== null) {
+        modifier += (modMatch[1] === '-' ? -1 : 1) * Number(modMatch[2]);
+    }
     const totalModifier = modifier + dmBonus;
     return {
         modifier: totalModifier,
@@ -688,14 +870,18 @@ export function resolveRollPrompt(prompt: RollPromptState): RollOutcome {
     let success = prompt.autoFail ? false : (prompt.dc > 0 ? total >= prompt.dc : true);
     let critical: RollOutcome['critical'] = 'none';
 
+    // cb-m1 — RAW : le 20/1 naturel n'auto-réussit/rate que les ATTAQUES et les
+    // jets de mort. Un test ou une sauvegarde garde son total contre le DD
+    // (l'ancien code auto-réussissait tout sur 20, sans l'échec auto du 1).
+    const autoCritApplies = prompt.type === 'ATTACK' || isDeathSave;
     if (prompt.autoFail) {
         critical = die === 1 ? 'failure' : 'none';
     } else if (die === 20) {
         critical = 'success';
-        success = true;
+        if (autoCritApplies) success = true;
     } else if (die === 1) {
         critical = 'failure';
-        if (isDeathSave) success = false;
+        if (autoCritApplies) success = false;
     }
 
     return {
@@ -721,6 +907,14 @@ export function featGrantsAdvantageOn(character: CharacterSheet, context: string
 }
 
 /** True when one of the character's feats carries the given machine tag (mechanical.special). */
+/** Sauvegardes maîtrisées = classe + DONS (2026-08-13 : Résilient (CON)
+ *  n'ajoutait jamais la maîtrise — le `special` était du texte mort). */
+export function getProficientSaves(character: CharacterSheet): string[] {
+    const saves = [...(CLASS_DATA[character.class]?.savingThrows || [])];
+    if (hasFeatSpecial(character, 'save_proficiency_con') && !saves.includes('CON')) saves.push('CON');
+    return saves;
+}
+
 export function hasFeatSpecial(character: CharacterSheet, special: string): boolean {
     return (character.feats || []).some(id => getFeatById(id)?.mechanical?.special === special);
 }
@@ -906,16 +1100,25 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
         combatants.push({
             id: 'player',
             name: character.name || 'Hero',
-            hp: { current: character.hp.current, max: character.hp.max },
+            // PV max EFFECTIFS : un +CON d'objet/effet compte (+1 PV/niveau/point).
+            hp: { current: character.hp.current, max: getEffectiveMaxHP(character) },
             ac: getCombatAC(character),
             // Feat hook: Alert (+5) or any future initiativeBonus feat is real here.
-            initiative: Math.floor(Math.random() * 20) + 1 + abilityMod(character.stats.DEX) + featNumericBonus(character, 'initiativeBonus'),
+            // NF2 — un objet équipé « avantage à l'initiative » fait lancer 2d20.
+            initiative: (() => {
+                const d1 = Math.floor(Math.random() * 20) + 1;
+                const d2 = Math.floor(Math.random() * 20) + 1;
+                const die = gearAdvantageFor(character, 'initiative') ? Math.max(d1, d2) : d1;
+                // RE4 — stat EFFECTIVE (bonus racial + objets), pas la base brute :
+                // un Elfe perdait systématiquement son +1 d'initiative.
+                return die + abilityMod(getEffectiveStat(character, 'DEX')) + featNumericBonus(character, 'initiativeBonus');
+            })(),
             isPlayer: true,
             side: 'player',
             portrait: character.portrait,
             activeEffects: character.activeEffects || [],
             tempHP: character.tempHP || 0,
-            dexMod: abilityMod(character.stats.DEX),
+            dexMod: abilityMod(getEffectiveStat(character, 'DEX')),
             // Racial/draconic + feat resistances (single source: playerResistances).
             resistances: playerResistances(character),
         } as Combatant);
@@ -947,6 +1150,7 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
                 side: 'ally',
                 activeEffects: [],
                 dexMod: beast.dexMod,
+                attack: { ...beast.attack },
             } as Combatant);
         }
     }
@@ -956,7 +1160,9 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
     // se présente plus (morte, ou céleste en attente de repos long).
     if (character.mount && !combatants.some(c => c.id === 'mount')) {
         const mountType = getMountType(character.mount.kind || character.mount.name);
-        const mountMax = character.mount.hp?.max ?? mountType?.hp ?? 15;
+        // Cavalier (Paladin) — Monture liée : +niveau du héros en PV max.
+        const cavalierBonus = character.subclass === 'Cavalier' ? (character.level || 1) : 0;
+        const mountMax = (character.mount.hp?.max ?? mountType?.hp ?? 15) + cavalierBonus;
         const mountCurrent = character.mount.hp ? clampHP(character.mount.hp.current, mountMax) : mountMax;
         if (mountCurrent > 0) {
             combatants.push({
@@ -969,6 +1175,7 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
                 side: 'ally',
                 activeEffects: [],
                 dexMod: mountType?.dexMod ?? 1,
+                attack: mountType?.attack ? { ...mountType.attack } : allyAttackProfile(null, null, character.level || 1),
             } as Combatant);
         }
     }
@@ -989,6 +1196,9 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
             side: 'ally',
             activeEffects: [],
             dexMod: 1,
+            attack: comp.attack
+                ? { name: comp.attack.name, attackBonus: comp.attack.attackBonus, damage: comp.attack.damage, damageType: comp.attack.damageType }
+                : allyAttackProfile(null, getCreature(comp.name), character.level || 1),
         } as Combatant);
     }
 
@@ -1006,7 +1216,13 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
     actionEconomy[playerKey] = {
         ...baseTurnEconomy(),
         ...(actionEconomy[playerKey] || {}),
-        attacksMax: getPlayerAttackCount(character),
+        // cb-m14 — en combat DÉJÀ actif (renfort via add_enemy_init), ne pas
+        // écraser un attacksMax boosté (Sursaut d'action en cours) : on garde
+        // le plus grand des deux.
+        attacksMax: Math.max(
+            getPlayerAttackCount(character),
+            Number((actionEconomy[playerKey] as any)?.attacksMax) || 0,
+        ),
     };
 
     return syncCurrentTurn({
@@ -1021,10 +1237,73 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
     });
 }
 
+/**
+ * Aptitudes de classe que le JOUEUR déclenche depuis ses propres boutons.
+ *
+ * Le prompt système les liste déjà (« CLASS ABILITY BUTTONS … never re-apply
+ * its effect yourself »), mais rien ne les distinguait d'un sort côté moteur :
+ * `cast_spell("Imposition des mains")` tombait sur « Spell not found in SRD
+ * Codex », un cul-de-sac qui n'apprenait rien au MJ.
+ *
+ * Les noms FR sont nécessaires : data/classFeatures.ts porte des noms anglais
+ * avec des descriptions françaises, donc le MJ francophone n'a que la
+ * traduction sous la main.
+ */
+const PLAYER_CLASS_ABILITIES: Array<{ label: string; aliases: string[] }> = [
+    { label: 'Lay on Hands', aliases: ['lay on hands', 'imposition des mains'] },
+    { label: 'Divine Smite', aliases: ['divine smite', 'chatiment divin'] },
+    { label: 'Divine Sense', aliases: ['divine sense', 'perception divine', 'sens divin'] },
+    { label: 'Rage', aliases: ['rage'] },
+    { label: 'Second Wind', aliases: ['second wind', 'second souffle'] },
+    { label: 'Action Surge', aliases: ['action surge', 'fougue', 'sursaut d action'] },
+    { label: 'Bardic Inspiration', aliases: ['bardic inspiration', 'inspiration bardique'] },
+    { label: 'Flurry of Blows', aliases: ['flurry of blows', 'deluge de coups'] },
+    { label: 'Patient Defense', aliases: ['patient defense', 'defense patiente'] },
+    { label: 'Sneak Attack', aliases: ['sneak attack', 'attaque sournoise'] },
+];
+
+/** Le nom demandé désigne-t-il une aptitude de classe plutôt qu'un sort ? */
+export function matchPlayerClassAbility(name: string): string | null {
+    const fold = foldText(String(name || '')).replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!fold) return null;
+    for (const ability of PLAYER_CLASS_ABILITIES) {
+        if (ability.aliases.some(alias => fold === alias || fold.includes(alias))) return ability.label;
+    }
+    return null;
+}
+
 export function addEnemyToEncounter(current: EncounterState, args: any): { state: EncounterState; combatant: Combatant } {
-    const creature = getCreature(String(args?.name || 'Enemy'));
-    const name = creature?.name || String(args?.name || 'Enemy');
-    const hp = creature?.hp.base ?? (Number.isFinite(Number(args?.hp)) ? Number(args.hp) : 1);
+    const requested = String(args?.name || '').trim();
+    const creature = getCreature(requested || 'Enemy');
+    // TR10 (audit de séance du 2026-08-23) — le nom du MJ était ÉCRASÉ par celui
+    // du bestiaire SRD. Séquence observée : add_enemy_init("Garde des Quais A")
+    // et ("… B") créaient deux combattants nommés « Guard » ; ensuite
+    // set_enemy_target et resolve_attack sur « Garde des Quais A » renvoyaient
+    // « Enemy not found », et les deux homonymes rendaient même le bon nom
+    // ambigu. Le MJ a fini par passer l'id brut — deux minutes de combat sans
+    // résolution mécanique.
+    //
+    // La créature ne sert qu'aux STATISTIQUES ; le nom affiché et la poignée
+    // restent ceux du MJ. C'est aussi ce qu'exigent les bestiaires re-skinnés
+    // des campagnes d'auteur (« le moteur utilise les IDs SRD, le MJ narre
+    // TOUJOURS la version re-skinnée »). Les relectures ultérieures via
+    // getCreature(combatant.name) reçoivent désormais la MÊME chaîne qu'à la
+    // création — donc le même résultat, par construction.
+    //
+    // On ne DÉDOUBLONNE PAS les homonymes : l'ambiguïté sur deux noms
+    // identiques est une protection voulue et testée (« ambiguous-name
+    // protection » dans core.test.ts) — elle force le MJ à désigner par id
+    // plutôt que de frapper le mauvais gobelin. Le drame de la séance ne venait
+    // pas d'homonymes choisis par le MJ, mais d'homonymes FABRIQUÉS par le
+    // moteur en écrasant deux noms pourtant distincts.
+    const name = requested || creature?.name || 'Enemy';
+    // OU3 — un ennemi HOMEBREW sans hp ne naît plus avec 1 PV : défaut
+    // proportionné au niveau du groupe (min 8 / 6×niveau), symétrique du
+    // défaut des alliés. Le prompt encourage les variantes custom (« Goblin
+    // Boss ») — avant, l'oubli du hp le faisait mourir au premier coup.
+    const fallbackLevel = Math.max(1, Math.trunc(Number(args?.partyLevel) || 0) || 1);
+    const fallbackHP = Math.max(8, 6 * fallbackLevel);
+    const hp = creature?.hp.base ?? (Number.isFinite(Number(args?.hp)) && Number(args.hp) > 0 ? Number(args.hp) : fallbackHP);
     const ac = creature?.ac ?? (Number.isFinite(Number(args?.ac)) ? Number(args.ac) : 10);
     const dexMod = creature
         ? abilityMod(creature.stats.DEX)
@@ -1071,11 +1350,51 @@ export function addEnemyToEncounter(current: EncounterState, args: any): { state
  * the player: enemies target it, it targets enemies, and it counts toward the
  * party for defeat checks.
  */
-export function addAllyToEncounter(current: EncounterState, args: any): { state: EncounterState; combatant: Combatant } {
+/**
+ * Profil d'attaque d'un allié : chiffres explicites du MJ > attaque du
+ * bestiaire > profil générique proportionné au niveau du héros. Il y a
+ * TOUJOURS un profil, pour que le moteur puisse jouer le tour de l'allié —
+ * avant, un allié inconnu du bestiaire n'avait aucune attaque et son tour se
+ * contentait d'attendre le MJ pendant 8 s, puis passait.
+ */
+export function allyAttackProfile(args: any, creature: any, level = 1): { name: string; attackBonus: number; damage: string; damageType: string } {
+    const explicitDamage = String(args?.damageFormula || args?.damage || '').trim();
+    if (explicitDamage) {
+        return {
+            name: String(args?.attackName || args?.attack || 'Attack'),
+            attackBonus: Number.isFinite(Number(args?.attackBonus)) ? Number(args.attackBonus) : 3 + Math.floor(level / 4),
+            damage: explicitDamage,
+            damageType: String(args?.damageType || 'slashing'),
+        };
+    }
+    const fromBestiary: any = creature ? getCreatureAttacks(creature)[0] : null;
+    if (fromBestiary) {
+        return {
+            name: String(fromBestiary.name || 'Attack'),
+            attackBonus: Number(fromBestiary.attackBonus) || 4,
+            damage: String(fromBestiary.damage || '1d6+2'),
+            damageType: String(fromBestiary.damageType || 'slashing'),
+        };
+    }
+    // Garde-fou : un PNJ improvisé frappe comme un combattant de la classe du
+    // héros — assez pour compter, jamais assez pour voler la vedette.
+    const tier = Math.max(1, Math.min(20, level));
+    return {
+        name: 'Attack',
+        attackBonus: 3 + Math.floor(tier / 4),
+        damage: `1d8+${1 + Math.floor(tier / 5)}`,
+        damageType: 'slashing',
+    };
+}
+
+export function addAllyToEncounter(current: EncounterState, args: any, characterLevel = 1): { state: EncounterState; combatant: Combatant } {
     const creature = getCreature(String(args?.name || 'Ally'));
     const name = creature?.name || String(args?.name || 'Ally');
-    const hp = creature?.hp.base ?? (Number.isFinite(Number(args?.hp)) ? Number(args.hp) : 1);
-    const ac = creature?.ac ?? (Number.isFinite(Number(args?.ac)) ? Number(args.ac) : 10);
+    // Un allié sans PV explicites naissait avec **1 PV** et mourait au premier
+    // coup. Défaut proportionné au niveau du héros quand le MJ n'a rien donné.
+    const fallbackHp = Math.max(8, 6 * Math.max(1, characterLevel));
+    const hp = creature?.hp.base ?? (Number.isFinite(Number(args?.hp)) && Number(args.hp) > 0 ? Number(args.hp) : fallbackHp);
+    const ac = creature?.ac ?? (Number.isFinite(Number(args?.ac)) ? Number(args.ac) : 13);
     const dexMod = creature
         ? abilityMod(creature.stats.DEX)
         : Number.isFinite(Number(args?.dexMod)) ? Number(args.dexMod) : 0;
@@ -1091,6 +1410,9 @@ export function addAllyToEncounter(current: EncounterState, args: any): { state:
         portrait: creature?.imageUrl,
         activeEffects: [],
         dexMod,
+        // Le profil voyage AVEC le combattant : le moteur joue son tour même si
+        // le MJ ne rappelle jamais resolve_attack.
+        attack: allyAttackProfile(args, creature, characterLevel),
     } as Combatant;
 
     const combatants = [...(current.combatants || []), combatant].sort(byInitiative);
@@ -1234,12 +1556,23 @@ export function consumeCombatAction(
     };
 }
 
+/** Concentration d'un PNJ brisée par des dégâts — détail pour le transcript. */
+export interface NpcConcentrationBreak {
+    casterName: string;
+    effectName: string;
+    targetId?: string;
+    roll: number;
+    dc: number;
+    /** true si la concentration tombe parce que le lanceur est à 0 PV. */
+    downed: boolean;
+}
+
 export function applyDamageToEncounter(
     current: EncounterState,
     targetName: string,
     amount: number,
     damageType?: string
-): { state: EncounterState; found: boolean; target?: Combatant; amountApplied?: number; mitigation?: 'normal' | 'resistant' | 'immune' | 'vulnerable'; ambiguous?: boolean } {
+): { state: EncounterState; found: boolean; target?: Combatant; amountApplied?: number; mitigation?: 'normal' | 'resistant' | 'immune' | 'vulnerable'; ambiguous?: boolean; npcConcentrationBroken?: NpcConcentrationBreak } {
     const lookup = resolveCombatantReference(current, targetName);
     if (!lookup.combatant || lookup.ambiguous) {
         return { state: current, found: false, ambiguous: lookup.ambiguous };
@@ -1248,12 +1581,13 @@ export function applyDamageToEncounter(
     let target: Combatant | undefined;
     let amountApplied = Math.max(0, amount);
     let mitigation: 'normal' | 'resistant' | 'immune' | 'vulnerable' = 'normal';
+    let npcConcentrationBroken: NpcConcentrationBreak | undefined;
     const combatants = current.combatants.map(c => {
         if (c.id === lookup.combatant!.id) {
             const adjusted = damageAdjustment(c, amount, damageType);
             amountApplied = adjusted.amountApplied;
             mitigation = adjusted.mitigation;
-            
+
             let tempHP = c.tempHP || 0;
             let finalDamage = amountApplied;
             if (tempHP > 0) {
@@ -1265,12 +1599,34 @@ export function applyDamageToEncounter(
                     finalDamage = 0;
                 }
             }
-            
-            target = { 
-                ...c, 
+
+            target = {
+                ...c,
                 tempHP,
-                hp: { ...c.hp, current: clampHP(c.hp.current - finalDamage, c.hp.max) } 
+                hp: { ...c.hp, current: clampHP(c.hp.current - finalDamage, c.hp.max) }
             };
+
+            // Audit 2026-08-12 — concentration des PNJ : elle n'existait que
+            // pour le héros (le Hold Person d'un ennemi ne se brisait jamais).
+            // RAW : dégâts → CON save DD max(10, dégâts/2) ; 0 PV → perdue.
+            if (target.concentratingOn && amountApplied > 0 && !target.isPlayer) {
+                const conc = target.concentratingOn;
+                if (target.hp.current <= 0) {
+                    npcConcentrationBroken = { casterName: target.name, effectName: conc.effectName, targetId: conc.targetId, roll: 0, dc: 0, downed: true };
+                    target = { ...target, concentratingOn: undefined };
+                } else {
+                    const dc = Math.max(10, Math.floor(amountApplied / 2));
+                    const creatureData: any = lookupMonster(target.name) || getCreature(target.name);
+                    let conBonus = 0;
+                    if (creatureData && 'saves' in creatureData && creatureData.saves?.CON !== undefined) conBonus = creatureData.saves.CON;
+                    else if (creatureData && 'stats' in creatureData && creatureData.stats?.CON !== undefined) conBonus = Math.floor((creatureData.stats.CON - 10) / 2);
+                    const roll = Math.floor(Math.random() * 20) + 1 + conBonus;
+                    if (roll < dc) {
+                        npcConcentrationBroken = { casterName: target.name, effectName: conc.effectName, targetId: conc.targetId, roll, dc, downed: false };
+                        target = { ...target, concentratingOn: undefined };
+                    }
+                }
+            }
             return target;
         }
         return c;
@@ -1284,7 +1640,33 @@ export function applyDamageToEncounter(
             : current.logs,
     });
 
-    return { state: next, found: true, target, amountApplied, mitigation };
+    return { state: next, found: true, target, amountApplied, mitigation, npcConcentrationBroken };
+}
+
+/** Retire l'effet lié quand la concentration d'un PNJ tombe : sur le héros
+ *  (activeEffects de la fiche) et/ou sur les combattants. Retourne les deux
+ *  mises à jour ; l'appelant persiste. */
+export function releaseNpcConcentrationEffect(
+    state: EncounterState,
+    character: CharacterSheet | null,
+    broken: NpcConcentrationBreak
+): { state: EncounterState; character: CharacterSheet | null; removedFromPlayer: boolean } {
+    const nameMatches = (e: any) => String(e?.name || '').toLowerCase() === broken.effectName.toLowerCase();
+    let removedFromPlayer = false;
+    let nextCharacter = character;
+    if (character && (!broken.targetId || state.combatants.find(c => c.id === broken.targetId)?.isPlayer)) {
+        const effects = character.activeEffects || [];
+        if (effects.some(nameMatches)) {
+            nextCharacter = { ...character, activeEffects: effects.filter(e => !nameMatches(e)) };
+            removedFromPlayer = true;
+        }
+    }
+    const combatants = state.combatants.map(c => {
+        const scoped = broken.targetId ? c.id === broken.targetId : true;
+        if (!scoped || !(c.activeEffects || []).some(nameMatches)) return c;
+        return { ...c, activeEffects: (c.activeEffects || []).filter(e => !nameMatches(e)) };
+    });
+    return { state: { ...state, combatants }, character: nextCharacter, removedFromPlayer };
 }
 
 export function parseItemAdditionalDamage(item: Item): { damage: string; damageType: CodexDamageType }[] {
@@ -1311,14 +1693,21 @@ export function parseItemAdditionalDamage(item: Item): { damage: string; damageT
     }
 
     // Find flat bonuses like "+2 fire damage", "+5 lightning", "plus 3 cold"
-    const flatRegex = /(?:\+|\bplus\b)\s*(\d+)\s*([a-zA-Z]+)(?:\s+damage)?/g;
+    const flatRegex = /(?:\+|\bplus\b)\s*(\d+)\s*([a-zA-ZÀ-ſ]+)(\s*(?:damage|d[ée]g[âa]ts))?/g;
     let flatMatch;
+    // cb-m8 — mots de CARACTÉRISTIQUES (EN abrégés + FR) : « +2 Force » sur un
+    // objet français est un bonus de FOR, pas un rider de dégâts de type force.
+    // 'force' n'est accepté comme type de dégâts que suivi de damage/dégâts.
+    const abilityWords = new Set(['ac', 'ca', 'str', 'dex', 'con', 'int', 'wis', 'cha',
+        'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma',
+        'force', 'dexterite', 'dextérité', 'sagesse', 'charisme']);
     while ((flatMatch = flatRegex.exec(combined)) !== null) {
         const flatVal = flatMatch[1];
         const rawType = flatMatch[2];
+        const hasDamageWord = Boolean(flatMatch[3]);
         const dmgType = normalizeDamageType(rawType);
         if (dmgType) {
-            if (rawType === 'ac' || rawType === 'str' || rawType === 'dex' || rawType === 'con' || rawType === 'int' || rawType === 'wis' || rawType === 'cha') {
+            if (abilityWords.has(rawType) && !hasDamageWord) {
                 continue;
             }
             parts.push({ damage: flatVal, damageType: dmgType });
@@ -1344,6 +1733,9 @@ export function resolveAttackAction(
         isMeleeAttack?: boolean;
         /** Opt-in -5/+10 (Great Weapon Master / Sharpshooter). Validated here. */
         powerAttack?: boolean;
+        /** OU4 — bonus plat additionnel (story modifiers du MJ déjà consommés) :
+         *  appliqué MÊME quand attackBonus est calculé par le moteur (omis). */
+        flatBonusModifier?: number;
     },
     character?: CharacterSheet
 ): { success: boolean; error?: string; resolution?: AttackResolution; state: EncounterState; advanced?: { name: string; from: string; to: string } } {
@@ -1385,13 +1777,10 @@ export function resolveAttackAction(
     const resolvedDamageType = attacker.isPlayer
         ? args.damageType || character?.weapon?.damageType || 'damage'
         : monsterAttack?.damageType || args.damageType || 'damage';
-    // Melee unless the weapon is actually ranged. (Was `!(reach>10)`, which has no
-    // bearing on ranged — bows lack `reach` and were therefore wrongly tagged melee.)
+    // Melee unless the weapon is actually ranged. Une seule règle partagée
+    // (isRangedWeapon) : nom EN/FR, propriété Munitions/Distance ou portée.
     const playerWeapon = character?.weapon;
-    const playerIsRanged = !!playerWeapon && (
-        (playerWeapon.properties || []).some(p => /ammunition|ranged/i.test(String(p))) ||
-        (!!playerWeapon.range && !(playerWeapon.properties || []).some(p => /thrown/i.test(String(p))))
-    );
+    const playerIsRanged = isRangedWeapon(playerWeapon);
     // -5/+10 opt-in : Maître des armes de guerre (arme de mêlée lourde) ou
     // Tireur d'élite (arme à distance). Validé côté moteur — un flag envoyé
     // sans le feat ou avec la mauvaise arme est ignoré.
@@ -1405,6 +1794,10 @@ export function resolveAttackAction(
         : monsterAttack ? monsterAttack.attackBonus : Number.isFinite(Number(args.attackBonus)) ? Number(args.attackBonus) : 0;
     const attackBonus = rawAttackBonus
         + (powerAttackActive ? -5 : 0)
+        // OU4 — story modifiers plats du MJ (grant_story_modifier) : avant, ils
+        // n'étaient injectés que si l'appelant fournissait attackBonus — omis
+        // (le cas recommandé), le bonus consommé se perdait sans effet.
+        + (Number.isFinite(Number(args.flatBonusModifier)) ? Number(args.flatBonusModifier) : 0)
         // Buffs/debuffs chiffrés des alliés/ennemis (Frappe guidée sur un
         // compagnon, malédiction -2 attaque sur un chef…).
         + (attacker.isPlayer ? 0 : combatantEffectBonus(attacker, 'attackBonus'));
@@ -1443,11 +1836,22 @@ export function resolveAttackAction(
         // distance), pas un engagement.
         isMeleeAttack = false;
     }
+    let mountedCharge = false;
+    // Charge montée : POSSÉDER une monture ne suffit pas — il faut être EN
+    // SELLE (mount.mounted !== false ; absent = en selle, compat anciens
+    // saves) et la monture présente au combat doit tenir debout. Sans ça,
+    // chaque attaque de mêlée sur une cible lointaine devenait une charge
+    // complète, à pied, tant qu'un cheval attendait à l'écurie.
+    const mountCombatant = character?.mount ? state.combatants.find(c => c.id === 'mount') : undefined;
+    const riddenMount = !!character?.mount
+        && (character.mount as any).mounted !== false
+        && !(mountCombatant && mountCombatant.hp.current <= 0);
     if (isMeleeAttack && bandGateApplies) {
         if (band === 'far') {
             // CHARGE MONTÉE : à dos de monture, le joueur fond sur une cible
             // lointaine et frappe dans la même action (loin → contact).
-            if (attacker.isPlayer && character?.mount) {
+            if (attacker.isPlayer && riddenMount && character?.mount) {
+                mountedCharge = true;
                 state = setBand(state, bandCarrier.id, 'melee');
                 state = { ...state, logs: [...(state.logs || []), makeLog(`${attacker.name} charges on ${character.mount.name} (far → melee)`, 'turn')] };
             } else {
@@ -1465,10 +1869,68 @@ export function resolveAttackAction(
             }
         }
         if (band === 'near') {
-            // Engagement gratuit : on fond sur la cible et on frappe.
-            state = setBand(state, bandCarrier.id, 'melee');
+            // NF4 — l'engagement n'est PLUS gratuit : fondre sur une cible « à
+            // distance » consomme l'ACTION (near → melee), la frappe attend le
+            // tour suivant. Loin = 2 actions, à distance = 1 action, contact =
+            // frappe. Deux exceptions closent ET frappent en une action :
+            // la CHARGE MONTÉE, et la CHARGE ENRAGÉE du Barbare (Rage active).
+            const ragingCharge = attacker.isPlayer && !!character
+                && character.class === 'Barbarian'
+                && (character.activeEffects || []).some(e => e.name === 'Rage');
+            if (attacker.isPlayer && riddenMount && character?.mount) {
+                mountedCharge = true;
+                state = setBand(state, bandCarrier.id, 'melee');
+                state = { ...state, logs: [...(state.logs || []), makeLog(`${attacker.name} charges on ${character.mount.name} (near → melee)`, 'turn')] };
+            } else if (ragingCharge) {
+                state = setBand(state, bandCarrier.id, 'melee');
+                state = { ...state, logs: [...(state.logs || []), makeLog(`${attacker.name} charges in a RAGE (near → melee) and strikes`, 'turn')] };
+            } else {
+                const moved = setBand(state, bandCarrier.id, 'melee');
+                const log = makeLog(
+                    `${attacker.name} closes the distance (near → melee)${attacker.isPlayer ? ` toward ${target.name}` : ''}`,
+                    'turn'
+                );
+                return {
+                    success: true,
+                    state: { ...moved, logs: [...(moved.logs || []), log] },
+                    advanced: { name: bandCarrier.name, from: 'near', to: 'melee' },
+                };
+            }
         }
     } else if (!isMeleeAttack && bandGateApplies) {
+        // NF4 — portée réelle des armes à distance : seules les armes à LONGUE
+        // portée (arc long, arbalète lourde…) touchent une cible LOINTAINE ;
+        // arc court, arbalète légère, fronde et armes de jet portent jusqu'à
+        // « à distance ». Hors de portée, l'attaque devient un RAPPROCHEMENT.
+        if (band === 'far') {
+            const weaponName = attacker.isPlayer
+                ? String(playerWeapon?.name || '')
+                : String(args.attackName || monsterAttack?.name || '');
+            const rangeText = attacker.isPlayer
+                ? String(playerWeapon?.range || '')
+                : String((monsterAttack as any)?.range || '');
+            const normalRange = Number((rangeText.match(/(\d+)/) || [])[1]) || 0;
+            const SHORT_RANGE_NAMES = /shortbow|arc court|light crossbow|arbal[eè]te l[ée]g[eè]re|sling|fronde|dagger|dague|javelin|javeline|handaxe|hachette|dart|fl[ée]chette/i;
+            const LONG_RANGE_NAMES = /longbow|arc long|heavy crossbow|arbal[eè]te lourde/i;
+            const longReach = LONG_RANGE_NAMES.test(weaponName)
+                || (!SHORT_RANGE_NAMES.test(weaponName) && (
+                    normalRange >= 100                      // notation en pieds (150/600…)
+                    || (normalRange >= 30 && normalRange <= 60)  // notation en mètres (45/180…)
+                    || normalRange === 0                    // portée inconnue : ne pas bloquer
+                ));
+            if (!longReach) {
+                const moved = setBand(state, bandCarrier.id, 'near');
+                const log = makeLog(
+                    `${attacker.name} advances (far → near): ${weaponName || 'the weapon'} is short-ranged`,
+                    'turn'
+                );
+                return {
+                    success: true,
+                    state: { ...moved, logs: [...(moved.logs || []), log] },
+                    advanced: { name: bandCarrier.name, from: 'far', to: 'near' },
+                };
+            }
+        }
         // Tir/jet à bout portant : désavantage si un hostile est AU CONTACT
         // (SRD : créature hostile à 1,50 m du tireur).
         const hostileAdjacent = attacker.isPlayer
@@ -1501,6 +1963,24 @@ export function resolveAttackAction(
         coverBonus: args.targetCoverBonus,
         isMeleeAttack,
     });
+    // NF2 — avantage d'ÉQUIPEMENT sur les jets d'attaque (objet « advantage on
+    // attack rolls »), fusionné comme les conditions.
+    if (attacker.isPlayer && character) {
+        const gearAttackAdv = gearAdvantageFor(character, 'attack');
+        if (gearAttackAdv) {
+            context.prompt.advantage = mergeAdvantage(context.prompt.advantage, 'advantage');
+            context.prompt.contextReasons = [...(context.prompt.contextReasons || []), `${gearAttackAdv.source}: advantage on attacks`];
+        }
+    }
+    // PL11 — objets DÉFENSIFS du joueur (cape de déplacement…) : quand le
+    // joueur est la CIBLE, les attaquants subissent le désavantage.
+    if (target.isPlayer && character) {
+        const gearDefense = gearAdvantageFor(character, 'defense');
+        if (gearDefense) {
+            context.prompt.advantage = mergeAdvantage(context.prompt.advantage, 'disadvantage');
+            context.prompt.contextReasons = [...(context.prompt.contextReasons || []), `${gearDefense.source}: attackers have disadvantage`];
+        }
+    }
     const attackRoll = resolveRollPrompt(context.prompt);
     const effectiveAC = attackRoll.prompt.dc;
     // Champion (Fighter archetype): Improved Critical — crits on 19-20, and
@@ -1508,23 +1988,50 @@ export function resolveAttackAction(
     const critThreshold = attacker.isPlayer && character?.subclass === 'Champion'
         ? ((character.level || 1) >= 15 ? 18 : 19)
         : 20;
-    const criticalHit = attackRoll.die >= critThreshold;
-    const hit = criticalHit || (attackRoll.die !== 1 && attackRoll.total >= effectiveAC);
+    // cb-m3 — RAW : un coup EN MÊLÉE qui touche une cible paralysée ou
+    // inconsciente est automatiquement critique.
+    // TP4 (contre-audit) — cible JOUEUR : fusionner fiche + ligne de combat comme
+    // le fait déjà le bloc targetEffects ci-dessus (:1896) — apply_condition
+    // n'écrit que sur la fiche, la ligne seule ratait la paralysie du héros.
+    const helplessTarget = [
+        ...(target.isPlayer ? (character?.activeEffects || []) : []),
+        ...(target.activeEffects || []),
+    ]
+        .map(conditionFromEffect)
+        .some(cond => cond && (cond.id === 'paralyzed' || cond.id === 'unconscious'));
+    // RE3 (contre-audit) — RAW : seul le 20 naturel touche automatiquement.
+    // Le seuil de critique étendu du Champion (19, puis 18 au niv. 15) n'élargit
+    // que la plage de CRITIQUE des attaques qui touchent — un 19 naturel sous la
+    // CA doit rater (avant : il touchait ET critiquait).
+    const hit = attackRoll.die === 20 || (attackRoll.die !== 1 && attackRoll.total >= effectiveAC);
+    const criticalHit = hit && (attackRoll.die >= critThreshold || (helplessTarget && isMeleeAttack));
 
     let damage = 0;
     let rawDamage = 0;
     let mitigation: AttackResolution['mitigation'] = 'normal';
     const resolvedDamageParts: NonNullable<AttackResolution['damageParts']> = [];
+    // Riders à usage unique dépensés par ce coup (Châtiment divin).
+    const consumedEffectIds: string[] = [];
+    // Réaction défensive auto-déclenchée par ce coup (exposée à l'appelant).
+    let reactionUsed: 'uncanny_dodge' | 'deflect_missiles' | undefined;
+    let reactionAmountStart = 0;
     // Great Weapon Fighting: with a two-handed melee weapon, reroll damage dice
     // that show a 1 or 2 (once). Only for the player's main weapon part.
     const gwfActive = !!(attacker.isPlayer && character
         && (character as any).fightingStyle === 'Great Weapon Fighting'
         && (character.weapon?.properties || []).includes('two-handed'));
+    // cb-m6 — « première attaque du tour » PARTAGÉE par tous les riders
+    // 1×/tour : attacksUsed === 0 ET drapeau onceRiderUsed non consommé
+    // (l'attaque bonus de Frénésie ne dépense pas attacksUsed).
+    const onceRiderFree = (() => {
+        const e: any = current.actionEconomy?.[combatantKey(attacker)];
+        return !e || (!((e.attacksUsed ?? 0) > 0) && !e.onceRiderUsed);
+    })();
     // Attaquant sauvage : 1×/tour (première attaque), on lance les dés d'arme
     // deux fois et on garde le meilleur total. Mêlée uniquement.
     const savageActive = !!(attacker.isPlayer && character && isMeleeAttack
         && hasFeatSpecial(character, 'savage_attacker')
-        && (() => { const e = current.actionEconomy?.[combatantKey(attacker)]; return !e || !((e.attacksUsed ?? 0) > 0); })());
+        && onceRiderFree);
     if (hit) {
         const damageParts: { damage: string; damageType: CodexDamageType }[] = [];
         if (attacker.isPlayer && character) {
@@ -1541,9 +2048,7 @@ export function resolveAttackAction(
             // when hitting a creature below its HP max. Approximated as "on the
             // first attack of the player's turn" via the action economy.
             if (character.subclass === 'Hunter' && target.hp.current < target.hp.max) {
-                const econ = current.actionEconomy?.[combatantKey(attacker)];
-                const isFirstAttackThisTurn = !econ || !((econ.attacksUsed ?? 0) > 0);
-                if (isFirstAttackThisTurn) {
+                if (onceRiderFree) {
                     damageParts.push({ damage: '1d8', damageType: resolvedDamageType as CodexDamageType });
                 }
             }
@@ -1556,6 +2061,9 @@ export function resolveAttackAction(
                         damage: fx.onWeaponHit.dice,
                         damageType: (fx.onWeaponHit.damageType || resolvedDamageType) as CodexDamageType,
                     });
+                    // Rider à usage unique (Châtiment divin) : signalé à
+                    // l'appelant pour qu'il le retire après CE coup.
+                    if (fx.onWeaponHit.consumeOnHit) consumedEffectIds.push(fx.id);
                 }
             }
             // Rogue: Sneak Attack — once per turn when the strike lands with
@@ -1565,11 +2073,36 @@ export function resolveAttackAction(
             if (character.class === 'Rogue'
                 && context.prompt.advantage === 'advantage'
                 && (weaponIsFinesse || playerIsRanged)) {
-                const econ = current.actionEconomy?.[combatantKey(attacker)];
-                const isFirstAttackThisTurn = !econ || !((econ.attacksUsed ?? 0) > 0);
-                if (isFirstAttackThisTurn) {
+                if (onceRiderFree) {
                     damageParts.push({ damage: getSneakAttackDice(character.level || 1), damageType: resolvedDamageType as CodexDamageType });
                 }
+            }
+            // ── Riders de classe/sous-classe (SRD) auto-appliqués ──
+            const playerLevel = character.level || 1;
+            const isFirstAttackOfTurn = onceRiderFree;
+            // Paladin 11+ — Châtiment divin amélioré : +1d8 radiant sur CHAQUE
+            // coup de mêlée (en plus du Châtiment activable).
+            if (character.class === 'Paladin' && playerLevel >= 11 && isMeleeAttack) {
+                damageParts.push({ damage: '1d8', damageType: 'radiant' });
+            }
+            // Clerc 8+ (Guerre/Vie) — Frappe divine : +1d8 (1×/tour), 2d8 au 14.
+            if (character.class === 'Cleric' && playerLevel >= 8 && isFirstAttackOfTurn
+                && (character.subclass === 'War Domain' || character.subclass === 'Life Domain')) {
+                damageParts.push({
+                    damage: playerLevel >= 14 ? '2d8' : '1d8',
+                    damageType: character.subclass === 'Life Domain' ? 'radiant' : resolvedDamageType as CodexDamageType,
+                });
+            }
+            // Barbare Zélote 3+ — Furie divine : +1d6+⌊niv/2⌋ radiant sur la
+            // première attaque de chaque tour pendant la rage.
+            if (character.subclass === 'Zealot' && isFirstAttackOfTurn
+                && (character.activeEffects || []).some(e => e.name === 'Rage')) {
+                damageParts.push({ damage: `1d6+${Math.floor(playerLevel / 2)}`, damageType: 'radiant' });
+            }
+            // Paladin Cavalier — Charge fervente : +1d8 quand la frappe conclut
+            // une charge montée (loin → contact dans la même action).
+            if (character.subclass === 'Cavalier' && mountedCharge) {
+                damageParts.push({ damage: '1d8', damageType: resolvedDamageType as CodexDamageType });
             }
         } else if (!attacker.isPlayer && monsterAttack?.damageParts?.length) {
             // Monster data types damageType as a plain string; the values are valid
@@ -1587,6 +2120,35 @@ export function resolveAttackAction(
             }
         }
 
+        // ── RÉACTIONS DÉFENSIVES du joueur frappé (SRD, auto-appliquées) ──
+        // Moine 3+ — Déviation de projectiles : un tir d'arme qui touche est
+        // réduit de 1d10 + DEX + niveau (à 0 → projectile attrapé).
+        // Roublard 5+ — Esquive instinctive : les dégâts d'un coup visible sont
+        // divisés par deux. Les deux consomment LA réaction (une par round).
+        let deflectPool = 0;
+        if (combatantSide(attacker) === 'enemy' && target.isPlayer && character) {
+            const econ = state.actionEconomy?.[combatantKey(target)];
+            const reactionFree = !(econ?.reactionUsed);
+            const lvl = character.level || 1;
+            if (reactionFree && character.class === 'Monk' && lvl >= 3 && !isMeleeAttack) {
+                deflectPool = rollDice(`1d10+${abilityMod(getEffectiveStat(character, 'DEX')) + lvl}`).total;
+                reactionUsed = 'deflect_missiles';
+            } else if (reactionFree && character.class === 'Rogue' && lvl >= 5) {
+                reactionUsed = 'uncanny_dodge';
+            }
+            if (reactionUsed) {
+                const consumed = consumeCombatAction(state, combatantKey(target), 'reaction');
+                if (consumed.success) state = consumed.state;
+                else reactionUsed = undefined; // réaction indisponible finalement
+            }
+        }
+        reactionAmountStart = deflectPool;
+
+        // Barbare 9+ — Critique brutal : dés d'arme SUPPLÉMENTAIRES sur un
+        // critique (non doublés), greffés sur la part d'arme uniquement.
+        // RE7 — RAW : attaques de MÊLÉE uniquement (une javeline lancée n'en profite pas).
+        const brutalDice = attacker.isPlayer && character && criticalHit && isMeleeAttack ? brutalCriticalDice(character) : 0;
+
         for (let partIndex = 0; partIndex < damageParts.length; partIndex++) {
             const part = damageParts[partIndex];
             const damageRoll = rollDice(part.damage);
@@ -1603,9 +2165,27 @@ export function resolveAttackAction(
                 if (sum(second) > sum(rolls)) rolls = second;
             }
             const rollSum = rolls.reduce((s, r) => s + r, 0);
-            const partRawDamage = criticalHit
-                ? rolls.reduce((sum, roll) => sum + roll * 2, 0) + damageRoll.modifier
+            // cb-m12 — critique RAW : on RELANCE les dés (variance réelle) au
+            // lieu de doubler la valeur des premiers dés.
+            let partRawDamage = criticalHit
+                ? rollSum + rollDice(part.damage).rolls.reduce((s, r) => s + r, 0) + damageRoll.modifier
                 : rollSum + damageRoll.modifier;
+            // Critique brutal : dés d'arme supplémentaires (lancés UNE fois,
+            // pas doublés) sur la part d'arme.
+            if (brutalDice > 0 && partIndex === 0) {
+                const sides = Number(part.damage.match(/\d+d(\d+)/i)?.[1]) || 6;
+                partRawDamage += rollDice(`${brutalDice}d${sides}`).total;
+            }
+            // Déviation de projectiles : la réduction ronge les parts dans l'ordre.
+            if (reactionUsed === 'deflect_missiles' && deflectPool > 0) {
+                const absorbed = Math.min(deflectPool, partRawDamage);
+                partRawDamage -= absorbed;
+                deflectPool -= absorbed;
+            }
+            // Esquive instinctive : chaque part est divisée par deux.
+            if (reactionUsed === 'uncanny_dodge') {
+                partRawDamage = Math.floor(partRawDamage / 2);
+            }
             const applied = applyDamageToEncounter(state, combatantKey(target), partRawDamage, part.damageType);
             const partDamage = applied.amountApplied ?? partRawDamage;
             const partMitigation = applied.mitigation || 'normal';
@@ -1623,7 +2203,42 @@ export function resolveAttackAction(
         }
     }
 
-    const updatedTarget = state.combatants.find(c => c.id === target.id) || target;
+    // cb-m6 — consomme le drapeau partagé des riders « 1×/tour » dès qu'un coup
+    // du joueur a porté en début de tour (attaque bonus de Frénésie incluse) :
+    // la première attaque principale ne re-déclenche plus Sneak/Frappe divine…
+    if (hit && attacker.isPlayer && onceRiderFree) {
+        const riderKey = combatantKey(attacker);
+        state = {
+            ...state,
+            actionEconomy: {
+                ...state.actionEconomy,
+                [riderKey]: { ...(state.actionEconomy?.[riderKey] || {}), onceRiderUsed: true } as any,
+            },
+        };
+    }
+
+    let updatedTarget = state.combatants.find(c => c.id === target.id) || target;
+    // ── Barbare 11+ — Rage implacable : s'il tombe à 0 PV en rage, une
+    //    sauvegarde de CON DD 10 réussie le laisse à 1 PV (1×/combat).
+    let relentless = false;
+    if (updatedTarget.isPlayer && updatedTarget.hp.current <= 0 && character
+        && character.class === 'Barbarian' && (character.level || 1) >= 11
+        && (character.activeEffects || []).some(e => e.name === 'Rage')
+        && !(updatedTarget as any).relentlessUsed) {
+        const conMod = abilityMod(getEffectiveStat(character, 'CON'));
+        const save = rollDice(`1d20+${conMod}`);
+        if (save.total >= 10) {
+            relentless = true;
+            state = {
+                ...state,
+                combatants: state.combatants.map(c => c.id === updatedTarget.id
+                    ? { ...c, hp: { ...c.hp, current: 1 }, relentlessUsed: true } as Combatant
+                    : c),
+                logs: [...(state.logs || []), makeLog(`${updatedTarget.name} refuses to fall (Relentless Rage, CON save ${save.total} vs DC 10)`, 'system')],
+            };
+            updatedTarget = state.combatants.find(c => c.id === target.id) || updatedTarget;
+        }
+    }
     const damageTypeLabel = resolvedDamageParts.length > 1
         ? resolvedDamageParts.map(part => part.damageType).join(' + ')
         : resolvedDamageType;
@@ -1652,8 +2267,32 @@ export function resolveAttackAction(
             targetHP: updatedTarget.hp,
             state,
             log,
+            consumedEffectIds: consumedEffectIds.length ? consumedEffectIds : undefined,
+            reaction: reactionUsed,
+            reactionAmount: reactionAmountStart || undefined,
+            relentless: relentless || undefined,
+            isMeleeAttack,
         },
     };
+}
+
+/** Formate les dégâts d'une attaque PART PAR PART pour le journal des jets :
+ *  « 8 slashing + 4 fire (resistant ½) = 11 » au lieu du total agrégé qui
+ *  masquait l'enchantement élémentaire (demande joueur, 2026-08-13). */
+export function formatDamageParts(resolution: {
+    damage: number;
+    damageType?: string;
+    damageFormula?: string;
+    damageParts?: { damage: number; damageType: string; damageFormula?: string; mitigation?: string }[];
+}): string {
+    const parts = resolution.damageParts;
+    if (!parts || parts.length <= 1) {
+        return `${resolution.damageFormula || ''} = ${resolution.damage} (${resolution.damageType || 'damage'})`;
+    }
+    const seg = parts
+        .map(p => `${p.damage} ${p.damageType}${p.mitigation && p.mitigation !== 'normal' ? ` (${p.mitigation})` : ''}`)
+        .join(' + ');
+    return `${seg} = ${resolution.damage}`;
 }
 
 export interface MoraleCheckResult {
@@ -1666,6 +2305,20 @@ export interface MoraleCheckResult {
     fled: boolean;
     combatant?: Combatant;
 }
+
+/** DD du test de moral (règle maison, documentée au codex) — WIS save quand un
+ *  ennemi passe sous 50 % de ses PV. Une seule source de vérité : réutilisé par
+ *  l'UI et les lignes de transcript. */
+export const MORALE_DC = 11;
+
+/** Caractéristique d'incantation par classe — UNE source de vérité, partagée
+ *  entre le moteur (castSpell) et l'UI (SpellbookPanel affichait un DD basé INT
+ *  par défaut alors que le moteur lançait en SAG pour un Clerc sans champ
+ *  spellcastingAbility — audit 2026-08-12). */
+export const CLASS_CASTER_ABILITY: Record<string, Ability> = {
+    Mage: 'INT', Wizard: 'INT', Cleric: 'WIS', Druid: 'WIS', Ranger: 'WIS', Monk: 'WIS',
+    Bard: 'CHA', Sorcerer: 'CHA', Warlock: 'CHA', Paladin: 'CHA',
+};
 
 export function resolveMoraleCheck(current: EncounterState, targetIdOrName: string): MoraleCheckResult {
     const lookup = resolveCombatantReference(current, targetIdOrName);
@@ -1692,14 +2345,14 @@ export function resolveMoraleCheck(current: EncounterState, targetIdOrName: stri
     const nextCombatants = current.combatants.map(c => c.id === combatant.id ? updatedCombatant : c);
     let nextState = { ...current, combatants: nextCombatants };
 
-    // Wisdom save DC 11
+    // Wisdom save vs MORALE_DC
     const monsterData = lookupMonster(combatant.name) || getCreature(combatant.name);
     const wis = (monsterData as any)?.stats?.WIS || 10;
     const wisMod = Math.floor((wis - 10) / 2);
 
     const dieRoll = Math.floor(Math.random() * 20) + 1;
     const total = dieRoll + wisMod;
-    const success = total >= 11;
+    const success = total >= MORALE_DC;
 
     let fled = false;
     if (!success) {
@@ -1773,12 +2426,21 @@ export function encounterOutcome(current: EncounterState): 'ongoing' | 'victory'
 export function applyDamageToCharacter(
     character: CharacterSheet,
     amount: number,
-    damageType?: string
-): { character: CharacterSheet; amountApplied: number; mitigation: 'normal' | 'resistant' } {
+    damageType?: string,
+    opts?: { isCritical?: boolean }
+): { character: CharacterSheet; amountApplied: number; mitigation: 'normal' | 'resistant' | 'immune' | 'vulnerable' } {
     const type = normalizeDamageType(damageType);
     let amountApplied = Math.max(0, Math.trunc(amount));
-    let mitigation: 'normal' | 'resistant' = 'normal';
-    if (type && playerResistances(character).some(r => normalizeDamageType(r) === type)) {
+    let mitigation: 'normal' | 'resistant' | 'immune' | 'vulnerable' = 'normal';
+    // Audit 2026-08-12 — le héros ne pouvait jamais être immunisé ni vulnérable
+    // (le type de retour n'admettait que normal|resistant).
+    if (type && (character.immunities || []).some(r => normalizeDamageType(r) === type)) {
+        amountApplied = 0;
+        mitigation = 'immune';
+    } else if (type && (character.vulnerabilities || []).some(r => normalizeDamageType(r) === type)) {
+        amountApplied = amountApplied * 2;
+        mitigation = 'vulnerable';
+    } else if (type && playerResistances(character).some(r => normalizeDamageType(r) === type)) {
         amountApplied = Math.floor(amountApplied / 2);
         mitigation = 'resistant';
     }
@@ -1788,15 +2450,56 @@ export function applyDamageToCharacter(
         if (hpLoss >= tempHP) { hpLoss -= tempHP; tempHP = 0; }
         else { tempHP -= hpLoss; hpLoss = 0; }
     }
+
+    // RAW SRD (audit 2026-08-12 — aucun de ces deux mécanismes n'existait) :
+    // 1. Dégâts subis À TERRE (0 PV) = 1 échec de jet de mort automatique,
+    //    2 sur un coup critique.
+    // 2. Mort massive : si les dégâts restants après tomber à 0 atteignent le
+    //    max de PV, mort instantanée.
+    const before = Math.max(0, character.hp.current);
+    const wasDown = before <= 0;
+    let deathSaves = character.deathSaves;
+    if (wasDown && hpLoss > 0) {
+        const prev = deathSaves || { successes: 0, failures: 0, isStable: false, isDead: false };
+        const failures = Math.min(3, prev.failures + (opts?.isCritical ? 2 : 1));
+        deathSaves = { ...prev, isStable: false, failures, isDead: failures >= 3 };
+    }
+    const effectiveMax = getEffectiveMaxHP(character);
+    const nextHP = clampHP(before - hpLoss, effectiveMax);
+    if (!wasDown && nextHP <= 0 && (hpLoss - before) >= effectiveMax) {
+        deathSaves = { successes: 0, failures: 3, isStable: false, isDead: true };
+    }
+
     return {
         amountApplied,
         mitigation,
         character: {
             ...character,
             tempHP,
-            hp: { ...character.hp, current: clampHP(character.hp.current - hpLoss, character.hp.max) },
+            deathSaves,
+            hp: { ...character.hp, current: nextHP },
         },
     };
+}
+
+/** RAW — stabiliser un mourant sans le soigner : test de Médecine DD 10 réussi
+ *  (ou effet équivalent). 0 PV, stable, compteurs remis à zéro. */
+export function stabilizeCharacter(character: CharacterSheet): CharacterSheet {
+    if (character.hp.current > 0) return character;
+    return {
+        ...character,
+        deathSaves: { successes: 0, failures: 0, isStable: true, isDead: false },
+    };
+}
+
+/** RAW — dégâts subis alors qu'on est DÉJÀ à 0 PV : 1 échec de jet de mort
+ *  automatique (2 sur coup critique). Utilisé par les handlers de combat dont
+ *  le chemin des dégâts passe par les combattants, pas par
+ *  applyDamageToCharacter. */
+export function applyDownedDamagePenalty(character: CharacterSheet, isCritical = false): CharacterSheet {
+    const prev = character.deathSaves || { successes: 0, failures: 0, isStable: false, isDead: false };
+    const failures = Math.min(3, prev.failures + (isCritical ? 2 : 1));
+    return { ...character, deathSaves: { ...prev, isStable: false, failures, isDead: failures >= 3 } };
 }
 
 export function applyCharacterHP(character: CharacterSheet, nextHP: number): CharacterSheet {
@@ -1804,7 +2507,7 @@ export function applyCharacterHP(character: CharacterSheet, nextHP: number): Cha
         ...character,
         hp: {
             ...character.hp,
-            current: clampHP(nextHP, character.hp.max),
+            current: clampHP(nextHP, getEffectiveMaxHP(character)),
         },
     };
 
@@ -1848,22 +2551,32 @@ export function applyEffectArgs(character: CharacterSheet, args: any): Character
     const stat = (statRaw || 'AC').trim() as any;
     const bonus = clampStatModifier(Number.parseInt((bonusRaw || '0').trim(), 10) || 0);
 
+    // RE6 (contre-audit) — sans `roundsRemaining`, tickRoundEffects ignorait
+    // l'effet : un « -2 CA, 3 rounds » posé sur le JOUEUR collait jusqu'au repos
+    // long, alors que le chemin PNJ jumeau (useToolProcessor add_effect) expire
+    // correctement. Aligné : rounds numérotés (défaut 10), `permanent` respecté.
+    const duration = String(args?.duration || 'rounds') as any;
+    const effect: any = {
+        id: makeId('effect'),
+        name: String(args?.name || 'Effect'),
+        source: String(args?.source || 'condition') as any,
+        duration,
+        modifiers: [{ stat, bonus }],
+    };
+    if (duration === 'rounds') {
+        effect.roundsRemaining = Math.max(1, Math.trunc(Number(args?.rounds)) || 10);
+    }
+
     return {
         ...character,
         activeEffects: [
             ...(character.activeEffects || []),
-            {
-                id: makeId('effect'),
-                name: String(args?.name || 'Effect'),
-                source: String(args?.source || 'condition') as any,
-                duration: String(args?.duration || 'rounds') as any,
-                modifiers: [{ stat, bonus }],
-            },
+            effect,
         ],
     };
 }
 
-function spendSpellSlot(character: CharacterSheet, spellLevel: number, requestedSlot?: number): { character: CharacterSheet; consumedSlot?: number; error?: string } {
+export function spendSpellSlot(character: CharacterSheet, spellLevel: number, requestedSlot?: number): { character: CharacterSheet; consumedSlot?: number; error?: string } {
     if (spellLevel <= 0) return { character };
 
     const slotLevel = Math.max(spellLevel, Math.trunc(Number(requestedSlot || spellLevel)));
@@ -1905,6 +2618,10 @@ function spendSpellSlot(character: CharacterSheet, spellLevel: number, requested
 function spellEffectFor(spellName: string): ActiveEffect | null {
     const name = spellName.toLowerCase();
     if (name === 'bless') {
+        // RAW SRD : +1d4 aux jets d'attaque ET de sauvegarde, 1 minute,
+        // concentration. (L'ancienne implémentation était un story modifier
+        // +2 plat à 3 « usages » de portée 'any' — mauvais dé, mauvaise durée,
+        // et il boostait aussi les tests et jets de morts — audit 2026-08-12.)
         return {
             id: makeId('spell'),
             name: 'Bless',
@@ -1912,8 +2629,11 @@ function spellEffectFor(spellName: string): ActiveEffect | null {
             duration: 'concentration',
             concentration: true,
             roundsRemaining: 10,
-            description: 'SRD Codex: bonus support for attack rolls and saving throws.',
-            modifiers: [],
+            description: 'SRD: +1d4 to attack rolls and saving throws for 1 minute (concentration).',
+            modifiers: [
+                { stat: 'attackBonus', bonus: 0, dice: '1d4' },
+                { stat: 'saveBonus', bonus: 0, dice: '1d4' },
+            ],
         };
     }
     if (name === 'hold person') {
@@ -1989,24 +2709,14 @@ function spellEffectFor(spellName: string): ActiveEffect | null {
     return null;
 }
 
-function blessStoryModifier(): StoryRollModifier {
-    return {
-        id: makeId('story'),
-        name: 'Bless',
-        source: 'blessing',
-        mode: 'normal',
-        bonus: 2,
-        remainingUses: 3,
-        scope: 'any',
-        reason: 'SRD Codex approximation of Bless: attack rolls and saving throws gain a small bonus.',
-        createdAt: Date.now(),
-    };
-}
-
 export function castSpell(character: CharacterSheet, args: {
     spellName: string;
     slotLevel?: number;
     target?: string;
+    /** Id EXACT du combattant visé. Indispensable quand plusieurs ennemis
+     *  partagent un nom (« Gobelin », « Gobelin ») : la résolution par nom seul
+     *  était ambiguë et le sort n'infligeait alors aucun dégât. */
+    targetId?: string;
     casterAbility?: Ability | string;
     casterAbilityMod?: number;
     spellAttackBonus?: number;
@@ -2020,19 +2730,43 @@ export function castSpell(character: CharacterSheet, args: {
     maximizeHealing?: boolean;
     fixedHealing?: number;
 }): SpellCastResult {
-    const spell = lookupSpell(args.spellName);
+    // TR10 (audit de séance du 2026-08-23) — deux échecs de cast_spell observés,
+    // et aucun n'était une hallucination du MJ :
+    //   cast_spell("Imposition des mains") → aptitude de PALADIN, pas un sort ;
+    //   cast_spell("Blessure / Bless")     → les deux langues collées.
+    // « Spell not found in SRD Codex » ne lui disait ni l'un ni l'autre.
+    const spell = lookupSpell(args.spellName)
+        // Forme bilingue « FR / EN » : on tente chaque moitié.
+        || String(args.spellName).split('/').map(part => lookupSpell(part.trim())).find(Boolean);
     if (!spell) {
+        const ability = matchPlayerClassAbility(args.spellName);
+        if (ability) {
+            return {
+                success: false,
+                error: `"${ability}" is a CLASS ABILITY, not a spell — the player triggers it from their own button and the engine applies it. Do not cast it: narrate it when you receive the "[SYSTEM] Player used ..." report.`,
+                character,
+                summary: `${ability} is a class ability, not a spell.`,
+            };
+        }
         return { success: false, error: 'Spell not found in SRD Codex', character, summary: 'Spell not found.' };
     }
 
+    // Comparaison ROBUSTE : la liste du personnage peut contenir le nom EN, un
+    // id (« magic_missile ») ou un nom FR — on résout chaque entrée via le
+    // codex et on compare les identités, au lieu d'une égalité de chaîne brute
+    // qui rejetait le sort (« not in caster setup ») pour un simple alias.
     const configuredSpells = [
         ...(character.cantrips || []),
         ...(character.knownSpells || []),
         ...(character.preparedSpells || []),
     ]
-        .map(name => String(name || '').trim().toLowerCase())
+        .map(name => String(name || '').trim())
         .filter(Boolean);
-    if (configuredSpells.length && !configuredSpells.includes(spell.name.toLowerCase())) {
+    const knowsSpell = configuredSpells.some(name =>
+        name.toLowerCase() === spell.name.toLowerCase()
+        || lookupSpell(name)?.id === spell.id
+    );
+    if (configuredSpells.length && !knowsSpell) {
         return {
             success: false,
             error: `${spell.name} is not in this character's caster setup`,
@@ -2040,6 +2774,28 @@ export function castSpell(character: CharacterSheet, args: {
             character,
             summary: `${character.name || 'The character'} has not prepared or learned ${spell.name}.`,
         };
+    }
+    // Audit 2026-08-21 — fiche SANS listes de sorts (anciens saves) : la porte
+    // était grande ouverte (n'importe quel sort SRD passait). On exige au moins
+    // que le sort soit sur la LISTE DE CLASSE du lanceur — un Guerrier ne lance
+    // pas Boule de feu parce que sa fiche est vide.
+    if (!configuredSpells.length && Array.isArray((spell as any).classes) && (spell as any).classes.length && character.class) {
+        // Vocabulaire du jeu → listes SRD : 'Mage' lance la liste 'Wizard' ;
+        // les sous-classes tiers-caster empruntent la liste du Magicien.
+        const listNames = new Set<string>([character.class]);
+        if (character.class === 'Mage') listNames.add('Wizard');
+        if (/eldritch knight|chevalier occulte|arcane trickster|filou arcanique|escroc arcanique/i.test(String(character.subclass || ''))) {
+            listNames.add('Wizard');
+        }
+        if (!(spell as any).classes.some((c: string) => listNames.has(c))) {
+            return {
+                success: false,
+                error: `${spell.name} is not on the ${character.class} spell list`,
+                spell,
+                character,
+                summary: `${character.name || 'The character'} (${character.class}) cannot cast ${spell.name}.`,
+            };
+        }
     }
 
     const spent = spendSpellSlot(character, spell.level, args.slotLevel);
@@ -2049,7 +2805,10 @@ export function castSpell(character: CharacterSheet, args: {
 
     let nextCharacter = spent.character;
     const slotLevel = spent.consumedSlot || args.slotLevel || spell.level;
-    const casterAbility = normalizeAbility(args.casterAbility || nextCharacter.spellcastingAbility || spell.attack?.ability || 'CHA');
+    // da-m7 — la caractéristique de sort vient de la CLASSE du lanceur avant le
+    // champ codé en dur du sort (Fire Bolt disait 'CHA' même pour un Mage INT).
+    const casterAbility = normalizeAbility(args.casterAbility || nextCharacter.spellcastingAbility
+        || CLASS_CASTER_ABILITY[nextCharacter.class] || spell.attack?.ability || 'CHA');
     const casterAbilityMod = Number.isFinite(Number(args.casterAbilityMod))
         ? Number(args.casterAbilityMod)
         : abilityMod(getEffectiveStat(nextCharacter, casterAbility));
@@ -2060,21 +2819,50 @@ export function castSpell(character: CharacterSheet, args: {
         ? Number(args.spellSaveDC)
         : 8 + casterAbilityMod + proficiencyBonus(nextCharacter.level);
 
+    // ── MÉTAMAGIE (Ensorceleur) : les marqueurs posés par les boutons sont
+    //    consommés par CE lancement. Accéléré → le sort coûte l'action bonus ;
+    //    Intensifié → la cible fait sa sauvegarde avec DÉSAVANTAGE.
+    const quickenedMarker = (nextCharacter.activeEffects || []).find(e => e.name === 'Quickened Spell');
+    const heightenedMarker = (nextCharacter.activeEffects || []).find(e => e.name === 'Heightened Spell');
+    const quickened = !!quickenedMarker;
+    if (quickenedMarker || (heightenedMarker && spell.save)) {
+        nextCharacter = {
+            ...nextCharacter,
+            activeEffects: (nextCharacter.activeEffects || []).filter(e =>
+                e.id !== quickenedMarker?.id && !(heightenedMarker && spell.save && e.id === heightenedMarker.id)),
+        };
+    }
+
+    // ── Riders passifs de sous-classe sur les DÉGÂTS de sorts ──
+    // Agonizing Blast (Occultiste 2+) : +mod. CHA par rayon d'Eldritch Blast.
+    // Empowered Evocation (École d'évocation 10+) : +mod. INT aux sorts d'évocation.
+    const bonusSpellDamage = (formula: string | undefined): string | undefined => {
+        if (!formula) return formula;
+        let out = formula;
+        if (spell.id === 'eldritch_blast' && character.class === 'Warlock' && (nextCharacter.level || 1) >= 2) {
+            const cha = abilityMod(getEffectiveStat(nextCharacter, 'CHA'));
+            const beams = Number(formula.match(/^(\d+)d/)?.[1]) || 1;
+            if (cha !== 0) out = `${out}${cha * beams >= 0 ? '+' : ''}${cha * beams}`;
+        }
+        // RE8 — RAW : Empowered Evocation s'applique à TOUT sort d'évocation de
+        // magicien, tours de magie inclus (le combo Fire Bolt + INT était perdu).
+        if (character.subclass === 'School of Evocation' && (nextCharacter.level || 1) >= 10 && spell.school === 'Evocation') {
+            const int = abilityMod(getEffectiveStat(nextCharacter, 'INT'));
+            if (int > 0) out = `${out}+${int}`;
+        }
+        return out;
+    };
+
     const concentrationReplaced: string[] = [];
     const rawEffect = spellEffectFor(spell.name);
     const activeEffect = rawEffect ? stampEffectExpiry(rawEffect, args.worldHour) : null;
-    let storyModifier: StoryRollModifier | undefined;
     if (activeEffect) {
+        // Bénédiction RAW vit désormais entièrement dans l'ActiveEffect
+        // (modificateurs dice '1d4' attaque+sauvegarde) — plus de story
+        // modifier parallèle à « usages » (audit 2026-08-12).
         const applied = applyConcentrationReplacement(nextCharacter, activeEffect);
         nextCharacter = applied.character;
         concentrationReplaced.push(...applied.removed);
-        if (spell.name.toLowerCase() === 'bless') {
-            storyModifier = blessStoryModifier();
-            nextCharacter = {
-                ...nextCharacter,
-                storyModifiers: [...(nextCharacter.storyModifiers || []), storyModifier],
-            };
-        }
     }
 
     if (spell.healing) {
@@ -2089,26 +2877,50 @@ export function castSpell(character: CharacterSheet, args: {
         const discipleOfLifeBonus = nextCharacter.subclass === 'Life Domain' && spell.level >= 1
             ? 2 + slotLevel
             : 0;
-        const healing = Math.max(0, healingRoll.total + (spell.healing.abilityModifier ? casterAbilityMod : 0) + discipleOfLifeBonus);
-        nextCharacter = {
-            ...nextCharacter,
-            hp: { ...nextCharacter.hp, current: clampHP(nextCharacter.hp.current + healing, nextCharacter.hp.max) },
-        };
+        // Supreme Healing (Domaine de la Vie 17+) : les dés de soin rendent leur MAXIMUM.
+        const supremeHealing = nextCharacter.subclass === 'Life Domain' && (nextCharacter.level || 1) >= 17;
+        const healingTotal = supremeHealing && !Number.isFinite(Number(args.fixedHealing))
+            ? maxRollOfFormula(healingDice || spell.healing.dice)
+            : healingRoll.total;
+        const healing = Math.max(0, healingTotal + (spell.healing.abilityModifier ? casterAbilityMod : 0) + discipleOfLifeBonus);
+        // CB1 — cible-aware : le soin ne remonte les PV du LANCEUR que si la
+        // cible est le lanceur (ou absente). Sinon `healing` est retourné à
+        // l'appelant, qui l'applique à la cible réelle (ligne de combat,
+        // compagnon). Avant, « Cure Wounds sur le compagnon » soignait le
+        // joueur et laissait le compagnon à terre — et le panneau soignait
+        // les DEUX (fiche + ligne d'allié).
+        const rawTargetId = String(args.targetId ?? '').trim().toLowerCase();
+        const rawTargetName = String(args.target ?? '').trim().toLowerCase();
+        const selfNames = new Set(['self', 'me', 'you', 'player', 'moi', 'soi', 'joueur', 'hero', 'heros', 'héros',
+            String(nextCharacter.name || '').trim().toLowerCase()]);
+        const targetsSelf = rawTargetId
+            ? rawTargetId === 'player'
+            : (!rawTargetName || selfNames.has(rawTargetName));
+        if (targetsSelf) {
+            nextCharacter = {
+                ...nextCharacter,
+                hp: { ...nextCharacter.hp, current: clampHP(nextCharacter.hp.current + healing, getEffectiveMaxHP(nextCharacter)) },
+            };
+        }
         return {
             success: true,
             spell,
             character: nextCharacter,
             consumedSlot: spent.consumedSlot,
             healing,
+            healingTargetsSelf: targetsSelf,
+            quickened,
             activeEffect: activeEffect || undefined,
             concentrationReplaced,
-            summary: `${spell.name} heals ${healing} HP.`,
+            summary: targetsSelf
+                ? `${spell.name} heals ${healing} HP.`
+                : `${spell.name} heals ${args.target || 'the target'} for ${healing} HP.`,
         };
     }
 
     if (spell.attack) {
         const { damageDice } = getScaledSpellDice(spell, slotLevel, args.characterLevel || nextCharacter.level);
-        const damageFormula = damageDice || spell.damage?.dice;
+        const damageFormula = bonusSpellDamage(damageDice || spell.damage?.dice);
         const prompt: RollPromptState = {
             type: 'ATTACK',
             name: `${spell.name} spell attack${args.target ? ` vs ${args.target}` : ''}`,
@@ -2120,6 +2932,7 @@ export function castSpell(character: CharacterSheet, args: {
             pendingSpell: {
                 spellName: spell.name,
                 target: args.target,
+                targetId: args.targetId,
                 damageFormula,
                 damageType: spell.damage?.type,
                 slotLevel,
@@ -2133,6 +2946,7 @@ export function castSpell(character: CharacterSheet, args: {
             prompt,
             damageFormula,
             damageType: spell.damage?.type,
+            quickened,
             activeEffect: activeEffect || undefined,
             concentrationReplaced,
             summary: `${spell.name} requires a spell attack roll.`,
@@ -2141,7 +2955,7 @@ export function castSpell(character: CharacterSheet, args: {
 
     if (spell.save) {
         const { damageDice } = getScaledSpellDice(spell, slotLevel, args.characterLevel || nextCharacter.level);
-        const damageFormula = damageDice || spell.damage?.dice;
+        const damageFormula = bonusSpellDamage(damageDice || spell.damage?.dice);
         
         let targetSaveBonus = Number.isFinite(Number(args.targetSaveBonus)) ? Number(args.targetSaveBonus) : undefined;
         if (targetSaveBonus === undefined && args.target) {
@@ -2157,21 +2971,27 @@ export function castSpell(character: CharacterSheet, args: {
         }
         if (targetSaveBonus === undefined) targetSaveBonus = 0;
 
+        // Potent Cantrip (École d'évocation 6+) : un tour de magie à sauvegarde
+        // inflige la MOITIÉ des dégâts même sur une sauvegarde réussie.
+        const potentCantrip = character.subclass === 'School of Evocation'
+            && (nextCharacter.level || 1) >= 6 && spell.level === 0 && !!damageFormula;
         const prompt: RollPromptState = {
             type: 'SAVE',
             name: `${args.target || 'Target'} ${spell.save.ability} save vs ${spell.name}`,
             dc: spellSaveDC,
             formula: `1d20${targetSaveBonus >= 0 ? '+' : ''}${targetSaveBonus}`,
-            advantage: 'normal',
+            // Sort intensifié (métamagie) : la cible sauvegarde avec désavantage.
+            advantage: heightenedMarker ? 'disadvantage' : 'normal',
             dmBonus: 0,
             requestedAt: Date.now(),
             pendingSpell: {
                 spellName: spell.name,
                 target: args.target,
+                targetId: args.targetId,
                 damageFormula,
                 damageType: spell.damage?.type,
                 conditionOnFailure: spell.condition,
-                effectOnSuccess: spell.save.effectOnSuccess,
+                effectOnSuccess: potentCantrip ? 'half' : spell.save.effectOnSuccess,
                 slotLevel,
             },
         };
@@ -2184,9 +3004,36 @@ export function castSpell(character: CharacterSheet, args: {
             damageFormula,
             damageType: spell.damage?.type,
             conditionOnFailure: spell.condition,
+            quickened,
             activeEffect: activeEffect || undefined,
             concentrationReplaced,
-            summary: `${spell.name} requires a ${spell.save.ability} save vs DC ${spellSaveDC}.`,
+            summary: `${spell.name} requires a ${spell.save.ability} save vs DC ${spellSaveDC}${heightenedMarker ? ' (Heightened: save at disadvantage)' : ''}.`,
+        };
+    }
+
+    // Sort de DÉGÂTS sans jet d'attaque ni sauvegarde (Projectile magique) : il
+    // touche automatiquement. Sans cette branche il retombait dans le « sort
+    // utilitaire » ci-dessous et n'infligeait RIEN.
+    if (spell.damage?.dice && !spell.attack && !spell.save && !spell.healing) {
+        const { damageDice } = getScaledSpellDice(spell, slotLevel, args.characterLevel || nextCharacter.level);
+        const damageFormula = bonusSpellDamage(damageDice || spell.damage.dice)!;
+        return {
+            success: true,
+            spell,
+            character: nextCharacter,
+            consumedSlot: spent.consumedSlot,
+            damageFormula,
+            damageType: spell.damage.type,
+            autoDamage: {
+                damageFormula,
+                damageType: spell.damage.type,
+                target: args.target,
+                targetId: args.targetId,
+            },
+            quickened,
+            activeEffect: activeEffect || undefined,
+            concentrationReplaced,
+            summary: `${spell.name} automatically hits for ${damageFormula} ${spell.damage.type || 'damage'}.`,
         };
     }
 
@@ -2195,10 +3042,34 @@ export function castSpell(character: CharacterSheet, args: {
         spell,
         character: nextCharacter,
         consumedSlot: spent.consumedSlot,
+        quickened,
         activeEffect: activeEffect || undefined,
-        storyModifier,
         concentrationReplaced,
         summary: `${spell.name} applied.`,
+    };
+}
+
+/**
+ * Applique les dégâts d'un sort à TOUCHE AUTOMATIQUE sur l'état de combat.
+ * Renvoie null si la cible est introuvable (le sort reste « narratif »).
+ */
+export function applyAutoDamageSpell(
+    current: EncounterState,
+    auto: NonNullable<SpellCastResult['autoDamage']>,
+): { state: EncounterState; target: Combatant; damage: number; rolled: number; mitigation: 'normal' | 'resistant' | 'immune' | 'vulnerable'; summary: string } | null {
+    const lookup = resolveCombatantReference(current, auto.targetId || auto.target || '', { autoResolve: true });
+    if (!lookup.combatant) return null;
+    const rolled = rollDamageAmount(auto.damageFormula).raw;
+    const applied = applyDamageToEncounter(current, combatantKey(lookup.combatant), rolled, auto.damageType);
+    if (!applied.found || !applied.target) return null;
+    const damage = applied.amountApplied || 0;
+    return {
+        state: applied.state,
+        target: applied.target,
+        damage,
+        rolled,
+        mitigation: applied.mitigation || 'normal',
+        summary: `${applied.target.name} takes ${damage}${auto.damageType ? ` ${auto.damageType}` : ''} damage (auto-hit).`,
     };
 }
 
@@ -2210,7 +3081,12 @@ function conditionToEffect(condition: ConditionEntry): ActiveEffect {
         id: makeId('condition'),
         name: condition.name,
         source: 'condition',
-        duration: 'permanent',
+        // CB6 — plus jamais « permanent » : une condition posée en jeu expire
+        // d'elle-même (10 rounds ≈ 1 minute, la durée type des sorts de
+        // contrôle 5e), peut être retirée par l'outil remove_condition, et
+        // saute au repos long. Avant : poison de piège = désavantage à vie.
+        duration: 'rounds',
+        roundsRemaining: 10,
         description: condition.summary,
         modifiers,
     };
@@ -2270,8 +3146,9 @@ export function applyConditionToEncounter(
 
 function rollDamageAmount(formula: string, critical = false): { total: number; raw: number } {
     const rolled = rollDice(formula);
+    // cb-m12 — critique RAW : dés RELANCÉS, pas doublés en valeur.
     const raw = critical
-        ? rolled.rolls.reduce((sum, roll) => sum + roll * 2, 0) + rolled.modifier
+        ? rolled.total + rollDice(formula).rolls.reduce((sum, roll) => sum + roll, 0)
         : rolled.total;
     return { total: Math.max(0, raw), raw: Math.max(0, raw) };
 }
@@ -2378,7 +3255,11 @@ export function resolvePendingSpellRoll(current: EncounterState, outcome: RollOu
     }
 
     const targetRef = pending.targetId || pending.target || '';
-    const targetLookup = resolveCombatantReference(current, targetRef);
+    // autoResolve : quand plusieurs ennemis portent le MÊME nom (« Gobelin »,
+    // « Gobelin »), la recherche par nom était « ambiguë » et le sort
+    // n'infligeait AUCUN dégât, silencieusement. On tranche désormais comme
+    // pour les attaques d'arme (première cible vivante, la plus entamée).
+    const targetLookup = resolveCombatantReference(current, targetRef, { autoResolve: true });
     if (!targetLookup.combatant || targetLookup.ambiguous) {
         return {
             resolved: true,
@@ -2455,8 +3336,12 @@ export function resolveConcentrationAfterDamage(character: CharacterSheet, damag
     if (character.hp.current <= 0) {
         const removedNames = new Set(concentrationEffects.map(e => e.name.toLowerCase()));
         const storyModifiers = (character.storyModifiers || []).filter(mod => {
+            // cb-m7 — on ne purge que les modificateurs liés AU SORT rompu
+            // (même nom que l'effet de concentration retiré). L'ancien
+            // `source !== 'blessing'` rasait aussi les bénédictions du MJ
+            // sans rapport (« Chanceux »…).
             const modName = mod.name.toLowerCase();
-            return !removedNames.has(modName) && mod.source !== 'blessing';
+            return !removedNames.has(modName);
         });
         return {
             character: { 
@@ -2497,8 +3382,12 @@ export function resolveConcentrationAfterDamage(character: CharacterSheet, damag
     if (broken) {
         const removedNames = new Set(concentrationEffects.map(e => e.name.toLowerCase()));
         const storyModifiers = (character.storyModifiers || []).filter(mod => {
+            // cb-m7 — on ne purge que les modificateurs liés AU SORT rompu
+            // (même nom que l'effet de concentration retiré). L'ancien
+            // `source !== 'blessing'` rasait aussi les bénédictions du MJ
+            // sans rapport (« Chanceux »…).
             const modName = mod.name.toLowerCase();
-            return !removedNames.has(modName) && mod.source !== 'blessing';
+            return !removedNames.has(modName);
         });
         nextCharacter = {
             ...character,
@@ -2565,19 +3454,46 @@ function defaultResources(character: CharacterSheet): CharacterSheet['resources'
 
     if (cls === 'Fighter') {
         resources.secondWind = { current: 1, max: 1, recoverOn: 'short_rest', label: 'Second Wind' };
-        if (level >= 2) resources.actionSurge = { current: 1, max: 1, recoverOn: 'short_rest', label: 'Action Surge' };
+        // da-m2 — Action Surge ×2 au niveau 17 (SRD).
+        if (level >= 2) {
+            const surges = level >= 17 ? 2 : 1;
+            resources.actionSurge = { current: surges, max: surges, recoverOn: 'short_rest', label: 'Action Surge' };
+        }
+        // Indomitable (SRD) : relance une sauvegarde ratée — 1/repos long,
+        // 2 au niveau 13, 3 au 17. Branché sur la fenêtre de relance BG3.
+        if (level >= 9) {
+            const uses = level >= 17 ? 3 : level >= 13 ? 2 : 1;
+            resources.indomitable = { current: uses, max: uses, recoverOn: 'long_rest', label: 'Indomitable' };
+        }
         if (character.subclass === 'Battle Master' && level >= 3) {
             const dice = level >= 15 ? 6 : level >= 7 ? 5 : 4;
-            const die = level >= 10 ? 'd10' : 'd8';
+            // da-m2 — d12 au niveau 18 (promis par subclasses.ts, jamais servi).
+            const die = level >= 18 ? 'd12' : level >= 10 ? 'd10' : 'd8';
             resources.superiorityDice = { current: dice, max: dice, recoverOn: 'short_rest', label: `Superiority Dice (${die})` };
         }
     }
     if (cls === 'Paladin') {
         resources.layOnHands = { current: level * 5, max: level * 5, recoverOn: 'long_rest', label: 'Lay on Hands' };
+        // Divine Sense (SRD) : 1 + mod. CHA par repos long.
+        resources.divineSense = { current: 1 + chaMod, max: 1 + chaMod, recoverOn: 'long_rest', label: 'Divine Sense' };
+        // Canalisation divine du serment (Arme sacrée, Vœu d'inimitié, Courroux
+        // de la nature, Défi du cavalier…) — 1/repos court à partir du niveau 3.
+        if (level >= 3) {
+            resources.channelDivinity = { current: 1, max: 1, recoverOn: 'short_rest', label: 'Channel Divinity' };
+        }
+    }
+    if (cls === 'Cleric' && level >= 10) {
+        // Intervention divine (SRD) : d100 ≤ niveau → miracle. 1 tentative/repos long.
+        resources.divineIntervention = { current: 1, max: 1, recoverOn: 'long_rest', label: 'Divine Intervention' };
+    }
+    if (cls === 'Monk' && character.subclass === 'Way of the Open Hand' && level >= 6) {
+        resources.wholenessOfBody = { current: 1, max: 1, recoverOn: 'long_rest', label: 'Wholeness of Body' };
     }
     if (cls === 'Barbarian') {
-        const rageMax = level >= 17 ? 6 : level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2;
-        resources.rage = { current: rageMax, max: rageMax, recoverOn: 'long_rest', label: 'Rage' };
+        // da-m2 — Rage ILLIMITÉE au niveau 20 (SRD) : 99 ≈ sans limite,
+        // affichable sans casser le format current/max des ressources.
+        const rageMax = level >= 20 ? 99 : level >= 17 ? 6 : level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2;
+        resources.rage = { current: rageMax, max: rageMax, recoverOn: 'long_rest', label: level >= 20 ? 'Rage (∞)' : 'Rage' };
     }
     if (cls === 'Bard') {
         resources.bardicInspiration = {
@@ -2588,7 +3504,9 @@ function defaultResources(character: CharacterSheet): CharacterSheet['resources'
         };
     }
     if (cls === 'Cleric' && level >= 2) {
-        resources.channelDivinity = { current: level >= 6 ? 2 : 1, max: level >= 6 ? 2 : 1, recoverOn: 'short_rest', label: 'Channel Divinity' };
+        // da-m2 — Channel Divinity ×3 au niveau 18 (SRD).
+        const cdUses = level >= 18 ? 3 : level >= 6 ? 2 : 1;
+        resources.channelDivinity = { current: cdUses, max: cdUses, recoverOn: 'short_rest', label: 'Channel Divinity' };
     }
     if (cls === 'Cleric' && character.subclass === 'War Domain') {
         // War Priest: bonus-action weapon attack, WIS-mod uses per long rest.
@@ -2597,6 +3515,14 @@ function defaultResources(character: CharacterSheet): CharacterSheet['resources'
     }
     if (cls === 'Druid' && level >= 2) {
         resources.wildShape = { current: 2, max: 2, recoverOn: 'short_rest', label: 'Wild Shape' };
+        // Récupération naturelle (Cercle de la Terre) : rend des emplacements
+        // dont la somme des niveaux vaut la moitié du niveau de druide.
+        resources.naturalRecovery = { current: 1, max: 1, recoverOn: 'long_rest', label: 'Natural Recovery' };
+    }
+    if (cls === 'Warlock') {
+        // L'Occultiste n'avait AUCUNE capacité activable. Focalisation du pacte :
+        // le patron guide sa main — avantage sur la prochaine attaque de sort.
+        resources.pactFocus = { current: 1, max: 1, recoverOn: 'short_rest', label: 'Pact Focus' };
     }
     if (cls === 'Monk' && level >= 2) {
         resources.ki = { current: level, max: level, recoverOn: 'short_rest', label: 'Ki' };
@@ -2629,7 +3555,8 @@ function defaultSpellSlots(character: CharacterSheet): CharacterSheet['spellSlot
     if (!fullCasters.includes(character.class) && !halfCasters.includes(character.class) && !warlock) return undefined;
 
     if (warlock) {
-        const max = level >= 11 ? 3 : level >= 2 ? 2 : 1;
+        // da-m1 — 4e emplacement de pacte au niveau 17 (SRD).
+        const max = level >= 17 ? 4 : level >= 11 ? 3 : level >= 2 ? 2 : 1;
         const slotLevel = level >= 9 ? 5 : level >= 7 ? 4 : level >= 5 ? 3 : level >= 3 ? 2 : 1;
         return { [`pact${slotLevel}`]: { current: max, max } };
     }
@@ -2746,10 +3673,20 @@ export function applyShortRest(character: CharacterSheet, spendHitDice = 0): Cha
     const diceToSpend = Math.max(0, Math.min(spendHitDice, hitDice.remaining));
     if (diceToSpend > 0) {
         const conMod = abilityMod(getEffectiveStat(ensured, 'CON'));
+        const effMax = getEffectiveMaxHP(ensured);
+        // Don Robuste/Durable (2026-08-13) : chaque dé de vie dépensé rend au
+        // minimum 2 × mod de CON PV (le `special` était du texte mort).
+        const perDieFloor = hasFeatSpecial(ensured, 'durable_hit_die_minimum') ? Math.max(1, conMod * 2) : 1;
         for (let i = 0; i < diceToSpend; i++) {
-            hp = clampHP(hp + Math.max(1, Math.floor(Math.random() * hitDice.die) + 1 + conMod), ensured.hp.max);
+            hp = clampHP(hp + Math.max(perDieFloor, Math.floor(Math.random() * hitDice.die) + 1 + conMod), effMax);
         }
         hitDice = { ...hitDice, remaining: hitDice.remaining - diceToSpend };
+        // Barde 2+ — Chant reposant : +1dX de soins quand on dépense des dés de
+        // vie pendant un repos court (d6 → d12 avec le niveau).
+        if (ensured.class === 'Bard' && (ensured.level || 1) >= 2) {
+            const die = songOfRestDie(ensured.level || 1);
+            hp = clampHP(hp + Math.floor(Math.random() * die) + 1, effMax);
+        }
     }
 
     // Beast Master companion patches itself up too: a short rest brings it back
@@ -2825,10 +3762,13 @@ export function applyLongRest(character: CharacterSheet): CharacterSheet {
         ...ensured,
         companions,
         mount,
-        hp: { ...ensured.hp, current: ensured.hp.max },
+        hp: { ...ensured.hp, current: getEffectiveMaxHP(ensured) },
         tempHP: 0,
         deathSaves: { successes: 0, failures: 0, isStable: false, isDead: false },
-        activeEffects: (ensured.activeEffects || []).filter(effect => effect.duration === 'permanent'),
+        // CB6 — le repos long guérit les CONDITIONS (poison, paralysie,
+        // entrave…) quelle que soit leur durée ; seuls les effets permanents
+        // NON-conditions (traits, objets) survivent à la nuit.
+        activeEffects: (ensured.activeEffects || []).filter(effect => effect.duration === 'permanent' && effect.source !== 'condition'),
         resources,
         spellSlots,
         hitDice: {

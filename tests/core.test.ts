@@ -5,7 +5,6 @@
  */
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { calculateSkillModifier, calculateSaveModifier, getSkillAbility, rollWithAdvantage } from '../services/skillSystem';
-import { parseAllTags, processDMTags, stripTags } from '../services/dmTagParser';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
 import {
     addEnemyToEncounter,
@@ -245,25 +244,6 @@ describe('ENEMY_INIT tag regex', () => {
     });
 });
 
-// ─── stripTags ───────────────────────────────────────────────────────────────
-
-describe('stripTags', () => {
-    it('removes parameterized bracket tags from text', () => {
-        // stripTags regex only strips [TAG: params] format
-        const text = 'The goblins rush toward you. [ENEMY_INIT: Goblin | 7 | 13 | -1 | +2 | E5] They snarl.';
-        const stripped = stripTags(text);
-        expect(stripped).not.toContain('[ENEMY_INIT');
-        expect(stripped).toContain('The goblins rush toward you.');
-    });
-
-    it('removes legacy parameterless bracket tags from text', () => {
-        const text = 'Battle begins! [COMBAT_START]';
-        const stripped = stripTags(text);
-        expect(stripped).toContain('Battle begins!');
-        expect(stripped).not.toContain('[COMBAT_START]');
-    });
-});
-
 // ─── Bestiary Lookup ─────────────────────────────────────────────────────────
 
 describe('getCreature fuzzy lookup', () => {
@@ -438,7 +418,10 @@ describe('rulesEngine campaign mechanics', () => {
             spellSlots: { '1': { current: 0, max: 4 }, '2': { current: 0, max: 2 } },
             activeEffects: [
                 { id: 'bless', name: 'Bless', source: 'spell' as const, duration: 'concentration' as const, modifiers: [] },
-                { id: 'boon', name: 'Story Boon', source: 'condition' as const, duration: 'permanent' as const, modifiers: [] },
+                // CB6 : un effet permanent NON-condition (bénédiction d'objet…)
+                // survit à la nuit ; une CONDITION (poison…) est guérie.
+                { id: 'boon', name: 'Story Boon', source: 'item' as const, duration: 'permanent' as const, modifiers: [] },
+                { id: 'poison', name: 'Poisoned', source: 'condition' as const, duration: 'permanent' as const, modifiers: [] },
             ],
         };
 
@@ -600,9 +583,10 @@ describe('SRD 5.1 Codex integration', () => {
         expect(fireBolt?.damage?.dice).toBe('1d10');
     });
 
-    it('casts Bless as concentration and grants a local roll bonus modifier', () => {
+    it('casts Bless as concentration with RAW +1d4 dice modifiers on attacks and saves', () => {
         const character = {
             ...DEFAULT_CHAR,
+            class: 'Cleric', // porte de liste de classe (2026-08-21)
             spellSlots: { '1': { current: 1, max: 1 } },
             activeEffects: [],
             storyModifiers: [],
@@ -612,13 +596,22 @@ describe('SRD 5.1 Codex integration', () => {
 
         expect(result.success).toBe(true);
         expect(result.character.spellSlots?.['1'].current).toBe(0);
-        expect(result.character.activeEffects.some(effect => effect.name === 'Bless' && effect.concentration)).toBe(true);
-        expect(result.character.storyModifiers?.some(modifier => modifier.name === 'Bless' && modifier.bonus > 0)).toBe(true);
+        const bless = result.character.activeEffects.find(effect => effect.name === 'Bless');
+        expect(bless?.concentration).toBe(true);
+        // RAW : +1d4 attaques ET sauvegardes — plus de story modifier +2 « à usages ».
+        expect(bless?.modifiers.some(m => m.stat === 'attackBonus' && m.dice === '1d4')).toBe(true);
+        expect(bless?.modifiers.some(m => m.stat === 'saveBonus' && m.dice === '1d4')).toBe(true);
+        expect((result.character.storyModifiers || []).some(modifier => modifier.name === 'Bless')).toBe(false);
+        // Le bonus 1d4 se matérialise dans les jets : getRollBonus('save') ∈ [1..4].
+        const saveBonus = getRollBonus(result.character, 'save');
+        expect(saveBonus).toBeGreaterThanOrEqual(1);
+        expect(saveBonus).toBeLessThanOrEqual(4);
     });
 
     it('casts Hold Person as a Wisdom save with paralyzed on failure', () => {
         const character = {
             ...DEFAULT_CHAR,
+            class: 'Cleric', // porte de liste de classe (2026-08-21)
             stats: { ...DEFAULT_CHAR.stats, CHA: 16 },
             spellSlots: { '2': { current: 1, max: 1 } },
             activeEffects: [],
@@ -636,6 +629,7 @@ describe('SRD 5.1 Codex integration', () => {
     it('casts Cure Wounds with slot scaling and clamps healing at max HP', () => {
         const character = {
             ...DEFAULT_CHAR,
+            class: 'Cleric', // porte de liste de classe (2026-08-21)
             stats: { ...DEFAULT_CHAR.stats, WIS: 16 },
             hp: { current: 8, max: 12 },
             spellSlots: { '2': { current: 1, max: 1 } },
@@ -1111,10 +1105,14 @@ describe('scene visual request coherence', () => {
         });
 
         expect(useGameStore.getState().isGeneratingImage).toBe(true);
+        // PL4 — une image terminée mais SUPPLANTÉE s'affiche quand même
+        // (mieux qu'un fond périmé pendant la génération suivante) ; elle ne
+        // compte pas comme « applied » et la génération continue.
         expect(useGameStore.getState().completeSceneVisualRequest(first.id, 'old-url')).toBe(false);
-        expect(useGameStore.getState().bgImage).toBe('');
+        expect(useGameStore.getState().bgImage).toBe('old-url');
         expect(useGameStore.getState().isGeneratingImage).toBe(true);
 
+        // La plus récente REMPLACE l'intérimaire à son arrivée.
         expect(useGameStore.getState().completeSceneVisualRequest(second.id, 'new-url')).toBe(true);
         expect(useGameStore.getState().bgImage).toBe('new-url');
         expect(useGameStore.getState().isGeneratingImage).toBe(false);
@@ -1276,33 +1274,46 @@ describe('subclasses (archetypes) mechanics', () => {
         expect(getSubclassFeaturesForLevel('Ranger', 'Hunter', 3).some(f => f.name === 'Colossus Slayer')).toBe(true);
     });
 
-    it('Champion crits on a natural 19', () => {
-        const random = vi.spyOn(Math, 'random').mockReturnValue(0.9); // d20 → 19
+    it('Champion crits on a natural 19 that HITS — but a 19 under the AC still misses (RE3, RAW)', () => {
+        // RE3 (contre-audit 2026-08-13) — l'ancien test verrouillait le bug :
+        // « 19 < CA 30 touche uniquement parce que le Champion transforme le 19
+        // en crit ». RAW : seul le 20 naturel touche automatiquement ; le seuil
+        // étendu du Champion n'élargit que la plage de CRITIQUE des attaques
+        // qui touchent.
         const champion = { ...DEFAULT_CHAR, subclass: 'Champion', inventory: [] };
-        const state = {
+        const mkState = (ac: number) => ({
             isActive: true,
             currentTurn: 'player',
             round: 1,
             turnIndex: 0,
             combatants: [
                 { id: 'player', name: 'Hero', hp: { current: 10, max: 10 }, ac: 16, initiative: 15, isPlayer: true },
-                { id: 'enemy-1', name: 'Cible', hp: { current: 20, max: 20 }, ac: 30, initiative: 5, isPlayer: false },
+                { id: 'enemy-1', name: 'Cible', hp: { current: 20, max: 20 }, ac, initiative: 5, isPlayer: false },
             ],
-        };
-        const result = resolveAttackAction(state, {
+        });
+        const args = {
             attacker: 'player',
             target: 'enemy-1',
             attackBonus: 0,
             damageFormula: '1d6',
             damageType: 'slashing',
-        }, champion);
-        random.mockRestore();
+        };
 
-        // 19 + 0 = 19 < AC 30 — only hits because Champion turns 19 into a crit.
-        expect(result.resolution?.criticalHit).toBe(true);
-        expect(result.resolution?.hit).toBe(true);
+        // Cas 1 — nat 19 vs CA 30 : RATÉ (pas d'auto-touche sous la CA).
+        let random = vi.spyOn(Math, 'random').mockReturnValue(0.9); // d20 → 19
+        const miss = resolveAttackAction(mkState(30), args, champion);
+        random.mockRestore();
+        expect(miss.resolution?.hit).toBe(false);
+        expect(miss.resolution?.criticalHit).toBe(false);
+
+        // Cas 2 — nat 19 vs CA 16 : touche (19 ≥ 16) ET critique (seuil Champion 19).
+        random = vi.spyOn(Math, 'random').mockReturnValue(0.9);
+        const crit = resolveAttackAction(mkState(16), args, champion);
+        random.mockRestore();
+        expect(crit.resolution?.hit).toBe(true);
+        expect(crit.resolution?.criticalHit).toBe(true);
         // Crit doubles the dice: d6 rolled 6 → 12 damage.
-        expect(result.resolution?.damage).toBe(12);
+        expect(crit.resolution?.damage).toBe(12);
     });
 
     it('Hunter adds Colossus Slayer 1d8 against a wounded target on the first attack of the turn', () => {
@@ -1805,7 +1816,9 @@ describe('24-point batch (hour expiry, riders, distance, AoE, FR parsing)', () =
         expect(lookupCondition('agrippé')?.id).toBe('grappled');
     });
 
-    it('melee attack vs a FAR enemy becomes an engage (far → near), near engages free', () => {
+    it('melee vs FAR: two advances are needed (far → near → melee), then the strike lands', () => {
+        // NF4 — l'engagement n'est plus gratuit : loin = 2 actions pour arriver
+        // au contact, à distance = 1 action, la frappe part au contact.
         const state: any = {
             isActive: true, currentTurn: 'player', round: 1, actionEconomy: {},
             combatants: [
@@ -1820,11 +1833,15 @@ describe('24-point batch (hour expiry, riders, distance, AoE, FR parsing)', () =
         expect(first.resolution).toBeUndefined();
         const nearState = first.state;
         expect(nearState.combatants.find((c: any) => c.id === 'e1')?.range).toBe('near');
-        // Depuis near : l'engagement est gratuit, l'attaque se résout et colle au contact.
+        // Depuis near : le rapprochement consomme encore l'action (near → melee).
         const second = resolveAttackAction(nearState, { attacker: 'player', target: 'e1', consumeAction: false }, char);
         expect(second.success).toBe(true);
-        expect(second.resolution).toBeTruthy();
+        expect((second as any).advanced).toEqual({ name: 'Archer', from: 'near', to: 'melee' });
+        expect(second.resolution).toBeUndefined();
         expect(second.state.combatants.find((c: any) => c.id === 'e1')?.range).toBe('melee');
+        // Au contact : la frappe part enfin.
+        const third = resolveAttackAction(second.state, { attacker: 'player', target: 'e1', consumeAction: false }, char);
+        expect(third.resolution).toBeTruthy();
     });
 
     it('powerAttack flag is ignored without the matching feat', () => {
@@ -2105,7 +2122,7 @@ describe('flagship campaign — Le Chant Brisé', () => {
         expect(CHANT_BRISE.chapters[0].status).toBe('active');
         expect(CHANT_BRISE.chapters.every((c, i) => c.id === String(i + 1))).toBe(true);
         expect(CHANT_BRISE.villain.name).toContain('Vaelrian');
-        expect(CHANT_BRISE.firstScene.chapterId).toBe('1');
+        expect(CHANT_BRISE.firstScene!.chapterId).toBe('1');
     });
 
     it('is registered as an authored campaign and in the adventure menu', () => {

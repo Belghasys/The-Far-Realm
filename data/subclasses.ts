@@ -9,8 +9,18 @@
 //   - Battle Master       → Superiority Dice resource (defaultResources)
 //   - Berserker           → Frenzy bonus-action attack while raging (combat UI)
 //   - War Domain          → War Priest bonus-action attack resource (combat UI)
-//   - Life Domain         → Disciple of Life: +2+slot HP on healing spells (castSpell)
+//   - Life Domain         → Disciple of Life +2+slot HP, Supreme Healing L17 (castSpell),
+//                           Divine Strike L8 (resolveAttackAction)
 //   - Draconic Bloodline  → +1 HP/level (grantXP) and unarmored AC 13+DEX (getBaseACFromArmor)
+//   - Zealot              → Divine Fury radiant rider while raging (resolveAttackAction)
+//   - Cavalier            → bonded mount +level HP (startEncounter), +1d8 mounted charge
+//                           (resolveAttackAction), Défi du cavalier (combat UI → enemy intent)
+//   - Oath of Devotion    → Sacred Weapon +CHA attack buff (combat UI)
+//   - Oath of Vengeance   → Vow of Enmity advantage (combat UI)
+//   - Oath of the Ancients→ Nature's Wrath restrain (combat UI)
+//   - School of Evocation → Potent Cantrip L6, Empowered Evocation L10 (castSpell)
+//   - Way of the Open Hand→ Wholeness of Body resource (combat UI)
+//   - Champion            → Remarkable Athlete L7 half-prof (request_roll)
 // Everything else is honored narratively by the DM (the system prompt lists the
 // player's subclass features).
 
@@ -72,6 +82,11 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Weapon Bond', description: "Lie une arme par un rituel : impossible de te désarmer, et tu peux l'invoquer en action bonus." },
                     ],
                     7: [{ name: 'War Magic', description: "Quand tu utilises ton action pour lancer un tour de magie, effectue une attaque d'arme en action bonus." }],
+                    // da-m9 — la progression s'arrêtait au niveau 7 (les autres
+                    // archétypes vont jusqu'à 14-18).
+                    10: [{ name: 'Eldritch Strike', description: "Quand tu touches une créature avec une attaque d'arme, elle a un désavantage à sa prochaine sauvegarde contre un de tes sorts avant la fin de ton tour suivant." }],
+                    15: [{ name: 'Arcane Charge', description: "Quand tu utilises ton Sursaut d'action, tu peux te téléporter jusqu'à 9 m vers un espace libre que tu vois, avant ou après l'action supplémentaire." }],
+                    18: [{ name: 'Improved War Magic', description: "Quand tu utilises ton action pour lancer un SORT (pas seulement un tour de magie), tu peux effectuer une attaque d'arme en action bonus." }],
                 },
             },
         ],
@@ -111,10 +126,24 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                 description: 'Un chevalier vert qui défend la lumière et la nature sauvage contre les ténèbres.',
                 featuresByLevel: {
                     3: [
-                        { name: "Nature's Wrath (Channel Divinity)", description: 'Action : des lianes spectrales — une créature à 3 m ou moins réussit une sauvegarde de FOR/DEX ou est entravée.' },
+                        { name: "Nature's Wrath (Channel Divinity)", description: 'Action : des lianes spectrales — une créature à 3 m ou moins réussit une sauvegarde de FOR/DEX ou est entravée. (Bouton dédié en combat.)' },
                         { name: 'Turn the Faithless (Channel Divinity)', description: 'Action : les fées et fiélons à 9 m ou moins réussissent une sauvegarde de SAG ou fuient pendant 1 minute.' },
                     ],
                     7: [{ name: 'Aura of Warding', description: 'Toi et tes alliés à 3 m ou moins avez la résistance aux dégâts des sorts.' }],
+                },
+            },
+            {
+                id: 'cavalier',
+                name: 'Cavalier',
+                description: "Le chevalier monté par excellence — charges dévastatrices, monture liée et défi lancé à l'ennemi.",
+                featuresByLevel: {
+                    3: [
+                        { name: 'Monture liée', description: "Ta monture est bénie par ton serment : elle gagne +ton niveau en PV maximum et se bat à tes côtés avec une loyauté sans faille. (Appliqué automatiquement par le moteur — utilise set_mount pour la lier.)" },
+                        { name: 'Charge fervente', description: "Quand tu CHARGES à dos de monture (attaque de mêlée sur un ennemi LOIN), ta frappe inflige +1d8 dégâts. (Appliqué automatiquement par le moteur.)" },
+                        { name: 'Défi du cavalier (Channel Divinity)', description: "Action bonus : défie un ennemi — il concentre ses assauts sur TOI (le moteur fixe sa cible sur toi). Protège ainsi tes alliés. (Bouton dédié en combat.)" },
+                    ],
+                    7: [{ name: 'Aura du protecteur', description: 'Ta monture et tes alliés à 3 m ou moins ajoutent +1 à leur CA tant que tu es conscient et en selle.' }],
+                    15: [{ name: 'Charge inarrêtable', description: 'Ta Charge fervente inflige +2d8 (au lieu de +1d8) et la cible réussit une sauvegarde de FOR ou est jetée À TERRE.' }],
                 },
             },
         ],
@@ -144,6 +173,19 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     7: [{ name: 'Exceptional Training', description: "Ton compagnon peut Foncer, Se désengager ou Aider avec son action quand il n'attaque pas." }],
                     11: [{ name: 'Bestial Fury', description: 'Ton compagnon effectue deux attaques quand il attaque.' }],
                     15: [{ name: 'Share Spells', description: 'Tes sorts qui te ciblent peuvent aussi affecter ton compagnon à 9 m ou moins.' }],
+                },
+            },
+            {
+                id: 'gloom_stalker',
+                name: 'Gloom Stalker',
+                description: "Le prédateur des ténèbres — invisible aux yeux nocturnes, mortel dès le premier round.",
+                featuresByLevel: {
+                    3: [
+                        { name: 'Dread Ambusher', description: "Au PREMIER round de chaque combat : +ton mod. SAG à l'initiative, +3 m de vitesse, et ta première attaque inflige +1d8 dégâts si elle touche. (Annonce l'embuscade au MJ.)" },
+                        { name: 'Umbral Sight', description: "Vision dans le noir 18 m (+9 m si tu l'avais déjà). Dans les TÉNÈBRES, tu es INVISIBLE pour les créatures qui comptent sur leur vision nocturne." },
+                    ],
+                    7: [{ name: 'Iron Mind', description: 'Tu gagnes la maîtrise des jets de sauvegarde de SAGESSE.' }],
+                    11: [{ name: 'Stalker\'s Flurry', description: "Une fois par tour, quand tu RATES une attaque d'arme, tu peux en effectuer une autre immédiatement." }],
                 },
             },
         ],
@@ -184,6 +226,9 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Mage Hand Legerdemain', description: 'Ta Mage Hand invisible peut ranger/récupérer des objets, crocheter des serrures et faire les poches à distance.' },
                     ],
                     9: [{ name: 'Magical Ambush', description: 'Si tu es caché quand tu lances un sort, la cible a un désavantage à sa sauvegarde.' }],
+                    // da-m9 — la progression s'arrêtait au niveau 9.
+                    13: [{ name: 'Versatile Trickster', description: 'Action bonus : ta Mage Hand distrait une créature à 1,50 m d\'elle — tu as l\'avantage à tes attaques contre cette créature ce tour-ci.' }],
+                    17: [{ name: 'Spell Thief', description: "1/repos long, en réaction : quand une créature lance un sort qui te vise, vole-le — le sort n'a aucun effet sur toi et tu peux le lancer toi-même pendant 8 heures (sauvegarde d'INT du lanceur pour résister)." }],
                 },
             },
         ],
@@ -263,6 +308,19 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     6: [{ name: 'Primal Strike', description: 'Tes attaques sous forme de bête comptent comme magiques.' }],
                 },
             },
+            {
+                id: 'spores',
+                name: 'Circle of Spores',
+                description: "Un symbiote fongique — la mort nourrit la vie, et tes spores rongent ceux qui t'approchent.",
+                featuresByLevel: {
+                    2: [
+                        { name: 'Halo of Spores', description: "Réaction : une créature à 3 m ou moins réussit une sauvegarde de CON (contre ton DD de sort) ou subit 1d4 dégâts nécrotiques (1d6 au niv. 6, 1d8 au 10, 1d10 au 14)." },
+                        { name: 'Symbiotic Entity', description: "Action : dépense une utilisation de Wild Shape pour gagner 4×niveau PV temporaires ; tes attaques de mêlée infligent +1d6 nécrotiques et ton Halo de spores double ses dés (10 min)." },
+                    ],
+                    6: [{ name: 'Fungal Infestation', description: "Réaction quand une bête/humanoïde de FP ≤ 1/4 meurt à 3 m ou moins : il se relève comme ZOMBIE à ton service (1 PV, obéit à tes ordres, 1 h)." }],
+                    10: [{ name: 'Spreading Spores', description: 'Action bonus : projette ton Halo de spores dans un cube de 3 m à 9 m ou moins pendant 1 minute.' }],
+                },
+            },
         ],
     },
 
@@ -330,6 +388,19 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     14: [{ name: 'Totemic Attunement (Bear)', description: 'En rage, les ennemis à 1,50 m ou moins ont le désavantage aux attaques contre tout autre que toi.' }],
                 },
             },
+            {
+                id: 'zealot',
+                name: 'Zealot',
+                description: "Une rage bénie par les dieux de la guerre — ta furie inflige des dégâts radiants et la mort ne veut pas de toi.",
+                featuresByLevel: {
+                    3: [
+                        { name: 'Divine Fury', description: "Pendant ta rage, ta PREMIÈRE attaque réussie de chaque tour inflige +1d6+½ niveau dégâts radiants. (Appliqué automatiquement par le moteur.)" },
+                        { name: 'Warrior of the Gods', description: "Les sorts qui te ramènent à la vie ne coûtent AUCUNE composante matérielle — les dieux veulent que tu te relèves." },
+                    ],
+                    6: [{ name: 'Fanatical Focus', description: 'Une fois par rage, relance une sauvegarde ratée.' }],
+                    14: [{ name: 'Rage Beyond Death', description: "En rage, tomber à 0 PV ne te fait PAS perdre conscience — tu ne meurs que si tes jets de mort échouent trois fois pendant que la rage dure." }],
+                },
+            },
         ],
     },
 
@@ -361,6 +432,19 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                     ],
                     6: [{ name: 'Extra Attack', description: "Tu attaques deux fois quand tu effectues l'action Attaquer." }],
                     14: [{ name: 'Battle Magic', description: 'Quand tu lances un sort de barde, effectue une attaque d’arme en action bonus.' }],
+                },
+            },
+            {
+                id: 'whispers',
+                name: 'College of Whispers',
+                description: "Le barde que l'on craint — des mots qui poignardent l'esprit et des secrets qui tuent.",
+                featuresByLevel: {
+                    3: [
+                        { name: 'Psychic Blades', description: "Quand tu TOUCHES avec une attaque d'arme, dépense un dé d'Inspiration bardique pour infliger +2d6 dégâts psychiques (3d6 au niv. 5, 5d6 au 10, 8d6 au 15). Annonce-le au MJ sur le coup." },
+                        { name: 'Words of Terror', description: "Après 1 minute de conversation, la cible réussit une sauvegarde de SAG ou est EFFRAYÉE de toi (ou d'une créature de ton choix) pendant 1 h." },
+                    ],
+                    6: [{ name: 'Mantle of Whispers', description: "Quand un humanoïde meurt à 9 m ou moins, capture son OMBRE : revêts-la pour prendre son apparence et accéder à ses souvenirs de surface (1 h)." }],
+                    14: [{ name: 'Shadow Lore', description: 'Murmure un secret : la cible réussit une sauvegarde de SAG ou est CHARMÉE et t\'obéit pendant 8 h, persuadée que tu connais son secret le plus sombre.' }],
                 },
             },
         ],
@@ -465,6 +549,22 @@ export const SUBCLASS_DATA: Record<string, SubclassConfig> = {
                         { name: 'Wild Magic Surge', description: "Après avoir lancé un sort d'ensorceleur de niveau 1+, le MJ peut te faire lancer un d20 : sur un 1, lance sur la table de Magie sauvage — tout peut arriver." },
                         { name: 'Tides of Chaos', description: "Gagne l'avantage à une attaque, un test ou une sauvegarde (se recharge quand une vague de magie sauvage se déclenche ou après un repos long)." },
                     ],
+                },
+            },
+            {
+                id: 'storm',
+                name: 'Storm Sorcery',
+                description: "La tempête vit en toi — le vent te porte, la foudre et le tonnerre répondent à ta colère.",
+                featuresByLevel: {
+                    1: [
+                        { name: 'Wind Speaker', description: 'Tu parles le primordial (et ses dialectes aérien, aquatique, igné et terreux).' },
+                        { name: 'Tempestuous Magic', description: "Action bonus quand tu lances un sort de niveau 1+ : des bourrasques te soulèvent — vole de 3 m sans provoquer d'attaques d'opportunité." },
+                    ],
+                    6: [
+                        { name: 'Heart of the Storm', description: 'RÉSISTANCE aux dégâts de foudre et de tonnerre ; quand tu lances un sort de foudre/tonnerre de niveau 1+, les créatures de ton choix à 3 m ou moins subissent ½ niveau d\'ensorceleur dégâts du même type.' },
+                        { name: 'Storm Guide', description: 'Apaise la pluie autour de toi ou dirige les vents (utilitaire, sans concentration).' },
+                    ],
+                    14: [{ name: "Storm's Fury", description: 'Réaction quand une attaque de mêlée te touche : l\'attaquant subit ton niveau en dégâts de foudre et réussit une sauvegarde de FOR ou est repoussé de 6 m.' }],
                 },
             },
         ],

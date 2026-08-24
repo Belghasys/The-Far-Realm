@@ -47,6 +47,14 @@ export interface FeatMechanical {
 export interface FeatDef {
     /** kebab-case unique id, e.g. 'great-weapon-master'. */
     id: string;
+    /** da-m4 — prérequis SRD vérifiés à la sélection (LevelUpModal). */
+    prerequisites?: {
+        /** Le personnage doit savoir lancer au moins un sort. */
+        spellcaster?: boolean;
+        /** Affichage lisible du prérequis. */
+        label?: string;
+        labelFr?: string;
+    };
     name: string;
     nameFr: string;
     /** Short English summary (1 sentence, shown in pickers). */
@@ -241,6 +249,7 @@ export const FEATS: FeatDef[] = [
     },
     {
         id: 'war-caster',
+        prerequisites: { spellcaster: true, label: 'Requires: able to cast at least one spell', labelFr: 'Prérequis : capacité à lancer au moins un sort' },
         name: 'War Caster',
         nameFr: 'Mage de guerre',
         description: 'You cast spells in the thick of melee without dropping blade, shield or focus.',
@@ -260,6 +269,7 @@ export const FEATS: FeatDef[] = [
     },
     {
         id: 'elemental-adept-fire',
+        prerequisites: { spellcaster: true, label: 'Requires: able to cast at least one spell', labelFr: 'Prérequis : capacité à lancer au moins un sort' },
         name: 'Elemental Adept (Fire)',
         nameFr: 'Adepte élémentaire (Feu)',
         description: 'Your flames burn through wards and never sputter.',
@@ -393,6 +403,23 @@ export const FEATS: FeatDef[] = [
 /** Fast lookup of a feat by its kebab-case id. Returns undefined if unknown. */
 export function getFeatById(id: string): FeatDef | undefined {
     return FEATS.find(f => f.id === id);
+}
+
+/** da-m4 — vérifie les prérequis SRD d'un don pour ce personnage (utilisé par
+ *  le sélecteur du LevelUpModal : un Barbare ne peut plus prendre War Caster). */
+export function meetsFeatPrerequisites(
+    feat: FeatDef,
+    character: { cantrips?: string[]; knownSpells?: string[]; preparedSpells?: string[]; spellSlots?: Record<string, { max: number }> },
+): boolean {
+    if (!feat.prerequisites) return true;
+    if (feat.prerequisites.spellcaster) {
+        const knowsASpell = (character.cantrips || []).length > 0
+            || (character.knownSpells || []).length > 0
+            || (character.preparedSpells || []).length > 0
+            || Object.values(character.spellSlots || {}).some(pool => (pool?.max || 0) > 0);
+        if (!knowsASpell) return false;
+    }
+    return true;
 }
 
 /** All feat ids, in display order (handy for validation and pickers). */
