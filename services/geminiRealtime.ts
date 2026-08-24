@@ -1436,10 +1436,29 @@ export class LiveDungeonMaster {
                 this.firstPromptTokenCount = prompt;
                 sessionTrace.trace('tokens', `Plancher de session : ${prompt} tokens au 1er tour`, usage);
             }
-            // Élagage serveur : le contexte ne rétrécit jamais tout seul.
+            // ⚠️ GRANDEUR NON QUALIFIÉE (audit 2026-08-24, lot 5 — « mesurer,
+            // pas régler »). Ce seuil s'appuyait sur l'idée que promptTokenCount
+            // reflète l'occupation de la fenêtre. Les traces du 23/08 l'excluent :
+            //
+            //  · valeurs jusqu'à 512 465 sur une fenêtre annoncée de 128 000 —
+            //    soit 4× ; ce ne peut pas être l'occupation courante ;
+            //  · série non monotone dans les DEUX sens, avec un bond de +414 000
+            //    en une minute, alors que l'audio ne produit que ~1 500 tok/min ;
+            //  · l'hypothèse « accumulation sur les allers-retours d'outils » a
+            //    été TESTÉE et réfutée : les deux plus gros pics surviennent sans
+            //    aucun appel d'outil dans les 25 s précédentes ;
+            //  · la somme des modalités vaut ~90-93 % du total, donc le détail
+            //    lui-même est incomplet.
+            //
+            // Conséquence : cette chute de 25 % n'est PAS une compression prouvée,
+            // et le réglage 100K/70K plus haut a été choisi sur cette lecture. On
+            // ne touche à rien tant que la grandeur n'est pas établie — ce qui
+            // demande la documentation du SDK ou une séance contrôlée d'un puis
+            // deux tours. Le ré-ancrage déclenché ici reste inoffensif (même bloc
+            // que le battement, plancher de 90 s), d'où le choix de le laisser.
             if (prev > 0 && prompt < prev * 0.75) {
-                const line = `COMPRESSION détectée : ${prev} → ${prompt} tokens (−${prev - prompt})`;
-                log.warn(`🗜️ ${line}`);
+                const line = `Chute du promptTokenCount : ${prev} → ${prompt} (−${prev - prompt}) — grandeur non qualifiée, voir lot 5`;
+                log.warn(`📉 ${line}`);
                 auditBus.publish('engine', line, usage);
                 sessionTrace.trace('tokens', line, usage);
                 campaignEventLog.append('CONNECTION_EVENT', line, { before: prev, after: prompt });
