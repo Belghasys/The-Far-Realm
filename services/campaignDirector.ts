@@ -97,6 +97,94 @@ export function splitChapterPressure(cliffhanger?: string | null): { narrative: 
     return { narrative: full.slice(0, full.length - match[0].length).trim(), cue: match[1].trim() };
 }
 
+// ═══════════════════ VERROUS DE SECRET (audit 2026-08-24, C1) ═══════════════
+//
+// Séance du 23/08, chapitre 1 : le premier secret protégé des Portes de l'Exil
+// a été narré mot pour mot par un PNJ — « Séverin… l'Ourdisseur. C'était un
+// Passeur de Vantael… coudre tous les mondes » — alors qu'il porte
+// « Révélation du passé : Acte II (Ch5). NE PAS révéler avant ».
+//
+// La cause n'est pas que le MJ ignorait la consigne : c'est qu'elle n'existait
+// qu'en PROSE, au milieu d'un paragraphe, et qu'il fallait la rapprocher d'une
+// position de chapitre que le MJ suit mal (A1). Le moteur, lui, connaît les
+// deux. On calcule donc le verrou et on le pose à côté du secret, partout où il
+// circule — bloc directeur, lookup_campaign, auditeur de narration.
+
+/** Verbes qui annoncent une RÉVÉLATION (par opposition à un simple semis). */
+const REVEAL_INTENT = /(r[ée]v[ée]l\w*|divulgu\w*|d[ée]masqu\w*|d[ée]voil\w*|vision|reveal\w*|disclos\w*|unmask\w*)/gi;
+/** « Ch5 », « Ch. 5 », « chapitre 3 », « chapter 4 » — la borne BASSE d'une plage. */
+const CHAPTER_REF = /\b(?:chapitres?|chapters?|ch\.?)\s*(\d{1,2})\b/i;
+/** Fenêtre de rattachement entre le verbe et le numéro qu'il gouverne. */
+const GATE_WINDOW = 140;
+
+/**
+ * Chapitre à partir duquel un secret protégé peut être révélé, lu dans sa prose.
+ *
+ * Le numéro doit SUIVRE un verbe de révélation : c'est ce qui distingue
+ * « démasquage au Ch12 » (un verrou) de « Le Ravaudeur frappe le hub au Ch16 »
+ * ou « Indices à semer dès le Ch2 » (des repères de mise en scène). Sans cette
+ * règle, on déverrouillerait le traître trois chapitres trop tôt — ou on
+ * verrouillerait des notes qui ne cachent rien.
+ *
+ * Sur une plage (« Ch4-6 », « Acte II (Ch5, …) »), on retient la borne basse :
+ * c'est le premier moment où la révélation est permise.
+ *
+ * @returns le numéro de chapitre, ou null si le secret ne porte aucun verrou.
+ */
+export function parseSecretGate(secret?: string | null): number | null {
+    const text = String(secret || '');
+    if (!text) return null;
+    REVEAL_INTENT.lastIndex = 0;
+    let hit: RegExpExecArray | null;
+    while ((hit = REVEAL_INTENT.exec(text)) !== null) {
+        const after = text.slice(hit.index + hit[0].length, hit.index + hit[0].length + GATE_WINDOW);
+        const ref = after.match(CHAPTER_REF);
+        if (ref) {
+            const n = Number(ref[1]);
+            if (Number.isFinite(n) && n > 0) { REVEAL_INTENT.lastIndex = 0; return n; }
+        }
+    }
+    return null;
+}
+
+/** Rang du chapitre courant (1-based) — la grandeur comparable à un verrou. */
+export function currentChapterNumber(
+    manifest?: AdventureManifest | null,
+    runtime?: CampaignRuntimeState,
+): number | null {
+    const chapters = manifest?.chapters || [];
+    const id = runtime?.currentChapterId;
+    if (!id) return chapters.length ? 1 : null;
+    const index = chapters.findIndex(c => c.id === id);
+    if (index >= 0) return index + 1;
+    const numeric = Number(String(id).replace(/[^\d]/g, ''));
+    return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
+/** Étiquette d'état d'un secret — vide s'il n'a pas de verrou ou si la position
+ *  est inconnue (on n'invente pas un verrou qu'on ne sait pas situer). */
+export function secretLockLabel(secret: string, chapterNow: number | null): string {
+    const gate = parseSecretGate(secret);
+    if (!gate || chapterNow == null) return '';
+    return chapterNow < gate ? ` [LOCKED until Ch${gate}]` : ` [open since Ch${gate}]`;
+}
+
+/**
+ * Les secrets ENCORE verrouillés, formulés pour l'auditeur de narration : c'est
+ * la liste de ce qu'une réplique n'a pas le droit d'énoncer comme un fait.
+ */
+export function buildLockedSecretFacts(
+    manifest?: AdventureManifest | null,
+    runtime?: CampaignRuntimeState,
+): string[] {
+    const chapterNow = currentChapterNumber(manifest, runtime);
+    if (chapterNow == null) return [];
+    return (runtime?.protectedSecrets || [])
+        .map(secret => ({ secret, gate: parseSecretGate(secret) }))
+        .filter(({ gate }) => gate != null && chapterNow < gate)
+        .map(({ secret, gate }) => `LOCKED DM-only secret (must not be stated as fact before Ch${gate}; the party is at Ch${chapterNow}): ${trimText(secret, 300)}`);
+}
+
 /**
  * Préfixe du fait canon semé à la CRÉATION pour rappeler la scène verrouillée.
  * Il était permanent : au niveau 9 et au jour 6, « Locked first scene: … »
@@ -419,7 +507,22 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
     // Étiquette DURCIE : elle était nue (« Protected secrets: »), alors que le
     // secret du héros, lui, porte un avertissement explicite dans le prompt
     // système. Un secret injecté à chaque tour sans consigne finit par fuiter.
-    lines.push(`Protected secrets (DM-ONLY — never state outright; seed them, reveal only at their beat): ${compactList((runtime?.protectedSecrets || []).map(secret => trimText(secret, INJECTION_BUDGETS.protectedSecret)))}`);
+    // C1 — chaque secret porte désormais son état de verrou, CALCULÉ depuis la
+    // position réelle. L'étiquette est ajoutée APRÈS la coupe : elle ne peut pas
+    // être tronquée, contrairement à la consigne en prose qu'elle remplace.
+    const chapterNow = currentChapterNumber(manifest, runtime);
+    const secrets = runtime?.protectedSecrets || [];
+    lines.push(`Protected secrets (DM-ONLY — never state outright; seed them, reveal only at their beat): ${compactList(secrets.map(secret => `${trimText(secret, INJECTION_BUDGETS.protectedSecret)}${secretLockLabel(secret, chapterNow)}`))}`);
+    {
+        const gates = secrets
+            .map(secret => parseSecretGate(secret))
+            .filter((gate): gate is number => gate != null);
+        const stillLocked = chapterNow == null ? [] : gates.filter(gate => chapterNow < gate);
+        if (gates.length) {
+            const nextUnlock = stillLocked.length ? Math.min(...stillLocked) : null;
+            lines.push(`Secret gates (computed from the chapter above, not from your memory): ${stillLocked.length} of ${gates.length} still LOCKED${nextUnlock ? `, next unlock at Ch${nextUnlock}` : ' — all open'}. A LOCKED secret must never be stated as established fact, by you or by any character: NPCs may hint, be mistaken or lie about it, and the hero may suspect it — nobody confirms it before its chapter.`);
+        }
+    }
     lines.push(`World clocks: ${compactList(clocks)}`);
     lines.push('Campaign director rule: keep this compact spine coherent, but do not force the player back to it. Use branch/clue/consequence tools when the player detours.');
 

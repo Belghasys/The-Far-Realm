@@ -36,7 +36,7 @@ import { StatusBar, StatusEffect } from './StatusBar';
 import { ActionPips } from './ActionPips';
 import { LevelUpModal } from './LevelUpModal';
 import { campaignEventLog } from '../services/campaignEventLog';
-import { buildCampaignDirectorContext } from '../services/campaignDirector';
+import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../services/campaignDirector';
 import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves } from '../services/rulesEngine';
 import type { ProposedPlayerAction } from '../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
@@ -919,10 +919,20 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       ...(activeQuestLine ? [`Active quests: ${activeQuestLine}`] : []),
       `In-world time: Day ${runtimeNow.dayCount || 1}, ${runtimeNow.timeOfDay || 'day'}`,
     ];
-    void auditNarration({ narration: last.text, stateFacts, language }).then(result => {
+    // C1 — les secrets dont le chapitre de révélation n'est pas atteint, verrou
+    // CALCULÉ depuis la position réelle. L'auditeur ne surveillait que les
+    // chiffres (PV, or, inventaire, combat, objectif, heure) : une révélation
+    // prématurée passait sans que rien ne la voie.
+    const lockedSecrets = buildLockedSecretFacts(adventureManifestData, runtimeNow);
+    void auditNarration({ narration: last.text, stateFacts, lockedSecrets, language }).then(result => {
       if (!result || result.consistent || !result.note) return;
-      auditBus.publish('gemini-system', `Consistency check flagged: ${result.note.slice(0, 80)}`, { note: result.note, narration: last.text });
-      dm.sendSystemMessage(`[SYSTEM] Consistency check — the engine state disagrees with your last narration: ${result.note} Honor the engine values from now on; do not announce a correction, just weave the true state into the fiction.`);
+      auditBus.publish('gemini-system', `Consistency check flagged${result.leak ? ' (SECRET LEAK)' : ''}: ${result.note.slice(0, 80)}`, { note: result.note, leak: result.leak, narration: last.text });
+      // Une fuite ne se corrige pas comme un chiffre faux : le mal est dit, on
+      // ne demande pas de rétablir une valeur mais de RE-COUVRIR — rendre la
+      // révélation douteuse plutôt que de la confirmer.
+      dm.sendSystemMessage(result.leak
+        ? `[SYSTEM] SECRET GATE — your last narration stated a DM-only secret whose reveal chapter is not reached: ${result.note} Do NOT correct this aloud and do not repeat it. From now on, treat it as an unverified claim: let the speaker be uncertain, mistaken or self-serving, and keep the confirmation for its proper chapter.`
+        : `[SYSTEM] Consistency check — the engine state disagrees with your last narration: ${result.note} Honor the engine values from now on; do not announce a correction, just weave the true state into the fiction.`);
     });
   }, [dm, isConnected, transcript, character, combatState, language]);
 

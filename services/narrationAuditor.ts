@@ -36,6 +36,10 @@ export interface NarrationAuditInput {
     narration: string;
     /** Compact, factual engine-state lines ("Player HP: 14/27", "Gold: 35"...). */
     stateFacts: string[];
+    /** C1 — secrets d'auteur dont le chapitre de révélation n'est PAS atteint.
+     *  Fournis par campaignDirector.buildLockedSecretFacts (verrou calculé
+     *  depuis la position réelle, pas depuis la prose du secret). */
+    lockedSecrets?: string[];
     language: string;
 }
 
@@ -43,11 +47,24 @@ export interface NarrationAuditResult {
     consistent: boolean;
     /** One short corrective instruction for the DM when inconsistent. */
     note?: string;
+    /** Vrai quand la narration a ÉNONCÉ un secret encore verrouillé — le défaut
+     *  n'est pas le même qu'une incohérence de chiffres, et la note envoyée au
+     *  MJ doit le dire autrement (on ne demande pas de « rétablir la vraie
+     *  valeur » : le mal est fait, on demande de re-couvrir). */
+    leak?: boolean;
 }
 
 export async function auditNarration(input: NarrationAuditInput): Promise<NarrationAuditResult | null> {
     const narration = String(input.narration || '').trim().slice(0, 2400);
     if (!narration || !input.stateFacts.length) return null;
+
+    // Section des secrets verrouillés, construite à part : elle n'est présente
+    // que s'il y a quelque chose à surveiller, et son absence vaut consigne
+    // (« s'il n'y a pas de section, leak est toujours faux »).
+    const lockedBlock = input.lockedSecrets?.length
+        ? ['## LOCKED AUTHORED SECRETS (their reveal chapter is NOT reached yet)',
+            ...input.lockedSecrets.map(f => `- ${f}`), ''].join('\n')
+        : '';
 
     const prompt = `
 You audit a D&D game narration for CLEAR contradictions with the authoritative engine state.
@@ -55,6 +72,7 @@ You audit a D&D game narration for CLEAR contradictions with the authoritative e
 ## ENGINE STATE (authoritative — the single source of truth)
 ${input.stateFacts.map(f => `- ${f}`).join('\n')}
 
+${lockedBlock}
 ## DM NARRATION (most recent)
 ${narration}
 
@@ -66,6 +84,7 @@ Flag ONLY unambiguous, material contradictions:
 - a narrated death/defeat of a combatant whose HP is > 0 (or vice versa)
 - STORY DRIFT: the narration has abandoned the stated campaign objective/active quests for an unrelated storyline with NO transition (a side scene or player detour is fine; a silent replacement of the plot is not)
 - narrated time of day flatly contradicting the in-world clock (e.g. "midday sun" during Night) — only when stated explicitly
+- SECRET LEAK (set leak=true as well): the narration, or a character speaking in it, states one of the LOCKED secrets above as an established fact — naming the hidden identity, the hidden motive or the hidden past outright. Hinting, suspecting, being mistaken or lying about it is FINE and must not be flagged; only a plain confirmation counts. If there is no locked-secret section above, leak is always false.
 Everything stylistic, atmospheric, or merely unstated is CONSISTENT. When in doubt, consistent=true.
 If inconsistent, write ONE short corrective instruction for the DM (max 160 chars, in ${input.language === 'fr' ? 'French' : 'English'}) that states the true value to honor going forward — never ask the DM to retcon aloud.
 `;
@@ -82,6 +101,7 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
                     properties: {
                         consistent: { type: 'BOOLEAN' },
                         note: { type: 'STRING' },
+                        leak: { type: 'BOOLEAN' },
                     },
                     required: ['consistent'],
                 },
@@ -93,6 +113,7 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
         return {
             consistent: parsed.consistent !== false,
             note: typeof parsed.note === 'string' ? parsed.note.slice(0, 200) : undefined,
+            leak: parsed.leak === true,
         };
     } catch (e) {
         log.debug('Narration audit failed (non-fatal):', e);

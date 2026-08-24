@@ -6,7 +6,7 @@ import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, bui
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/imageReferences';
 import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../types';
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../services/skillSystem';
-import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening } from '../services/campaignDirector';
+import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/campaignDirector';
 import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/branchWriterService';
@@ -1059,8 +1059,14 @@ export function useToolProcessor(deps: {
                         for (const fact of (rt.canonFacts || [])) {
                             consider('memory', 'Fait établi', fact, fact);
                         }
+                        // C1 — le verrou voyage AVEC le secret : le remonter nu
+                        // par lookup_campaign contournait l'étiquetage du bloc
+                        // directeur, et c'est justement là que le MJ va chercher
+                        // ce qu'il ne voit plus dans sa fenêtre.
+                        const chapterNow = currentChapterNumber(m, rt);
                         for (const secret of (rt.protectedSecrets || [])) {
-                            consider('memory', 'Secret (DM-ONLY)', secret, secret);
+                            const lock = secretLockLabel(secret, chapterNow);
+                            consider('memory', `Secret (DM-ONLY)${lock}`, `${secret}${lock}`, secret);
                         }
                         for (const npc of (useGameStore.getState().journal.npcs || []) as any[]) {
                             const facts = (npc.knownFacts || []).join(' | ');

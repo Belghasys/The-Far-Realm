@@ -255,7 +255,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       **CAMPAIGN SEED:**
       - Adventure: ${compact(adventure, 160) || 'Unknown'}
       - Session: ${isResumedSession ? 'resumed from saved history' : 'new live session'}
-      - Campaign spine: see the CAMPAIGN DIRECTOR CONTEXT below (villain, current chapter/scene, world clocks, canon facts). The full manifest is DM-REFERENCE ONLY and is deliberately NOT inlined here (it contains secrets/solutions). Pull specific authored detail on demand via lookup_campaign, and never reveal a secret or twist ahead of its beat.
+      - Campaign spine: see the CAMPAIGN DIRECTOR CONTEXT below (villain, current chapter/scene, world clocks, canon facts). The full manifest is DM-REFERENCE ONLY and is deliberately NOT inlined here (it contains secrets/solutions). Pull specific authored detail on demand via lookup_campaign, and never reveal a secret or twist ahead of its beat. The director context marks every protected secret as [LOCKED until ChN] or [open since ChN], computed from your CURRENT chapter — that tag is the authority, not your recollection. A LOCKED secret may be hinted at, suspected, lied about or gotten wrong by an NPC; it is never confirmed as fact, by you or by anyone speaking in your scene.
       - New session opening rule: if private director context includes a locked first scene, start exactly there after the cinematic. Do not invent an alternate tavern, road, dream, or recap opening.
       ${storySoFar}
       ${historyLog}
