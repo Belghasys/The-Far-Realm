@@ -70,6 +70,8 @@ export const INJECTION_BUDGETS = {
     /** Porte les interdits de révélation (« NE PAS révéler … ») : ne jamais couper. */
     firstSceneSetup: 700,
     firstSceneQuestion: 200,
+    /** Un choix de branche : décision + options + note PERSISTER. */
+    chapterChoice: 300,
     worldClock: 340,
     canonFact: 300,
     protectedSecret: 360,
@@ -283,8 +285,15 @@ function campaignChronicleContext(runtime?: CampaignRuntimeState): string[] {
     // Le gel d'un chapitre EFFACE ses lignes de log (chapterChronicle) : les
     // promesses anciennes ne survivent que dans canonFacts, taguées à la source.
     // On réunit les deux sources dans la ligne « à ne jamais oublier ».
+    // C3 (audit 2026-08-24) — la regex balayait TOUS les faits canon, donc les
+    // règles du monde semées à la création : « Le Cortège ne rompt jamais un
+    // serment » occupait la ligne « à ne jamais oublier » avant qu'aucune
+    // promesse n'ait été faite, et pouvait en évincer une vraie (slice -8). Un
+    // fait canon ne compte donc que s'il porte le tag que le jeu écrit lui-même
+    // (extractCampaignFacts) ; le texte libre reste balayé côté LOG, où il est
+    // écrit par le greffier ou le moteur pour cette raison précise.
     const promiseFacts = (runtime?.canonFacts || [])
-        .filter(f => /^\s*\[Promesse\]/i.test(f) || PROMISE_RE.test(f))
+        .filter(f => /^\s*\[Promesse\]/i.test(f))
         .map(f => f.replace(/^\s*\[Promesse\]\s*/i, ''));
     const promises = [...new Set([...promiseFacts, ...promiseLines])].slice(-8);
     if (promises.length) {
@@ -361,6 +370,16 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
         }
         if (pressure.cue) {
             lines.push(`Clock cue for this chapter's end (advance it with update_campaign_runtime when the beat lands): ${trimText(pressure.cue, INJECTION_BUDGETS.chapterClockCue)}`);
+        }
+        // A6 — les choix ÉCRITS du chapitre : 65 dans les trois campagnes,
+        // avec leur note « PERSISTER » qui dit quoi enregistrer pour que la
+        // décision compte au chapitre suivant. Rien ne les lisait : ni le bloc,
+        // ni lookup_campaign. C'était du contenu payé en écriture et invisible.
+        const choices = (chapter.branchingChoices || []).slice(0, 2);
+        if (choices.length) {
+            lines.push(`Chapter choices the player may face (do NOT force them; when one is made, honor its consequence): ${choices
+                .map(ch => `« ${trimText(ch.decision, 120)} » A: ${trimText(ch.optionA, 90)} / B: ${trimText(ch.optionB, 90)} → ${trimText(ch.consequence, INJECTION_BUDGETS.chapterChoice)}`)
+                .join(' | ')}`);
         }
     } else if (runtime?.currentObjective) {
         lines.push(`Current objective: ${trimText(runtime.currentObjective, 220)}`);

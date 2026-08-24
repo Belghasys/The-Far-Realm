@@ -1087,6 +1087,49 @@ export function levelUpCompanions(character: CharacterSheet, toLevel: number): C
     return { ...character, companions };
 }
 
+/** Ce qu'une nuit a réellement fait bouger sur une horloge du monde. */
+export interface NightClockTick {
+    name: string;
+    stage: number;
+    maxStage: number;
+    /** Vrai UNIQUEMENT au tour où l'horloge atteint son palier final. */
+    reachedMax: boolean;
+}
+
+/**
+ * Fait passer une nuit sur les horloges du monde — implémentation UNIQUE,
+ * partagée par l'outil `long_rest` du MJ et le bouton de repos du joueur (elle
+ * était copiée aux deux endroits, avec le risque classique de n'en corriger
+ * qu'un).
+ *
+ * Deux corrections d'audit (2026-08-24, A4) :
+ *
+ * 1. `tickOnLongRest: false` épargne une horloge. Les barèmes écrits disent
+ *    autre chose que « +1 par nuit » — « La Couture : +1 par clôture d'ACTE,
+ *    +1 par sortie à fil » ; « Voix Moissonnées : NE monte JAMAIS pour des
+ *    pilleurs anonymes ». Le tic universel poussait ces horloges à leur palier
+ *    final toute seule, quels que soient les choix du joueur. Absence de
+ *    drapeau = tic (comportement d'origine, conservé pour les horloges créées
+ *    par le MJ sur une campagne générée, où c'est le seul moteur).
+ * 2. Seules les horloges qui BOUGENT sont rapportées. Une horloge déjà au
+ *    maximum réclamait « FINAL STAGE REACHED — trigger its consequence now » à
+ *    chaque nuit : deux d'entre elles l'ont fait toute la séance du 23/08.
+ */
+export function advanceClocksForNight<T extends {
+    name: string; stage: number; maxStage: number; status: string;
+    tickOnLongRest?: boolean; updatedAt?: number;
+}>(clocks: T[] | undefined | null, now: number = Date.now()): { clocks: T[]; ticked: NightClockTick[] } {
+    const ticked: NightClockTick[] = [];
+    const next = (clocks || []).map(clock => {
+        if (clock.status !== 'active' || clock.tickOnLongRest === false) return clock;
+        const stage = Math.min(clock.maxStage, clock.stage + 1);
+        if (stage === clock.stage) return clock; // déjà au palier final : silence
+        ticked.push({ name: clock.name, stage, maxStage: clock.maxStage, reachedMax: stage >= clock.maxStage });
+        return { ...clock, stage, updatedAt: now };
+    });
+    return { clocks: next, ticked };
+}
+
 /**
  * Un combat est-il DÉJÀ en cours, au point que le redémarrer dupliquerait son
  * roster ?

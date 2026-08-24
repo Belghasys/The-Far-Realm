@@ -97,6 +97,11 @@ export const CB_WORLD_CLOCKS: AdventureManifest['initialWorldClocks'] = [
     stage: 0,
     maxStage: 6,
     status: 'active',
+    // Barème ÉVÉNEMENTIEL : cette horloge ne monte QUE par ses
+    // déclencheurs écrits, jamais par le simple passage d'une nuit
+    // (audit 2026-08-24, A4 — le tic universel la poussait seule au
+    // palier final, quels que soient les choix du joueur).
+    tickOnLongRest: false,
     updatedAt: 0,
   },
 ];

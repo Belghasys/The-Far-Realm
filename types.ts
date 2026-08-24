@@ -1106,6 +1106,12 @@ export interface CampaignWorldClock {
   maxStage: number;
   status: 'active' | 'paused' | 'resolved';
   updatedAt: number;
+  /** Cette horloge avance-t-elle d'elle-même à chaque nuit (repos long) ?
+   *  `false` = horloge ÉVÉNEMENTIELLE, qui ne monte que par les déclencheurs de
+   *  son barème (clôture d'acte, sortie à fil, enlèvement…). Absent = tic, ce
+   *  qui reste le seul moteur des horloges créées par le MJ sur une campagne
+   *  générée. Voir advanceClocksForNight (audit 2026-08-24, A4). */
+  tickOnLongRest?: boolean;
 }
 
 export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';

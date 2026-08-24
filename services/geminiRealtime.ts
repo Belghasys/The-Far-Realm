@@ -145,7 +145,7 @@ const GAME_TOOL_DECLARATIONS = [
             type: "OBJECT" as any,
             properties: {
                 query: { type: "STRING" as any, description: "What to look up: a name, place, keyword, or theme (e.g. 'Ysolde', 'Cairn de Givre', 'Gel Profond')." },
-                kind: { type: "STRING" as any, description: "Optional filter: npc | scene | location | lore | reward | chapter | encounter | memory (canon facts, secrets and NPC memories beyond the visible window) | villain (the antagonist's arc, weaknesses — and, only with this explicit kind, their secret)." }
+                kind: { type: "STRING" as any, description: "Optional filter: npc | scene | location | lore | reward | chapter | encounter | choice (the authored branching decisions of a chapter and what each option commits to) | memory (canon facts, secrets and NPC memories beyond the visible window) | villain (the antagonist's arc, weaknesses — and, only with this explicit kind, their secret)." }
             },
             required: ["query"]
         }

@@ -31,6 +31,7 @@ import {
     applyShortRest,
     applyEffectArgs,
     encounterAlreadyRunning,
+    advanceClocksForNight,
     encounterOutcome,
     applyStoryModifiersToPrompt,
     normalizeRollPrompt,
@@ -85,7 +86,13 @@ function stringListArg(value: unknown): string[] {
     return text ? [text] : [];
 }
 
-function uniqueAppend(existing: string[], incoming: string[], limit = 80): string[] {
+/** Nombre de faits de TÊTE preserves quand le plafond est atteint : ce sont les
+ *  faits semes par l'auteur a la creation (regles du monde, DC des horloges,
+ *  lois du plan). Le `slice(-limit)` les evinçait EN PREMIER — exactement les
+ *  seuls que le MJ ne peut pas redecouvrir (audit 2026-08-24, C2). */
+export const PRESERVED_HEAD_FACTS = 6;
+
+export function uniqueAppend(existing: string[], incoming: string[], limit = 80): string[] {
     const seen = new Set(existing.map(item => item.toLowerCase()));
     const next = [...existing];
     for (const item of incoming) {
@@ -95,7 +102,10 @@ function uniqueAppend(existing: string[], incoming: string[], limit = 80): strin
             next.push(item);
         }
     }
-    return next.slice(-limit);
+    if (next.length <= limit) return next;
+    const head = next.slice(0, PRESERVED_HEAD_FACTS);
+    const tail = next.slice(-(limit - head.length));
+    return [...head, ...tail];
 }
 
 function clockId(name: string): string {
@@ -1015,6 +1025,16 @@ export function useToolProcessor(deps: {
                         // Audit 2026-08-21 — les rencontres ÉCRITES (difficulté +
                         // monstres prévus) étaient chargées puis jamais lues : le
                         // MJ improvisait ses spawns sans voir le calibrage voulu.
+                        // A6 — les choix branchés sont aussi CONSULTABLES : le
+                        // bloc n'en sert que ceux du chapitre courant, or le MJ
+                        // peut vouloir vérifier ce qu'un choix passé engageait.
+                        if (!kind || kind === 'choice') {
+                            for (const b of ((ch.branchingChoices || []) as any[])) {
+                                consider('choice', `Ch${ch.id} — ${String(b.decision || '').slice(0, 60)}`,
+                                    `A: ${b.optionA} | B: ${b.optionB}${b.consequence ? ` — ${b.consequence}` : ''}`,
+                                    `${ch.id} ${b.decision || ''} ${b.optionA || ''} ${b.optionB || ''} ${b.consequence || ''} choix choice decision branche`);
+                            }
+                        }
                         if (!kind || kind === 'encounter' || kind === 'combat') {
                             for (const enc of ((ch.encounters || []) as any[])) {
                                 if (enc.type && enc.type !== 'combat' && kind === 'combat') continue;
@@ -3488,22 +3508,24 @@ export function useToolProcessor(deps: {
                     // active clock ticks +1 mechanically. Without this, a clock the DM
                     // forgets to advance by hand is a dead clock and the world stops
                     // feeling like it moves on its own.
-                    const clocksAdvanced: { name: string; stage: number; maxStage: number; reachedMax: boolean }[] = [];
-                    const activeClocks = (useGameStore.getState().campaignRuntime.worldClocks || [])
-                        .filter(clock => clock.status === 'active');
-                    if (activeClocks.length) {
-                        useGameStore.getState().setCampaignRuntime(prev => ({
-                            ...prev,
-                            worldClocks: (prev.worldClocks || []).map(clock => {
-                                if (clock.status !== 'active') return clock;
-                                const stage = Math.min(clock.maxStage, clock.stage + 1);
-                                clocksAdvanced.push({ name: clock.name, stage, maxStage: clock.maxStage, reachedMax: stage >= clock.maxStage });
-                                return { ...clock, stage, updatedAt: Date.now() };
-                            }),
-                            updatedAt: Date.now(),
-                        }));
-                        await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
-                        campaignEventLog.append('CAMPAIGN_RUNTIME_UPDATED', `World clocks advanced by long rest: ${clocksAdvanced.map(c => `${c.name} ${c.stage}/${c.maxStage}`).join(', ')}`, { clocksAdvanced });
+                    // A4 — implémentation UNIQUE partagée avec le bouton de repos
+                    // du joueur : le tic respecte le barème déclaré par chaque
+                    // horloge, et ne rapporte que celles qui BOUGENT (une horloge
+                    // déjà au maximum réclamait sa conséquence chaque nuit).
+                    let clocksAdvanced: ReturnType<typeof advanceClocksForNight>['ticked'] = [];
+                    {
+                        const before = useGameStore.getState().campaignRuntime.worldClocks || [];
+                        const result = advanceClocksForNight(before);
+                        clocksAdvanced = result.ticked;
+                        if (clocksAdvanced.length) {
+                            useGameStore.getState().setCampaignRuntime(prev => ({
+                                ...prev,
+                                worldClocks: advanceClocksForNight(prev.worldClocks).clocks,
+                                updatedAt: Date.now(),
+                            }));
+                            await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
+                            campaignEventLog.append('CAMPAIGN_RUNTIME_UPDATED', `World clocks advanced by long rest: ${clocksAdvanced.map(c => `${c.name} ${c.stage}/${c.maxStage}`).join(', ')}`, { clocksAdvanced });
+                        }
                     }
 
                     return {

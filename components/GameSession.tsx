@@ -37,7 +37,7 @@ import { ActionPips } from './ActionPips';
 import { LevelUpModal } from './LevelUpModal';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildCampaignDirectorContext } from '../services/campaignDirector';
-import { advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves } from '../services/rulesEngine';
+import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves } from '../services/rulesEngine';
 import type { ProposedPlayerAction } from '../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
 import { DeathScreen } from './DeathScreen';
@@ -4530,17 +4530,15 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
 
     // Une nuit passe : tick des horloges du monde (le bouton manuel ne le
     // faisait pas — seul l'outil long_rest du MJ tiquait) + narration.
-    const clocksAdvanced: string[] = [];
-    const activeClocks = (useGameStore.getState().campaignRuntime.worldClocks || []).filter(clock => clock.status === 'active');
-    if (activeClocks.length) {
+    // A4 — MÊME implémentation que l'outil long_rest du MJ (elle était copiée
+    // ici, avec le risque classique de n'en corriger qu'une). Le barème de
+    // chaque horloge est respecté, et seules celles qui bougent sont annoncées.
+    const ticked = advanceClocksForNight(useGameStore.getState().campaignRuntime.worldClocks).ticked;
+    const clocksAdvanced = ticked.map(c => `"${c.name}" ${c.stage}/${c.maxStage}${c.reachedMax ? ' (FINAL STAGE)' : ''}`);
+    if (ticked.length) {
       useGameStore.getState().setCampaignRuntime(prev => ({
         ...prev,
-        worldClocks: (prev.worldClocks || []).map(clock => {
-          if (clock.status !== 'active') return clock;
-          const stage = Math.min(clock.maxStage, clock.stage + 1);
-          clocksAdvanced.push(`"${clock.name}" ${stage}/${clock.maxStage}${stage >= clock.maxStage ? ' (FINAL STAGE)' : ''}`);
-          return { ...clock, stage, updatedAt: Date.now() };
-        }),
+        worldClocks: advanceClocksForNight(prev.worldClocks).clocks,
         updatedAt: Date.now(),
       }));
       void saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
