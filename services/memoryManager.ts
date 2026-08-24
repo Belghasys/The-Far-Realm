@@ -11,6 +11,7 @@
 
 import { saveService } from './saveService';
 import { log } from './logger';
+import { auditBus } from './auditBus';
 
 // Types
 export interface ChatMessage {
@@ -58,12 +59,16 @@ export interface ShortTermMemory {
 // Constants
 const STORAGE_KEY = 'dnd_short_term_memory';
 const SUMMARY_CACHE_KEY = 'dnd_summary_cache';
-const TOKEN_THRESHOLD = 60000; // 60K tokens
-const PURGE_KEEP_PERCENT = 0.20; // Keep last 20%
+// 15K ≈ 1h30-2h30 de jeu vocal : le grand résumé se rafraîchit EN COURS de
+// soirée. L'ancien seuil 60K (~8-10 h) ne se déclenchait presque jamais — le
+// résumé cumulatif n'existait pas pour la plupart des parties (audit trame).
+const TOKEN_THRESHOLD = 15000;
+// 30 % conservés mot pour mot (~30-40 min de dialogue au seuil 15K) : le MJ
+// garde le fil immédiat, le résumé + digests + campaign log portent le reste.
+const PURGE_KEEP_PERCENT = 0.30;
 // French runs ~3.3 chars/token (vs ~4 for English); using 4 under-counted and
 // fired the purge too late on FR campaigns. 3.5 is a safe bilingual middle.
 const CHARS_PER_TOKEN = 3.5;
-const SUMMARY_REGEN_THRESHOLD = 50; // Regenerate summary after 50 new messages
 
 class MemoryManager {
     private memory: ShortTermMemory;
@@ -86,8 +91,16 @@ class MemoryManager {
 
     private loadSummaryCache(): { text: string; messageCount: number } | null {
         try {
-            const stored = localStorage.getItem(this.summaryKey()) || localStorage.getItem(SUMMARY_CACHE_KEY);
-            return stored ? JSON.parse(stored) : null;
+            const scoped = localStorage.getItem(this.summaryKey());
+            if (scoped) return JSON.parse(scoped);
+            // TP6 — clé héritée non scopée : migrer PUIS la supprimer, sinon
+            // toute nouvelle campagne hérite du résumé d'une ancienne.
+            const legacy = localStorage.getItem(SUMMARY_CACHE_KEY);
+            if (legacy) {
+                localStorage.removeItem(SUMMARY_CACHE_KEY);
+                return JSON.parse(legacy);
+            }
+            return null;
         } catch { return null; }
     }
 
@@ -110,17 +123,16 @@ class MemoryManager {
         this.saveSummaryCache();
     }
 
-    /** Returns true if we need to regenerate the summary (too many new messages since last one) */
-    shouldRegenerateSummary(): boolean {
-        if (!this.cachedSummary) return true;
-        const newMessages = this.memory.chatHistory.length - this.cachedSummary.messageCount;
-        return newMessages >= SUMMARY_REGEN_THRESHOLD;
-    }
-
     // Load from localStorage
     private loadFromStorage(): ShortTermMemory {
         try {
-            const stored = localStorage.getItem(this.storageKey()) || localStorage.getItem(STORAGE_KEY);
+            let stored = localStorage.getItem(this.storageKey());
+            if (!stored) {
+                // TP6 — même migration que le résumé : consommer la clé héritée
+                // une seule fois (contamination inter-campagnes sinon).
+                stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) localStorage.removeItem(STORAGE_KEY);
+            }
             if (stored) {
                 const parsed = JSON.parse(stored);
                 log.info('📦 Memory loaded from localStorage:', {
@@ -195,13 +207,6 @@ class MemoryManager {
         return this.memory.chatHistory;
     }
 
-    // Get formatted context string for LLM
-    getContextForLLM(): string {
-        return this.memory.chatHistory
-            .map(m => `${m.speaker.toUpperCase()}: ${m.text}`)
-            .join('\n');
-    }
-
     // Update combat state
     updateCombatState(state: CombatStateSnapshot | null): void {
         this.memory.combatState = state;
@@ -230,16 +235,22 @@ class MemoryManager {
 
         log.info('🔄 Purging memory - threshold exceeded');
 
+        // TP5 (corrigé pour de vrai) — `history` est une RÉFÉRENCE au tableau
+        // vivant : addMessage push dessus pendant l'await du résumé, donc sa
+        // .length bouge. L'ancienne version faisait `slice(history.length)` en
+        // aval → toujours [] → les répliques arrivées pendant le résumé étaient
+        // perdues. On fige la longueur MAINTENANT et on découpe sur ce nombre.
         const history = this.memory.chatHistory;
-        const keepCount = Math.ceil(history.length * PURGE_KEEP_PERCENT);
-        const toArchive = history.slice(0, history.length - keepCount);
-        const toKeep = history.slice(-keepCount);
+        const snapshotLen = history.length;
+        const keepCount = Math.ceil(snapshotLen * PURGE_KEEP_PERCENT);
+        const toArchive = history.slice(0, snapshotLen - keepCount);
+        const toKeep = history.slice(snapshotLen - keepCount, snapshotLen);
 
         // Generate summary of archived content. Summarize FIRST and only purge
         // on success: purging with a stub summary turned one API hiccup
         // (offline, quota) into permanent campaign amnesia.
         const archiveText = toArchive.map(m => `${m.speaker}: ${m.text}`).join('\n');
-        let summary = '';
+        let summary: string;
 
         try {
             summary = await summarize(archiveText);
@@ -253,12 +264,18 @@ class MemoryManager {
         }
         log.info('📝 Summary generated:', summary.substring(0, 100) + '...');
 
-        // Update memory
-        this.memory.chatHistory = toKeep;
-        this.memory.tokenCount = toKeep.reduce((acc, m) => acc + this.countTokens(m.text), 0);
+        // Update memory — tout ce qui a été poussé APRÈS le snapshot survit.
+        const arrivedDuringSummary = this.memory.chatHistory.slice(snapshotLen);
+        this.memory.chatHistory = [...toKeep, ...arrivedDuringSummary];
+        this.memory.tokenCount = this.memory.chatHistory.reduce((acc, m) => acc + this.countTokens(m.text), 0);
         this.saveToStorage();
 
         log.info(`✅ Memory purged: ${toArchive.length} archived, ${toKeep.length} kept, ${this.memory.tokenCount} tokens remaining`);
+        // Traçabilité (journal de session) : chaque purge est un moment où de
+        // la mémoire brute disparaît — on consigne quoi et combien.
+        auditBus.publish('engine',
+            `Purge mémoire : ${toArchive.length} répliques archivées → résumé ${summary.length} chars, ${toKeep.length} gardées`,
+            { archived: toArchive.length, kept: toKeep.length, arrivedDuringSummary: arrivedDuringSummary.length, tokensRemaining: this.memory.tokenCount });
 
         return summary;
     }
@@ -312,7 +329,9 @@ class MemoryManager {
     // Import from Firebase load
     importFromSave(data: { transcript?: { speaker: 'user' | 'dm'; text: string }[]; combat?: any }): void {
         if (data.transcript) {
-            const revIndex = [...data.transcript].reverse().findIndex(m => m.text && m.text.includes('📚'));
+            // TP14 — préfixe STRICT du marqueur d'archive : un simple 📚 dans une
+            // réplique du MJ (« la bibliothèque 📚… ») tronquait tout l'historique.
+            const revIndex = [...data.transcript].reverse().findIndex(m => m.text && m.text.trim().startsWith('📚 ['));
             // Keep the messages AFTER the last 📚 archive marker (everything before
             // it is already summarized). Edge case: if the marker is the LAST message
             // (a save taken right after archiving, with no live tail yet), the slice

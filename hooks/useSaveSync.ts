@@ -2,16 +2,23 @@ import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet } from '../types';
 import { saveService } from '../services/saveService';
+import { buildSlimManifestPayload, SlimManifestPayload } from '../services/manifestTokens';
+import { useGameStore } from '../store/gameStore';
 import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { ChatMessage } from './useTranscript';
+import { foldText } from '../services/skillSystem';
 
 // Firestore hard-caps a document at 1 MiB. A long campaign's transcript + event
 // log can blow past that, which makes the ENTIRE setDoc throw — losing the whole
 // save, not just the overflow. We trim the OLDEST entries to a safe byte budget
 // before writing; long-term continuity is preserved by the AI summary, archived
 // conversations and the director context, not this inline transcript.
-const roughBytes = (v: any): number => { try { return JSON.stringify(v).length; } catch { return 0; } };
+// Contre-audit 2026-08-13 (SP4) — mesurer en OCTETS UTF-8, pas en unités UTF-16 :
+// `.length` sous-estime chaque caractère accenté français (2 octets) et emoji
+// (4 octets), donc le « budget » pouvait dépasser la limite Firestore réelle.
+const utf8 = new TextEncoder();
+const roughBytes = (v: any): number => { try { return utf8.encode(JSON.stringify(v)).length; } catch { return 0; } };
 function capByByteBudget<T>(items: T[], budget: number): T[] {
     if (!Array.isArray(items) || items.length === 0) return items;
     const out: T[] = [];
@@ -61,8 +68,21 @@ export function useSaveSync({
     const isSavingRef = useRef(false);
     const npcSyncSet = useRef(new Set<string>());
 
-    const buildManifestPayload = (data: any): AdventureManifest | undefined => {
-        if (data.adventureManifestData) return data.adventureManifestData;
+    const buildManifestPayload = (data: any): AdventureManifest | SlimManifestPayload | undefined => {
+        if (data.adventureManifestData) {
+            // Campagne d'AUTEUR : persister la forme MINCE (~2 Ko) au lieu du
+            // manifeste entier (~220 Ko pour le Chant Brisé = 93 % du plafond
+            // Firestore d'1 MiB — une campagne plus grosse faisait échouer
+            // TOUTES les sauvegardes en silence). Le manifeste se reconstruit
+            // au chargement depuis le gabarit du code (hydrateManifestPayload).
+            const slim = buildSlimManifestPayload(
+                data.adventure,
+                data.adventureManifestData,
+                useGameStore.getState().manifestTokens,
+            );
+            if (slim) return slim;
+            return data.adventureManifestData;
+        }
         if (!data.adventureManifest) return undefined;
         return {
             villain: {
@@ -85,8 +105,12 @@ export function useSaveSync({
             character: data.character,
             // Bound transcript + events so a long campaign never exceeds Firestore's
             // 1 MiB document cap (which would fail the whole save). Newest entries win.
-            transcript: capByByteBudget<any>(data.transcript || [], 550_000),
-            events: capByByteBudget<any>(campaignEventLog.getEvents() || [], 200_000),
+            // Budgets abaissés (SP4) : mesure désormais en octets réels, et le manifeste
+            // des campagnes d'auteur a grossi (~48 Ko de guide rattaché — CP6). Marge
+            // visée : manifest ~220 Ko + transcript 450 Ko + events 150 Ko + fiche/journal
+            // ≈ 950 Ko < 1 MiB Firestore.
+            transcript: capByByteBudget<any>(data.transcript || [], 450_000),
+            events: capByByteBudget<any>(campaignEventLog.getEvents() || [], 150_000),
             manifest: buildManifestPayload(data),
             campaignRuntime: data.campaignRuntime,
             ...(data.combatState?.isActive ? {
@@ -108,12 +132,16 @@ export function useSaveSync({
             }),
             journal: {
                 briefing: data.journal.briefing,
+                // OU1 — steps/createdAt inclus : update_quest_step écrivait la
+                // checklist puis la sauvegarde la jetait au premier sync.
                 quests: (data.journal.quests || []).map((q: any) => ({
-                    id: q.id, title: q.title, description: q.description, status: q.status
+                    id: q.id, title: q.title, description: q.description, status: q.status,
+                    steps: q.steps || [], createdAt: q.createdAt ?? null
                 })),
                 npcs: (data.journal.npcs || []).map((n: any) => ({
                     id: n.id, name: n.name, description: n.description, location: n.location,
-                    disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt
+                    disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt,
+                    createdAt: n.createdAt ?? null
                 })),
                 locations: data.journal.locations || [],
                 chronicle: data.journal.chronicle || []
@@ -337,6 +365,7 @@ export function useSaveSync({
                             const [fullTag, npcName, description, location] = match;
                             // Only sync if this specific tag occurrence hasn't been synced yet
                             if (!npcSyncSet.current.has(fullTag)) {
+                                npcSyncSet.current.add(fullTag);
                                 const newNpc = {
                                     id: `npc_${npcName.toLowerCase().replace(/\s+/g, '_')}`,
                                     name: npcName.trim(),
@@ -344,11 +373,14 @@ export function useSaveSync({
                                     location: location.trim(),
                                     lastConversation: new Date().toISOString()
                                 };
-                                await saveService.addNPCConversation(newNpc);
-                                npcSyncSet.current.add(fullTag);
-
-                                // Append to local copy to prevent overwrite by buildSavePayload(data)
-                                if (!currentNpcs.some((n: any) => n.id === newNpc.id)) {
+                                // Dédup par NOM plié (accents/casse) ET par id : l'outil
+                                // add_npc crée des ids crypto.randomUUID(), donc le seul
+                                // test d'id laissait ce chemin hérité recréer le même
+                                // PNJ en double (audit 2026-08-12).
+                                const alreadyKnown = currentNpcs.some((n: any) =>
+                                    n.id === newNpc.id || foldText(String(n.name || '')) === foldText(newNpc.name));
+                                if (!alreadyKnown) {
+                                    await saveService.addNPCConversation(newNpc);
                                     currentNpcs.push({
                                         id: newNpc.id,
                                         name: newNpc.name,
@@ -416,8 +448,8 @@ export function useSaveSync({
         latestData.current.setJournal(updatedJournal);
         saveService.updateJournalDebounced({
             briefing: updatedJournal.briefing,
-            quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status })),
-            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt })),
+            quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status, steps: q.steps || [], createdAt: q.createdAt ?? null })),
+            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt, createdAt: n.createdAt ?? null })),
             locations: (updatedJournal.locations || []).map((l: any) => ({ id: l.id, name: l.name, description: l.description })),
             chronicle: (updatedJournal.chronicle || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, timestamp: c.timestamp })),
         });
@@ -427,8 +459,8 @@ export function useSaveSync({
         latestData.current.setJournal(updatedJournal);
         await saveService.updateJournalImmediate({
             briefing: updatedJournal.briefing,
-            quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status })),
-            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt })),
+            quests: updatedJournal.quests.map((q: any) => ({ id: q.id, title: q.title, description: q.description, status: q.status, steps: q.steps || [], createdAt: q.createdAt ?? null })),
+            npcs: updatedJournal.npcs.map((n: any) => ({ id: n.id, name: n.name, description: n.description, location: n.location, disposition: n.disposition, knownFacts: n.knownFacts, lastSeenAt: n.lastSeenAt, createdAt: n.createdAt ?? null })),
             locations: (updatedJournal.locations || []).map((l: any) => ({ id: l.id, name: l.name, description: l.description })),
             chronicle: (updatedJournal.chronicle || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, timestamp: c.timestamp })),
         });

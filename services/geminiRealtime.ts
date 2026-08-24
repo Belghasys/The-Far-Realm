@@ -12,6 +12,9 @@ import { campaignEventLog } from './campaignEventLog';
 import { requireViteEnv } from './modelConfig';
 import { auditBus } from './auditBus';
 import { getAppSettings } from '../store/settingsStore';
+// IJ7 — lecture de l'activeSaveId pour lier le handle de reprise à la sauvegarde.
+import { useGameStore } from '../store/gameStore';
+import { sessionTrace } from './sessionTrace';
 
 // --- Audio Utilities ---
 
@@ -91,6 +94,24 @@ function appendTranscriptChunk(previous: string, incoming: string): string {
     return `${prev} ${next}`;
 }
 
+// ── DIAGNOSTIC TEMPORAIRE « coupures » ───────────────────────────────────────
+// Corrèle chaque interruption serveur avec ce qui l'a précédée : injection de
+// texte pendant que le MJ parle ? écho capté par le micro ? Visible dans la
+// console (filtre DIAG-COUPURE) et l'AuditConsole. À RETIRER une fois le
+// coupable identifié.
+function diagStamp(): string {
+    const d = new Date();
+    const p = (n: number, w = 2) => String(n).padStart(w, '0');
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
+}
+
+/** Profondeur max de la file du gate de silence (les plus anciens sont jetés). */
+const MAX_DEFERRED = 8;
+
+/** TR10 — plancher entre deux ré-ancrages du contexte directeur déclenchés
+ *  par une compression de fenêtre. Mesuré le 2026-08-23 : sans plancher,
+ *  29 renvois de 12 Ko en 34 min, dont 91 % identiques au précédent. */
+const REANCHOR_MIN_INTERVAL_MS = 90_000;
 const AUDIO_MODEL = normalizeLiveModelName(requireViteEnv('VITE_AUDIO_MODEL', import.meta.env.VITE_AUDIO_MODEL));
 
 export function liveConnectionConfigSummary() {
@@ -119,12 +140,12 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "lookup_campaign",
-        description: "Pull authored detail from THIS campaign's manifest on demand (scenes, NPCs, locations, lore, rewards, chapter notes). Use whenever you need specifics the live context didn't include — a named NPC's personality/voice, a place's description, a chapter's secret or DM notes, an item. Returns the matching authored chunks.",
+        description: "Pull authored detail from THIS campaign's manifest AND the campaign's living memory on demand (scenes, NPCs, locations, lore, rewards, chapter notes, encounters, the villain, and every canon fact/secret ever recorded). Use whenever you need specifics the live context didn't include — a named NPC's personality/voice, a place's description, a chapter's secret, an item, an old promise, or what you established about someone twenty scenes ago. The live context only ever shows a WINDOW of the campaign's facts: when the context says a memory index exists, this tool is how you reach the rest. Returns the matching chunks.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 query: { type: "STRING" as any, description: "What to look up: a name, place, keyword, or theme (e.g. 'Ysolde', 'Cairn de Givre', 'Gel Profond')." },
-                kind: { type: "STRING" as any, description: "Optional filter: npc | scene | location | lore | reward | chapter." }
+                kind: { type: "STRING" as any, description: "Optional filter: npc | scene | location | lore | reward | chapter | encounter | memory (canon facts, secrets and NPC memories beyond the visible window) | villain (the antagonist's arc, weaknesses — and, only with this explicit kind, their secret)." }
             },
             required: ["query"]
         }
@@ -155,7 +176,7 @@ const GAME_TOOL_DECLARATIONS = [
             properties: {
                 spellName: { type: "STRING" as any },
                 slotLevel: { type: "INTEGER" as any },
-                target: { type: "STRING" as any, description: "Combatant id/name — or 'all_enemies' for an AREA spell (Fireball, Burning Hands): every enemy then rolls its OWN save and shares one damage roll." },
+                target: { type: "STRING" as any, description: "Combatant id/name — or 'all_enemies' for an AREA spell (Fireball, Burning Hands): every enemy then rolls its OWN save and shares one damage roll. Use 'all_combatants' when the blast zone ALSO covers allies (companion, mount): friendly fire is real — they save and take damage too." },
                 casterAbility: { type: "STRING" as any, description: "STR, DEX, CON, INT, WIS, or CHA" },
                 casterAbilityMod: { type: "INTEGER" as any },
                 spellAttackBonus: { type: "INTEGER" as any },
@@ -221,16 +242,33 @@ const GAME_TOOL_DECLARATIONS = [
         }
     },
     {
-        name: "update_campaign_runtime",
-        description: "Update compact campaign director state after a meaningful chapter, scene, objective, canon fact, secret, world clock, or branch status change. Do not call every turn.",
+        // DC1 (audit trame) — SEUL mécanisme d'avancement de la position :
+        // validation fuzzy côté client, erreur EXPLICITE listant les ids
+        // valides (l'ancien chemin échouait en silence et le contexte
+        // ramenait le MJ au chapitre 1 pour toute la campagne).
+        name: "set_campaign_position",
+        description: "REQUIRED whenever the story moves to a new chapter or scene of the campaign manifest. Marks earlier chapters as completed. The client validates the ids and returns an explicit error with the list of valid ids if no match — never guess silently. Also call it right after you decide a chapter is finished.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                currentChapterId: { type: "STRING" as any, description: "Current main chapter id from the adventure manifest, if known." },
-                currentSceneId: { type: "STRING" as any, description: "Current main scene id from the adventure manifest, if known." },
+                chapterId: { type: "STRING" as any, description: "Chapter id, exact title, or chapter number (e.g. '3'). Fuzzy-matched against the manifest." },
+                sceneId: { type: "STRING" as any, description: "Scene id or title within that chapter (optional)." },
+                region: { type: "STRING" as any, description: "World/plane the story is now in (optional — set it whenever the party changes world, e.g. 'Le Val Clos')." }
+            },
+            required: ["chapterId"]
+        }
+    },
+    {
+        name: "update_campaign_runtime",
+        description: "Update compact campaign director state after a meaningful objective, canon fact, secret, world clock, or branch status change. Do not call every turn. CHAPTER/SCENE changes go through set_campaign_position (mandatory), never through this tool.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
                 currentObjective: { type: "STRING" as any, description: "Short current objective for the player-facing campaign board." },
                 canonFact: { type: "STRING" as any, description: "Stable fact that is now true in the campaign." },
+                canonFacts: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Several stable facts at once (alternative to canonFact)." },
                 protectedSecret: { type: "STRING" as any, description: "Private director-only secret that should not be shown to the player." },
+                protectedSecrets: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Several director-only secrets at once (alternative to protectedSecret)." },
                 branchStatus: { type: "STRING" as any, description: "active, resolved, abandoned, or merged_into_main for the active branch." },
                 worldClockName: { type: "STRING" as any, description: "Name of a world clock to create or update." },
                 worldClockDescription: { type: "STRING" as any, description: "Short description of the pressure or countdown." },
@@ -253,7 +291,8 @@ const GAME_TOOL_DECLARATIONS = [
                 ability: { type: "STRING" as any, description: "Ability for a raw ability check or a saving throw: STR/DEX/CON/INT/WIS/CHA. Use with isSave=true for a saving throw." },
                 isSave: { type: "BOOLEAN" as any, description: "True if this is a saving throw (the engine adds the class's save proficiency)." },
                 advantage: { type: "STRING" as any, description: "Optional: 'ADV' or 'DIS'" },
-                bonus: { type: "INTEGER" as any, description: "Optional static bonus — leave empty for skill/ability/save checks (the sheet provides it)." }
+                bonus: { type: "INTEGER" as any, description: "Optional static bonus — leave empty for skill/ability/save checks (the sheet provides it)." },
+                force: { type: "BOOLEAN" as any, description: "Set true ONLY to override the branch-plan suppression when the roll really stems from a NEW concrete player action with risk (the engine otherwise rejects rolls right after a branch plan)." }
             },
             required: ["reason", "dc"]
         }
@@ -268,7 +307,8 @@ const GAME_TOOL_DECLARATIONS = [
                 quantity: { type: "INTEGER" as any },
                 type: { type: "STRING" as any, description: "'weapon', 'armor', 'consumable', 'misc', 'ammo', or 'container'" },
                 effect: { type: "STRING" as any, description: "Custom magic effect text (e.g. '+2 CON', '+1d6 fire', '+10 speed', '+1 AC')" },
-                properties: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Weapon properties (e.g., ['finesse', 'light', 'two-handed'])" },
+                properties: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Weapon properties (e.g., ['finesse', 'light', 'two-handed']). For a RANGED weapon (bow, crossbow, sling) you MUST include 'ammunition' so the engine treats it as ranged." },
+                range: { type: "STRING" as any, description: "Range bands in feet for a ranged/thrown weapon, e.g. '150/600' for a longbow, '20/60' for a thrown dagger. Required for any bow/crossbow/sling." },
                 damageDice: { type: "STRING" as any, description: "Base damage dice for weapons (e.g., '1d8', '2d6')" },
                 damageType: { type: "STRING" as any, description: "Damage type (e.g., 'slashing', 'piercing', 'fire', 'radiant')" },
                 acBonus: { type: "INTEGER" as any, description: "Armor Class magic bonus (e.g. 1, 2)" },
@@ -312,31 +352,36 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_enemy_init",
-        description: "Add an enemy to the combat initiative tracker. If the monster exists in the bestiary, local HP, AC, DEX, portrait, and attacks are used; hp/ac are fallback only for homebrew.",
+        description: "Add an enemy to the combat initiative tracker. If the monster exists in the bestiary, local HP, AC, DEX, portrait, and attacks are used; hp/ac are fallback only for homebrew. For HOMEBREW enemies (not in the bestiary), ALWAYS pass hp and ac — omitted hp falls back to a level-scaled default, not the stats you had in mind. SIZE THE FIGHT TO THE HERO'S LEVEL: the engine enforces an SRD XP budget and REJECTS spawns past the deadly threshold (+25%) — the error tells you the remaining headroom. At level 1-2, one or two weak creatures IS a real fight.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any },
-                hp: { type: "INTEGER" as any, description: "Fallback HP for homebrew enemies only." },
+                hp: { type: "INTEGER" as any, description: "HP for homebrew enemies — STRONGLY recommended for any creature not in the bestiary (omitted = level-scaled default)." },
                 ac: { type: "INTEGER" as any, description: "Fallback AC for homebrew enemies only." },
                 strMod: { type: "INTEGER" as any, description: "Fallback STR modifier for homebrew enemies only." },
                 dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for homebrew enemies only." },
                 xp: { type: "INTEGER" as any, description: "XP award for defeating this HOMEBREW enemy (SRD CR table). Omit for bestiary monsters." },
-                range: { type: "STRING" as any, description: "Starting distance from the player: 'melee' (adjacent), 'near' (a few strides), 'far' (needs a full move or ranged attack). Default: near." }
+                range: { type: "STRING" as any, description: "Starting distance from the player: 'melee' (adjacent), 'near' (a few strides), 'far' (needs a full move or ranged attack). Default: near." },
+                force: { type: "BOOLEAN" as any, description: "Set true ONLY after the engine rejected the spawn as over-budget AND the campaign manifest explicitly scripts this fight as a deadly set-piece. Never use it to pad ordinary encounters." }
             },
             required: ["name"]
         }
     },
     {
         name: "add_ally_init",
-        description: "Add an ALLY (companion, rescued NPC, summoned creature) to the initiative tracker. The ally fights ON THE PLAYER'S SIDE: enemies may target it, it attacks enemies, and it counts toward the party for defeat. You (the DM) decide and narrate the ally's action on its turn. Use this instead of add_enemy_init for any friendly combatant. Bestiary stats are used if the name matches.",
+        description: "Add an ALLY (companion, rescued NPC, summoned creature) to the initiative tracker. The ally fights ON THE PLAYER'S SIDE: enemies may target it, it counts toward the party for defeat, and THE ENGINE PLAYS ITS TURN AUTOMATICALLY (real attack roll + real damage) — you only narrate the reported result, never re-roll it. Use this instead of add_enemy_init for any friendly combatant. Bestiary stats are used if the name matches; otherwise pass hp/ac and the attack numbers so the ally hits for a fair amount.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any },
-                hp: { type: "INTEGER" as any, description: "Fallback HP for homebrew allies only." },
-                ac: { type: "INTEGER" as any, description: "Fallback AC for homebrew allies only." },
-                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for the initiative roll." }
+                hp: { type: "INTEGER" as any, description: "HP for homebrew allies (defaults to a level-appropriate value if omitted)." },
+                ac: { type: "INTEGER" as any, description: "AC for homebrew allies (defaults to 13)." },
+                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for the initiative roll." },
+                attackName: { type: "STRING" as any, description: "Name of the ally's attack, e.g. 'Épée courte', 'Arc court'." },
+                attackBonus: { type: "INTEGER" as any, description: "Attack roll bonus, e.g. 4." },
+                damageFormula: { type: "STRING" as any, description: "Damage dice, e.g. '1d8+2'." },
+                damageType: { type: "STRING" as any, description: "e.g. 'slashing', 'piercing', 'radiant'." }
             },
             required: ["name"]
         }
@@ -352,7 +397,40 @@ const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                condition: { type: "STRING" as any, description: "SRD condition name, e.g. 'prone', 'poisoned', 'frightened', 'restrained'." },
+                condition: { type: "STRING" as any, description: "SRD condition name, e.g. 'prone', 'poisoned', 'frightened', 'restrained', 'petrified', 'deafened', 'exhaustion'." },
+                target: { type: "STRING" as any, description: "Combatant name or id. Omit or 'player' for the player character." },
+                concentrationBy: { type: "STRING" as any, description: "If an ENEMY caster maintains this effect through CONCENTRATION (e.g. its Hold Person), the caster's combatant name/id. Damaging that caster then forces a real CON save — on a failure the effect ends automatically." }
+            },
+            required: ["condition"]
+        }
+    },
+    {
+        name: "open_shop",
+        description: "Open the TRADING interface with a merchant: a real buy/sell panel appears on the player's screen, stocked by merchant type and party level, SRD gold prices. Call it whenever the player enters a shop or starts trading. Types: blacksmith (weapons/armor; masterwork +1 damage from level 5, magic +1 gear from level 10), apothecary (potions/remedies), general (adventuring gear), enchanter (magic items). Purchases and sales are handled BY THE ENGINE — never also call add_gold/add_inventory_item for them; you'll receive [SYSTEM] reports to narrate.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                merchantName: { type: "STRING" as any, description: "The merchant's name, e.g. 'Borin Marteau-de-Fer'." },
+                merchantType: { type: "STRING" as any, description: "blacksmith | apothecary | general | enchanter (French synonyms work: forgeron, apothicaire, bazar, enchanteur)." },
+                priceModifier: { type: "NUMBER" as any, description: "Price multiplier: 1 = normal, 1.5 = greedy, 0.8 = friendly. Default 1." },
+                greeting: { type: "STRING" as any, description: "One short line of merchant flavor shown in the shop header." },
+                extraItems: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Optional SIGNATURE stock: exact magic item names from the catalog (e.g. 'Longsword +1', 'Cloak of Protection') — for key merchants and quest rewards for sale." }
+            },
+            required: ["merchantName"]
+        }
+    },
+    {
+        name: "close_shop",
+        description: "Close the trading interface (the player leaves the stall or the haggling ends).",
+        parameters: { type: "OBJECT" as any, properties: {} }
+    },
+    {
+        name: "remove_condition",
+        description: "Remove a condition or named effect from a combatant (cured poison, broken paralysis, dispelled magic, the grappler lets go…). Omit target (or use 'player') for the player. Works in and out of combat. Use whenever the fiction lifts a condition (antidote, Lesser Restoration, the spellcaster's concentration ends…).",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                condition: { type: "STRING" as any, description: "Condition or effect name to remove, e.g. 'poisoned', 'restrained', 'Hold Person'." },
                 target: { type: "STRING" as any, description: "Combatant name or id. Omit or 'player' for the player character." }
             },
             required: ["condition"]
@@ -401,7 +479,7 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "propose_player_action",
-        description: "When the player improvises a creative/off-script action on THEIR turn ('I shoot the chandelier so it falls on the goblins', 'I give a glorious rallying speech', 'I draw my sword'), do NOT resolve it yourself and do NOT advance the turn. Instead AUTHOR a custom action card with this tool: it pops up to the player showing its cost, the player clicks it, and the engine rolls the real dice. You decide the numbers you adjudicate (cost, attack bonus, DC, advantage, damage). Choose 'resolution': 'attack' (d20 to hit a target then damage), 'save' (the target(s) roll a saving throw, take damage on fail), 'check' (the player rolls an ability check vs a DC), 'auto' (it just happens — rule of cool, no roll), or 'effect' (a pure buff/condition, e.g. the speech grants +2 to the next attack via modifierBonus). Call once per improvised action.",
+        description: "When the player improvises a creative/off-script action on THEIR turn ('I shoot the chandelier so it falls on the goblins', 'I give a glorious rallying speech', 'I draw my sword'), do NOT resolve it yourself and do NOT advance the turn. NEVER use this for a real spell from the player's spellbook — that is cast_spell (slots, concentration, real DC); the engine rejects spellbook spells here. Instead AUTHOR a custom action card with this tool: it pops up to the player showing its cost, the player clicks it, and the engine rolls the real dice. You decide the numbers you adjudicate (cost, attack bonus, DC, advantage, damage). Choose 'resolution': 'attack' (d20 to hit a target then damage), 'save' (the target(s) roll a saving throw, take damage on fail), 'check' (the player rolls an ability check vs a DC), 'auto' (it just happens — rule of cool, no roll), or 'effect' (a pure buff/condition, e.g. the speech grants +2 to the next attack via modifierBonus). Call once per improvised action.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
@@ -421,6 +499,9 @@ const GAME_TOOL_DECLARATIONS = [
                 modifierBonus: { type: "INTEGER" as any, description: "For resolution='effect': flat bonus granted to the player, e.g. 2 for a +2." },
                 modifierScope: { type: "STRING" as any, description: "For resolution='effect': what the bonus applies to — 'attack' | 'check' | 'save' | 'all'." },
                 modifierUses: { type: "INTEGER" as any, description: "For resolution='effect': how many of the player's next rolls it applies to (usually 1)." },
+                targetEffectStat: { type: "STRING" as any, description: "Optional numeric debuff/buff applied ON THE TARGET when the card succeeds: which stat — 'attackBonus' | 'AC' | 'damageBonus' | 'speed'." },
+                targetEffectBonus: { type: "INTEGER" as any, description: "Amount for targetEffectStat (e.g. -2 for 'sand in the eyes: -2 to its attacks')." },
+                targetEffectRounds: { type: "INTEGER" as any, description: "Duration in combat rounds for the target effect (default 2)." },
                 description: { type: "STRING" as any, description: "Optional one-line flavor shown under the card title." }
             },
             required: ["label", "cost", "resolution"]
@@ -462,7 +543,7 @@ const GAME_TOOL_DECLARATIONS = [
                 damageFormula: { type: "STRING" as any, description: "Damage dice, e.g. '2d6', '1d4', '6d6'." },
                 damageType: { type: "STRING" as any, description: "fire, cold, poison, acid, lightning, bludgeoning (falls), necrotic..." },
                 target: { type: "STRING" as any, description: "Combatant id/name, or 'player' (default)." },
-                targets: { type: "STRING" as any, description: "MULTI-target hazard: 'all_enemies' (rockslide over the whole pack) or a comma-separated list of ids/names. Each target rolls its own save/damage. Overrides 'target'." },
+                targets: { type: "STRING" as any, description: "MULTI-target hazard: 'all_enemies' (rockslide over the whole pack), 'all_combatants' (EVERYONE including the player and allies — cave-in, spreading fire), or a comma-separated list of ids/names. Each target rolls its own save/damage. Overrides 'target'." },
                 attackBonus: { type: "INTEGER" as any, description: "Scripted ATTACK mode (ambush arrow, dart trap): 1d20+bonus is rolled vs the target's AC — a miss deals NOTHING. Use INSTEAD of saveAbility/saveDC." },
                 saveAbility: { type: "STRING" as any, description: "Optional saving throw first: STR/DEX/CON/INT/WIS/CHA (CON for poison/cold, DEX for flames/falling debris)." },
                 saveDC: { type: "INTEGER" as any, description: "DC of the saving throw (10 easy, 12-13 standard, 15+ harsh)." },
@@ -487,7 +568,7 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_quest",
-        description: "Add a quest to the player's journal. Optionally seed 2-4 checkable steps (sub-objectives) so the player sees their progress.",
+        description: "Add a quest to the player's journal. Call it THE MOMENT the hero is given or accepts a job — an NPC asks for help, a contract is taken, a goal is named ('find my son', 'clear the mine', 'carry the relic to the abbey') — in the same beat, not at the end of the scene. A goal the player is pursuing that is NOT in the journal does not exist for them. Optionally seed 2-4 checkable steps (sub-objectives) so the player sees their progress.",
         parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any }, steps: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Optional 2-4 short sub-objectives shown as a checklist." } }, required: ["title", "description"] }
     },
     {
@@ -497,8 +578,8 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "complete_quest",
-        description: "Mark a quest as completed.",
-        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any } }, required: ["title"] }
+        description: "Mark a quest as completed — call it IN THE SAME BEAT as the resolution (the relic is handed over, the missing son is home, the reward is paid), never 'later'. Pass the EXACT title as it appears in the journal; an ambiguous title is rejected rather than closing the wrong quest, and the error lists the active titles. Announce the reward in the same breath.",
+        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any, description: "Exact quest title from the journal / director context." } }, required: ["title"] }
     },
     {
         name: "recruit_companion",
@@ -522,15 +603,27 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "set_mount",
-        description: "The hero acquires a MOUNT: bought, gifted, tamed — or SUMMONED (Paladin level 5+ gets their Celestial Steed for free via Find Steed, kind='destrier_celeste'). Overland travel speeds up, and in combat a melee attack on a FAR enemy becomes a mounted CHARGE (close + strike in one action). One mount at a time — calling again replaces it.",
+        description: "The hero acquires a MOUNT: bought, gifted, tamed — or SUMMONED (Paladin level 5+ gets their Celestial Steed for free via Find Steed, kind='destrier_celeste'). Overland travel speeds up, and in combat a melee attack on a FAR enemy becomes a mounted CHARGE (close + strike in one action) — but ONLY while the hero is IN THE SADDLE (acquiring mounts up; see set_mounted). One mount at a time — calling again replaces it. Provide at least one of name/kind (the call is rejected with neither).",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any, description: "The mount's given name (e.g. 'Tempête'). Optional if kind is set." },
                 kind: { type: "STRING" as any, description: "Typed mount from the catalog: poney, cheval_selle, destrier, chameau, elan, loup_geant, sanglier_geant, griffon (flying), pegase (flying), destrier_celeste (PALADIN 5+ ONLY — free summon, returns after a long rest if slain). Sets speed/flying automatically." },
                 speed: { type: "INTEGER" as any, description: "Override speed in feet. Usually omit — the kind sets it." },
+                hp: { type: "INTEGER" as any, description: "Override max HP for a CUSTOM mount. Usually omit — the kind's catalog stats apply." },
                 description: { type: "STRING" as any, description: "Short flavor: color, temperament, name origin." }
             }
+        }
+    },
+    {
+        name: "set_mounted",
+        description: "The hero climbs INTO the saddle (mounted=true) or DISMOUNTS (mounted=false). Call it whenever the fiction changes riding state — entering a building, sneaking, a tavern, boarding a boat = dismount; setting off on the road or charging into battle on horseback = mount up. Mounted charges (melee strike on a FAR enemy in one action) only work while mounted.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                mounted: { type: "BOOLEAN" as any, description: "true = in the saddle, false = on foot." }
+            },
+            required: ["mounted"]
         }
     },
     {
@@ -599,7 +692,7 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_story_moment",
-        description: "Record a memorable narrative event in the chronicle.",
+        description: "Record a MAJOR narrative beat in the chronicle — a revelation, a betrayal, a pact sealed, arriving at a landmark, a boss falling, a character death. One line the player would want to re-read months later. NOT for routine combat, loot, gold or XP (the engine logs those). Re-logging the same beat is detected and ignored, so prefer a distinctive title.",
         parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any } }, required: ["title", "description"] }
     },
     {
@@ -683,18 +776,18 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "set_music_mood",
-        description: "Set generated background music. Use combat/combat_boss for fights; exploration/quest/dungeon/town/tavern/rest for campaign ambience. Call it when the ATMOSPHERE changes (new area, fight starts/ends, rest), not every line. Tracks are cached and crossfade automatically. If no preset fits, you may pass a SHORT English style caption instead (e.g. 'ritual drums, eerie choir') — never a full sentence.",
-        parameters: { type: "OBJECT" as any, properties: { mood: { type: "STRING" as any, description: "exploration, quest, combat, combat_boss, victory, tension, rest, tavern, dungeon, town, dramatic, stealth — or a short English style caption." } }, required: ["mood"] }
+        description: "Set background music from the pre-recorded score. Call it when the ATMOSPHERE changes (new area, fight starts/ends, a rest, a revelation), not every line. Tracks crossfade automatically. Pass ONLY a preset name — there is no free-form generation; if none fits perfectly, pick the closest. Guide: fights = combat / combat_boss / chase ; outcomes = victory / defeat / level_up ; places = town / tavern / shop / dungeon / wilderness / sacred / festival ; travel = travel (on the road) or exploration (looking around a place) ; feelings = tension / horror / mystery / dramatic / sorrow / rest ; casting a long ritual = ritual.",
+        parameters: { type: "OBJECT" as any, properties: { mood: { type: "STRING" as any, description: "One of: exploration, quest, combat, combat_boss, victory, tension, rest, tavern, dungeon, town, dramatic, stealth, defeat, level_up, shop, travel, wilderness, horror, mystery, sacred, chase, ritual, sorrow, festival." } }, required: ["mood"] }
     },
     {
         name: "trigger_sfx",
-        description: "Play a short DIEGETIC sound effect to punctuate your narration — a sound the characters would actually hear in the world. Examples: heavy door creaking open, distant thunder, wolf howl, sword unsheathed, tavern crowd murmur, chains rattling, a body hitting the floor, bowstring twang, spell crackling. Generation is LOCAL and UNLIMITED — call it as often as the fiction deserves; previously heard sounds replay instantly from cache.",
+        description: "Play a short DIEGETIC sound effect from the curated 600-sound bank (instant — the client picks the variant, no repeats). Pass a bank `key`. Families: combat/* (sword_swing, blade_slice, bow_shoot, shield_block, parry_metal, axe_chop…) · magic/* (fire, ice, lightning, heal_divine, dark_necro + per-element impacts: fire_impact, ice_impact, lightning_impact, force_impact, thunder_wave, psychic_pulse, necrotic_impact, earth_spike, wind_slash, water_blast) · monsters/<creature> — one voice PER creature: orc, troll, gnoll, kobold, goblin_chatter, zombie, ghoul, wight, banshee, lich, vampire, mummy, minotaur, harpy, werewolf, bear, wolf_howl, giant_rat, bat_swarm, basilisk, drake, mimic, demon_snarl, dragon_roar, dragon_breath, dragon_wing, elemental_fire/earth/air/water, beast_growl (generic fallback) · items/* (potion, coins, chest_open…) · dungeon/* (door, chains, mechanism_trap…) · impacts/* (punch, metal, crit_hit…) · footsteps/* (stone, wood, snow… + run_stone, run_dirt) · environment/* ambiences (tavern_quiet, tavern_rowdy, tavern_crowd, market_crowd, storm, blizzard, wind, rain, forest, night_crickets, cave, swamp, crypt, city_night, temple_hall, ship_deck, river, fire_crackle, battlefield_distant, thunder_distant) · dungeon/* also has stone_slab, chains, water_drip, torch_light. ALWAYS use the creature-specific monster key when one exists. If unsure, pick the CLOSEST key — a fuzzy resolver maps near-misses; there is no free-form generation.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                description: { type: "STRING" as any, description: "ONE concrete sound, IN ENGLISH, 3-8 words, no sentence, no negations. GOOD: 'massive iron portcullis grinding open', 'distant rolling thunder', 'goblin dying shriek'." }
+                key: { type: "STRING" as any, description: "Bank key 'category/action' from the list above. Pick the closest match." }
             },
-            required: ["description"]
+            required: ["key"]
         }
     },
     {
@@ -751,14 +844,22 @@ export class LiveDungeonMaster {
     private pendingToolResponses: any[] = [];
     private sessionResumptionHandle: string | null = null;
     private readonly sessionResumptionStorageKey: string;
-    private restoredThisConnection: boolean = false;
     private directorContext: string = '';
     private lastDirectorContextSent: string = '';
     private lastDirectorContextSentAt: number = 0;
-    private pendingPrivateContext: string = '';
+    /** File du GATE DE SILENCE : textes en attente de la fin de la tirade du MJ. */
+    private deferredQueue: Array<{ text: string; at: number; onSent?: () => void }> = [];
+    /** Mesure de fenêtre (usageMetadata) : plancher, dernier relevé, échantillon. */
+    private firstPromptTokenCount = 0;
+    private lastPromptTokenCount = 0;
+    private lastTracedTokenCount = 0;
 
     // Buffer for accumulating DM transcript across multiple server messages
     private dmTranscriptBuffer: string = '';
+    // IJ1 (audit trame) — la transcription JOUEUR arrive en fragments de 1-6
+    // mots ; les committer un par un remplissait la fenêtre de restauration
+    // (14 places) avec les miettes d'UNE seule phrase. Bufferisé comme le MJ.
+    private userTranscriptBuffer: string = '';
 
     constructor(
         character: CharacterSheet,
@@ -806,9 +907,22 @@ export class LiveDungeonMaster {
         return `dungeonai_live_resumption_${stable}`;
     }
 
+    // IJ7 (audit trame) — le handle de reprise est LIÉ à la sauvegarde et daté :
+    // sans cela, charger un AUTRE slot du même héros reprenait la conversation
+    // Live de la partie précédente (le MJ « se souvenait » d'événements que la
+    // sauvegarde chargée n'a pas). Périmé après 30 min → session fraîche.
     private loadResumptionHandle(): string | null {
         try {
-            return localStorage.getItem(this.sessionResumptionStorageKey);
+            const raw = localStorage.getItem(this.sessionResumptionStorageKey);
+            if (!raw) return null;
+            let parsed: { h?: string; s?: string | null; t?: number };
+            try { parsed = JSON.parse(raw); } catch { return null; } // format hérité → fraîche
+            const activeSaveId = useGameStore.getState().activeSaveId || null;
+            const fresh = typeof parsed.t === 'number' && Date.now() - parsed.t < 30 * 60_000;
+            const sameSave = (parsed.s || null) === activeSaveId;
+            if (parsed.h && fresh && sameSave) return parsed.h;
+            localStorage.removeItem(this.sessionResumptionStorageKey);
+            return null;
         } catch {
             return null;
         }
@@ -817,14 +931,21 @@ export class LiveDungeonMaster {
     private storeResumptionHandle(handle: string | null) {
         this.sessionResumptionHandle = handle;
         try {
-            if (handle) localStorage.setItem(this.sessionResumptionStorageKey, handle);
-            else localStorage.removeItem(this.sessionResumptionStorageKey);
+            if (handle) {
+                localStorage.setItem(this.sessionResumptionStorageKey, JSON.stringify({
+                    h: handle,
+                    s: useGameStore.getState().activeSaveId || null,
+                    t: Date.now(),
+                }));
+            } else {
+                localStorage.removeItem(this.sessionResumptionStorageKey);
+            }
         } catch {
             // Resumption is an optimization. The app can still reconnect with restored history.
         }
     }
 
-    async connect() {
+    async connect(): Promise<void> {
         log.info('🔌 Connecting to Gemini Live API...');
 
         if (!GEMINI_KEY) {
@@ -833,7 +954,10 @@ export class LiveDungeonMaster {
 
         // Close gate BEFORE connecting so stale worklets from previous connections can't send
         this._sendGate = false;
-        this.restoredThisConnection = false;
+        // IJ5 — jamais de résidu de transcription d'une session précédente qui
+        // fuirait dans le premier turnComplete de la nouvelle.
+        this.dmTranscriptBuffer = '';
+        this.userTranscriptBuffer = '';
 
         // A FRESH session (no resumption handle) has no memory of the previous
         // connection's tool-call ids — replaying queued tool responses into it
@@ -850,8 +974,16 @@ export class LiveDungeonMaster {
             characterName: this.character.name,
             directorContext: this.directorContext,
         });
+        // Le contexte directeur vient d'être EMBARQUÉ dans le prompt : le marquer
+        // « déjà envoyé » pour que le flush post-(re)connexion ne renvoie pas le
+        // même bloc en double 4 s plus tard (dédup naturelle, sauf s'il change).
+        if (this.directorContext.trim()) {
+            this.lastDirectorContextSent = this.directorContext.trim();
+            this.lastDirectorContextSentAt = Date.now();
+        }
 
         auditBus.publish('gemini-system', `Live system prompt (${systemPrompt.length} chars, model ${AUDIO_MODEL})`, systemPrompt);
+        auditBus.publish('engine', `Live connect — ${this.sessionResumptionHandle ? 'reprise par handle' : 'session FRAÎCHE'}, prompt ${systemPrompt.length} chars, ${this.initialHistory.length} répliques en mémoire`);
 
         const ai = new GoogleGenAI({
             apiKey: GEMINI_KEY,
@@ -874,15 +1006,25 @@ export class LiveDungeonMaster {
                             }
                         }
                     },
-                    tools: [{ functionDeclarations: GAME_TOOL_DECLARATIONS }],
+                    tools: [{ functionDeclarations: GAME_TOOL_DECLARATIONS as any }],
                     inputAudioTranscription: {},
                     outputAudioTranscription: {},
                     sessionResumption: {
                         handle: this.sessionResumptionHandle || undefined,
                     },
+                    // COMPRESSION (revu le 2026-08-22). L'ancien réglage
+                    // 60K→30K amputait la MOITIÉ du contexte à chaque passage,
+                    // et 30K est de l'ordre du plancher fixe de la session
+                    // (déclarations d'outils ~15K tokens + prompt système ~13K) :
+                    // il ne restait presque rien de la conversation. La fenêtre
+                    // du modèle est de 128K — on déclenche donc plus tard et on
+                    // garde beaucoup plus. Coût : plus de tokens d'entrée par
+                    // tour. usageMetadata (ci-dessous) mesure désormais l'effet
+                    // réel dans le journal de session : à ajuster sur données,
+                    // plus sur hypothèse.
                     contextWindowCompression: {
-                        triggerTokens: '60000',
-                        slidingWindow: { targetTokens: '30000' }
+                        triggerTokens: '100000',
+                        slidingWindow: { targetTokens: '70000' }
                     },
                 },
                 callbacks: {
@@ -908,6 +1050,11 @@ export class LiveDungeonMaster {
                     },
                     onclose: (e: CloseEvent) => {
                         log.error('❌ Gemini Live Connection closed', e.code, e.reason);
+                        auditBus.publish('engine', `Live close — code=${e.code}${e.reason ? ` raison="${String(e.reason).slice(0, 120)}"` : ''}`);
+                        // IJ5 — la dernière tirade avant une coupure ne doit pas
+                        // disparaître de la trame : flush des buffers d'abord.
+                        this.commitUserBuffer();
+                        this.commitDmBuffer(true);
                         // 1. CLOSE THE GATE FIRST — this is the fastest possible signal
                         this._sendGate = false;
                         // 2. Kill everything SYNCHRONOUSLY
@@ -931,6 +1078,13 @@ export class LiveDungeonMaster {
             if (this.isConnected) {
                 if (!resumingFromHandle) this.restoreHistory();
                 this.flushOutboundTextQueue();
+                // LM2 (contre-audit) — les flushes appelés dans onopen sont des
+                // no-ops garantis (le SDK invoque onopen AVANT de résoudre
+                // connect(), donc this.session est encore null). Après une
+                // reconnexion avec handle de reprise, les réponses d'outils en
+                // attente n'étaient JAMAIS renvoyées : le modèle restait
+                // suspendu sur son function call et le MJ se taisait.
+                this.flushToolResponseQueue();
             }
 
             try {
@@ -952,7 +1106,6 @@ export class LiveDungeonMaster {
 
     private restoreHistory() {
         log.info(`📜 History is restored via system prompt instructions (${this.initialHistory.length} messages).`);
-        this.restoredThisConnection = true;
     }
 
     // Keep the in-memory history current as the session unfolds. A reconnect WITHOUT a
@@ -1121,7 +1274,6 @@ export class LiveDungeonMaster {
         const next = String(context || '').trim();
         if (!next || next === this.directorContext) return;
         this.directorContext = next;
-        this.pendingPrivateContext = next;
     }
 
     /**
@@ -1131,23 +1283,40 @@ export class LiveDungeonMaster {
      * clocks, and canon facts silently drifts. GameSession calls this on
      * significant state changes; a min-interval guard keeps the cost bounded.
      */
-    public flushDirectorContext(minIntervalMs: number = 30000): boolean {
+    /**
+     * DC2/DC3 — `force` bypasse le DÉDUP : renvoyer un contexte identique est
+     * un RAPPEL (battement périodique, reprise après reconnexion), pas une
+     * mise à jour.
+     *
+     * TR10 — il ne bypasse PLUS le throttle. Les appelants qui veulent un envoi
+     * immédiat passent déjà `minIntervalMs = 0` (battement, post-reconnexion) ;
+     * le ré-ancrage post-compression, lui, se donne un plancher, parce qu'il
+     * partait jusqu'à quatre fois par minute et nourrissait la compression
+     * qu'il était censé réparer.
+     */
+    public flushDirectorContext(minIntervalMs: number = 30000, force = false): boolean {
         const context = this.directorContext.trim();
         if (!context || !this.canSendRealtime()) return false;
         const now = Date.now();
-        if (context === this.lastDirectorContextSent) return false;
+        if (!force && context === this.lastDirectorContextSent) return false;
         if (now - this.lastDirectorContextSentAt < minIntervalMs) return false;
 
-        const sent = this.sendRealtimeTextNow([
+        // GATE DE SILENCE : jamais pendant une tirade. Le bloc part au silence.
+        // Le marquage « envoyé » se fait à l'envoi RÉEL (callback), sinon un
+        // contexte différé puis jeté serait compté comme délivré.
+        const sent = this.sendOrDefer([
             '[PRIVATE_DM_CONTEXT - do not narrate, do not answer this block, do not roll from this block alone]',
             context,
             '[/PRIVATE_DM_CONTEXT]',
-        ].join('\n'));
-        if (sent) {
+        ].join('\n'), () => {
             this.lastDirectorContextSent = context;
-            this.lastDirectorContextSentAt = now;
-            this.pendingPrivateContext = '';
-        }
+            this.lastDirectorContextSentAt = Date.now();
+            // Journal de session : chaque envoi du bloc directeur est un
+            // événement de pression sur la fenêtre — taille + mode consignés,
+            // bloc COMPLET dans la trace disque (pas dans l'auditBus mémoire).
+            auditBus.publish('engine', `Director context envoyé (${context.length} chars${force ? ', FORCÉ' : ''})`);
+            sessionTrace.trace('director', `flush ${context.length} chars${force ? ' (forcé)' : ''}`, context);
+        });
         return sent;
     }
 
@@ -1160,7 +1329,6 @@ export class LiveDungeonMaster {
 
         this.lastDirectorContextSent = context;
         this.lastDirectorContextSentAt = now;
-        this.pendingPrivateContext = '';
         return [
             '[PRIVATE_DM_CONTEXT - do not narrate, do not answer this block, do not roll from this block alone]',
             context,
@@ -1177,7 +1345,9 @@ export class LiveDungeonMaster {
             this.queueTextMessage(`[SYSTEM]: ${note}`);
             return false;
         }
-        return this.sendRealtimeTextNow(`[SYSTEM]: ${note}`);
+        // GATE DE SILENCE : les notes système (auditeur de cohérence, rappels
+        // PNJ, rapports moteur) attendent la fin de la tirade du MJ.
+        return this.sendOrDefer(`[SYSTEM]: ${note}`);
     }
 
     private handleGeminiMessage(msg: LiveServerMessage) {
@@ -1196,10 +1366,19 @@ export class LiveDungeonMaster {
             }
 
             // --- Input transcription (user speech) ---
+            // IJ1 — l'UI est rafraîchie par fragment (temps réel), mais la
+            // MÉMOIRE ne reçoit que la phrase complète, au flush du tour.
             if (content.inputTranscription?.text) {
+                // [DIAG-COUPURE] Le serveur « entend » le joueur PENDANT que le MJ
+                // parle : soit vraie interruption voulue, soit écho/bruit — le
+                // texte transcrit ci-dessous tranche (mots du MJ = écho).
+                if (this.playingNodes.length > 0) {
+                    const diag = `[DIAG-COUPURE] ${diagStamp()} MICRO entendu pendant que le MJ parle (écho ?) : « ${content.inputTranscription.text.slice(0, 50)} »`;
+                    log.info(diag);
+                    auditBus.publish('gemini-in', diag);
+                }
                 this.onTranscriptUpdate('user', content.inputTranscription.text);
-                memoryManager.addMessage({ speaker: 'user', text: content.inputTranscription.text });
-                this.recordHistory('user', content.inputTranscription.text);
+                this.userTranscriptBuffer = appendTranscriptChunk(this.userTranscriptBuffer, content.inputTranscription.text);
             }
 
             // --- Output transcription (DM speech) ---
@@ -1209,19 +1388,17 @@ export class LiveDungeonMaster {
 
             // --- Interruption handling ---
             if (content.interrupted) {
-                log.info("🎤 Interruption detected: clearing audio queue...");
+                const diag = `[DIAG-COUPURE] ${diagStamp()} INTERRUPTION serveur — ${this.playingNodes.length} segment(s) audio stoppé(s) — narration coupée : « …${this.dmTranscriptBuffer.slice(-60)} »`;
+                log.info(diag);
+                auditBus.publish('gemini-in', diag);
                 this.handleInterruption();
             }
 
-            // --- Turn complete: flush DM transcript buffer ---
+            // --- Turn complete: flush user THEN DM buffers (ordre chronologique) ---
             if (content.turnComplete) {
-                if (this.dmTranscriptBuffer.trim()) {
-                    auditBus.publish('gemini-in', `DM: ${this.dmTranscriptBuffer.slice(0, 90)}`, this.dmTranscriptBuffer);
-                    this.onTranscriptUpdate('dm', this.dmTranscriptBuffer);
-                    memoryManager.addMessage({ speaker: 'dm', text: this.dmTranscriptBuffer });
-                    this.recordHistory('dm', this.dmTranscriptBuffer);
-                    this.dmTranscriptBuffer = '';
-                }
+                log.info(`[DIAG-COUPURE] ${diagStamp()} fin de tour NORMALE (turnComplete)`);
+                this.commitUserBuffer();
+                this.commitDmBuffer();
             }
         }
 
@@ -1242,6 +1419,50 @@ export class LiveDungeonMaster {
             this.storeResumptionHandle(update.newHandle);
         }
 
+        // ── MESURE DE LA FENÊTRE (2026-08-22) ────────────────────────────────
+        // usageMetadata est fourni par le SDK à chaque réponse et n'était JAMAIS
+        // lu. Il donne : le plancher réel de la session (outils + prompt système,
+        // ~15K + ~13K tokens estimés mais jamais vérifiés), le vrai débit audio,
+        // et surtout la DÉTECTION DE COMPRESSION — une chute franche du
+        // promptTokenCount signifie que le serveur vient d'élaguer l'historique.
+        // Sans ça, le client narre à l'aveugle sur une mémoire qu'il croit
+        // intacte. Tout part au journal de session pour analyse après-coup.
+        const usage: any = (msg as any).usageMetadata;
+        if (usage && typeof usage.promptTokenCount === 'number') {
+            const prompt = usage.promptTokenCount;
+            const prev = this.lastPromptTokenCount;
+            this.lastPromptTokenCount = prompt;
+            if (this.firstPromptTokenCount === 0) {
+                this.firstPromptTokenCount = prompt;
+                sessionTrace.trace('tokens', `Plancher de session : ${prompt} tokens au 1er tour`, usage);
+            }
+            // Élagage serveur : le contexte ne rétrécit jamais tout seul.
+            if (prev > 0 && prompt < prev * 0.75) {
+                const line = `COMPRESSION détectée : ${prev} → ${prompt} tokens (−${prev - prompt})`;
+                log.warn(`🗜️ ${line}`);
+                auditBus.publish('engine', line, usage);
+                sessionTrace.trace('tokens', line, usage);
+                campaignEventLog.append('CONNECTION_EVENT', line, { before: prev, after: prompt });
+                // La mémoire vivante vient d'être amputée : re-poser l'état
+                // complet dès que le MJ se taira (le gate s'en charge).
+                //
+                // TR10 (audit de séance du 2026-08-23) — mais PAS à chaque fois.
+                // Séance mesurée : 78 compressions en 34 min (une toutes les
+                // 26 s) et 29 ré-ancrages forcés, soit 349 Ko réinjectés — dont
+                // 91 % identiques au bloc précédent. C'était une boucle : la
+                // compression déclenchait un renvoi de 12 Ko, qui regonflait la
+                // fenêtre, qui déclenchait la compression suivante. Le plancher
+                // ci-dessous casse la boucle sans rien retirer au contenu :
+                // l'état complet est toujours re-posé, simplement pas quatre
+                // fois par minute.
+                this.flushDirectorContext(REANCHOR_MIN_INTERVAL_MS, true);
+            } else if (prompt - this.lastTracedTokenCount >= 5000) {
+                // Échantillonnage : une ligne tous les +5K tokens, pas par tour.
+                this.lastTracedTokenCount = prompt;
+                sessionTrace.trace('tokens', `Contexte : ${prompt} tokens`, usage);
+            }
+        }
+
         if (msg.goAway) {
             const delay = this.delayBeforeGoAwayReconnect(msg.goAway.timeLeft);
             campaignEventLog.append('CONNECTION_EVENT', 'Gemini Live sent goAway; scheduling reconnect', {
@@ -1249,6 +1470,7 @@ export class LiveDungeonMaster {
                 delay,
             });
             log.warn(`Gemini Live goAway received. Reconnecting in ${delay}ms.`);
+            sessionTrace.trace('connexion', `goAway reçu — reconnexion planifiée dans ${delay}ms`, { timeLeft: msg.goAway.timeLeft });
             this.scheduleForcedReconnect(delay);
         }
     }
@@ -1275,8 +1497,41 @@ export class LiveDungeonMaster {
         const s = this.session;
         this.session = null;
         if (s) { try { s.close(); } catch(_) {} }
+        // Un goAway est une passation PLANIFIÉE par Google, pas une panne : les
+        // compteurs de fenêtre repartent de zéro sur la nouvelle session, sinon
+        // la première mesure serait lue comme une compression géante.
+        this.firstPromptTokenCount = 0;
+        this.lastPromptTokenCount = 0;
+        this.lastTracedTokenCount = 0;
         this.onConnectionChange(false);
         this.attemptReconnect();
+    }
+
+    /** Committe la phrase du joueur bufferisée (IJ1) — une seule entrée propre. */
+    private commitUserBuffer() {
+        const spoken = this.userTranscriptBuffer.trim();
+        this.userTranscriptBuffer = '';
+        if (!spoken) return;
+        // Journal de session : les répliques VOCALES du joueur n'apparaissaient
+        // nulle part dans l'audit (seules les tirades MJ y passaient).
+        auditBus.publish('gemini-out', `PLAYER (voix) : ${spoken.slice(0, 90)}`, spoken);
+        memoryManager.addMessage({ speaker: 'user', text: spoken });
+        this.recordHistory('user', spoken);
+    }
+
+    /** Committe la narration MJ bufferisée. `interrupted` = coupée par le
+     *  joueur : on l'enregistre QUAND MÊME (IJ5/MM2 — elle a été entendue ;
+     *  la jeter créait des trous dans le transcript, la mémoire ET la
+     *  sauvegarde), suffixée pour que le MJ sache qu'il a été coupé. */
+    private commitDmBuffer(interrupted = false) {
+        const spokenDm = this.dmTranscriptBuffer.trim();
+        this.dmTranscriptBuffer = '';
+        if (!spokenDm) return;
+        const text = interrupted ? `${spokenDm} …` : spokenDm;
+        auditBus.publish('gemini-in', `DM${interrupted ? ' (interrompu)' : ''}: ${text.slice(0, 90)}`, text);
+        this.onTranscriptUpdate('dm', text);
+        memoryManager.addMessage({ speaker: 'dm', text });
+        this.recordHistory('dm', text);
     }
 
     private handleInterruption() {
@@ -1286,8 +1541,12 @@ export class LiveDungeonMaster {
         });
         this.playingNodes = [];
         this.nextStartTime = 0;
-        // Clear pending DM transcript on interruption
-        this.dmTranscriptBuffer = '';
+        // IJ5/MM2 — enregistrer la narration partielle AVANT de vider : le
+        // joueur l'a entendue, elle fait partie de la trame.
+        this.commitUserBuffer();
+        this.commitDmBuffer(true);
+        // Le MJ s'est tu (coupé par le joueur) : la file différée peut partir.
+        this.flushDeferred();
     }
 
     private playAudio(base64Audio: string) {
@@ -1317,6 +1576,9 @@ export class LiveDungeonMaster {
             this.playingNodes.push(source);
             source.onended = () => {
                 this.playingNodes = this.playingNodes.filter(n => n !== source);
+                // Gate de silence : le dernier segment vient de finir → on peut
+                // enfin livrer ce qui attendait sans risquer de couper le MJ.
+                if (this.playingNodes.length === 0) this.flushDeferred();
             };
         } catch (e) {
             log.error("Failed to play audio delta:", e);
@@ -1430,8 +1692,59 @@ export class LiveDungeonMaster {
         });
     }
 
+    /** Le MJ a-t-il de l'audio EN COURS DE LECTURE ?
+     *  ⚠️ `turnComplete` ne veut PAS dire silence : playAudio programme les
+     *  segments dans le futur via nextStartTime, donc la génération est finie
+     *  bien avant que le joueur ait fini d'entendre. Seul playingNodes fait foi. */
+    private isSpeaking(): boolean {
+        return this.playingNodes.length > 0;
+    }
+
+    /**
+     * GATE DE SILENCE (2026-08-22) — envoie le texte MAINTENANT si le MJ se
+     * tait, sinon le DIFFÈRE jusqu'à la fin de sa tirade.
+     *
+     * Pourquoi : toute injection de texte pendant que le MJ parle peut être
+     * interprétée par Gemini Live comme une prise de parole du joueur → barge-in
+     * → narration coupée net. Le battement de contexte (toutes les 4 min), la
+     * note de l'auditeur de cohérence et les rappels PNJ tiraient à l'aveugle.
+     * C'est la cause n°1 suspectée des coupures signalées par le joueur.
+     *
+     * File DÉDIÉE : outboundTextQueue ne convient pas (elle périme à 60 s et
+     * jette tout bloc [PRIVATE_DM_CONTEXT — IJ4), elle sert aux reconnexions.
+     */
+    private sendOrDefer(text: string, onSent?: () => void): boolean {
+        if (!this.canSendRealtime()) return false;
+        if (!this.isSpeaking()) {
+            const ok = this.sendRealtimeTextNow(text);
+            if (ok) onSent?.();
+            return ok;
+        }
+        this.deferredQueue.push({ text, at: Date.now(), onSent });
+        // Borne dure : en cas de tirade interminable, on garde les plus RÉCENTS
+        // (un contexte périmé n'a aucune valeur).
+        if (this.deferredQueue.length > MAX_DEFERRED) this.deferredQueue.shift();
+        auditBus.publish('engine', `Envoi différé (MJ parle) : ${text.slice(0, 60)}`);
+        return true; // accepté — partira au silence
+    }
+
+    /** Vide la file différée dès que le MJ se tait. */
+    private flushDeferred(): void {
+        if (!this.deferredQueue.length || this.isSpeaking() || !this.canSendRealtime()) return;
+        const pending = this.deferredQueue.splice(0, this.deferredQueue.length);
+        for (const item of pending) {
+            if (this.sendRealtimeTextNow(item.text)) item.onSent?.();
+        }
+    }
+
     private sendRealtimeTextNow(text: string): boolean {
         if (!this.session || !this.canSendRealtime()) return false;
+        // [DIAG-COUPURE] Toute injection de texte passe ici — noter si elle part
+        // pendant que le MJ a de l'audio en cours (candidate à le couper).
+        const diagSpeaking = this.playingNodes.length > 0;
+        const diag = `[DIAG-COUPURE] ${diagStamp()} ENVOI texte — MJ ${diagSpeaking ? `PARLE (${this.playingNodes.length} segment(s)) ⚠️` : 'silencieux'} — ${text.slice(0, 70)}`;
+        log.info(diag);
+        auditBus.publish('gemini-out', diag, text);
         try {
             this.session.sendRealtimeInput({ text });
             return true;
@@ -1452,7 +1765,14 @@ export class LiveDungeonMaster {
     private flushOutboundTextQueue() {
         if (!this.canSendRealtime() || this.outboundTextQueue.length === 0) return;
 
-        const queued = [...this.outboundTextQueue];
+        // IJ4/LM17 — péremption : après une longue coupure, rejouer de vieux
+        // [SYSTEM]/contextes faisait « reculer » le MJ (le prompt reconstruit
+        // décrit déjà l'état À JOUR). On jette ce qui a plus de 60 s et tout
+        // bloc [PRIVATE_DM_CONTEXT (le contexte frais repart par son canal).
+        const now = Date.now();
+        const queued = [...this.outboundTextQueue].filter(item =>
+            now - (item.createdAt || 0) <= 60_000
+            && !item.text.startsWith('[PRIVATE_DM_CONTEXT'));
         this.outboundTextQueue = [];
         this.onQueueChange?.(0);
 
@@ -1498,6 +1818,12 @@ export class LiveDungeonMaster {
         if (connectionLivedMs > 5000 && this._lastConnectTime > 0) {
             log.info(`⚡ Connection was stable for ${connectionLivedMs}ms before drop, resetting reconnect attempts.`);
             this.reconnectAttempts = 0;
+            // LM1 (contre-audit) — consommer le timestamp APRÈS la décision :
+            // _lastConnectTime n'est réécrit qu'à onopen, donc chaque échec
+            // suivant re-mesurait la MÊME vieille session « stable » et remettait
+            // le compteur à 0 — boucle infinie à 2 s, onReconnectFailed (et la
+            // sauvegarde d'urgence qui y est câblée) ne partait jamais.
+            this._lastConnectTime = 0;
         } else if (this.sessionResumptionHandle && this._lastConnectTime > 0) {
             // Opened then died almost immediately while resuming from a stored
             // handle → the handle is almost certainly stale/expired. Drop it so the
@@ -1543,6 +1869,14 @@ export class LiveDungeonMaster {
     }
 
     async manualReconnect() {
+        // LM5 (contre-audit) — annuler un backoff en vol AVANT tout : le timer
+        // d'attemptReconnect (fenêtre 2-10 s, précisément quand le joueur clique
+        // « Reconnecter ») rappelait connect() en plus de celui-ci → DEUX
+        // sessions Live concurrentes, deux voix. disconnect() le faisait déjà.
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         this.reconnectAttempts = 0;
         this.isReconnecting = false;
         this._lastConnectTime = 0;

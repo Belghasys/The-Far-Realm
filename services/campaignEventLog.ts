@@ -45,6 +45,21 @@ function makeId(): string {
 class CampaignEventLog {
     private campaignId = DEFAULT_CAMPAIGN_ID;
     private events: CampaignEvent[] = this.load();
+    // GS16 (audit trame DC4) — abonnement React : `getEvents().length` en dep
+    // d'un useMemo est un mutable hors React, le contexte directeur pouvait
+    // rester périmé. Les composants s'abonnent et re-rendent sur append.
+    private listeners = new Set<() => void>();
+
+    subscribe(listener: () => void): () => void {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+
+    private notify(): void {
+        for (const listener of this.listeners) {
+            try { listener(); } catch { /* listener défaillant : ignorer */ }
+        }
+    }
 
     private storageKey(campaignId = this.campaignId): string {
         const stable = String(campaignId || DEFAULT_CAMPAIGN_ID)
@@ -85,16 +100,30 @@ class CampaignEventLog {
         summary: string,
         payload: TPayload
     ): CampaignEvent<TPayload> {
+        // PL5 — clone JSON-safe AU MOMENT de l'append : le payload était stocké
+        // PAR RÉFÉRENCE, et une mutation ultérieure de l'objet (ex.
+        // holdForRollResolution qui attache la fonction resolveToolCall au
+        // prompt déjà loggé) contaminait l'événement… qui partait ensuite dans
+        // le document Firestore (« Unsupported field value: a function » —
+        // toutes les sauvegardes échouaient). JSON.stringify élimine fonctions
+        // et undefined, et fige l'instantané.
+        let safePayload: TPayload;
+        try {
+            safePayload = payload === undefined ? (null as TPayload) : JSON.parse(JSON.stringify(payload));
+        } catch {
+            safePayload = { note: 'unserializable payload dropped' } as TPayload;
+        }
         const event: CampaignEvent<TPayload> = {
             id: makeId(),
             type,
             timestamp: Date.now(),
             summary,
-            payload,
+            payload: safePayload,
         };
 
         this.events = [...this.events, event as CampaignEvent].slice(-MAX_EVENTS);
         this.persist();
+        this.notify();
         return event;
     }
 
@@ -105,6 +134,7 @@ class CampaignEventLog {
     import(events?: CampaignEvent[]) {
         this.events = Array.isArray(events) ? events.slice(-MAX_EVENTS) : [];
         this.persist();
+        this.notify();
     }
 
     clear() {
@@ -114,6 +144,7 @@ class CampaignEventLog {
         } catch {
             // Ignore unavailable storage.
         }
+        this.notify();
     }
 }
 

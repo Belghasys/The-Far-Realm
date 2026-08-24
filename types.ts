@@ -1,3 +1,5 @@
+import { isProficientWithWeapon } from './data/weapons';
+
 export type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
 export interface CharacterStats {
@@ -12,7 +14,8 @@ export interface CharacterStats {
 export type ItemType = 'weapon' | 'armor' | 'consumable' | 'misc' | 'ammo' | 'container';
 // 'ranged' : emplacement d'arme À DISTANCE séparé de la main directrice — arc
 // et épée restent équipés ENSEMBLE, plus besoin de permuter à chaque combat.
-export type ItemSlot = 'head' | 'chest' | 'legs' | 'feet' | 'hands' | 'mainHand' | 'offHand' | 'ranged' | 'ring' | 'neck' | 'back' | 'waist' | 'none';
+// PL6 — deux emplacements d'anneaux (ring + ring2), comme à la table.
+export type ItemSlot = 'head' | 'chest' | 'legs' | 'feet' | 'hands' | 'mainHand' | 'offHand' | 'ranged' | 'ring' | 'ring2' | 'neck' | 'back' | 'waist' | 'none';
 
 export interface Item {
   id: string;
@@ -39,7 +42,18 @@ export interface Item {
   acBonus?: number;
   stealthDisadvantage?: boolean;
   value?: string;
+  /** NF2 — avantages accordés tant que l'objet est ÉQUIPÉ : noms de compétences
+   *  (EN ou FR, ex. 'Stealth'/'Discrétion'), 'attack' (jets d'attaque) ou
+   *  'initiative'. Le texte de l'objet est aussi parsé (getGearAdvantages). */
+  advantageOn?: string[];
+  /** SRD — l'objet exige l'HARMONISATION. Maximum 3 objets harmonisés équipés
+   *  à la fois (appliqué à l'équipement — audit 2026-08-12 : le drapeau était
+   *  purement décoratif). */
+  attunement?: boolean;
 }
+
+/** SRD 5.1 — plafond d'objets magiques harmonisés portés simultanément. */
+export const ATTUNEMENT_LIMIT = 3;
 
 export type InventoryItem = Item;
 
@@ -68,6 +82,10 @@ export interface StatModifier {
   bonus: number;
   setTo?: number; // For effects like Mage Armor that SET AC to a value
   formula?: 'mage_armor'; // Dynamic AC formulas that depend on current stats
+  /** Bonus en DÉS relancé À CHAQUE jet concerné (Bénédiction : '1d4' sur
+   *  attaques et sauvegardes — RAW SRD ; l'ancienne approximation +2 plat à
+   *  3 « usages » était fausse — audit 2026-08-12). */
+  dice?: string;
 }
 
 export interface ActiveEffect {
@@ -85,7 +103,15 @@ export interface ActiveEffect {
   /** Damage rider added to the player's weapon hits while the effect is active
    *  (Hunter's Mark, Hex, Divine Favor, Battle Master maneuver…). Omitted
    *  damageType = the weapon's own damage type. */
-  onWeaponHit?: { dice: string; damageType?: string };
+  /** `consumeOnHit` : le rider est dépensé par le PREMIER coup qui touche
+   *  (Châtiment divin), au lieu de s'appliquer à chaque coup du round. */
+  onWeaponHit?: { dice: string; damageType?: string; consumeOnHit?: boolean };
+  /** Le porteur est à découvert : les attaques CONTRE lui ont l'avantage
+   *  (Attaque téméraire du barbare). Lu par deriveRollContext — un effet
+   *  « class_feature » ne passe pas par la table des conditions SRD. */
+  grantsAttackersAdvantage?: boolean;
+  /** Le porteur attaque avec l'avantage tant que l'effet dure. */
+  grantsAttackAdvantage?: boolean;
 }
 
 export interface DeathSaves {
@@ -142,6 +168,16 @@ export interface CharacterStoryProfile {
   secret?: string;
   cinematicStyle?: string;
   dmHooks?: string[];
+  /** Essais déjà consommés dans la forge de portrait (plafond
+   *  MAX_HERO_PORTRAIT_ATTEMPTS). Persisté avec le personnage pour survivre à un
+   *  rechargement — sinon le plafond se remettrait à zéro à chaque F5. */
+  portraitAttempts?: number;
+  /** Identifiant unique du portrait, posé par la forge au premier passage.
+   *  C'est lui (et non le nom) qui indexe le cache : deux héros homonymes de
+   *  deux campagnes ne partagent plus le même visage, et renommer le personnage
+   *  ne perd plus le portrait. Absent = personnage d'avant la forge (clé par
+   *  nom, comportement historique). */
+  portraitId?: string;
 }
 
 /**
@@ -180,6 +216,10 @@ export interface MountSheet {
    *  alliée et attaque d'elle-même. À 0 : morte (retirée), sauf le Destrier
    *  céleste qui revient au prochain repos long. */
   hp?: { current: number; max: number };
+  /** EN SELLE ou à pied. Absent = en selle (compat anciens saves). La charge
+   *  montée (loin → contact + frappe) exige d'être en selle : posséder une
+   *  monture ne suffit pas. Bascule via l'UI compagnons ou l'outil set_mounted. */
+  mounted?: boolean;
   description?: string;
   acquiredAt: number;
 }
@@ -232,6 +272,11 @@ export interface CharacterSheet {
   stats: CharacterStats;
   hp: { current: number; max: number };
   tempHP: number; // Temporary hit points
+  /** Types de dégâts auxquels le héros est IMMUNISÉ (0 dégât) — posés par un
+   *  objet/effet/MJ. Les résistances raciales restent dérivées de la race. */
+  immunities?: string[];
+  /** Types de dégâts auxquels le héros est VULNÉRABLE (dégâts doublés). */
+  vulnerabilities?: string[];
   ac: number; // Base AC
   gold: number; // Gold pieces
   inventory: Item[];
@@ -263,7 +308,10 @@ export interface CharacterSheet {
 const RACIAL_BONUSES: Record<string, Partial<Record<Ability, number>>> = {
   Human: { STR: 1, DEX: 1, CON: 1, INT: 1, WIS: 1, CHA: 1 },
   Elf: { DEX: 2 },
-  'Half-Elf': { CHA: 2 },
+  // da-m5 — SRD : CHA+2 ET +1 à deux autres caractéristiques au choix. Comme
+  // pour les dons à choix (cf. feats.ts), le choix est épinglé de façon
+  // déterministe : DEX/CON, le duo le plus universellement utile.
+  'Half-Elf': { CHA: 2, DEX: 1, CON: 1 },
   'Half-Orc': { STR: 2, CON: 1 },
   Dwarf: { CON: 2 },
   Gnome: { INT: 2 },
@@ -347,9 +395,29 @@ function parseLegacyArmor(item?: Item | null): Partial<Pick<Item, 'armorType' | 
   return { armorType: 'light', baseAC };
 }
 
-function isRangedWeapon(weapon: Partial<Weapon>): boolean {
-  const haystack = `${weapon.name || ''} ${weapon.range || ''} ${(weapon.properties || []).join(' ')}`.toLowerCase();
-  return Boolean(weapon.range) || haystack.includes('bow') || haystack.includes('crossbow') || haystack.includes('ranged') || haystack.includes('thrown');
+/** Weapon names that mean "ranged" in EN and FR. `arc` is word-bounded so
+ *  "arcane"/"marc" don't match, and "hache d'armes" stays melee. */
+const RANGED_NAME_RE = /\b(bow|longbow|shortbow|crossbow|sling|dart|arc|arcs|arbal[eè]te|arbal[eè]tes|fronde|fl[eé]chette)\b/i;
+/** Properties that mean "ranged" (EN + FR wording used by the DM/tools). */
+const RANGED_PROP_RE = /ammunition|munition|ranged|[àa]\s*distance|distance/i;
+const THROWN_PROP_RE = /thrown|jet|lanc/i;
+
+/**
+ * Single source of truth for "is this a ranged weapon?" — used by the fighting
+ * styles, the -5/+10 feats, Sneak Attack, the distance bands and the DM
+ * context. A weapon counts as ranged when it has an Ammunition/Ranged
+ * property, a listed range that is not a thrown range, or a bow/crossbow/sling
+ * name in either language.
+ */
+export function isRangedWeapon(weapon: Partial<Weapon> | Partial<Item> | null | undefined): boolean {
+  if (!weapon) return false;
+  const props = ((weapon as any).properties || []).map((p: unknown) => String(p).toLowerCase());
+  if (props.some((p: string) => RANGED_PROP_RE.test(p))) return true;
+  if (RANGED_NAME_RE.test(String(weapon.name || ''))) return true;
+  // A range band only means "ranged" for a weapon that is not merely throwable
+  // (a dagger has 20/60 but is a melee weapon until it is actually thrown).
+  if (weapon.range && !props.some((p: string) => THROWN_PROP_RE.test(p))) return true;
+  return false;
 }
 
 function hasWeaponProperty(weapon: Partial<Weapon>, property: string): boolean {
@@ -573,6 +641,35 @@ export function isStatModified(character: CharacterSheet, stat: string): boolean
 
 // ========== COMBAT HELPER FUNCTIONS ==========
 
+/** Petit lanceur local pour StatModifier.dice ('1d4', '2d6+1'). Volontairement
+ *  ici (types.ts ne peut pas importer services/utils sans cycle). */
+function rollModifierDice(dice: string): number {
+  const m = String(dice || '').trim().match(/^(\d+)d(\d+)([+-]\d+)?$/i);
+  if (!m) return 0;
+  const count = Math.min(20, Number(m[1]) || 0);
+  const faces = Math.max(1, Number(m[2]) || 1);
+  const flat = Number(m[3] || 0);
+  let total = flat;
+  for (let i = 0; i < count; i++) total += Math.floor(Math.random() * faces) + 1;
+  return total;
+}
+
+// PV MAX EFFECTIFS (2026-08-13) : un objet/effet qui monte la CON (+2 CON de
+// ceinture, effet 'CON') donne +1 PV max par niveau et par point de
+// modificateur, tant qu'il est actif — avant, les bonus de CON n'ajoutaient
+// AUCUN PV. (Une hausse PERMANENTE — ASI/don — est intégrée à hp.max au
+// level-up ; ici on ne compte que le delta temporaire effectif − base.)
+export function getEffectiveMaxHP(character: CharacterSheet): number {
+  // Contre-audit 2026-08-13 — la base du delta doit INCLURE le bonus racial :
+  // hp.max est déjà stocké avec la CON effective (création + level-up), donc
+  // comparer à la seule stat brute recomptait le racial (+5 PV fantômes pour un
+  // Nain niv. 5). Le delta ne couvre que les effets/objets TEMPORAIRES.
+  const baseMod = Math.floor((character.stats.CON + getRacialBonus(character.race, 'CON') - 10) / 2);
+  const effMod = Math.floor((getEffectiveStat(character, 'CON') - 10) / 2);
+  const delta = (effMod - baseMod) * Math.max(1, character.level || 1);
+  return Math.max(1, character.hp.max + delta);
+}
+
 // Calculate effective attack bonus with active effects + equipped gear.
 // Gear: any equipped non-weapon item whose text carries « +N aux jets
 // d'attaque » / "+N to attack rolls" (anneaux, gantelets…) — l'arme elle-même
@@ -582,7 +679,7 @@ export function getEffectiveAttackBonus(character: CharacterSheet): number {
   for (const effect of character.activeEffects || []) {
     for (const mod of effect.modifiers) {
       if (mod.stat === 'attackBonus') {
-        bonus += mod.bonus;
+        bonus += mod.bonus + (mod.dice ? rollModifierDice(mod.dice) : 0);
       }
     }
   }
@@ -605,7 +702,7 @@ export function getRollBonus(character: CharacterSheet, kind: 'check' | 'save'):
   const stat = kind === 'save' ? 'saveBonus' : 'checkBonus';
   for (const effect of character.activeEffects || []) {
     for (const mod of effect.modifiers) {
-      if (mod.stat === stat) bonus += mod.bonus;
+      if (mod.stat === stat) bonus += mod.bonus + (mod.dice ? rollModifierDice(mod.dice) : 0);
     }
   }
   const gearRe = kind === 'save'
@@ -690,6 +787,13 @@ export function getCombatAC(character: CharacterSheet, coverBonus: number = 0): 
   return effectiveAC + coverBonus;
 }
 
+// DA5 — Robustesse naine (Nain des collines / Hill Dwarf) : +1 PV max par
+// niveau. Affiché sur la fiche de race mais jamais branché au moteur avant —
+// même mécanique que Draconic Bloodline (+1) et le don Robuste (+2).
+export function racialHPBonusPerLevel(character: Pick<CharacterSheet, 'race'>): number {
+  return /nain des collines|hill dwarf/i.test(String(character.race || '')) ? 1 : 0;
+}
+
 // Number of weapon attacks the player makes with the Attack action (5e Extra Attack).
 // Martials get a 2nd at level 5; Fighter gets a 3rd at 11 and a 4th at 20.
 export function getPlayerAttackCount(character: CharacterSheet): number {
@@ -719,13 +823,16 @@ export function getPlayerAttackModifier(character: CharacterSheet, weaponOverrid
     abilityMod = Math.max(strMod, dexMod);
   }
 
-  const proficiencyBonus = Math.floor((character.level - 1) / 4) + 2;
+  // SRD (audit 2026-08-12) : le bonus de maîtrise n'est ajouté QUE si la
+  // classe maîtrise l'arme — un Mage à la grande hache attaque sans maîtrise.
+  const fullProficiency = Math.floor((character.level - 1) / 4) + 2;
+  const proficiencyBonus = isProficientWithWeapon(character.class, weapon.name) ? fullProficiency : 0;
   const effectBonus = getEffectiveAttackBonus(character);
   const legacyWeaponBonus = weapon.attackBonus || 0;
   // Use magicBonus if explicitly defined, otherwise compute from attackBonus (legacy backup)
   const weaponExtraBonus = weapon.magicBonus !== undefined
     ? weapon.magicBonus
-    : Math.max(0, legacyWeaponBonus - proficiencyBonus);
+    : Math.max(0, legacyWeaponBonus - fullProficiency);
 
   const styleBonus = character.fightingStyle === 'Archery' && isRangedWeapon(weapon) ? 2 : 0;
 
@@ -759,7 +866,19 @@ export function getPlayerDamageBonus(character: CharacterSheet, weaponOverride?:
     && !hasOffhandWeapon
     ? 2
     : 0;
-  const effectBonus = getEffectiveDamageBonus(character);
+  let effectBonus = getEffectiveDamageBonus(character);
+  // cb-m5 — le bonus de dégâts de la RAGE ne s'applique qu'aux attaques de
+  // MÊLÉE (RAW : attaques de mêlée basées sur la Force) : on le retranche
+  // quand l'arme jugée est à distance.
+  if (isRangedWeapon(weapon)) {
+    for (const fx of character.activeEffects || []) {
+      if (fx.name === 'Rage') {
+        for (const mod of fx.modifiers || []) {
+          if (mod.stat === 'damageBonus') effectBonus -= mod.bonus;
+        }
+      }
+    }
+  }
   const magicBonus = weapon.magicBonus !== undefined
     ? weapon.magicBonus
     : Math.max(0, (weapon.attackBonus || 0) - (Math.floor((character.level - 1) / 4) + 2)); // fallback for legacy
@@ -846,6 +965,10 @@ export interface AdventureManifest {
     title: string;
     objective: string;
     status: 'pending' | 'active' | 'completed';
+    /** Acte d'appartenance (campagnes longues) : quand tous les chapitres d'un
+     *  acte sont clos, leurs digests sont PLIÉS en un digest d'acte unique —
+     *  sans ce champ, 19 digests de chapitre occupaient 35 % du contexte MJ. */
+    act?: string;
     scenes?: {
       id: string;
       title: string;
@@ -875,6 +998,10 @@ export interface AdventureManifest {
     narrationTone?: string;
     musicMood?: string;
     firstSceneHook?: string;
+    /** Direction artistique imposée par la campagne, ajoutée en fin de chaque
+     *  prompt d'image (ex. « muted watercolor, ink linework »). Absent = style
+     *  dark-fantasy par défaut. Voir styleTagsForCampaign(). */
+    styleTags?: string;
   };
   firstScene?: {
     chapterId?: string;
@@ -889,6 +1016,12 @@ export interface AdventureManifest {
   /** IDs of monsters selected by the AI for this campaign bestiary */
   selectedMonsterIds?: string[];
   fullManifesto: string;
+  /** Slots de variation propres à cette campagne d'auteur (passe fill-only) :
+   *  jeton → liste d'options canoniques + fallback. Sans déclaration ici, un
+   *  jeton inconnu se remplissait d'inventions hors-canon du modèle, ou du
+   *  littéral « cette histoire » en cas d'échec réseau. `freeForm` = valeur
+   *  libre acceptée (pas de liste fermée). */
+  variationSlots?: Record<string, { options: string; fallback: string; freeForm?: boolean }>;
   /** Curated monster pool (≤40) for this campaign. Loaded once during generation. */
   campaignBestiary?: import('./data/bestiary').CreatureStats[];
   /** Supporting cast: allies, merchants, betrayers */
@@ -905,6 +1038,18 @@ export interface AdventureManifest {
     item: string;
     type: string;
     description?: string;
+  }[];
+  /** NF3 — marchands PRINCIPAUX générés avec l'histoire : boutiquiers
+   *  récurrents ancrés dans les lieux des chapitres, chacun avec une quête
+   *  personnelle dont la récompense est un objet puissant. Le MJ les incarne
+   *  et ouvre leur boutique via open_shop(name, type). */
+  keyMerchants?: {
+    name: string;
+    type: string;             // blacksmith | apothecary | general | enchanter
+    location: string;
+    personality?: string;
+    questHook?: string;
+    questReward?: string;     // Nom d'objet magique du catalogue
   }[];
   /**
    * World clocks to seed into the runtime at campaign creation. These are the
@@ -965,6 +1110,43 @@ export interface CampaignWorldClock {
 
 export type TimeOfDay = 'dawn' | 'day' | 'dusk' | 'night';
 
+/** Une ligne du LOG DE CAMPAGNE — la colonne vertébrale de la mémoire du MJ
+ *  (architecture « secrétaire + résumeur » du 2026-08-20). Deux écrivains :
+ *  le MOTEUR (combats résumés, loot, quêtes, niveaux — gratuit, fiable,
+ *  immédiat) et le SECRÉTAIRE journalKeeper (décisions/promesses du dialogue).
+ *  Toujours en ANGLAIS (langue du prompt MJ), horodaté jour+moment+chapitre. */
+export interface CampaignLogEntry {
+  id: string;
+  day: number;
+  timeOfDay: TimeOfDay;
+  chapterId?: string;
+  kind: 'combat' | 'loot' | 'quest' | 'levelup' | 'gold' | 'down' | 'note';
+  text: string;
+  createdAt: number;
+}
+
+/** Digest FIGÉ d'un chapitre clos : rédigé une fois à la clôture, plus jamais
+ *  re-résumé — le passé ne s'érode plus (contrairement à l'ancien résumé
+ *  global refondu à chaque purge). */
+export interface ChapterDigest {
+  chapterId: string;
+  title: string;
+  days: string;      // ex. "J1-J2"
+  text: string;      // ~80-120 mots, anglais
+  createdAt: number;
+}
+
+/** Digest d'ACTE : quand tous les chapitres d'un acte sont clos, leurs digests
+ *  sont résumés en un seul bloc (~100-140 mots) et retirés de la liste des
+ *  digests de chapitre — la mémoire longue reste bornée sur 20 chapitres. */
+export interface ActDigest {
+  actId: string;
+  title: string;
+  days: string;
+  text: string;
+  createdAt: number;
+}
+
 export interface CampaignRuntimeState {
   currentChapterId?: string;
   currentSceneId?: string;
@@ -980,6 +1162,17 @@ export interface CampaignRuntimeState {
   dayCount?: number;
   timeOfDay?: TimeOfDay;
   updatedAt?: number;
+  /** Log de campagne append-only (cap ~200 ; les lignes d'un chapitre clos
+   *  sont pliées dans son digest puis retirées du log vivant). */
+  campaignLog?: CampaignLogEntry[];
+  /** Digests figés des chapitres clos, dans l'ordre. */
+  chapterDigests?: ChapterDigest[];
+  /** Digests d'actes clos (chapitres pliés) — voir ActDigest. */
+  actDigests?: ActDigest[];
+  /** Résumé roulant du chapitre EN COURS (régénéré ~toutes les 50 répliques). */
+  currentChapterSummary?: string;
+  /** Monde/plan courant (campagnes multi-plans) — posé par set_campaign_position. */
+  currentRegion?: string;
 }
 
 export const DEFAULT_CAMPAIGN_RUNTIME: CampaignRuntimeState = {
@@ -990,6 +1183,9 @@ export const DEFAULT_CAMPAIGN_RUNTIME: CampaignRuntimeState = {
   worldClocks: [],
   dayCount: 1,
   timeOfDay: 'day',
+  campaignLog: [],
+  chapterDigests: [],
+  actDigests: [],
 };
 
 
@@ -1026,6 +1222,10 @@ export interface QuestEntry {
   status: 'active' | 'completed' | 'failed';
   /** Optional checkable sub-objectives (update_quest_step tool / DM). */
   steps?: QuestStep[];
+  /** ISO date — posé à la création (add_quest) et à la clôture. Sert au tri
+   *  du journal et à distinguer une quête récurrente d'un doublon. */
+  createdAt?: string;
+  completedAt?: string;
 }
 
 export interface NPCEntry {
@@ -1248,6 +1448,12 @@ export interface CodexMonsterRef {
   immunities?: CodexDamageType[];
   vulnerabilities?: CodexDamageType[];
   conditionImmunities?: string[];
+  /** Caractéristiques brutes de la créature — REQUIS pour que les sauvegardes
+   *  des monstres utilisent leur vrai modificateur (audit 2026-08-12 : sans ce
+   *  champ, tout monstre résolu via lookupMonster sauvegardait à +0 plat). */
+  stats?: { STR: number; DEX: number; CON: number; INT: number; WIS: number; CHA: number };
+  /** Bonus de sauvegarde avec maîtrise (Liche SAG +9…), prioritaire sur stats. */
+  saves?: Partial<Record<'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA', number>>;
   portrait?: string;
   source: CodexSource;
 }

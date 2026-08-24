@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User } from 'firebase/auth';
 import {
     AdventureManifest,
+    CampaignLogEntry,
     CampaignRuntimeState,
     CampaignSubBranchPlan,
     CharacterSheet,
@@ -11,8 +12,10 @@ import {
     AppState,
     JournalState
 } from '../types';
+import { repairCharacterWeapons } from '../data/equipment';
+import { viteEnv } from '../services/modelConfig';
+import { hydrateManifestPayload, isSlimManifestPayload } from '../services/manifestTokens';
 import { ChatMessage } from '../hooks/useTranscript';
-import { SceneContext } from '../services/sceneImageService';
 import { Combatant } from '../components/CombatTracker';
 
 // Seed the UI language from a previous choice, else the browser, defaulting to English.
@@ -23,6 +26,20 @@ function getInitialLanguage(): Language {
         if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('fr')) return 'fr';
     } catch { /* SSR / restricted storage */ }
     return 'en';
+}
+
+// UI2 (contre-audit 2026-08-13) — réparation des sauvegardes existantes : les
+// lanceurs « prepared » créés avant le correctif ont knownSpells vide alors que
+// preparedSpells est rempli → grimoire vide + verrou maxPrepared (les sorts de
+// création saturent le quota sans pouvoir être dépréparés). Les sorts préparés
+// sont par définition connus : on les fusionne dans knownSpells.
+function repairKnownSpells<T extends { knownSpells?: string[]; preparedSpells?: string[] }>(character: T): T {
+    const prepared = character.preparedSpells || [];
+    if (prepared.length === 0) return character;
+    const known = character.knownSpells || [];
+    const missing = prepared.filter(s => !known.includes(s));
+    if (missing.length === 0) return character;
+    return { ...character, knownSpells: [...known, ...missing] };
 }
 
 export interface SceneVisualRequest {
@@ -62,6 +79,9 @@ export interface ProposedPlayerAction {
     damageType?: string;
     condition?: string;
     selfModifier?: { mode?: string; bonus?: number; scope?: string; uses?: number };
+    /** Malus/bonus CHIFFRÉ appliqué à la CIBLE au succès de la carte
+     *  (« sable dans les yeux : attackBonus -2, 2 rounds »). */
+    targetEffect?: { stat: string; bonus: number; rounds: number };
     createdAt: number;
 }
 
@@ -106,6 +126,10 @@ interface GameState {
     adventureManifest: string;
     adventureManifestData: AdventureManifest | null;
     setAdventureManifest: (manifest: string, data?: AdventureManifest | null) => void;
+    /** Valeurs de jetons de la passe de personnalisation (campagnes d'auteur) —
+     *  persistées à la place du manifeste entier (sauvegarde « mince »). */
+    manifestTokens: Record<string, string> | null;
+    setManifestTokens: (tokens: Record<string, string> | null) => void;
     campaignRuntime: CampaignRuntimeState;
     setCampaignRuntime: (updater: CampaignRuntimeState | ((prev: CampaignRuntimeState) => CampaignRuntimeState)) => void;
     activateBranch: (branch: CampaignSubBranchPlan) => CampaignSubBranchPlan;
@@ -118,8 +142,6 @@ interface GameState {
 
     bgImage: string;
     setBgImage: (url: string) => void;
-    currentScene: SceneContext | null;
-    setCurrentScene: (scene: SceneContext | null) => void;
     activeSceneVisualRequest: SceneVisualRequest | null;
     lastSceneVisualRequest: SceneVisualRequest | null;
     beginSceneVisualRequest: (request: Omit<SceneVisualRequest, 'id' | 'requestedAt' | 'status'>) => SceneVisualRequest;
@@ -159,6 +181,16 @@ interface GameState {
     removeProposedAction: (id: string) => void;
     clearProposedActions: () => void;
 
+    // NF3 — boutique de marchand ouverte par l'outil open_shop du MJ.
+    activeShop: {
+        merchantName: string;
+        merchantType: string;
+        priceModifier: number;
+        greeting?: string;
+        stock: { item: any; price: number }[];
+    } | null;
+    setActiveShop: (shop: GameState['activeShop']) => void;
+
     // Recent combat rolls (attack/damage/save) shown as a persistent feed inside
     // the combat tracker — so enemy rolls are visible in the combat area, not just
     // the fleeting dice overlay / left-panel DiceTray.
@@ -181,7 +213,6 @@ interface GameState {
 
     // Helpers to sync and update combat-related character states
     updateCharacterHPAndCombatHP: (hp: number) => void;
-    deductSpellSlot: (level: string) => void;
 
     // Helpers to bulk update (for loading saves)
     loadSaveState: (saveData: any) => void;
@@ -192,7 +223,6 @@ const defaultSessionState = {
     transcript: [],
     journal: DEFAULT_JOURNAL,
     bgImage: '',
-    currentScene: null,
     activeSceneVisualRequest: null,
     lastSceneVisualRequest: null,
     combatState: { isActive: false, combatants: [], currentTurn: '' },
@@ -227,7 +257,86 @@ function normalizeRuntime(runtime?: Partial<CampaignRuntimeState> | null): Campa
         canonFacts: runtime?.canonFacts || [],
         protectedSecrets: runtime?.protectedSecrets || [],
         worldClocks: runtime?.worldClocks || [],
+        campaignLog: runtime?.campaignLog || [],
+        chapterDigests: runtime?.chapterDigests || [],
+        actDigests: runtime?.actDigests || [],
     };
+}
+
+/** Écrit une ligne dans le log de campagne — l'écrivain MOTEUR (gratuit,
+ *  fiable, immédiat) de l'architecture secrétaire+résumeur. Horodate avec le
+ *  calendrier du monde + chapitre courant, plafonne le log vivant à 200. */
+export function appendCampaignLog(kind: CampaignLogEntry['kind'], text: string): void {
+    const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 220);
+    if (!clean) return;
+    useGameStore.getState().setCampaignRuntime(prev => ({
+        ...prev,
+        campaignLog: [
+            ...(prev.campaignLog || []).slice(-199),
+            {
+                id: makeSceneVisualId().replace('visual_', 'log_'),
+                day: prev.dayCount || 1,
+                timeOfDay: prev.timeOfDay || 'day',
+                chapterId: prev.currentChapterId,
+                kind,
+                text: clean,
+                createdAt: Date.now(),
+            },
+        ],
+    }));
+}
+
+/** Chronique de combat partagée (session courante, non persistée) : PV du héros
+ *  à l'OUVERTURE du combat + attaques custom jouées. Un module et non un ref
+ *  React : la fin de combat a TROIS portes (moteur, outil MJ end_combat, bouton
+ *  d'urgence) réparties entre GameSession et useToolProcessor — chacune doit
+ *  pouvoir lire ET remettre à zéro, sinon les PV du combat suivant sont faux. */
+export const combatChronicle = {
+    data: { active: false, hpStart: 0, custom: [] as string[] },
+    begin(hpStart: number): void {
+        if (!this.data.active) this.data = { active: true, hpStart, custom: [] };
+    },
+    addCustom(label: string): void {
+        const c = this.data.custom;
+        if (label && c.length < 8 && !c.includes(label)) c.push(label);
+    },
+    /** Lit l'état et remet à zéro — à appeler à CHAQUE dénouement. */
+    take(): { active: boolean; hpStart: number; custom: string[] } {
+        const d = this.data;
+        this.data = { active: false, hpStart: 0, custom: [] };
+        return d;
+    },
+};
+
+/** « 3x ogre, wolf » — regroupe les ennemis d'un roster par nom de base. */
+export function describeCombatFoes(combatants: Array<{ name?: string; side?: string; isPlayer?: boolean }>): string {
+    const groups = new Map<string, number>();
+    for (const c of combatants || []) {
+        if (c.side ? c.side !== 'enemy' : c.isPlayer) continue;
+        const base = String(c.name || 'enemy').replace(/\s+(\d+|[IVX]+)$/i, '').trim() || 'enemy';
+        groups.set(base, (groups.get(base) || 0) + 1);
+    }
+    return [...groups.entries()].map(([n, count]) => (count > 1 ? `${count}x ${n}` : n)).join(', ') || 'unknown foes';
+}
+
+/** Ligne-résumé de combat pour le log de campagne (format validé utilisateur :
+ *  « Combat: Salim vs 3x ogre — mortally wounded (lost 40/50 HP) — +2000 XP »). */
+export function formatCombatChronicleLine(opts: {
+    heroName: string; hpCurrent: number; hpMax: number;
+    hpStart: number | null; foes: string; xp?: number; custom?: string[];
+    outcome: 'victory' | 'defeat' | 'narrative' | 'interrupted';
+}): string {
+    const lost = Math.max(0, (opts.hpStart ?? opts.hpMax) - opts.hpCurrent);
+    const ratio = opts.hpMax > 0 ? lost / opts.hpMax : 0;
+    const qual = lost <= 0 ? 'unscathed' : ratio <= 0.25 ? 'lightly wounded' : ratio <= 0.5 ? 'wounded' : ratio <= 0.75 ? 'badly wounded' : 'mortally wounded';
+    const hpTxt = lost > 0 ? ` (lost ${lost}/${opts.hpMax} HP)` : '';
+    const state = opts.outcome === 'victory' ? `${qual}${hpTxt}`
+        : opts.outcome === 'defeat' ? `DEFEATED — hero fell${hpTxt}`
+        : opts.outcome === 'narrative' ? `ended by DM narration — ${qual}${hpTxt}`
+        : `stopped without resolution — ${qual}${hpTxt}`;
+    const xpTxt = opts.xp && opts.xp > 0 ? ` — +${opts.xp} XP` : '';
+    const customTxt = opts.custom?.length ? ` — custom moves: ${opts.custom.slice(0, 5).join(', ')}` : '';
+    return `Combat: ${opts.heroName} vs ${opts.foes} — ${state}${xpTxt}${customTxt}`;
 }
 
 function makeSceneVisualId(): string {
@@ -266,6 +375,8 @@ export const useGameStore = create<GameState>((set) => ({
     adventureManifest: '',
     adventureManifestData: null,
     setAdventureManifest: (adventureManifest, adventureManifestData = null) => set({ adventureManifest, adventureManifestData }),
+    manifestTokens: null,
+    setManifestTokens: (manifestTokens) => set({ manifestTokens }),
     campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME,
     setCampaignRuntime: (updater) => set((state) => ({
         campaignRuntime: normalizeRuntime(typeof updater === 'function' ? updater(state.campaignRuntime) : updater)
@@ -276,7 +387,9 @@ export const useGameStore = create<GameState>((set) => ({
             id: branch.id || makeBranchId(),
             status: 'active',
             createdAt: branch.createdAt || Date.now(),
-            source: branch.source || 'gemini-flash-latest',
+            // gm-m3 — provenance lue depuis la config (VITE_BRANCH_MODEL) au
+            // lieu d'un ID figé qui deviendrait mensonger en changeant de modèle.
+            source: branch.source || viteEnv('VITE_BRANCH_MODEL', import.meta.env.VITE_BRANCH_MODEL, 'branch-writer'),
         };
         set((state) => ({
             campaignRuntime: {
@@ -301,7 +414,6 @@ export const useGameStore = create<GameState>((set) => ({
         journal: typeof updater === 'function' ? updater(state.journal) : updater
     })),
     setBgImage: (bgImage) => set({ bgImage }),
-    setCurrentScene: (currentScene) => set({ currentScene }),
     beginSceneVisualRequest: (request) => {
         const next: SceneVisualRequest = {
             ...request,
@@ -318,7 +430,13 @@ export const useGameStore = create<GameState>((set) => ({
     completeSceneVisualRequest: (id, imageUrl) => {
         let applied = false;
         set((state) => {
-            if (state.activeSceneVisualRequest?.id !== id) return state;
+            // PL4 — requête SUPPLANTÉE par une plus récente encore en cours :
+            // on AFFICHE quand même l'image terminée (mieux qu'un fond périmé
+            // pendant 10-60 s de plus) — la plus récente la remplacera à son
+            // arrivée. Avant, l'image finie était simplement jetée.
+            if (state.activeSceneVisualRequest?.id !== id) {
+                return imageUrl ? { ...state, bgImage: imageUrl } : state;
+            }
             applied = true;
             const completed: SceneVisualRequest = {
                 ...state.activeSceneVisualRequest,
@@ -368,6 +486,9 @@ export const useGameStore = create<GameState>((set) => ({
     removeProposedAction: (id) => set((state) => ({ proposedActions: state.proposedActions.filter((a) => a.id !== id) })),
     clearProposedActions: () => set({ proposedActions: [] }),
 
+    activeShop: null,
+    setActiveShop: (activeShop) => set({ activeShop }),
+
     combatRolls: [],
     pushCombatRoll: (entry) => set((state) => ({
         combatRolls: [...state.combatRolls, { ...entry, id: (state.combatRolls[state.combatRolls.length - 1]?.id ?? 0) + 1 }].slice(-12)
@@ -408,33 +529,33 @@ export const useGameStore = create<GameState>((set) => ({
         };
     }),
 
-    deductSpellSlot: (level) => set((state) => {
-        if (!state.character || !state.character.spellSlots) return state;
-        const slots = state.character.spellSlots[level];
-        if (!slots) return state;
-        return {
-            character: {
-                ...state.character,
-                spellSlots: {
-                    ...state.character.spellSlots,
-                    [level]: {
-                        ...slots,
-                        current: Math.max(0, slots.current - 1)
-                    }
-                }
-            }
-        };
-    }),
-
     loadSaveState: (saveData) => set({
         // Spread defaultSessionState FIRST so a previous game's transient state
         // (bgImage, currentScene, isNPCTurn, currentRoll, activePrompt…) is
         // fully reset when loading another save in the same tab.
         ...defaultSessionState,
-        character: saveData.character || null,
+        // Migration à la volée : les anciennes sauvegardes stockaient les arcs
+        // sans portée ni propriété « ammunition » — le moteur et le MJ les
+        // prenaient pour des armes de mêlée.
+        // UI2 (contre-audit) — réparer aussi les lanceurs « prepared » existants :
+        // knownSpells vide + preparedSpells rempli = grimoire vide et verrou
+        // maxPrepared (aucun sort préparable). Les sorts préparés deviennent connus.
+        character: saveData.character ? repairKnownSpells(repairCharacterWeapons(saveData.character)) : null,
         selectedAdventure: saveData.adventure || '',
-        adventureManifest: saveData.manifest?.fullManifesto || '',
-        adventureManifestData: saveData.manifest || null,
+        // Sauvegarde MINCE (campagnes d'auteur) : le doc Firestore ne porte que
+        // {authoredRef, tokenValues, chapterStatuses} (~2 Ko) — le manifeste
+        // complet se reconstruit ici depuis le gabarit du code. Les anciennes
+        // sauvegardes (objet complet) passent inchangées.
+        ...(() => {
+            const hydrated = hydrateManifestPayload(saveData.manifest, saveData.adventure);
+            return {
+                adventureManifest: hydrated?.fullManifesto || '',
+                adventureManifestData: hydrated,
+                manifestTokens: isSlimManifestPayload(saveData.manifest)
+                    ? saveData.manifest.tokenValues
+                    : (saveData.manifestTokens || null),
+            };
+        })(),
         campaignRuntime: normalizeRuntime(saveData.campaignRuntime),
         transcript: saveData.transcript || [],
         journal: saveData.journal || DEFAULT_JOURNAL,
@@ -445,5 +566,5 @@ export const useGameStore = create<GameState>((set) => ({
             : defaultSessionState.combatState,
     }),
 
-    resetSessionState: () => set({ ...defaultSessionState, character: null, selectedAdventure: '', activeSaveId: null, adventureManifest: '', adventureManifestData: null, campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME }),
+    resetSessionState: () => set({ ...defaultSessionState, character: null, selectedAdventure: '', activeSaveId: null, adventureManifest: '', adventureManifestData: null, manifestTokens: null, campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME }),
 }));
