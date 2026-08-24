@@ -11,6 +11,7 @@ interface Props {
 
 import { MARTIAL_CLASSES, RACE_DATA, RACES, BACKGROUNDS, FIGHTING_STYLES, DEITIES, CLASS_DATA, BASE_STAT, MAX_POINTS, getWeaponFromInventory, DEFAULT_CHAR } from '../data';
 import { CLASS_SKILLS, CLASS_EXPERTISE, ALL_SKILLS } from '../data/classes';
+import { dispClass, dispRace, dispStyle } from '../data/labels';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../services/skillSystem';
 import { hasFeatSpecial } from '../services/rulesEngine';
@@ -227,24 +228,9 @@ const acLabel = (item: any, lang: Lang): string => {
   return item.effect || '';
 };
 
-// ── Display-only French labels for the identity cards (keys stay English) ─────
-const CLASS_FR: Record<string, string> = {
-  Fighter: 'Guerrier', Paladin: 'Paladin', Ranger: 'Rôdeur', Rogue: 'Roublard', Cleric: 'Clerc',
-  Druid: 'Druide', Mage: 'Mage', Wizard: 'Magicien', Barbarian: 'Barbare', Bard: 'Barde',
-  Monk: 'Moine', Warlock: 'Occultiste', Sorcerer: 'Ensorceleur',
-};
-const RACE_FR: Record<string, string> = {
-  Human: 'Humain', Elf: 'Elfe', 'Half-Elf': 'Demi-elfe', 'Half-Orc': 'Demi-orc', Dwarf: 'Nain',
-  Gnome: 'Gnome', Halfling: 'Halfelin', Tiefling: 'Tieffelin', Dragonborn: 'Drakéide',
-};
-const STYLE_FR: Record<string, string> = {
-  Archery: 'Tir', Defense: 'Défense', Dueling: 'Duel', 'Great Weapon Fighting': 'Arme lourde',
-  Protection: 'Protection', 'Two-Weapon Fighting': 'Combat à deux armes',
-};
-// Class/Race/Style display names: English keys for 'en', French map for 'fr'.
-const dispClass = (c: string, lang: Lang) => (lang === 'fr' ? (CLASS_FR[c] || c) : c);
-const dispRace = (r: string, lang: Lang) => (lang === 'fr' ? (RACE_FR[r] || r) : r); // subraces already have French keys for fr
-const dispStyle = (s: string, lang: Lang) => (lang === 'fr' ? (STYLE_FR[s] || s) : s);
+// Display-only French labels: moved to data/labels.ts so the refreshed menu
+// screens read the SAME table. Keys stay English (they travel in saves).
+// Subrace keys are already French, hence dispRace's passthrough.
 
 // One-click personality presets — fill the four SRD pillars + hooks, then editable.
 type Archetype = { nameEn: string; nameFr: string; profileEn: Partial<CharacterStoryProfile>; profileFr: Partial<CharacterStoryProfile> };
