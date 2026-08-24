@@ -313,7 +313,16 @@ export function describeCombatFoes(combatants: Array<{ name?: string; side?: str
     const groups = new Map<string, number>();
     for (const c of combatants || []) {
         if (c.side ? c.side !== 'enemy' : c.isPlayer) continue;
-        const base = String(c.name || 'enemy').replace(/\s+(\d+|[IVX]+)$/i, '').trim() || 'enemy';
+        // Suffixes du tracker : chiffres, chiffres romains, ET lettres A/B/C.
+        // La lettre manquait — un combat de six gobelins nommés « Goblin A »…
+        // « Goblin F » produisait « 2x Goblin C, 2x Goblin A, … » dans le log de
+        // campagne, puis dans les résumés (audit 2026-08-24, B4). Lettre en
+        // MAJUSCULE uniquement : c'est la convention du tracker, et on ne veut
+        // pas amputer un nom qui finirait par une minuscule.
+        const base = String(c.name || 'enemy')
+            .replace(/\s+(\d+|[IVX]+)$/i, '')
+            .replace(/\s+[A-Z]$/, '')
+            .trim() || 'enemy';
         groups.set(base, (groups.get(base) || 0) + 1);
     }
     return [...groups.entries()].map(([n, count]) => (count > 1 ? `${count}x ${n}` : n)).join(', ') || 'unknown foes';

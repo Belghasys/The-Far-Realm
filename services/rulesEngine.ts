@@ -1087,6 +1087,27 @@ export function levelUpCompanions(character: CharacterSheet, toLevel: number): C
     return { ...character, companions };
 }
 
+/**
+ * Un combat est-il DÉJÀ en cours, au point que le redémarrer dupliquerait son
+ * roster ?
+ *
+ * L'invariant que cette fonction porte (audit 2026-08-24, B4) : une action qui
+ * change l'état du monde vérifie L'ÉTAT, pas la politesse de son appelant.
+ * `startEncounter` conserve délibérément le roster quand le combat est actif —
+ * c'est le chemin du RECHARGEMENT de sauvegarde, voulu et testé (core.test.ts,
+ * « startEncounter drops a stale (inactive) roster »). Mais `start_combat`
+ * empruntait le même chemin quand le MJ l'appelait deux fois de suite : le
+ * roster était conservé, le MJ repeuplait par-dessus, et le combat comptait
+ * douze ennemis au lieu de six — donc le double d'XP à la victoire.
+ *
+ * Roster vide = rien à dupliquer : le cas dégénéré n'est pas « en cours ».
+ */
+export function encounterAlreadyRunning(
+    state?: Partial<EncounterState> | null,
+): boolean {
+    return Boolean(state?.isActive && (state.combatants || []).length > 0);
+}
+
 export function startEncounter(character: CharacterSheet, current: EncounterState): EncounterState {
     // Starting a FRESH encounter must not resurrect a previous fight's roster:
     // leftover corpses cluttered the tracker and re-entered the next victory's

@@ -334,10 +334,17 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
     // Chronologie : le passé RESTE le passé. Sans cette ligne, le MJ rouvrait
     // des quêtes bouclées des jours (de jeu) plus tôt comme si elles étaient
     // en cours.
-    const completedQuests = (journal.quests || [])
-        .filter(q => q.status === 'completed')
-        .slice(-6)
-        .map(q => q.title);
+    // DÉDUP par titre (audit 2026-08-24, B1) : la même quête recréée puis
+    // refermée six fois occupait la fenêtre ENTIÈRE, évinçant toutes les autres
+    // quêtes closes — le MJ ne pouvait donc plus voir qu'il les avait déjà
+    // bouclées, ce qui l'invitait à les rouvrir. On dédoublonne en gardant la
+    // clôture la PLUS RÉCENTE de chaque titre, puis on coupe.
+    const completedQuests = (() => {
+        const titles = (journal.quests || [])
+            .filter(q => q.status === 'completed')
+            .map(q => q.title);
+        return [...new Set(titles.slice().reverse())].reverse().slice(-6);
+    })();
     // Rich NPC lines: disposition + what each NPC remembers, so the DM plays
     // them as people with continuity, not name tags.
     const npcs = (journal.npcs || []).slice(-8).map(n => {

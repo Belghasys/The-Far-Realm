@@ -30,6 +30,7 @@ import {
     applyLongRest,
     applyShortRest,
     applyEffectArgs,
+    encounterAlreadyRunning,
     encounterOutcome,
     applyStoryModifiersToPrompt,
     normalizeRollPrompt,
@@ -134,6 +135,27 @@ export function findQuestByTitle(quests: any[], rawTitle: string, status?: strin
     if (loose.length === 1) return { quest: loose[0] };
     if (loose.length > 1) return { ambiguous: loose.map((q: any) => q.title) };
     return {};
+}
+
+/**
+ * `add_quest` doit-il REFUSER ce titre parce qu'il désigne une quête déjà
+ * accomplie ?
+ *
+ * La dédup ne visait que les quêtes ACTIVES — restriction posée le 2026-08-21
+ * pour qu'une quête récurrente (« Escorter la caravane ») puisse rouvrir. Elle a
+ * créé le défaut inverse : rien n'empêchait plus de recréer une quête close, et
+ * la séance du 2026-08-23 montre la même quête créée puis refermée SIX fois. La
+ * fenêtre « déjà accomplies » du contexte s'en trouvait saturée, donc le MJ ne
+ * voyait plus qu'il l'avait bouclée — la boucle se refermait sur elle-même.
+ *
+ * On garde l'intention de 2026-08-21, mais elle doit être DÉCLARÉE : une vraie
+ * quête récurrente passe `recurring: true`.
+ *
+ * @returns la quête close qui bloque la création, ou null si la voie est libre.
+ */
+export function questCreationBlockedBy(quests: any[], title: string, recurring?: boolean): any | null {
+    if (recurring) return null;
+    return findQuestByTitle(quests || [], title, 'completed').quest || null;
 }
 
 function numericArg(value: unknown, fallback: number): number {
@@ -1063,6 +1085,21 @@ export function useToolProcessor(deps: {
                 case 'start_combat': {
                     const character = store.character;
                     if (!character) return { success: false, error: 'No character loaded' };
+                    // GARDE PAR ÉTAT (audit 2026-08-24, B4). Trace du 23/08 à
+                    // 20:09:32-35 : deux start_combat à une seconde d'intervalle,
+                    // puis six add_enemy_init répétés — le roster est passé à
+                    // douze gobelins et deux Trenn, chaque tour ennemi a été joué
+                    // deux fois, et la victoire a payé 600 XP au lieu de 300.
+                    // startEncounter conserve le roster quand le combat est actif
+                    // (chemin du rechargement de sauvegarde, voulu et testé) : ce
+                    // n'est donc pas au moteur de refuser, c'est ici.
+                    if (encounterAlreadyRunning(store.combatState)) {
+                        return {
+                            success: false,
+                            alreadyRunning: true,
+                            error: 'A combat is ALREADY running — do NOT call start_combat again (it would duplicate the roster and the XP). To bring in more foes, call add_enemy_init on the current fight; to close it, call end_combat.',
+                        };
+                    }
                     const state = startEncounter(character, store.combatState);
                     store.setCombatState(state);
                     store.clearCombatRolls();
@@ -2032,6 +2069,23 @@ export function useToolProcessor(deps: {
                     // titre déjà TERMINÉE ne doit plus avaler la nouvelle (audit
                     // 2026-08-21 — la quête récurrente « Escorter la caravane »
                     // renvoyait success:true sans jamais rouvrir quoi que ce soit).
+                    // Quête déjà ACCOMPLIE : on refuse, et on dit POURQUOI —
+                    // le MJ ne voyait plus la clôture dans sa fenêtre saturée de
+                    // doublons et recréait de bonne foi (audit 2026-08-24, B1).
+                    // Une vraie quête récurrente doit se déclarer.
+                    const closedSame = questCreationBlockedBy(
+                        useGameStore.getState().journal.quests || [],
+                        questTitle,
+                        optionalBoolean(args.recurring),
+                    );
+                    if (closedSame) {
+                        return {
+                            success: false,
+                            alreadyCompleted: true,
+                            completedAt: closedSame.completedAt || null,
+                            error: `Quest "${closedSame.title}" was already COMPLETED${closedSame.completedAt ? ` on ${String(closedSame.completedAt).slice(0, 10)}` : ''} — it is settled PAST, do not re-create it. Reference it as a memory instead. If this is genuinely a NEW recurring contract of the same name, call add_quest again with recurring: true.`,
+                        };
+                    }
                     const existingQuest = (useGameStore.getState().journal.quests || [])
                         .find((q: any) => foldTitle(q.title) === foldTitle(questTitle) && q.status === 'active');
                     // Étapes optionnelles (checklist) fournies dès la création.
@@ -2548,10 +2602,15 @@ export function useToolProcessor(deps: {
                         }]
                     }), true);
                     campaignEventLog.append('JOURNAL_UPDATED', `Story moment: ${momentTitle}`, args);
-                    // La chronique du journal n'était JAMAIS relue par le MJ (elle
-                    // n'entre pas dans le contexte directeur) : on double la ligne
-                    // dans le log de campagne, qui lui revient en mémoire.
-                    appendCampaignLog('note', stringArg(args.description, 200) || momentTitle);
+                    // La chronique du journal n'entre pas dans le contexte
+                    // directeur : sans cette ligne, un moment marquant serait
+                    // invisible pour la mémoire du MJ. On garde donc le report,
+                    // mais réduit au TITRE (audit 2026-08-24, B3) : recopier la
+                    // description entière dupliquait, dans une langue différente,
+                    // la ligne que le greffier venait d'écrire sur le même beat —
+                    // le log plafonné à 200 lignes s'évinçait deux fois plus vite
+                    // et le résumeur digérait deux versions du même fait.
+                    appendCampaignLog('note', momentTitle);
                     return { success: true };
                 }
 

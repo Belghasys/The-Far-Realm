@@ -568,8 +568,8 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_quest",
-        description: "Add a quest to the player's journal. Call it THE MOMENT the hero is given or accepts a job — an NPC asks for help, a contract is taken, a goal is named ('find my son', 'clear the mine', 'carry the relic to the abbey') — in the same beat, not at the end of the scene. A goal the player is pursuing that is NOT in the journal does not exist for them. Optionally seed 2-4 checkable steps (sub-objectives) so the player sees their progress.",
-        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any }, steps: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Optional 2-4 short sub-objectives shown as a checklist." } }, required: ["title", "description"] }
+        description: "Add a quest to the player's journal. Call it THE MOMENT the hero is given or accepts a job — an NPC asks for help, a contract is taken, a goal is named ('find my son', 'clear the mine', 'carry the relic to the abbey') — in the same beat, not at the end of the scene. A goal the player is pursuing that is NOT in the journal does not exist for them. Optionally seed 2-4 checkable steps (sub-objectives) so the player sees their progress. A title that matches an already COMPLETED quest is REJECTED (that story is settled — reference it as a memory); pass recurring:true only for a genuinely new contract that reuses the same name.",
+        parameters: { type: "OBJECT" as any, properties: { title: { type: "STRING" as any }, description: { type: "STRING" as any }, steps: { type: "ARRAY" as any, items: { type: "STRING" as any }, description: "Optional 2-4 short sub-objectives shown as a checklist." }, recurring: { type: "BOOLEAN" as any, description: "True ONLY when this is a new instance of a recurring contract whose title was already completed before (e.g. escorting another caravan). Never use it to re-open a finished story." } }, required: ["title", "description"] }
     },
     {
         name: "update_quest_step",
