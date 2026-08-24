@@ -15,7 +15,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const H = vi.hoisted(() => ({
     navigate: vi.fn(),
-    menuTheme: { enter: vi.fn(), leave: vi.fn(), isPlaying: () => false, isConfigured: () => true },
+    menuTheme: { enter: vi.fn(), leave: vi.fn(), suspend: vi.fn(), resume: vi.fn(), isPlaying: () => false, isConfigured: () => true },
     saveService: { listSaves: vi.fn(), loadGame: vi.fn(), setCurrentSave: vi.fn() },
     memoryManager: { setSaveId: vi.fn(), importFromSave: vi.fn() },
     campaignEventLog: { setCampaignId: vi.fn(), import: vi.fn() },

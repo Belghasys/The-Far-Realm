@@ -169,12 +169,23 @@ def paysage(src, dest, largeurs=(820, 1600), qualite=64):
 
 
 def vignette(src, dest, largeur=420, qualite=66):
-    """Vignette du mur : une seule definition, le collage ne zoome pas."""
+    """
+    Vignette du mur, en deux definitions.
+
+    La petite sert au collage. La grande (@2x) n'est chargee QUE lorsqu'on
+    clique pour agrandir : une vignette de 420 px etiree en plein ecran est
+    illisible, et pre-charger cinquante-trois grandes images pour les dix qu'on
+    affiche serait absurde.
+    """
     im = Image.open(src).convert("RGB")
     L, H = im.size
-    o = im.resize((largeur, int(H * largeur / L)), Image.LANCZOS)
-    o.save(dest + ".webp", "WEBP", quality=qualite, method=6)
-    return os.path.getsize(dest + ".webp")
+    total = 0
+    for suffixe, l, q in (("", largeur, qualite), ("@2x", largeur * 2, qualite - 6)):
+        o = im.resize((l, int(H * l / L)), Image.LANCZOS)
+        chemin = dest + suffixe + ".webp"
+        o.save(chemin, "WEBP", quality=q, method=6)
+        total += os.path.getsize(chemin)
+    return total
 
 
 def favicons(src):

@@ -14,10 +14,13 @@ const H = vi.hoisted(() => ({
     navigate: vi.fn(),
     auth: { __marker: 'auth' },
     signOut: vi.fn(),
-    menuTheme: { enter: vi.fn(), leave: vi.fn(), isPlaying: () => false, isConfigured: () => true },
+    menuTheme: { enter: vi.fn(), leave: vi.fn(), suspend: vi.fn(), resume: vi.fn(), isPlaying: () => false, isConfigured: () => true },
     saveService: { loadGame: vi.fn(), setCurrentSave: vi.fn(), setUser: vi.fn(), clearUser: vi.fn() },
     memoryManager: { setSaveId: vi.fn(), importFromSave: vi.fn(), setUserId: vi.fn() },
     campaignEventLog: { setCampaignId: vi.fn(), import: vi.fn() },
+    // L'API YouTube ne charge pas dans jsdom. On la bouchonne pour choisir le
+    // cas testé : `null` = indisponible, ce qui est le repli qu'on veut voir.
+    chargerApiYouTube: vi.fn(),
     boutique: {
         langue: 'fr' as 'fr' | 'en',
         setLanguage: vi.fn(),
@@ -38,6 +41,7 @@ vi.mock('../../services/menuTheme', () => ({ menuTheme: H.menuTheme }));
 vi.mock('../../services/saveService', () => ({ saveService: H.saveService }));
 vi.mock('../../services/memoryManager', () => ({ memoryManager: H.memoryManager }));
 vi.mock('../../services/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
+vi.mock('../../services/youtubeMusic', () => ({ chargerApiYouTube: H.chargerApiYouTube }));
 
 // Le menu de chargement est réduit à sa surface utile : un bouton qui rend la
 // main avec un identifiant. Ce qui nous intéresse est ce que la VUE fait de
@@ -81,6 +85,7 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
         b.langue = 'fr';
         vi.clearAllMocks();
         H.saveService.loadGame.mockResolvedValue({ character: { name: 'Kaelen' }, transcript: [], events: [] });
+        H.chargerApiYouTube.mockResolvedValue(null);
     });
 
     it('lance l’arène en armant le mode ET l’aventure, puis file à la création', () => {
@@ -214,6 +219,61 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
 
         fireEvent.click(screen.getByRole('button', { name: 'MÉLANGER' }));
         expect(mur()).not.toEqual(avant);
+    });
+
+    it('porte la promesse du jeu en tête du menu, pas sur l’écran de connexion', () => {
+        render(<ModeSelectionView />);
+
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/IL PARLE/);
+        expect(screen.getByText(/Le dernier endroit où l’on joue|Le dernier endroit où l'on joue/)).toBeInTheDocument();
+        expect(screen.getByText(/la table est encore mise/)).toBeInTheDocument();
+    });
+
+    it('lance l’aventure depuis le héros, sans présélectionner d’aventure', () => {
+        render(<ModeSelectionView />);
+        fireEvent.click(screen.getByRole('button', { name: /LANCER L'AVENTURE/ }));
+
+        expect(b.setGameMode).toHaveBeenCalledWith('solo');
+        expect(H.navigate).toHaveBeenCalledWith('/lobby');
+        expect(b.setSelectedAdventure).not.toHaveBeenCalled();
+    });
+
+    it('place la taverne juste au-dessus du mur', () => {
+        render(<ModeSelectionView />);
+        const taverne = screen.getByText('LA TAVERNE');
+        const mur = screen.getByText('LE MUR');
+
+        // compareDocumentPosition : 4 = « le second suit le premier ».
+        expect(taverne.compareDocumentPosition(mur) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('annonce le repli quand le lecteur YouTube ne charge pas', async () => {
+        render(<ModeSelectionView />);
+
+        expect(await screen.findByText('INDISPONIBLE')).toBeInTheDocument();
+        expect(screen.getAllByText(/le thème local reprend la main/).length).toBeGreaterThan(0);
+    });
+
+    it('remplit le mur de dix tuiles, sans trou ni doublon', () => {
+        const { container } = render(<ModeSelectionView />);
+        const tuiles = container.querySelectorAll('.cw-tuile');
+        expect(tuiles).toHaveLength(10);
+
+        const sources = Array.from(tuiles).map(t => t.querySelector('img')?.getAttribute('src'));
+        expect(new Set(sources).size).toBe(10);
+    });
+
+    it('agrandit une vignette au clic, et se referme avec Échap', () => {
+        const { container } = render(<ModeSelectionView />);
+        const premiere = container.querySelector('.cw-tuile') as HTMLElement;
+
+        fireEvent.click(premiere);
+        const vue = screen.getByRole('dialog');
+        // L'agrandissement charge la définition double, pas la vignette.
+        expect(vue.querySelector('img')?.getAttribute('src')).toMatch(/@2x\.webp$/);
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).toBeNull();
     });
 
     it('réclame la musique de menu au montage et la relâche au démontage', () => {

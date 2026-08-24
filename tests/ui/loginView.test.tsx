@@ -26,7 +26,7 @@ const H = vi.hoisted(() => ({
     signInPopup: vi.fn(),
     // La musique de menu est un service à effet de bord (un <audio> unique de
     // module). On le bouchonne pour observer le contrat sans jouer de son.
-    menuTheme: { enter: vi.fn(), leave: vi.fn(), isPlaying: () => false, isConfigured: () => true },
+    menuTheme: { enter: vi.fn(), leave: vi.fn(), suspend: vi.fn(), resume: vi.fn(), isPlaying: () => false, isConfigured: () => true },
     // Mutable : chaque test choisit la langue avant de rendre la vue.
     langue: { valeur: 'fr' as 'fr' | 'en' },
 }));
