@@ -14,7 +14,7 @@ import { T, DISP, BODY } from '../theme/tokens';
 import { Panneau, Titre } from '../components/neon/SheetKit';
 import { NeonButton } from '../components/neon/NeonButton';
 import { getAuthoredCampaign } from '../data/campaigns';
-import { buildSlimManifestPayload } from '../services/manifestTokens';
+import { buildSlimManifestPayload } from '../services/manifestHydration';
 import { personalizeAuthoredManifest } from '../services/llmService';
 
 /**

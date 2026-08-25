@@ -448,7 +448,10 @@ export function ModeSelectionView() {
                         try {
                             const save = await saveService.loadGame(saveId);
                             if (save && save.character) {
-                                loadSaveState(save);
+                                // Même règle que LobbyView : les campagnes se
+                                // chargent au clic, pas avec le menu.
+                                const { hydrateSaveData } = await import('../services/manifestHydration');
+                                loadSaveState(hydrateSaveData(save));
                                 memoryManager.setSaveId(saveId);
                                 memoryManager.importFromSave({ transcript: save.transcript || [], combat: save.combat });
                                 campaignEventLog.setCampaignId(saveId);

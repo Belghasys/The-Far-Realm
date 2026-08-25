@@ -27,7 +27,11 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom', 'zustand', 'lucide-react'],
+            // `react-dom/client` est un point d'entrée DISTINCT de `react-dom` :
+            // nommer le second n'embarque pas le premier, et 525 Ko de source
+            // retombaient dans le chunk d'entrée — celui qui change à chaque
+            // déploiement, donc celui qu'aucun cache ne garde.
+            vendor: ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', 'react-router-dom', 'zustand', 'lucide-react'],
             firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
             gemini: ['@google/genai']
           }

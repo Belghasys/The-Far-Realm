@@ -251,7 +251,10 @@ export function LobbyView() {
                 const mostRecentSave = saves[0];
                 const fullSave = await saveService.loadGame(mostRecentSave.id);
                 if (fullSave && fullSave.character) {
-                    loadSaveState(fullSave);
+                    // Les gabarits de campagne (550 Ko de source) ne se chargent
+                    // qu'ici, au clic — pas avec le hall. Voir manifestHydration.
+                    const { hydrateSaveData } = await import('../services/manifestHydration');
+                    loadSaveState(hydrateSaveData(fullSave));
                     memoryManager.setSaveId(mostRecentSave.id);
                     memoryManager.importFromSave({ transcript: fullSave.transcript || [], combat: fullSave.combat });
                     campaignEventLog.setCampaignId(mostRecentSave.id);

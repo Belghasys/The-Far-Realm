@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User } from 'firebase/auth';
+import type { User } from 'firebase/auth';
 import {
     AdventureManifest,
     CampaignLogEntry,
@@ -14,9 +14,9 @@ import {
 } from '../types';
 import { repairCharacterWeapons } from '../data/equipment';
 import { viteEnv } from '../services/modelConfig';
-import { hydrateManifestPayload, isSlimManifestPayload } from '../services/manifestTokens';
-import { ChatMessage } from '../hooks/useTranscript';
-import { Combatant } from '../components/CombatTracker';
+import { isSlimManifestPayload } from '../services/manifestTokens';
+import type { ChatMessage } from '../hooks/useTranscript';
+import type { Combatant } from '../components/CombatTracker';
 import type { DepartedCombatant } from '../services/rulesEngine';
 
 // Seed the UI language from a previous choice, else the browser, defaulting to English.
@@ -596,17 +596,23 @@ export const useGameStore = create<GameState>((set) => ({
         character: saveData.character ? repairKnownSpells(repairCharacterWeapons(saveData.character)) : null,
         selectedAdventure: saveData.adventure || '',
         // Sauvegarde MINCE (campagnes d'auteur) : le doc Firestore ne porte que
-        // {authoredRef, tokenValues, chapterStatuses} (~2 Ko) — le manifeste
-        // complet se reconstruit ici depuis le gabarit du code. Les anciennes
-        // sauvegardes (objet complet) passent inchangées.
+        // {authoredRef, tokenValues, chapterStatuses} (~2 Ko). La réhydratation
+        // depuis le gabarit du code n'est PLUS faite ici : elle vit dans
+        // services/manifestHydration (hydrateSaveData), que l'appelant invoque
+        // avant — le store ne doit pas connaître les campagnes, sinon elles
+        // arrivent sur l'écran de connexion avec lui (550 Ko de source).
+        // Une forme mince qui arrive quand même est une erreur de programmation :
+        // on le dit, et on charge sans manifeste plutôt que de planter le hall.
         ...(() => {
-            const hydrated = hydrateManifestPayload(saveData.manifest, saveData.adventure);
+            if (isSlimManifestPayload(saveData.manifest)) {
+                console.error('[gameStore] loadSaveState a reçu un manifeste MINCE non réhydraté — passer par hydrateSaveData() avant.');
+                return { adventureManifest: '', adventureManifestData: null, manifestTokens: saveData.manifest.tokenValues };
+            }
+            const manifest = (saveData.manifest as AdventureManifest | undefined) || null;
             return {
-                adventureManifest: hydrated?.fullManifesto || '',
-                adventureManifestData: hydrated,
-                manifestTokens: isSlimManifestPayload(saveData.manifest)
-                    ? saveData.manifest.tokenValues
-                    : (saveData.manifestTokens || null),
+                adventureManifest: manifest?.fullManifesto || '',
+                adventureManifestData: manifest,
+                manifestTokens: saveData.manifestTokens || null,
             };
         })(),
         campaignRuntime: normalizeRuntime(saveData.campaignRuntime),

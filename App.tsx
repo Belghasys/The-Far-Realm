@@ -5,7 +5,6 @@ import { auth } from './services/firebase';
 import { memoryManager } from './services/memoryManager';
 import { saveService } from './services/saveService';
 import { useGameStore } from './store/gameStore';
-import { LiveConnectionManager } from './services/geminiRealtime';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then(module => ({ default: module.LoginView })));
@@ -29,14 +28,26 @@ export default function App() {
 
    useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (u) => {
+         const previous = useGameStore.getState().user;
          setUser(u);
          memoryManager.setUserId(u?.uid || null);
          if (u) {
             saveService.setUser(u.uid);
          } else {
             saveService.clearUser();
-            LiveConnectionManager.getInstance().disconnect();
             useGameStore.getState().resetSessionState();
+            // Le moteur (geminiRealtime → règles, prompt, panneaux de combat :
+            // le tiers du bundle) ne se charge pas avec l'écran de connexion.
+            // Il n'y a de session à couper que si quelqu'un ÉTAIT connecté :
+            // ce rappel tire aussi au premier chargement, avec u = null, et
+            // un import inconditionnel ici rechargerait tout ce qu'on vient
+            // d'écarter. L'import dynamique renvoie la même instance de
+            // module, donc le même singleton que celui de la partie.
+            if (previous) {
+               void import('./services/geminiRealtime')
+                  .then(m => m.LiveConnectionManager.getInstance().disconnect())
+                  .catch(() => { /* hors ligne : rien à couper */ });
+            }
          }
       });
       return unsubscribe;
