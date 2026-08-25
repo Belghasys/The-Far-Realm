@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useEffect } from 'react';
-import { useGameStore, appendCampaignLog, combatChronicle, describeCombatFoes, formatCombatChronicleLine } from '../store/gameStore';
+import { useGameStore, appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
 import { freezeChapterDigest, reconcileMissingDigests } from '../services/chapterChronicle';
 // Résumeur : digest FIGÉ d'un chapitre clos (architecture secrétaire+résumeur).
 import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, buildMomentImagePrompt, type ScenePromptOptions } from '../services/geminiImageService';
@@ -45,7 +45,11 @@ import {
     resolveSpellAgainstTargets,
     sanitizeXPGrant,
     startEncounter,
-    updateEnemyHP
+    updateEnemyHP,
+    withdrawCombatant,
+    findDeparted,
+    concentrationBreakOnDeparture,
+    type DepartedReason,
 } from '../services/rulesEngine';
 import {
     assessEncounterPressure,
@@ -317,11 +321,24 @@ export function useToolProcessor(deps: {
         // écriture d'état après un await → plus de fenêtre d'écrasement), puis
         // affiche les jets. Lignes de transcript bilingues (les anciennes étaient
         // en français dur même en session anglaise).
-        const runMoraleCheck = async (targetRef: string): Promise<{ rolled: boolean; fled?: boolean; state: any }> => {
+        const runMoraleCheck = async (targetRef: string): Promise<{ rolled: boolean; fled?: boolean; state: any; name?: string; total?: number }> => {
             const liveState = useGameStore.getState().combatState;
             const moraleResult = resolveMoraleCheck(liveState, targetRef);
             if (!moraleResult.rolled) return { rolled: false, state: liveState };
-            store.setCombatState(moraleResult.state);
+            let committed: any = moraleResult.state;
+            if (moraleResult.fled && moraleResult.combatant) {
+                // Le fuyard est SORTI du roster, vivant (audit 2026-08-25 : avant,
+                // hp = 0 + effet « Fled » illisible = un cadavre pour tout le monde).
+                // Un lanceur emporte sa concentration : lever l'effet qu'il tenait.
+                const broken = concentrationBreakOnDeparture(moraleResult.combatant);
+                if (broken) {
+                    const released = releaseNpcConcentrationEffect(committed, useGameStore.getState().character, broken);
+                    committed = released.state;
+                    if (released.removedFromPlayer && released.character) d.syncCharacterCritical(released.character, 'hp');
+                }
+                campaignEventLog.append('COMBATANT_LEFT', `${moraleResult.combatant.name} fled the battle (failed morale) — alive`, { ...(moraleResult.departed || {}), reason: 'fled' } as any);
+            }
+            store.setCombatState(committed);
 
             store.setCurrentRoll({
                 result: moraleResult.total!,
@@ -349,7 +366,40 @@ export function useToolProcessor(deps: {
                     ? `${who} a réussi son test de moral (sauvegarde SAG ${moraleResult.total} vs DD ${MORALE_DC}) après avoir subi des dégâts et continue de se battre.`
                     : `${who} passed their morale check (WIS save ${moraleResult.total} vs DC ${MORALE_DC}) after taking damage and keeps fighting.`);
             store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${line}]*` }]);
-            return { rolled: true, fled: moraleResult.fled, state: moraleResult.state };
+            return { rolled: true, fled: moraleResult.fled, state: committed, name: who, total: moraleResult.total };
+        };
+
+        // Ce que le MJ apprend du test de moral. Un handler d'outil n'a AUCUN
+        // autre canal vers le modèle que sa valeur de retour (pas de
+        // dm.sendSystemMessage ici) : avant, il n'apprenait jamais la fuite et
+        // narrait une mort (audit 2026-08-25).
+        const moraleReport = (m: { rolled: boolean; fled?: boolean; name?: string; total?: number }) => !m.rolled ? {} : {
+            moraleCheck: {
+                name: m.name,
+                result: m.fled ? 'fled' : 'held',
+                total: m.total,
+                dc: MORALE_DC,
+                note: m.fled
+                    ? `${m.name} FAILED its morale check and FLED the battle. It is ALIVE — it ran away with its remaining HP and may return later. Narrate a rout (it breaks and runs), NEVER a death.`
+                    : `${m.name} held its nerve and keeps fighting.`,
+            },
+        };
+        // Issue du combat vue depuis un outil : la clôture (XP, chronique) est
+        // automatique côté moteur — le MJ narre, il n'appelle pas end_combat.
+        const outcomeReport = (state: any) => {
+            const outcome = encounterOutcome(state);
+            if (outcome !== 'victory') return { encounterOutcome: outcome };
+            return {
+                encounterOutcome: outcome,
+                victoryNote: `The fight is over — ${describeFightEnd(state.combatants || [], state.departed || [])}. Enemies listed as FLED or SURRENDERED are ALIVE (they ran or yielded). The engine ends the combat and awards XP automatically: do NOT call end_combat, just narrate the aftermath.`,
+            };
+        };
+        // Un ennemi désigné par le MJ mais déjà SORTI du combat : une erreur qui
+        // explique, plutôt qu'un « not found » qui pousse le modèle à inventer.
+        const departedHint = (ref: string): string | null => {
+            const gone = findDeparted(useGameStore.getState().combatState, ref);
+            if (!gone) return null;
+            return `${gone.displayName || gone.name} already LEFT the fight in round ${gone.round} (${gone.reason}) — it is ALIVE and out of reach, not a target. If it comes back, add_enemy_init it again by the same name.`;
         };
 
         // Concentration après dégâts (5 anciens blocs copiés-collés unifiés).
@@ -1148,11 +1198,17 @@ export function useToolProcessor(deps: {
                         return { success: true, xpAwarded: 0 };
                     }
                     // ENEMIES only — allies (companion, rescued NPCs) are !isPlayer
-                    // too and must not inflate the XP clamp base.
-                    const enemyNames = store.combatState.combatants.filter(c => combatantSide(c) === 'enemy').map(c => c.name);
-                    const xpAwarded = sanitizeXPGrant(Number(args.xpAwarded || args.xpAmount || 0), enemyNames);
+                    // too and must not inflate the XP clamp base. Les sortis vivants
+                    // (fuite/reddition) COMPTENT : XP complète, et sans eux un combat
+                    // où tout le monde a fui n'aurait plus aucun plafond.
                     const rosterAtEnd = store.combatState.combatants;
-                    store.setCombatState((prev: any) => ({ ...prev, isActive: false, combatants: [], currentTurn: '', enemyIntents: {} }));
+                    const departedAtEnd = (store.combatState.departed || []).filter(dpt => !dpt.returned);
+                    const enemyNames = [
+                        ...rosterAtEnd.filter(c => combatantSide(c) === 'enemy').map(c => c.name),
+                        ...departedAtEnd.filter(dpt => dpt.side === 'enemy').map(dpt => dpt.name),
+                    ];
+                    const xpAwarded = sanitizeXPGrant(Number(args.xpAwarded || args.xpAmount || 0), enemyNames);
+                    store.setCombatState((prev: any) => ({ ...prev, isActive: false, combatants: [], currentTurn: '', enemyIntents: {}, departed: [] }));
                     if (xpAwarded) {
                         d.grantXP(xpAwarded, "Combat victory");
                     }
@@ -1182,15 +1238,21 @@ export function useToolProcessor(deps: {
                             xp: xpAwarded,
                             custom: chron.custom,
                             outcome: 'narrative',
+                            departed: describeDeparted(departedAtEnd) || undefined,
                         }));
                     } catch { /* la chronique ne casse jamais la fin de combat */ }
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat Ended. Awarded ${xpAwarded} XP]*` }]);
                     if (d.musicDirector) d.musicDirector.handleMusicTag('exploration');
-                    // Aftermath image: illustrate the resolution of the battle.
+                    // Aftermath image: illustrate the resolution of the battle —
+                    // « fallen foes » seulement s'il en reste ; des fuyards, ça se
+                    // dessine en silhouettes qui détalent, pas en cadavres.
                     {
                         const where = store.journal.locations?.slice(-1)?.[0]?.name || 'the battlefield';
+                        const scene = departedAtEnd.length
+                            ? `the aftermath of a battle at ${where}: routed foes scattering into the distance, dust settling, the victor catching their breath, dramatic low light`
+                            : `the aftermath of a battle at ${where}: fallen foes, drifting smoke and dust, the victor catching their breath, dramatic low light`;
                         scheduleSceneImage(
-                            buildSceneImagePrompt(`the aftermath of a battle at ${where}: fallen foes, drifting smoke and dust, the victor catching their breath, dramatic low light`, scenePromptOptions()),
+                            buildSceneImagePrompt(scene, scenePromptOptions()),
                             { kind: 'moment_image', phase: 'aftermath', summary: 'Combat aftermath image' }
                         );
                     }
@@ -1235,9 +1297,15 @@ export function useToolProcessor(deps: {
 
                     // OU3 — le niveau du groupe alimente le défaut de PV des
                     // ennemis homebrew (hp omis ≠ 1 PV).
-                    const { state, combatant } = addEnemyToEncounter(baseState, { ...args, partyLevel: character?.level });
+                    const { state: added, combatant } = addEnemyToEncounter(baseState, { ...args, partyLevel: character?.level });
+                    // Un fuyard qui REVIENT (même nom) : marquer son entrée `departed`
+                    // pour ne pas le compter deux fois (XP, bilan de victoire, tracker).
+                    const returning = (added.departed || []).find(dpt => !dpt.returned && dpt.name.toLowerCase() === combatant.name.toLowerCase());
+                    const state = returning
+                        ? { ...added, departed: (added.departed || []).map(dpt => dpt === returning ? { ...dpt, returned: true } : dpt) }
+                        : added;
                     store.setCombatState(state);
-                    campaignEventLog.append('COMBATANT_ADDED', `Added ${combatant.name} to initiative`, combatant);
+                    campaignEventLog.append('COMBATANT_ADDED', `Added ${combatant.name} to initiative${returning ? ' (back after having ' + returning.reason + ')' : ''}`, combatant);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Added ${combatant.name} to Initiative (HP: ${combatant.hp.current}, AC: ${combatant.ac})]*` }]);
 
                     logNewPlayerInitiative(hadPlayerBefore, character, state);
@@ -1253,7 +1321,13 @@ export function useToolProcessor(deps: {
                     const pressureWarning = projectedPressure.adjustedXP > projectedPressure.deadlyBudget
                         ? `CAUTION: the encounter is now DEADLY-tier (${projectedPressure.adjustedXP}/${projectedPressure.deadlyBudget} adjusted XP for this party). No more reinforcements; keep escape and clever play viable.`
                         : undefined;
-                    return { success: true, initiative: combatant.initiative, combatant, ...(pressureWarning ? { warning: pressureWarning } : {}) };
+                    return {
+                        success: true,
+                        initiative: combatant.initiative,
+                        combatant,
+                        ...(pressureWarning ? { warning: pressureWarning } : {}),
+                        ...(returning ? { note: `${combatant.name} had ${returning.reason} earlier in this fight and is now BACK in the initiative.` } : {}),
+                    };
                 }
 
                 case 'add_ally_init': {
@@ -1313,10 +1387,70 @@ export function useToolProcessor(deps: {
                             targetId: enemy.id,
                             hp: enemy.hp,
                         });
-                        return { success: true, current_hp: enemy.hp.current, is_dead: enemy.hp.current <= 0, targetId: enemy.id };
+                        // 0 PV = À TERRE (mort ou mourant) — jamais « en fuite » :
+                        // la fuite ne passe plus par les PV (enemy_leaves_combat).
+                        const isDown = enemy.hp.current <= 0;
+                        return {
+                            success: true,
+                            current_hp: enemy.hp.current,
+                            is_down: isDown,
+                            targetId: enemy.id,
+                            ...(isDown ? { note: `${enemy.name} is DOWN (dead or dying). If you meant that it flees or surrenders, it is ALIVE: undo with update_enemy_hp and call enemy_leaves_combat instead.` } : {}),
+                        };
                     }
                     if (ambiguous) return { success: false, error: "Ambiguous enemy name. Use the combatant id from the combat tracker/tool result." };
-                    return { success: false, error: "Enemy not found or already dead" };
+                    return { success: false, error: departedHint(String(args.id || args.name)) || "Enemy not found or already dead" };
+                }
+
+                case 'enemy_leaves_combat': {
+                    // Un ennemi VIVANT quitte le combat sans mourir (reddition,
+                    // retraite, rappel). Il sort du roster avec ses PV — vivant pour
+                    // le moteur, le tracker, l'XP, la chronique ET le MJ.
+                    if (!store.combatState.isActive) return { success: false, error: 'No active combat' };
+                    const ref = String(args.target || args.enemy || args.name || '').trim();
+                    if (!ref) return { success: false, error: 'enemy_leaves_combat requires a target' };
+                    const reason: DepartedReason = String(args.reason || 'fled').toLowerCase().startsWith('surr') ? 'surrendered' : 'fled';
+                    const live = useGameStore.getState().combatState;
+                    const result = withdrawCombatant(live, ref, reason);
+                    if (result.alreadyDeparted && result.departed) {
+                        return { success: true, alreadyLeft: true, name: result.departed.name, reason: result.departed.reason, alive: true, note: `${result.departed.displayName || result.departed.name} had already left the fight (${result.departed.reason}) — alive.` };
+                    }
+                    if (!result.found || !result.combatant) {
+                        return {
+                            success: false,
+                            error: result.ambiguous
+                                ? 'Ambiguous enemy. Use the combatant id.'
+                                : (result.error || 'Enemy not found. Only a LIVING enemy can leave the fight — a downed one (0 HP) is dead or dying, and the player/allies never go through this tool.'),
+                        };
+                    }
+                    let committed: any = result.state;
+                    const broken = concentrationBreakOnDeparture(result.combatant);
+                    if (broken) {
+                        const released = releaseNpcConcentrationEffect(committed, useGameStore.getState().character, broken);
+                        committed = released.state;
+                        if (released.removedFromPlayer && released.character) d.syncCharacterCritical(released.character, 'hp');
+                    }
+                    store.setCombatState(committed);
+                    const who = result.departed?.displayName || result.combatant.name;
+                    campaignEventLog.append('COMBATANT_LEFT', `${who} ${reason === 'surrendered' ? 'surrendered' : 'fled the battle'} (DM) — alive`, { ...(result.departed || {}), reason } as any);
+                    store.setTranscript(prev => [...prev, {
+                        speaker: 'dm',
+                        text: `*[SYSTEM: ${reason === 'surrendered'
+                            ? sysLine(`${who} se rend — hors combat, vivant.`, `${who} surrenders — out of the fight, alive.`)
+                            : sysLine(`${who} quitte le combat — hors combat, vivant.`, `${who} leaves the fight — out of reach, alive.`)}]*`,
+                    }]);
+                    return {
+                        success: true,
+                        name: result.combatant.name,
+                        targetId: result.combatant.id,
+                        reason,
+                        alive: true,
+                        hp: result.combatant.hp,
+                        note: reason === 'surrendered'
+                            ? `${who} has SURRENDERED: alive, disarmed, at the hero's mercy — play the scene (prisoner, bargain, mercy or execution as a deliberate CHOICE of the player, never as a combat kill).`
+                            : `${who} has LEFT the fight ALIVE with ${result.combatant.hp.current}/${result.combatant.hp.max} HP. It may return later.`,
+                        ...outcomeReport(committed),
+                    };
                 }
 
                 case 'set_enemy_target': {
@@ -1325,7 +1459,7 @@ export function useToolProcessor(deps: {
                     // runNPCTurn re-validates each turn and falls back to wounded-prey.
                     const enemyRef = resolveCombatantReference(store.combatState, String(args.enemy), { enemyOnly: true, livingOnly: true });
                     if (!enemyRef.combatant || enemyRef.ambiguous) {
-                        return { success: false, error: enemyRef.ambiguous ? 'Ambiguous enemy. Use combatant id.' : 'Enemy not found' };
+                        return { success: false, error: enemyRef.ambiguous ? 'Ambiguous enemy. Use combatant id.' : (departedHint(String(args.enemy)) || 'Enemy not found') };
                     }
                     const targetRef = resolveCombatantReference(store.combatState, String(args.target), { livingOnly: true });
                     const targetIsHero = targetRef.combatant && (targetRef.combatant.side ? targetRef.combatant.side !== 'enemy' : targetRef.combatant.isPlayer);
@@ -1582,7 +1716,6 @@ export function useToolProcessor(deps: {
                     campaignEventLog.append('HP_CHANGED', result.resolution.log.text, result.resolution);
                     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${result.resolution!.log.text}]*` }]);
 
-                    const outcome = encounterOutcome(morale.state);
                     return {
                         success: true,
                         hit: result.resolution.hit,
@@ -1590,7 +1723,8 @@ export function useToolProcessor(deps: {
                         attackTotal: result.resolution.attackRoll.total,
                         damage: result.resolution.damage,
                         targetHP: result.resolution.targetHP,
-                        encounterOutcome: outcome,
+                        ...moraleReport(morale),
+                        ...outcomeReport(morale.state),
                     };
                 }
 
@@ -1637,7 +1771,7 @@ export function useToolProcessor(deps: {
 
                     const applied = applyDamageToEncounter(store.combatState, target, amount, args.damageType);
                     if (!applied.found || !applied.target) {
-                        return { success: false, error: applied.ambiguous ? 'Ambiguous target. Use combatant id.' : 'Target not found' };
+                        return { success: false, error: applied.ambiguous ? 'Ambiguous target. Use combatant id.' : (departedHint(target) || 'Target not found') };
                     }
                     logDamage(applied.target.name);
 
@@ -1664,7 +1798,9 @@ export function useToolProcessor(deps: {
                     }
 
                     // --- MORALE CHECK FOR DAMAGED NPC --- (helper partagé, état frais)
-                    await runMoraleCheck(String(args.target || args.name));
+                    // Le retour n'est plus jeté : le MJ doit apprendre la fuite, et
+                    // l'issue du combat (dernier ennemi parti) doit lui parvenir.
+                    const moraleAfterDamage = await runMoraleCheck(String(args.target || args.name));
 
                     // Fiche FRAÎCHE après l'animation : l'ancien code repartait du
                     // snapshot du début de handler et écrasait tout changement
@@ -1693,7 +1829,17 @@ export function useToolProcessor(deps: {
                         hp: applied.target.hp,
                         tempHP: applied.target.tempHP
                     });
-                    return { success: true, target: applied.target.name, targetId: applied.target.id, hp: applied.target.hp, tempHP: applied.target.tempHP, amountApplied: applied.amountApplied, mitigation: applied.mitigation };
+                    return {
+                        success: true,
+                        target: applied.target.name,
+                        targetId: applied.target.id,
+                        hp: applied.target.hp,
+                        tempHP: applied.target.tempHP,
+                        amountApplied: applied.amountApplied,
+                        mitigation: applied.mitigation,
+                        ...moraleReport(moraleAfterDamage),
+                        ...outcomeReport(moraleAfterDamage.state),
+                    };
                 }
 
                 case 'environmental_damage': {
@@ -2644,8 +2790,12 @@ export function useToolProcessor(deps: {
                     if (!store.character) return { success: false, error: 'No character loaded' };
                     const xpBefore = store.character.xp;
                     // ENEMIES only — allies (companion, rescued NPCs) are !isPlayer
-                    // too and must not inflate the XP clamp base.
-                    const enemyNames = store.combatState.combatants.filter(c => combatantSide(c) === 'enemy').map(c => c.name);
+                    // too and must not inflate the XP clamp base. Les sortis vivants
+                    // (fuite/reddition) comptent dans la base du plafond.
+                    const enemyNames = [
+                        ...store.combatState.combatants.filter(c => combatantSide(c) === 'enemy').map(c => c.name),
+                        ...(store.combatState.departed || []).filter(dpt => !dpt.returned && dpt.side === 'enemy').map(dpt => dpt.name),
+                    ];
                     const amount = sanitizeXPGrant(Number(args.amount), enemyNames);
                     // « Awarded 50 XP for undefined » : reason non validée (audit 2026-08-12).
                     const xpReason = stringArg(args.reason, 120) || sysLine('progression', 'progress');

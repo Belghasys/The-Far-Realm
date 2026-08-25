@@ -438,8 +438,20 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "update_enemy_hp",
-        description: "Update an enemy's HP. If HP is 0 or less, they are dead.",
+        description: "Set an enemy's HP directly (a scripted wound, healing, a dramatic second wind). At 0 HP or less the enemy is DOWN — dead or dying — and must be narrated as such. NEVER set HP to 0 to represent an enemy that flees, surrenders, retreats or is called off: use enemy_leaves_combat for that (it leaves the fight ALIVE).",
         parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any }, hp: { type: "INTEGER" as any } }, required: ["name", "hp"] }
+    },
+    {
+        name: "enemy_leaves_combat",
+        description: "Remove a LIVING enemy from the fight WITHOUT killing it: it surrenders, yields, retreats, is called off, or breaks and runs for narrative reasons. It leaves the initiative alive with its current HP (it may return later — add_enemy_init it again by the same name) and still counts toward victory and XP. Use this instead of update_enemy_hp(0) whenever an enemy stops fighting but is not dead. Note: the engine already makes wounded enemies (below 40% HP) roll a morale check on their own (WIS save vs DC 11) — a failure appears as a `moraleCheck: { result: 'fled' }` field in a tool result or a '[SYSTEM] X … FLED' report: narrate those as a rout, never as a death.",
+        parameters: {
+            type: "OBJECT" as any,
+            properties: {
+                target: { type: "STRING" as any, description: "Enemy name or combatant id (use the id when enemies share a name)." },
+                reason: { type: "STRING" as any, description: "'surrendered' (yields, drops its weapon, begs for mercy) or 'fled' (runs away, retreats, is recalled by its master)." }
+            },
+            required: ["target", "reason"]
+        }
     },
     {
         name: "set_enemy_target",
@@ -455,7 +467,7 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "resolve_attack",
-        description: "Ask the local D&D rules engine to resolve an attack roll and damage against a combatant. For bestiary monsters, use attackName from lookup_monster/lookup_creature instead of inventing attack stats.",
+        description: "Ask the local D&D rules engine to resolve an attack roll and damage against a combatant. For bestiary monsters, use attackName from lookup_monster/lookup_creature instead of inventing attack stats. The result may carry `moraleCheck`: a wounded enemy (below 40% HP) rolls WIS vs DC 11 and on failure FLEES — ALIVE, out of the fight — narrate a rout, never a death. `encounterOutcome: 'victory'` means the engine ends the fight and awards XP itself: do not call end_combat.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
@@ -522,7 +534,7 @@ const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "apply_damage",
-        description: "Apply deterministic damage to a combatant by name (a FIXED amount you already know). For environmental hazards with dice, prefer environmental_damage which rolls locally and can demand a save.",
+        description: "Apply deterministic damage to a combatant by name (a FIXED amount you already know). For environmental hazards with dice, prefer environmental_damage which rolls locally and can demand a save. The result may carry `moraleCheck`: a damaged enemy below 40% HP rolls WIS vs DC 11 and on failure FLEES — ALIVE, out of the fight — narrate a rout, never a death. `encounterOutcome: 'victory'` means the engine ends the fight and awards XP itself: do not call end_combat.",
         parameters: {
             type: "OBJECT" as any,
             properties: {

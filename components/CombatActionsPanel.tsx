@@ -736,8 +736,11 @@ export function CombatActionsPanel({
     // Noms désambiguïsés (Gobelin A/B/C…) — même carte que la fenêtre de combat,
     // pour que deux monstres identiques restent distinguables dans les menus.
     const displayNames = useMemo(
-        () => buildDisplayNames([...combatState.combatants].sort((a, b) => b.initiative - a.initiative)),
-        [combatState.combatants]
+        () => buildDisplayNames(
+            [...combatState.combatants].sort((a, b) => b.initiative - a.initiative),
+            (combatState.departed || []).filter((d: any) => !d.returned),
+        ),
+        [combatState.combatants, combatState.departed]
     );
     const nameOf = (c: any) => (c.id && displayNames.get(c.id)) || c.name;
 

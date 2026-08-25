@@ -123,6 +123,9 @@ export function useSaveSync({
                     turnIndex: data.combatState.turnIndex,
                     actionEconomy: data.combatState.actionEconomy,
                     enemyIntents: data.combatState.enemyIntents,
+                    // Fuyards / redditions : sans ce champ, un rechargement en
+                    // plein combat les faisait disparaître (XP, chronique, MJ).
+                    departed: data.combatState.departed || [],
                 }
             } : {
                 // EXPLICITLY overwrite: every write is merge:true, so omitting the

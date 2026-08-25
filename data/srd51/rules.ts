@@ -7,7 +7,30 @@ const SRD_SOURCE = {
     sourceUrl: 'https://www.dndbeyond.com/srd',
 } as const;
 
+/** Règles MAISON de The Far Realm — jamais étiquetées SRD. */
+const HOUSE_SOURCE = {
+    sourceKind: 'homebrew',
+    license: 'homebrew',
+    attribution: 'The Far Realm house rule, enforced by the local rules engine.',
+} as const;
+
 export const SRD51_RULES: RuleEntry[] = [
+    {
+        kind: 'rule',
+        id: 'morale',
+        name: 'Morale (house rule) — Moral',
+        category: 'combat',
+        summary: 'A badly wounded enemy may lose its nerve and FLEE — alive, out of the fight. Fleeing is not dying.',
+        mechanics: [
+            'Trigger: an ENEMY drops below 40% of its maximum HP — once per fight, at the start of its turn or right after taking damage.',
+            'Check: Wisdom saving throw vs DC 11 (the creature\'s WIS modifier applies).',
+            'Failure: it flees — it leaves the initiative ALIVE with its current HP, may be met again later, and still counts toward victory and XP.',
+            'Success: it holds its nerve and never rolls again this fight.',
+            'Never rolls: undead, constructs, oozes, plants, and bosses (80+ max HP).',
+            'The DM can also remove a living enemy that yields or retreats with enemy_leaves_combat — never by setting its HP to 0.',
+        ],
+        source: HOUSE_SOURCE,
+    },
     {
         kind: 'rule',
         id: 'concentration',

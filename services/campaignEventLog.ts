@@ -8,6 +8,8 @@ export type CampaignEventType =
     | 'ENCOUNTER_STARTED'
     | 'ENCOUNTER_ENDED'
     | 'COMBATANT_ADDED'
+    /** Un ennemi a quitté le combat VIVANT (moral raté, reddition, retraite). */
+    | 'COMBATANT_LEFT'
     | 'COMBAT_TURN_ADVANCED'
     | 'HP_CHANGED'
     | 'XP_GRANTED'

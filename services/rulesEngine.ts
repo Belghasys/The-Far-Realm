@@ -1,4 +1,4 @@
-import { Combatant, combatantSide, isHero } from '../components/CombatTracker';
+import { Combatant, combatantSide, isHero, displayNameFor } from '../components/CombatTracker';
 export { combatantSide, isHero } from '../components/CombatTracker';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
 import { getFeatById } from '../data/feats';
@@ -26,7 +26,7 @@ import {
     isRangedWeapon,
     Item
 } from '../types';
-import { getEnemyXP } from './xpSystem';
+import { getEnemyXP, estimateXPFromHP } from './xpSystem';
 import {
     getScaledSpellDice,
     lookupCondition,
@@ -108,6 +108,29 @@ export interface RollContextResult {
     coverBonus: number;
 }
 
+export type DepartedReason = 'fled' | 'surrendered';
+
+/** Un combattant sorti du combat VIVANT (moral raté, reddition, retraite
+ *  narrée par le MJ). Il quitte le roster — « hors du combat » = « absent du
+ *  roster », ce qui garde justes tous les filtres `hp.current > 0` — et reste
+ *  consigné ici pour la victoire, l'XP, la chronique et le contexte du MJ.
+ *  Audit 2026-08-25 : avant, la fuite s'écrivait `hp = 0`, indiscernable d'une
+ *  mort pour le moteur ET pour le MJ, qui narrait un cadavre. */
+export interface DepartedCombatant {
+    id: string;
+    name: string;
+    /** Nom affiché par le tracker au moment du départ (« Goblin B »). */
+    displayName?: string;
+    side: 'player' | 'ally' | 'enemy';
+    reason: DepartedReason;
+    /** PV au moment du départ — jamais 0 : il est parti sur ses jambes. */
+    hp: { current: number; max: number };
+    xpValue?: number;
+    round: number;
+    /** Revenu au combat via add_enemy_init : ne pas le compter deux fois. */
+    returned?: boolean;
+}
+
 export interface EncounterState {
     isActive: boolean;
     combatants: Combatant[];
@@ -118,6 +141,9 @@ export interface EncounterState {
     logs?: CombatLogEntry[];
     /** Hybrid enemy targeting: MJ-set standing intents, enemy combatant id -> hero id. */
     enemyIntents?: Record<string, string>;
+    /** Sortis vivants du combat (fuite / reddition). Absent sur les anciennes
+     *  sauvegardes : TOUJOURS lire via `(state.departed || [])`. */
+    departed?: DepartedCombatant[];
 }
 
 export interface TurnEconomy {
@@ -1297,6 +1323,9 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
         turnIndex: current.turnIndex || 0,
         actionEconomy,
         enemyIntents: current.enemyIntents || {},
+        // Renfort sur un combat ACTIF (add_enemy_init passe par ici) : les
+        // fuyards déjà consignés survivent. Combat frais : registre vide.
+        departed: current.isActive ? (current.departed || []) : [],
         logs: current.logs || [makeLog('Encounter started', 'system')],
     });
 }
@@ -1403,6 +1432,7 @@ export function addEnemyToEncounter(current: EncounterState, args: any): { state
             turnIndex: current.turnIndex || 0,
             actionEconomy: current.actionEconomy || {},
             enemyIntents: current.enemyIntents || {},
+            departed: current.departed || [],
             logs: [...(current.logs || []), makeLog(`${combatant.name} joined initiative`, 'system')],
         }),
     };
@@ -1490,6 +1520,7 @@ export function addAllyToEncounter(current: EncounterState, args: any, character
             turnIndex: current.turnIndex || 0,
             actionEconomy: current.actionEconomy || {},
             enemyIntents: current.enemyIntents || {},
+            departed: current.departed || [],
             logs: [...(current.logs || []), makeLog(`${combatant.name} joined the fight as an ally`, 'system')],
         }),
     };
@@ -1514,6 +1545,85 @@ export function updateEnemyHP(current: EncounterState, name: string, hp: number)
         enemy,
         state: syncCurrentTurn({ ...current, combatants }),
     };
+}
+
+/** Retrouve un combattant déjà sorti du combat, par id ou par nom (insensible
+ *  à la casse) — pour que les outils du MJ expliquent « il a fui, vivant » au
+ *  lieu d'un sec « not found » qui pousse le modèle à inventer. */
+export function findDeparted(state: EncounterState, reference: string): DepartedCombatant | undefined {
+    const ref = String(reference || '').trim().toLowerCase();
+    if (!ref) return undefined;
+    const list = state.departed || [];
+    return list.find(d => d.id === reference)
+        || list.find(d => d.name.toLowerCase() === ref)
+        || list.find(d => (d.displayName || '').toLowerCase() === ref);
+}
+
+export interface WithdrawResult {
+    state: EncounterState;
+    found: boolean;
+    ambiguous?: boolean;
+    /** Déjà parti : état rendu tel quel. */
+    alreadyDeparted?: boolean;
+    combatant?: Combatant;
+    departed?: DepartedCombatant;
+    error?: string;
+}
+
+/**
+ * Un ENNEMI quitte le combat vivant (fuite sur moral raté, reddition, retraite
+ * narrée). Il sort du roster, PV intacts, et rejoint `departed`.
+ *
+ * Ordre impératif : si c'est SON tour, on avance le tour AVANT de le retirer —
+ * `advanceTurn` sur un acteur absent du roster retombe en tête d'ordre et
+ * incrémente le round (tours sautés). Purge aussi son intention de ciblage et
+ * son économie d'action (clé id seulement : une clé nom peut appartenir à un
+ * homonyme). Pure : l'appelant persiste.
+ */
+export function withdrawCombatant(current: EncounterState, reference: string, reason: DepartedReason, displayName?: string): WithdrawResult {
+    const lookup = resolveCombatantReference(current, reference, { livingOnly: true, autoResolve: true });
+    if (!lookup.combatant || lookup.ambiguous) {
+        const already = findDeparted(current, reference);
+        if (already && !lookup.ambiguous) return { state: current, found: true, alreadyDeparted: true, departed: already };
+        return { state: current, found: false, ambiguous: lookup.ambiguous };
+    }
+    const combatant = lookup.combatant;
+    if (combatantSide(combatant) !== 'enemy') {
+        return { state: current, found: false, error: 'Only enemies can leave the fight this way' };
+    }
+
+    let next: EncounterState = current;
+    if (next.currentTurn === combatant.id || next.currentTurn === combatant.name) {
+        next = advanceTurn(next);
+    }
+    const combatants = next.combatants.filter(c => c.id !== combatant.id);
+    const enemyIntents = { ...(next.enemyIntents || {}) };
+    delete enemyIntents[combatant.id];
+    const actionEconomy = { ...(next.actionEconomy || {}) };
+    delete actionEconomy[combatant.id];
+
+    const departed: DepartedCombatant = {
+        id: combatant.id,
+        name: combatant.name,
+        // Le nom que le joueur a lu dans le tracker (« Goblin B ») — calculé
+        // AVANT le retrait, sinon la lettre est perdue avec la ligne.
+        displayName: displayName ?? displayNameFor(current.combatants, combatant.id, current.departed || []),
+        side: 'enemy',
+        reason,
+        hp: { ...combatant.hp },
+        xpValue: combatant.xpValue,
+        round: next.round || 1,
+    };
+    const verb = reason === 'fled' ? 'flees the battle (alive)' : 'surrenders (alive, out of the fight)';
+    next = syncCurrentTurn({
+        ...next,
+        combatants,
+        enemyIntents,
+        actionEconomy,
+        departed: [...(next.departed || []), departed],
+        logs: [...(next.logs || []), makeLog(`${combatant.name} ${verb}`, 'condition')],
+    });
+    return { state: next, found: true, combatant, departed };
 }
 
 export function advanceTurn(current: EncounterState): EncounterState {
@@ -1705,6 +1815,16 @@ export function applyDamageToEncounter(
     });
 
     return { state: next, found: true, target, amountApplied, mitigation, npcConcentrationBroken };
+}
+
+/** Un lanceur qui QUITTE le combat (fuite, reddition) emporte sa concentration :
+ *  fiche de rupture à passer à releaseNpcConcentrationEffect, ou undefined s'il
+ *  ne tenait aucun sort. Sans ça, un Hold Person restait sur le héros après la
+ *  fuite de son auteur (la purge n'existait qu'à 0 PV). */
+export function concentrationBreakOnDeparture(combatant: Combatant | undefined): NpcConcentrationBreak | undefined {
+    const conc = combatant?.concentratingOn;
+    if (!combatant || !conc) return undefined;
+    return { casterName: combatant.name, effectName: conc.effectName, targetId: conc.targetId, roll: 0, dc: 0, downed: false };
 }
 
 /** Retire l'effet lié quand la concentration d'un PNJ tombe : sur le héros
@@ -2368,12 +2488,22 @@ export interface MoraleCheckResult {
     wisMod?: number;
     fled: boolean;
     combatant?: Combatant;
+    /** Fiche de sortie quand il a fui (PV intacts, round). */
+    departed?: DepartedCombatant;
 }
 
-/** DD du test de moral (règle maison, documentée au codex) — WIS save quand un
- *  ennemi passe sous 50 % de ses PV. Une seule source de vérité : réutilisé par
+/** DD du test de moral (règle maison — entrée `morale` du codex et bullet
+ *  MORALE du prompt système) — sauvegarde de SAG quand un ennemi passe sous
+ *  MORALE_HP_RATIO de ses PV max. Une seule source de vérité : réutilisé par
  *  l'UI et les lignes de transcript. */
 export const MORALE_DC = 11;
+/** Seuil de PV (fraction du max) en dessous duquel le test de moral se déclenche. */
+export const MORALE_HP_RATIO = 0.4;
+/** Types de créatures qui ne fuient JAMAIS (pas de volonté à briser). */
+const MINDLESS_CREATURE_TYPES = new Set(['undead', 'construct', 'ooze', 'plant']);
+/** Filet pour les noms homebrew absents du bestiaire (FR + EN) — en MOTS
+ *  ENTIERS : « ombre » nu capturait « Chevalier sombre », « lich » « lichen ». */
+const MINDLESS_NAME_RE = /(^|[^\p{L}])(zombie|zombis?|skeletons?|squelettes?|undead|morts?[- ]?vivants?|golems?|constructs?|automates?|goules?|ghouls?|momies?|mumm(?:y|ies)|liches?|lich|spectres?|specters?|wraiths?|vampires?|oozes?|jell(?:y|ies)|puddings?|gelatinous|gélatineux)([^\p{L}]|$)/iu;
 
 /** Caractéristique d'incantation par classe — UNE source de vérité, partagée
  *  entre le moteur (castSpell) et l'UI (SpellbookPanel affichait un DD basé INT
@@ -2395,23 +2525,26 @@ export function resolveMoraleCheck(current: EncounterState, targetIdOrName: stri
     const combatant = lookup.combatant;
     const maxHp = combatant.hp.max || 1;
     const hpRatio = combatant.hp.current / maxHp;
-    // Mindless creatures never rout — match FRENCH names too (a "squelette"
-    // used to fail morale and flee, which undead must not do).
-    const isMindless = /zombie|zombi|skeleton|squelette|undead|mort[- ]?vivant|golem|construct|automate/i.test(combatant.name);
+    // Les créatures sans volonté ne se débandent jamais. Décision par TYPE de
+    // bestiaire d'abord (audit 2026-08-25 : la regex de nom ne couvrait que 5
+    // morts-vivants sur 25 — une Ombre, une Goule, une Momie pouvaient fuir),
+    // regex de nom en filet pour les homebrew hors bestiaire.
+    const monsterData: any = lookupMonster(combatant.name) || getCreature(combatant.name);
+    const creatureType = String(monsterData?.type || '').toLowerCase();
+    const isMindless = MINDLESS_CREATURE_TYPES.has(creatureType) || MINDLESS_NAME_RE.test(combatant.name);
     const isBoss = maxHp >= 80;
 
-    if (hpRatio > 0.4 || isMindless || isBoss || combatant.moraleChecked) {
+    if (hpRatio > MORALE_HP_RATIO || isMindless || isBoss || combatant.moraleChecked) {
         return { state: current, rolled: false, fled: false, combatant };
     }
 
     // Set moraleChecked to true in state
     const updatedCombatant = { ...combatant, moraleChecked: true };
     const nextCombatants = current.combatants.map(c => c.id === combatant.id ? updatedCombatant : c);
-    let nextState = { ...current, combatants: nextCombatants };
+    let nextState: EncounterState = { ...current, combatants: nextCombatants };
 
     // Wisdom save vs MORALE_DC
-    const monsterData = lookupMonster(combatant.name) || getCreature(combatant.name);
-    const wis = (monsterData as any)?.stats?.WIS || 10;
+    const wis = monsterData?.stats?.WIS || 10;
     const wisMod = Math.floor((wis - 10) / 2);
 
     const dieRoll = Math.floor(Math.random() * 20) + 1;
@@ -2419,28 +2552,14 @@ export function resolveMoraleCheck(current: EncounterState, targetIdOrName: stri
     const success = total >= MORALE_DC;
 
     let fled = false;
+    let departed: DepartedCombatant | undefined;
     if (!success) {
         fled = true;
-        // Mark as fled by setting hp to 0 + a 'Fled' effect, instead of deleting
-        // the combatant from the roster. This keeps encounterOutcome's victory
-        // predicate working (it counts enemies still PRESENT but checks LIVING),
-        // so a fled last enemy correctly ends the fight as a victory.
-        const updatedCombatants = nextState.combatants.map(c => {
-            if (c.id !== combatant.id) return c;
-            return {
-                ...c,
-                hp: { ...c.hp, current: 0 },
-                activeEffects: [
-                    ...(c.activeEffects || []),
-                    { id: `fled-${c.id}`, name: 'Fled', source: 'condition' as const, duration: 'permanent' as const, description: 'Fled the battle (morale).', modifiers: [] },
-                ],
-            };
-        });
-        nextState = { ...nextState, combatants: updatedCombatants };
-        // If it was their turn, advance to the next living combatant.
-        if (nextState.currentTurn === combatant.id || nextState.currentTurn === combatant.name) {
-            nextState = advanceTurn(nextState);
-        }
+        // Il FUIT : sortie du roster, PV intacts (jamais `hp = 0` — c'était
+        // indiscernable d'une mort pour tout le monde, MJ compris).
+        const withdrawn = withdrawCombatant(nextState, combatant.id, 'fled');
+        nextState = withdrawn.state;
+        departed = withdrawn.departed;
     }
 
     return {
@@ -2451,7 +2570,8 @@ export function resolveMoraleCheck(current: EncounterState, targetIdOrName: stri
         dieRoll,
         wisMod,
         fled,
-        combatant: updatedCombatant
+        combatant: updatedCombatant,
+        departed,
     };
 }
 
@@ -2476,8 +2596,11 @@ export function encounterOutcome(current: EncounterState): 'ongoing' | 'victory'
     // Defeat only when the whole party (player + allies) is down — an ally still
     // standing keeps the fight alive even if the player has fallen.
     if (!heroesAlive) return 'defeat';
-    // Victory when every enemy is down (and there were enemies to begin with).
-    if (!enemiesAlive && current.combatants.some(c => combatantSide(c) === 'enemy')) return 'victory';
+    // Victory when every enemy is down or GONE (fled / surrendered — they left
+    // the roster alive), provided there were enemies to begin with.
+    const hadEnemies = current.combatants.some(c => combatantSide(c) === 'enemy')
+        || (current.departed || []).some(d => d.side === 'enemy');
+    if (!enemiesAlive && hadEnemies) return 'victory';
     return 'ongoing';
 }
 
@@ -3467,6 +3590,28 @@ export function resolveConcentrationAfterDamage(character: CharacterSheet, damag
         removedEffects: broken ? concentrationEffects : [],
         prompt,
     };
+}
+
+/** XP d'un ennemi : valeur explicite du MJ (add_enemy_init) → bestiaire →
+ *  codex → estimation par PV max (les ennemis custom valaient un forfait). */
+export function enemyXPValue(e: { name: string; xpValue?: number; hp?: { max?: number } }): number {
+    return (Number(e.xpValue) > 0 ? Number(e.xpValue) : 0)
+        || getCreature(e.name)?.xp
+        || lookupMonster(e.name)?.xp
+        || estimateXPFromHP(e.hp?.max ?? 1);
+}
+
+/** XP d'une victoire : ennemis du roster (tombés) + sortis vivants (fuite,
+ *  reddition — politique XP COMPLÈTE : la menace est écartée, SRD « vaincre »),
+ *  sans compter deux fois un fuyard revenu au combat (`returned`). */
+export function victoryXP(combatants: Combatant[], departed: DepartedCombatant[] = []): number {
+    const fromRoster = (combatants || [])
+        .filter(c => combatantSide(c) === 'enemy')
+        .reduce((sum, e) => sum + enemyXPValue(e), 0);
+    const fromDeparted = (departed || [])
+        .filter(d => d.side === 'enemy' && !d.returned)
+        .reduce((sum, d) => sum + enemyXPValue(d), 0);
+    return fromRoster + fromDeparted;
 }
 
 export function sanitizeXPGrant(amount: number, activeEnemyNames: string[] = []): number {

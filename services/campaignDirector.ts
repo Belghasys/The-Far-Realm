@@ -1,4 +1,5 @@
 import { Combatant } from '../components/CombatTracker';
+import type { DepartedCombatant } from './rulesEngine';
 import { AdventureManifest, CampaignRuntimeState, JournalState, CharacterSheet, getEffectiveAC } from '../types';
 import { CampaignEvent } from './campaignEventLog';
 import { assessEncounterPressure } from './codexService';
@@ -18,6 +19,8 @@ interface DirectorContextInput {
         currentTurn: string;
         round?: number;
         actionEconomy?: Record<string, any>;
+        /** Sortis VIVANTS du combat (fuite / reddition). */
+        departed?: DepartedCombatant[];
     };
     events: CampaignEvent[];
     /** Cumulative long-term memory summary (memoryManager) — "the story so far". */
@@ -614,10 +617,18 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
         );
         return `Encounter pressure: ${pressure.adjustedXP} adjusted XP vs deadly threshold ${pressure.deadlyBudget} (${pressure.adjustedXP > pressure.deadlyBudget ? 'DEADLY — no reinforcements, keep escape viable' : 'within budget'})`;
     })();
+    // Sortis VIVANTS : le MJ ne les voyait plus (ou, avant, les voyait à
+    // « HP 0/7 » — indiscernables d'un cadavre) et les narrait morts.
+    const departedLine = (() => {
+        const gone = (combatState.departed || []).filter(d => !d.returned);
+        if (!combatState.isActive || !gone.length) return null;
+        return `Out of the fight but ALIVE (never narrate them as dead — they may return): ${gone.map(d => `${d.displayName || d.name} (${d.reason}, round ${d.round}, ${d.hp.current}/${d.hp.max} HP)`).join(', ')}`;
+    })();
     const combat = combatState.isActive
         ? [
             `Combat active round ${combatState.round || 1}; current turn: ${currentTurnLabel}`,
-            `Combatants: ${combatState.combatants.map(c => `${c.name} (${c.id}) HP ${c.hp.current}/${c.hp.max} AC ${c.ac}${c.isPlayer ? ' PLAYER' : ''}`).join(', ')}`,
+            `Combatants: ${combatState.combatants.map(c => `${c.name} (${c.id}) HP ${c.hp.current}/${c.hp.max}${c.hp.current <= 0 ? ' DOWN' : ''} AC ${c.ac}${c.isPlayer ? ' PLAYER' : ''}`).join(', ')}`,
+            ...(departedLine ? [departedLine] : []),
             ...(combatPressureLine ? [combatPressureLine] : []),
         ].join('\n')
         : 'No active combat.';

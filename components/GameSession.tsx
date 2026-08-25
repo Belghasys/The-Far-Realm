@@ -37,7 +37,7 @@ import { ActionPips } from './ActionPips';
 import { LevelUpModal } from './LevelUpModal';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../services/campaignDirector';
-import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves } from '../services/rulesEngine';
+import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, victoryXP, concentrationBreakOnDeparture, MORALE_DC } from '../services/rulesEngine';
 import type { ProposedPlayerAction } from '../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
 import { DeathScreen } from './DeathScreen';
@@ -49,12 +49,11 @@ import { usePortrait, heroPortraitKey, heroPortraitPrompt } from '../services/po
 import { useSettingsStore } from '../store/settingsStore';
 import { lyriaMusicService } from '../services/lyriaMusic';
 import { getCreature, getCreatureAttacks, getMultiattackCount } from '../data/bestiary';
-import { estimateXPFromHP } from '../services/xpSystem';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { lookupMonster, lookupSpell, lookupCondition } from '../services/codexService';
 import { rollDice, maxRollOfFormula, isSystemLine } from '../services/utils';
 import { foldText } from '../services/skillSystem';
-import { appendCampaignLog, combatChronicle, describeCombatFoes, formatCombatChronicleLine } from '../store/gameStore';
+import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
 import { summarizeCurrentChapter } from '../services/llmService';
 import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../services/chapterChronicle';
 import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDiceRoll, playEndTurn } from '../services/combatSfx';
@@ -197,7 +196,9 @@ const TRANS = {
     reasonCombatVictory: 'Combat victory',
     castHealedLabel: (spell: string, n: number) => `Cast: ${spell} (Healed: ${n} HP)`,
     consumesPotionLabel: (name: string, n: number) => `Potion: ${name} (+${n} HP)`,
-    moraleCheckLabel: (name: string) => `${name} — morale check (Wisdom Save vs DC 11)`,
+    moraleCheckLabel: (name: string) => `${name} — morale check (Wisdom Save vs DC ${MORALE_DC})`,
+    moraleFledLine: (name: string, total: number) => `${name} failed their morale check (WIS save ${total} vs DC ${MORALE_DC}) and FLEES the fight — alive!`,
+    moraleHeldLine: (name: string, total: number) => `${name} passed their morale check (WIS save ${total} vs DC ${MORALE_DC}) and keeps fighting.`,
     attacksWith: 'attacks with',
     attackWord: 'Attack',
     saveNoun: 'Save',
@@ -326,7 +327,9 @@ const TRANS = {
     reasonCombatVictory: 'Victoire au combat',
     castHealedLabel: (spell: string, n: number) => `Sort : ${spell} (+${n} PV)`,
     consumesPotionLabel: (name: string, n: number) => `Potion : ${name} (+${n} PV)`,
-    moraleCheckLabel: (name: string) => `${name} — test de moral (sauvegarde de Sagesse vs DD 11)`,
+    moraleCheckLabel: (name: string) => `${name} — test de moral (sauvegarde de Sagesse vs DD ${MORALE_DC})`,
+    moraleFledLine: (name: string, total: number) => `${name} rate son test de moral (sauvegarde SAG ${total} vs DD ${MORALE_DC}) et S'ENFUIT du combat — vivant !`,
+    moraleHeldLine: (name: string, total: number) => `${name} réussit son test de moral (sauvegarde SAG ${total} vs DD ${MORALE_DC}) et continue de se battre.`,
     attacksWith: 'attaque avec',
     attackWord: 'Attaque',
     saveNoun: 'Sauvegarde',
@@ -1442,19 +1445,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     if (combatEndedRef.current) return true;
     combatEndedRef.current = true;
     setIsNPCTurn(false);
+    // Sortis VIVANTS (moral raté, reddition) : ils ne sont plus au roster mais
+    // comptent pour l'XP, le bilan et la chronique — et le MJ doit savoir
+    // qu'ils sont partis, pas morts (audit 2026-08-25).
+    const departed = ((state.departed || []) as any[]).filter((dpt: any) => !dpt.returned);
     if (outcome === 'victory') {
       const enemies = (state.combatants || []).filter((c: any) => (c.side ? c.side === 'enemy' : !c.isPlayer));
-      // Ordre de préférence : xp explicite du MJ (add_enemy_init) → bestiaire →
-      // estimation par PV max (les ennemis custom valaient un forfait de 25 XP).
-      const xp = enemies.reduce((sum: number, e: any) => sum + (
-        (Number(e.xpValue) > 0 ? Number(e.xpValue) : 0)
-        || getCreature(e.name)?.xp
-        || lookupMonster(e.name)?.xp
-        || estimateXPFromHP(e.hp?.max ?? 1)
-      ), 0);
+      // XP complète pour les tombés ET les sortis vivants — un seul calcul,
+      // testé (victoryXP) : xp explicite du MJ → bestiaire → estimation par PV.
+      const xp = victoryXP(state.combatants || [], departed);
       if (xp > 0) grantXP(xp, tr.reasonCombatVictory);
       setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Victoire ! +${xp} XP]*` }]);
-      if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] All enemies are defeated or fled. Combat is over (victory). Narrate the aftermath.`);
+      if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] Combat is over (victory). ${describeFightEnd(state.combatants || [], departed)}. Enemies listed as FLED or SURRENDERED are ALIVE — they ran or yielded, they did NOT die and they may return later: narrate the aftermath accordingly (no corpse, no loot from them).`);
       musicDirector.handleMusicTag('victory');
       // Log de campagne : UNE ligne-résumé (ennemis, PV perdus, XP, attaques
       // custom), jamais le déroulé du combat.
@@ -1470,6 +1472,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           xp,
           custom: chron.custom,
           outcome: 'victory',
+          departed: describeDeparted(departed) || undefined,
         }));
       } catch { /* le log de trame ne doit jamais casser la fin de combat */ }
     } else if (outcome === 'defeat') {
@@ -1487,6 +1490,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           foes,
           custom: chron.custom,
           outcome: 'defeat',
+          departed: describeDeparted(departed) || undefined,
         }));
       } catch { /* jamais bloquant */ }
     }
@@ -1494,7 +1498,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     persistCompanionHP(state);
     // Clear the roster too: leftover corpses re-entered the NEXT fight via
     // startEncounter's roster reuse and their XP was awarded a second time.
-    setCombatState({ ...state, isActive: false, combatants: [], currentTurn: '', enemyIntents: {} });
+    // Idem pour les fuyards : un registre non vidé se relirait au combat suivant.
+    setCombatState({ ...state, isActive: false, combatants: [], currentTurn: '', enemyIntents: {}, departed: [] });
     return true;
   };
 
@@ -3974,20 +3979,38 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         : (codexMonster?.attacks || []);
 
     // --- MORALE CHECK MECHANIC ---
-    const moraleResult = resolveMoraleCheck(combatState, npc.id);
+    // État FRAIS, pas la closure de rendu : pendant la seconde d'attente du
+    // planificateur, un outil du MJ (apply_damage, enemy_leaves_combat) a pu
+    // faire SORTIR ce PNJ du combat — rejouer le moral sur le snapshot l'aurait
+    // RESSUSCITÉ au commit. S'il n'est plus là, son tour n'existe plus.
+    const liveForMorale = useGameStore.getState().combatState;
+    if (!liveForMorale.isActive || !liveForMorale.combatants.some((c: any) => c.id === npc.id)) return;
+    const moraleResult = resolveMoraleCheck(liveForMorale, npc.id);
     // Seed the turn from the post-morale state when a check rolled, so the
     // moraleChecked flag persists and the enemy doesn't re-roll morale every
     // turn (the final setCombatState below would otherwise overwrite it with
     // the stale pre-morale combatState).
-    let moraleState = combatState;
+    let moraleState: typeof combatState = combatState;
     if (moraleResult.rolled) {
-      moraleState = moraleResult.state;
-      setCombatState(moraleResult.state);
+      const who = moraleResult.combatant!.name;
+      if (moraleResult.fled) {
+        // Fuite : on ne commet d'abord QUE le drapeau moraleChecked, on joue le
+        // dé, PUIS on retire le fuyard sur l'état le plus frais. Committer le
+        // tour déjà avancé avant l'animation lançait le tour du PNJ suivant
+        // pendant que le dé de moral tournait encore.
+        setCombatState((prev: any) => ({
+          ...prev,
+          combatants: prev.combatants.map((c: any) => c.id === npc.id ? { ...c, moraleChecked: true } : c),
+        }));
+      } else {
+        moraleState = moraleResult.state;
+        setCombatState(moraleResult.state);
+      }
 
       // Show the visual roll for the morale check
       setCurrentRoll({
         result: moraleResult.total!,
-        reason: tr.moraleCheckLabel(moraleResult.combatant!.name),
+        reason: tr.moraleCheckLabel(who),
         isDM: true,
         success: moraleResult.success
       });
@@ -3996,19 +4019,28 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       await waitDice();
 
       if (moraleResult.fled) {
-        setTranscript(prev => [...prev, {
-          speaker: 'dm',
-          text: `*[SYSTEM: ${moraleResult.combatant!.name} a raté son test de moral (Wisdom Save total ${moraleResult.total} vs DC 11) et s'enfuit du combat !]*`
-        }]);
-        // If that was the last enemy, the fight is over (victory).
-        maybeEndCombat(moraleResult.state);
+        // Il FUIT : sortie du roster, PV intacts — vivant pour le moteur, le
+        // tracker, l'XP, la chronique ET le MJ (avant : hp = 0, narré mort).
+        const gone = withdrawCombatant(useGameStore.getState().combatState, npc.id, 'fled');
+        if (gone.found && gone.combatant) {
+          setCombatState(gone.state);
+          const broken = concentrationBreakOnDeparture(gone.combatant);
+          if (broken) {
+            const released = releaseNpcConcentrationEffect(useGameStore.getState().combatState, useGameStore.getState().character, broken);
+            setCombatState(released.state);
+            if (released.removedFromPlayer && released.character) syncCharacterCritical(released.character, 'hp');
+          }
+          campaignEventLog.append('COMBATANT_LEFT', `${who} fled the battle (failed morale) — alive`, { ...(gone.departed || {}), reason: 'fled' } as any);
+        }
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.moraleFledLine(who, moraleResult.total!)}]*` }]);
+        if (dm && isConnected) {
+          dm.sendSystemMessage(`[SYSTEM] ${who} FAILED its morale check (WIS save ${moraleResult.total} vs DC ${MORALE_DC}) and FLED the battle. It is ALIVE — it ran away with its remaining HP and may return later. Narrate a rout (it breaks and runs), NEVER a death, and do not resolve anything for it.`);
+        }
+        // If that was the last enemy, the fight is over (victory) — état frais.
+        maybeEndCombat(useGameStore.getState().combatState);
         return; // Stop NPC turn execution since they fled!
-      } else {
-        setTranscript(prev => [...prev, {
-          speaker: 'dm',
-          text: `*[SYSTEM: ${moraleResult.combatant!.name} a réussi son test de moral (Wisdom Save total ${moraleResult.total} vs DC 11) et continue le combat]*`
-        }]);
       }
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.moraleHeldLine(who, moraleResult.total!)}]*` }]);
     }
 
     // ── LANCEUR DE SORTS ENNEMI (2026-08-13) : un mage/prêtre/liche du
@@ -4080,6 +4112,9 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     let currentState = moraleState;
 
     for (const attack of attacksToRun) {
+      // Le PNJ a-t-il QUITTÉ le combat pendant les dés (fuite/reddition via un
+      // outil du MJ) ? Un absent ne frappe pas.
+      if (!useGameStore.getState().combatState.combatants.some((c: any) => c.id === npc.id)) break;
       const attackBonus = (attack as any).attackBonus;
       const damageFormula = (attack as any).damage;
       const damageType = (attack as any).damageType || 'bludgeoning';
@@ -4287,6 +4322,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // We re-apply only what THIS turn changed — the target's HP/tempHP/effects —
     // leaving every other combatant row as the live state has it.
     const fresh = useGameStore.getState().combatState;
+    if (!fresh.isActive) return; // le combat s'est clos pendant les dés (dernier ennemi parti/tombé)
     const after = currentState.combatants.find((c: any) => c.id === target.id);
     // CB4 — la réaction consommée par le moteur pendant CE tour (Esquive
     // instinctive, Déviation de projectiles) doit survivre à la réconciliation.
@@ -4309,8 +4345,11 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // End the fight if this turn dropped the whole party (defeat). Otherwise
     // advance to the next combatant. Single setCombatState (was double before).
     if (maybeEndCombat(reconciled)) return;
-    const next = advanceTurn(reconciled);
-    setCombatState(next);
+    // Un outil du MJ a déjà déplacé le tour pendant les dés (CE PNJ a fui ou
+    // s'est rendu via apply_damage / enemy_leaves_combat → withdrawCombatant a
+    // avancé pour lui) : ne pas ré-avancer, le suivant perdrait son tour.
+    const stillMyTurn = fresh.currentTurn === npc.id || fresh.currentTurn === npc.name;
+    setCombatState(stillMyTurn ? advanceTurn(reconciled) : reconciled);
 
     if (dm && isConnected) {
       const targetAfter = currentState.combatants.find(c => c.id === target.id);
@@ -4362,6 +4401,17 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       active = false;
     };
   }, [combatState.currentTurn, isNPCTurn, combatState.isActive, isConnected]);
+
+  // Clôture automatique de la VICTOIRE : un OUTIL du MJ (enemy_leaves_combat,
+  // apply_damage dont le moral fait fuir le dernier ennemi, update_enemy_hp…)
+  // ne peut pas appeler maybeEndCombat — il vit ici. Dès que plus aucun ennemi
+  // n'est debout (tombés OU partis vivants), on clôt : XP, chronique, message
+  // au MJ. La DÉFAITE reste gérée par les chemins existants (jets de mort).
+  useEffect(() => {
+    if (!combatState.isActive) return;
+    if (encounterOutcome(combatState) !== 'victory') return;
+    maybeEndCombat(combatState);
+  }, [combatState.combatants, combatState.departed, combatState.isActive]);
 
   // ── Temps auto : la NARRATION pilote l'horloge ──────────────────────────
   // Dépendre du bon vouloir de Flash pour appeler set_time_of_day était naïf :
@@ -5132,6 +5182,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         combatants={combatState.combatants}
         currentTurn={combatState.currentTurn}
         round={combatState.round}
+        departed={combatState.departed}
         onAdvanceTurn={endPlayerTurnIfActive}
         onEndCombat={handleManualEndCombat}
         onOpenReference={handleOpenReference}

@@ -4,6 +4,7 @@ import { db } from './firebase';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet } from '../types';
 import type { SlimManifestPayload } from './manifestTokens';
 import type { CampaignEvent } from './campaignEventLog';
+import type { DepartedCombatant } from './rulesEngine';
 
 // Minimal Combatant interface for GameSave, as requested
 interface Combatant {
@@ -50,6 +51,9 @@ export interface GameSave {
         turnIndex?: number;
         actionEconomy?: Record<string, any>;
         enemyIntents?: Record<string, string>;
+        /** Sortis vivants du combat (fuite / reddition). Optionnel : les
+         *  sauvegardes antérieures au 2026-08-25 ne l'ont pas. */
+        departed?: DepartedCombatant[];
     };
     // Parsed Adventure Manifest
     /** Manifeste complet (aventures générées / anciennes sauvegardes) ou forme

@@ -17,6 +17,7 @@ import { viteEnv } from '../services/modelConfig';
 import { hydrateManifestPayload, isSlimManifestPayload } from '../services/manifestTokens';
 import { ChatMessage } from '../hooks/useTranscript';
 import { Combatant } from '../components/CombatTracker';
+import type { DepartedCombatant } from '../services/rulesEngine';
 
 // Seed the UI language from a previous choice, else the browser, defaulting to English.
 function getInitialLanguage(): Language {
@@ -161,6 +162,9 @@ interface GameState {
         // validated) each enemy turn; falls back to "wounded prey" if absent
         // or stale. Adds no latency to the turn loop.
         enemyIntents?: Record<string, string>;
+        // Sortis VIVANTS du combat (moral raté, reddition) — voir
+        // withdrawCombatant. Absent sur les anciennes sauvegardes.
+        departed?: DepartedCombatant[];
     };
     setCombatState: (updater: any | ((prev: any) => any)) => void;
     isNPCTurn: boolean;
@@ -328,12 +332,51 @@ export function describeCombatFoes(combatants: Array<{ name?: string; side?: str
     return [...groups.entries()].map(([n, count]) => (count > 1 ? `${count}x ${n}` : n)).join(', ') || 'unknown foes';
 }
 
+/** « fled: 2x Goblin; surrendered: Bandit » — les sortis vivants, groupés par
+ *  raison (même regroupement de noms que describeCombatFoes). Chaîne vide si
+ *  personne n'est parti. */
+export function describeDeparted(departed: Array<{ name?: string; side?: string; reason?: string; returned?: boolean }>): string {
+    const byReason = new Map<string, Array<{ name?: string; side?: string }>>();
+    for (const d of departed || []) {
+        if (d.returned) continue;
+        const reason = d.reason || 'fled';
+        if (!byReason.has(reason)) byReason.set(reason, []);
+        byReason.get(reason)!.push({ name: d.name, side: d.side || 'enemy' });
+    }
+    return [...byReason.entries()]
+        .map(([reason, rows]) => `${reason}: ${describeCombatFoes(rows)}`)
+        .join('; ');
+}
+
+/** « Defeated: 2x Goblin | Fled (ALIVE): Wolf | Surrendered (ALIVE): Bandit » —
+ *  bilan de fin de combat pour le MJ : les sortis vivants sont NOMMÉS comme
+ *  tels, sinon le modèle les narre en cadavres. */
+export function describeFightEnd(
+    combatants: Array<{ name?: string; side?: string; isPlayer?: boolean; hp?: { current: number } }>,
+    departed: Array<{ name?: string; side?: string; reason?: string; returned?: boolean }>,
+): string {
+    const isEnemy = (c: { side?: string; isPlayer?: boolean }) => (c.side ? c.side === 'enemy' : !c.isPlayer);
+    const downed = (combatants || []).filter(c => isEnemy(c) && (c.hp?.current ?? 0) <= 0);
+    const gone = (departed || []).filter(d => !d.returned && (d.side || 'enemy') === 'enemy');
+    const fled = gone.filter(d => d.reason === 'fled');
+    const yielded = gone.filter(d => d.reason === 'surrendered');
+    const parts: string[] = [];
+    if (downed.length) parts.push(`Defeated: ${describeCombatFoes(downed)}`);
+    if (fled.length) parts.push(`Fled (ALIVE): ${describeCombatFoes(fled)}`);
+    if (yielded.length) parts.push(`Surrendered (ALIVE): ${describeCombatFoes(yielded)}`);
+    return parts.join(' | ') || 'no enemies remain';
+}
+
 /** Ligne-résumé de combat pour le log de campagne (format validé utilisateur :
- *  « Combat: Salim vs 3x ogre — mortally wounded (lost 40/50 HP) — +2000 XP »). */
+ *  « Combat: Salim vs 3x ogre — mortally wounded (lost 40/50 HP) — +2000 XP »).
+ *  `departed` (« fled: Goblin ») se place AVANT les attaques custom : la ligne
+ *  est tronquée à 220 caractères et un fuyard qu'on oublie revient en cadavre
+ *  dans les résumés. */
 export function formatCombatChronicleLine(opts: {
     heroName: string; hpCurrent: number; hpMax: number;
     hpStart: number | null; foes: string; xp?: number; custom?: string[];
     outcome: 'victory' | 'defeat' | 'narrative' | 'interrupted';
+    departed?: string;
 }): string {
     const lost = Math.max(0, (opts.hpStart ?? opts.hpMax) - opts.hpCurrent);
     const ratio = opts.hpMax > 0 ? lost / opts.hpMax : 0;
@@ -344,8 +387,9 @@ export function formatCombatChronicleLine(opts: {
         : opts.outcome === 'narrative' ? `ended by DM narration — ${qual}${hpTxt}`
         : `stopped without resolution — ${qual}${hpTxt}`;
     const xpTxt = opts.xp && opts.xp > 0 ? ` — +${opts.xp} XP` : '';
+    const departedTxt = opts.departed ? ` — ${opts.departed}` : '';
     const customTxt = opts.custom?.length ? ` — custom moves: ${opts.custom.slice(0, 5).join(', ')}` : '';
-    return `Combat: ${opts.heroName} vs ${opts.foes} — ${state}${xpTxt}${customTxt}`;
+    return `Combat: ${opts.heroName} vs ${opts.foes} — ${state}${xpTxt}${departedTxt}${customTxt}`;
 }
 
 function makeSceneVisualId(): string {

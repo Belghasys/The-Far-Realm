@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity, ExternalLink, Heart, Shield, SkipForward, Skull, Swords, User, XCircle } from 'lucide-react';
 import { getCreature, getCreatureAttacks, formatCR } from '../data/bestiary';
 import type { ActiveEffect } from '../types';
+import type { DepartedCombatant } from '../services/rulesEngine';
 import { CombatActionsPanel } from './CombatActionsPanel';
 import { useGameStore } from '../store/gameStore';
 
@@ -34,6 +35,9 @@ const TRANS = {
         playerLegend: '● player',
         enemyLegend: '● enemy/DM',
         rollsEmpty: 'Attack and damage rolls will appear here.',
+        outOfFight: 'Out of the fight (alive)',
+        fled: 'fled',
+        surrendered: 'surrendered',
     },
     fr: {
         mainActionTitle: 'Action Principale (Vert = Disponible, Gris = Utilisé)',
@@ -63,6 +67,9 @@ const TRANS = {
         playerLegend: '● joueur',
         enemyLegend: '● ennemi/MJ',
         rollsEmpty: "Les jets d'attaque et de dégâts s'afficheront ici.",
+        outOfFight: 'Hors combat (vivants)',
+        fled: 'en fuite',
+        surrendered: 'reddition',
     },
 } as const;
 
@@ -141,6 +148,8 @@ interface Props {
     onUseAbility?: (abilityId: any, targetId?: string) => void;
     /** True while a player action is mid-resolution — disables the action panel. */
     isResolvingAction?: boolean;
+    /** Sortis VIVANTS du combat (moral raté, reddition) — pied « Hors combat ». */
+    departed?: DepartedCombatant[];
 }
 
 function hpPercent(combatant: Combatant): number {
@@ -173,12 +182,32 @@ export function combatantMapKey(combatant: Combatant, index: number): string {
     return combatant.id || `${combatant.name}-${index}`;
 }
 
-export function buildDisplayNames(combatants: Combatant[]): Map<string, string> {
+/** Noms désambiguïsés (« Goblin A/B/C »). `departed` = homonymes sortis vivants
+ *  du combat : ils comptent dans le total (le survivant garde sa lettre) et
+ *  leur lettre reste RÉSERVÉE — sinon « Goblin C » devenait « Goblin B » à
+ *  l'instant où B fuyait, alors que le transcript venait de le nommer. */
+export function buildDisplayNames(
+    combatants: Combatant[],
+    departed: Array<{ name: string; displayName?: string }> = [],
+): Map<string, string> {
     const enemyCounts = new Map<string, number>();
     for (const combatant of combatants) {
         if (combatant.isPlayer) continue;
         const key = normalizeTurn(combatant.name);
         enemyCounts.set(key, (enemyCounts.get(key) || 0) + 1);
+    }
+    const reserved = new Map<string, Set<string>>();
+    for (const gone of departed || []) {
+        if (!gone?.name) continue;
+        const key = normalizeTurn(gone.name);
+        enemyCounts.set(key, (enemyCounts.get(key) || 0) + 1);
+        const suffix = gone.displayName && gone.displayName.startsWith(gone.name)
+            ? gone.displayName.slice(gone.name.length).trim()
+            : '';
+        if (suffix) {
+            if (!reserved.has(key)) reserved.set(key, new Set());
+            reserved.get(key)!.add(suffix);
+        }
     }
 
     const seen = new Map<string, number>();
@@ -190,11 +219,25 @@ export function buildDisplayNames(combatants: Combatant[]): Map<string, string> 
             return;
         }
 
-        const duplicateIndex = seen.get(key) || 0;
+        let duplicateIndex = seen.get(key) || 0;
+        while (reserved.get(key)?.has(duplicateSuffix(duplicateIndex))) duplicateIndex++;
         seen.set(key, duplicateIndex + 1);
         names.set(combatantMapKey(combatant, index), `${combatant.name} ${duplicateSuffix(duplicateIndex)}`);
     });
     return names;
+}
+
+/** Nom affiché d'UN combattant (même carte que le tracker) — pour le consigner
+ *  au moment où il quitte le combat. */
+export function displayNameFor(
+    combatants: Combatant[],
+    combatantId: string,
+    departed: Array<{ name: string; displayName?: string }> = [],
+): string | undefined {
+    const sorted = [...(combatants || [])].sort((a, b) => b.initiative - a.initiative);
+    const index = sorted.findIndex(c => c.id === combatantId);
+    if (index < 0) return undefined;
+    return buildDisplayNames(sorted, departed).get(combatantMapKey(sorted[index], index));
 }
 
 function CombatantPortrait({ 
@@ -401,7 +444,7 @@ const CombatantRow: React.FC<{
                         <div className="mt-2 flex flex-wrap gap-1">
                             {combatant.activeEffects?.map((effect) => {
                                 const combined = `${effect.name} ${effect.description || ''}`.toLowerCase();
-                                const isNegative = /poison|blind|deaf|prn|stun|bleed|exhaust|charm|fright|fled|paraly|restrain|incapac|malus/i.test(combined);
+                                const isNegative = /poison|blind|deaf|prn|stun|bleed|exhaust|charm|fright|paraly|restrain|incapac|malus/i.test(combined);
                                 return (
                                     <span
                                         key={effect.id}
@@ -487,6 +530,7 @@ export function CombatTracker({
     onUsePotion,
     onUseAbility,
     isResolvingAction,
+    departed,
 }: Props) {
     // Rules of Hooks: every hook must run before any early return. (This
     // useGameStore was previously below the guard → "rendered more/fewer hooks"
@@ -498,7 +542,8 @@ export function CombatTracker({
     if (!isActive || !combatants.length) return null;
 
     const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
-    const displayNames = buildDisplayNames(sorted);
+    const gone = (departed || []).filter(d => !d.returned);
+    const displayNames = buildDisplayNames(sorted, gone);
     const living = sorted.filter(combatant => combatant.hp.current > 0);
     // Faction-aware: allies must NOT count as enemies in the header tally.
     const enemiesAlive = living.filter(combatant => combatantSide(combatant) === 'enemy').length;
@@ -592,6 +637,15 @@ export function CombatTracker({
                     ))}
                 </div>
             </div>
+
+            {/* Sortis VIVANTS du combat : la ligne d'initiative disparaît (ils ne sont
+                plus une cible), mais le joueur doit voir qu'ils sont partis, pas morts. */}
+            {gone.length > 0 && (
+                <div className="flex-none border-t border-white/10 bg-black/40 px-3 py-1.5 text-[10px] leading-4 text-white/60">
+                    <span className="mr-1.5 font-bold uppercase tracking-[0.18em] text-amber-200/60">{tr.outOfFight}</span>
+                    {gone.map(d => `${d.displayName || d.name} (${d.reason === 'surrendered' ? tr.surrendered : tr.fled})`).join(', ')}
+                </div>
+            )}
 
             {/* Combat roll journal — enemy + player attack/damage/save rolls, persistent in the combat area. */}
             <div className="border-t-2 border-amber-400/30 bg-black/55 px-2 py-2 flex-none">
