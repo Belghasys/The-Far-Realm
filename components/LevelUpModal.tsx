@@ -285,7 +285,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
 
     return (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-            <div className="bg-gradient-to-b from-amber-900 to-gray-900 border-2 border-amber-500 rounded-xl p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto custom-scrollbar shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+            <div className="bg-gradient-to-b from-amber-900 to-gray-900 border-2 border-amber-500 rounded-xl p-6 max-w-lg w-full max-h-[92vh] overflow-y-auto custom-scrollbar shadow-2xl">
 
                 {/* Header */}
                 <div className="text-center mb-6">

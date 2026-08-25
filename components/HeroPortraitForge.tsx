@@ -137,11 +137,11 @@ export function HeroPortraitForge({ character, language, onUpdateProfile, disabl
     };
 
     return (
-        <div className="mt-4 rounded border-2 border-gray-400 bg-parchment/40 p-3">
-            <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-700">
+        <div className="mt-4 rounded border-2 border-gray-700 bg-black/30 p-3">
+            <div className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gray-300">
                 <Wand2 className="h-3.5 w-3.5" /> {tr.title}
             </div>
-            <p className="mb-3 font-serif text-xs text-gray-600">{tr.hint}</p>
+            <p className="mb-3 font-serif text-xs text-gray-400">{tr.hint}</p>
 
             {candidates.length > 0 && (
                 <div className="mb-3 flex flex-wrap gap-3">
@@ -170,7 +170,7 @@ export function HeroPortraitForge({ character, language, onUpdateProfile, disabl
                     type="button"
                     onClick={() => void forge()}
                     disabled={busy || attemptsLeft <= 0 || disabled || !mediaOn}
-                    className="inline-flex items-center gap-2 rounded border-2 border-gray-500 bg-parchment px-3 py-1.5 font-serif text-sm font-bold text-gray-800 transition hover:border-blood hover:text-blood disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex items-center gap-2 rounded border-2 border-gray-500 bg-gray-900 px-3 py-1.5 font-serif text-sm font-bold text-gray-200 transition hover:border-blood hover:text-blood disabled:cursor-not-allowed disabled:opacity-40"
                 >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
                     {busy ? tr.working : (candidates.length ? tr.again : tr.generate)}
@@ -180,8 +180,8 @@ export function HeroPortraitForge({ character, language, onUpdateProfile, disabl
                 </span>
             </div>
 
-            {!mediaOn && <p className="mt-2 text-[11px] font-bold text-amber-800">{tr.imagesOff}</p>}
-            {mediaOn && !hasAppearance && <p className="mt-2 text-[11px] font-bold text-amber-800">{tr.needAppearance}</p>}
+            {!mediaOn && <p className="mt-2 text-[11px] font-bold text-amber-300">{tr.imagesOff}</p>}
+            {mediaOn && !hasAppearance && <p className="mt-2 text-[11px] font-bold text-amber-300">{tr.needAppearance}</p>}
             {error && <p className="mt-2 text-[11px] font-bold text-blood">{tr.failed}</p>}
         </div>
     );

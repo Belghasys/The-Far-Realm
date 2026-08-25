@@ -5369,7 +5369,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       {/* Relance BG3 — l'échec est affiché, l'Inspiration peut le rejouer */}
       {activePrompt && rerollOffer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="flex min-w-[340px] max-w-md flex-col items-center gap-5 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-b from-gray-900 to-black p-8 shadow-[0_0_60px_rgba(255,180,0,0.25)]">
+          <div className="flex min-w-[340px] max-w-md flex-col items-center gap-5 rounded-2xl border-2 border-amber-500/50 bg-gradient-to-b from-gray-900 to-black p-8 shadow-2xl">
             <div className="text-center">
               <div className="text-sm font-bold uppercase tracking-widest text-red-400">{language === 'fr' ? 'Échec' : tr.failureWord}</div>
               <div className="mt-1 text-2xl font-bold text-white">{rerollOffer.outcome.prompt.name}</div>

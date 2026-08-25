@@ -19,7 +19,11 @@ const SIZE_CLASS: Record<WindowSize, string> = {
 
 const TONE_CLASS: Record<WindowTone, string> = {
     dark: 'border-white/12 bg-zinc-950 text-white',
-    paper: 'border-stone-700/60 bg-[#e8e6d9] text-stone-950',
+    // « Papier » : l'échelle stone est INVERSÉE dans le thème (voir
+    // tailwind.config.js) — stone-100 est le panneau violet, stone-950 le
+    // parchemin. Le ton garde son nom parce que les fenêtres qui l'emploient
+    // gardent leur rôle : une feuille qu'on lit, pas un écran qu'on pilote.
+    paper: 'border-stone-400 bg-stone-100 text-stone-950',
 };
 
 interface GameWindowProps {
@@ -67,7 +71,7 @@ export function GameWindow({
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}
-                className={`flex h-full w-full ${SIZE_CLASS[size]} flex-col overflow-hidden border shadow-[0_24px_80px_rgba(0,0,0,0.65)] sm:h-[86vh] sm:rounded-md ${TONE_CLASS[tone]} ${className}`}
+                className={`flex h-full w-full ${SIZE_CLASS[size]} flex-col overflow-hidden border shadow-2xl sm:h-[86vh] sm:rounded-md ${TONE_CLASS[tone]} ${className}`}
             >
                 <header className={`flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 ${tone === 'paper' ? 'border-stone-900/25 bg-stone-950/5' : 'border-white/10 bg-black/35'}`}>
                     <div className="flex min-w-0 items-center gap-3">
@@ -86,7 +90,7 @@ export function GameWindow({
                         <button
                             type="button"
                             onClick={onClose}
-                            className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${tone === 'paper' ? 'border-stone-900/20 text-stone-700 hover:bg-stone-900 hover:text-white' : 'border-white/10 text-white/55 hover:bg-white/10 hover:text-white'}`}
+                            className={`inline-flex h-9 w-9 items-center justify-center rounded-md border transition ${tone === 'paper' ? 'border-stone-900/20 text-stone-700 hover:bg-stone-900 hover:text-stone-50' : 'border-white/10 text-white/55 hover:bg-white/10 hover:text-white'}`}
                             title={tr.close}
                             aria-label={tr.close}
                         >
@@ -133,7 +137,7 @@ export function WindowTabs<T extends string>({ tabs, active, onChange, tone = 'd
                         className={`shrink-0 rounded-md px-3 py-2 text-xs font-bold uppercase tracking-wide transition ${
                             tone === 'paper'
                                 ? isActive
-                                    ? 'bg-stone-900 text-white'
+                                    ? 'bg-stone-900 text-stone-50'
                                     : 'text-stone-600 hover:bg-stone-900/10 hover:text-stone-950'
                                 : isActive
                                     ? 'bg-amber-400 text-black'

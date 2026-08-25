@@ -340,7 +340,7 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
             icon={<BookOpen className="h-5 w-5 text-purple-400" />}
             onClose={onClose}
             size="lg"
-            bodyClassName="min-h-0 flex flex-1 flex-col overflow-hidden bg-[#0a0518]/95 border-purple-500/20"
+            bodyClassName="min-h-0 flex flex-1 flex-col overflow-hidden bg-black/95 border-purple-500/20"
             footer={
                 <div className="flex items-center justify-between gap-3 text-xs text-purple-300/70 font-mono">
                     <span>{tr.spellSaveDC} : <b className="text-purple-200">{dc}</b> · {tr.attackBonus} : <b className="text-purple-200">{attackBonus >= 0 ? '+' : ''}{attackBonus}</b></span>
@@ -481,7 +481,7 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
                 </div>
 
                 {/* Detail panel */}
-                <aside className="border-t border-purple-500/10 bg-[#0e0722] p-4 lg:border-l lg:border-t-0 overflow-y-auto custom-scrollbar">
+                <aside className="border-t border-purple-500/10 bg-gray-950 p-4 lg:border-l lg:border-t-0 overflow-y-auto custom-scrollbar">
                     {selected ? <SpellDetails sp={selected} dc={dc} attackBonus={attackBonus} ability={ABILITY} school={SCHOOL} tr={tr} />
                         : (
                             <div className="flex flex-col items-center justify-center py-20 text-center text-purple-300/30">

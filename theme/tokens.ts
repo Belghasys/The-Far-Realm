@@ -6,10 +6,12 @@
  * Guerrier, Magicien, Compagnie, Occultiste, Barde, Roublard). C'est ce qui
  * fait que l'interface et les portraits ont l'air d'appartenir au même monde.
  *
- * PORTÉE : le hall — connexion, choix du mode, choix de campagne, création.
- * L'INTÉRIEUR DU JEU N'EST PAS CONCERNÉ : fiche en partie, combat et journal
- * gardent Cinzel et l'or. Le contraste entre un hall pop et une table
- * médiévale est voulu, pas un oubli.
+ * PORTÉE : tout le jeu, depuis le 2026-08-25. Le hall et la création
+ * lisent ces jetons directement (styles en ligne) ; les écrans de partie —
+ * fiche, combat, journal, tableau de campagne — les lisent à travers le
+ * thème Tailwind (tailwind.config.js), où chaque famille de couleur est
+ * redéfinie sur une de ces teintes. Les deux fichiers dupliquent les mêmes
+ * hexadécimaux : si l'un change, changer l'autre.
  */
 
 export const T = {

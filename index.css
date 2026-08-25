@@ -138,10 +138,14 @@
 
 /* Cinematic Effects & Premium Aesthetics */
 :root {
-    --gold: #D4AF37;
-    --gold-glow: rgba(212, 175, 55, 0.4);
-    --crimson: #8B0000;
-    --crimson-glow: rgba(139, 0, 0, 0.4);
+    /* Charte « crayon + néon » (theme/tokens.ts) : l'or est devenu acide,
+       le sang est devenu rose, et rien ne brille jamais en flou — les ombres
+       sont dures et décalées. */
+    --gold: #F2E637;
+    --gold-glow: rgba(242, 230, 55, 0.35);
+    --crimson: #F43292;
+    --crimson-glow: rgba(244, 50, 146, 0.35);
+    --ink: #05001A;
     --glass: rgba(15, 15, 20, 0.7);
 }
 
@@ -153,28 +157,27 @@
 }
 
 .gold-border {
-    border: 1px solid var(--gold);
-    box-shadow: 0 0 15px var(--gold-glow);
+    border: 2px solid var(--gold);
+    box-shadow: 4px 4px 0 var(--ink);
 }
 
 .gold-text-glow {
-    text-shadow: 0 0 10px var(--gold-glow);
+    text-shadow: none;
 }
 
 .gold-btn {
-    background: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
-    color: #1a1a1a;
+    background: var(--gold);
+    color: var(--ink);
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+    box-shadow: 6px 6px 0 var(--ink);
 }
 
 .gold-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
-    filter: brightness(1.1);
+    transform: translate(-2px, -2px);
+    box-shadow: 8px 8px 0 var(--ink);
 }
 
 .cinematic-vignette {
@@ -223,13 +226,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--gold);
-    border-radius: 3px;
-    opacity: 0.5;
+    background: #48355F;
+    border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #FFD700;
+    background: #22E9FF;
 }
 
 @keyframes float-up {

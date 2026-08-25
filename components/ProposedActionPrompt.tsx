@@ -108,7 +108,7 @@ export function ProposedActionPrompt({ proposals, disabled = false, onConfirm, o
                     return (
                         <div
                             key={p.id}
-                            className={`rounded-2xl border-2 ${badge.ring} bg-gradient-to-b from-gray-900 to-black p-4 shadow-[0_0_40px_rgba(0,0,0,0.5)] animate-scale-in`}
+                            className={`rounded-2xl border-2 ${badge.ring} bg-gradient-to-b from-gray-900 to-black p-4 shadow-xl animate-scale-in`}
                         >
                             <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0">

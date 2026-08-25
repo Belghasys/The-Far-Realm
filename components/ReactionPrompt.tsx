@@ -34,7 +34,7 @@ export function ReactionPrompt({ request }: { request: ReactionRequest }) {
 
     return (
         <div className="fixed inset-x-0 bottom-32 z-[70] flex justify-center px-4 animate-fade-in pointer-events-none">
-            <div className="pointer-events-auto w-full max-w-md rounded-2xl border-2 border-sky-400/60 bg-gradient-to-b from-slate-900 to-black p-4 shadow-[0_0_50px_rgba(56,189,248,0.35)]">
+            <div className="pointer-events-auto w-full max-w-md rounded-2xl border-2 border-sky-400/60 bg-gradient-to-b from-slate-900 to-black p-4 shadow-xl">
                 <div className="flex items-center gap-2 text-sky-300">
                     <Shield className="h-5 w-5 animate-pulse" />
                     <span className="text-xs font-black uppercase tracking-[0.25em]">{tr.reaction}</span>

@@ -250,7 +250,7 @@ function LanguageToggle({ tone = 'dark' }: { tone?: 'dark' | 'paper' }) {
         ? 'text-stone-600 hover:bg-stone-900/10 hover:text-stone-950'
         : 'text-white/55 hover:bg-white/10 hover:text-white';
     return (
-        <div className={`flex items-center gap-1 rounded-md border p-0.5 ${tone === 'paper' ? 'border-stone-900/20 bg-white/30' : 'border-white/10 bg-black/30'}`}>
+        <div className={`flex items-center gap-1 rounded-md border p-0.5 ${tone === 'paper' ? 'border-stone-900/20 bg-stone-50/50' : 'border-white/10 bg-black/30'}`}>
             {(['en', 'fr'] as const).map(lng => (
                 <button
                     key={lng}
@@ -1000,15 +1000,15 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         return (
                             <div
                                 key={ability}
-                                className={`rounded-md border-2 p-3 text-center ${modified ? 'border-emerald-500 bg-emerald-50' : 'border-stone-400 bg-white/35'}`}
+                                className={`rounded-md border-2 p-3 text-center ${modified ? 'border-emerald-500 bg-emerald-500/15' : 'border-stone-400 bg-stone-50/50'}`}
                             >
                                 <div className="text-[10px] font-bold uppercase tracking-wide text-stone-500">{ability}</div>
-                                <div className={`font-fantasy text-3xl font-black ${modified ? 'text-emerald-700' : 'text-stone-950'}`}>{formatMod(effectiveVal)}</div>
-                                <div className="mx-auto mt-1 inline-flex min-w-8 justify-center rounded-full border border-stone-400 bg-white px-2 py-0.5 text-xs font-bold">
+                                <div className={`font-fantasy text-3xl font-black ${modified ? 'text-emerald-300' : 'text-stone-950'}`}>{formatMod(effectiveVal)}</div>
+                                <div className="mx-auto mt-1 inline-flex min-w-8 justify-center rounded-full border border-stone-400 bg-stone-50 px-2 py-0.5 text-xs font-bold">
                                     {effectiveVal}
                                 </div>
                                 {modified && baseVal !== effectiveVal && (
-                                    <div className="mt-1 text-[10px] font-bold text-emerald-700">base {baseVal}</div>
+                                    <div className="mt-1 text-[10px] font-bold text-emerald-300">base {baseVal}</div>
                                 )}
                             </div>
                         );
@@ -1030,7 +1030,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <PaperMetric icon={<HeartPulse className="h-4 w-4" />} label={tr.speed} value={`${getEffectiveSpeed(character)} ft`} />
                     </div>
 
-                    <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                    <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                             <h3 className="text-xs font-bold uppercase tracking-wide text-stone-600">{tr.hitPoints}</h3>
                             <div className="flex gap-3 text-xs font-bold uppercase text-stone-500">
@@ -1052,26 +1052,26 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                     </div>
 
                     {/* Expérience — progression vers le prochain niveau */}
-                    <div className="rounded-md border-2 border-amber-500 bg-amber-50 p-4">
+                    <div className="rounded-md border-2 border-amber-500 bg-amber-500/10 p-4">
                         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-700">
+                            <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-amber-300">
                                 <Star className="h-4 w-4" />
                                 {tr.experience} — {tr.level} {character.level}
                             </h3>
-                            <div className="text-xs font-bold uppercase text-amber-700">
+                            <div className="text-xs font-bold uppercase text-amber-300">
                                 {xpProgress.nextLevelXP !== null
                                     ? `${character.xp} / ${xpProgress.nextLevelXP} XP`
                                     : `${character.xp} XP — ${tr.maxLevel}`}
                             </div>
                         </div>
-                        <div className="h-4 overflow-hidden rounded-full border border-amber-300 bg-amber-100">
+                        <div className="h-4 overflow-hidden rounded-full border border-amber-500/40 bg-black/40">
                             <div
                                 className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all"
                                 style={{ width: `${Math.max(0, Math.min(100, xpProgress.percent))}%` }}
                             />
                         </div>
                         {xpProgress.nextLevelXP !== null && (
-                            <div className="mt-1 text-right text-[11px] text-amber-800/70">
+                            <div className="mt-1 text-right text-[11px] text-amber-200/70">
                                 {xpProgress.neededForNext - xpProgress.intoLevel} {tr.xpBeforeLevel1} {character.level + 1}
                             </div>
                         )}
@@ -1079,12 +1079,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
                     {/* Points de caractéristique en attente (ASI banké via « Plus tard ») */}
                     {(character.pendingASIPoints || 0) > 0 && (
-                        <div className="rounded-md border-2 border-green-600 bg-green-50 p-4">
-                            <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-green-700">
+                        <div className="rounded-md border-2 border-green-600 bg-green-500/10 p-4">
+                            <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-green-300">
                                 <Zap className="h-4 w-4" />
                                 {tr.pendingASI} : {character.pendingASIPoints}
                             </h3>
-                            <p className="mb-3 text-xs text-green-800/80">
+                            <p className="mb-3 text-xs text-green-200/80">
                                 {tr.clickAbility}
                             </p>
                             <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
@@ -1118,9 +1118,9 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                                     pendingASIPoints: Math.max(0, (character.pendingASIPoints || 0) - 1),
                                                 });
                                             }}
-                                            className="rounded-md border-2 border-green-300 bg-white p-2 text-center transition hover:border-green-600 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                            className="rounded-md border-2 border-green-300 bg-stone-50 p-2 text-center transition hover:border-green-600 hover:bg-green-500/25 disabled:cursor-not-allowed disabled:opacity-40"
                                         >
-                                            <div className="text-xs font-bold text-green-900">{stat}</div>
+                                            <div className="text-xs font-bold text-green-200">{stat}</div>
                                             <div className="text-sm font-black">{character.stats[stat]} <span className="text-green-600">+1</span></div>
                                         </button>
                                     );
@@ -1131,12 +1131,12 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
                     {/* Choix d'archétype en attente (Hunter/Beast Master, Champion, Domaine…) */}
                     {needsSubclass && subclassConfig && (
-                        <div className="rounded-md border-2 border-purple-500 bg-purple-50 p-4">
-                            <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-700">
+                        <div className="rounded-md border-2 border-purple-500 bg-purple-500/10 p-4">
+                            <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-300">
                                 <Gem className="h-4 w-4" />
                                 {subclassConfig.label} — {tr.choiceRequired}
                             </h3>
-                            <p className="mb-3 text-xs text-purple-800/80">
+                            <p className="mb-3 text-xs text-purple-200/80">
                                 {tr.mustChoose1} {character.class} {tr.mustChoose2} {character.level} {tr.mustChoose3}
                             </p>
                             <div className="grid gap-2 sm:grid-cols-2">
@@ -1146,9 +1146,9 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         type="button"
                                         onClick={() => handlePickSubclass(option.name)}
                                         disabled={!onUpdateCharacter}
-                                        className="rounded-md border-2 border-purple-300 bg-white p-3 text-left transition hover:border-purple-600 hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                        className="rounded-md border-2 border-purple-300 bg-stone-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-500/25 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <div className="font-bold text-purple-900">{option.name}</div>
+                                        <div className="font-bold text-purple-200">{option.name}</div>
                                         <p className="mt-1 text-xs leading-snug text-stone-600">{option.description}</p>
                                     </button>
                                 ))}
@@ -1156,7 +1156,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         </div>
                     )}
 
-                    <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                    <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                         <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.attacksSpells}</h3>
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[460px] text-sm">
@@ -1189,19 +1189,19 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                     </div>
 
                     {!!character.activeEffects?.length && (
-                        <div className="rounded-md border-2 border-emerald-500 bg-emerald-50 p-4">
-                            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-700">
+                        <div className="rounded-md border-2 border-emerald-500 bg-emerald-500/10 p-4">
+                            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-emerald-300">
                                 <Sparkles className="h-4 w-4" />
                                 {tr.activeEffects}
                             </h3>
                             <div className="space-y-2">
                                 {character.activeEffects.map((effect, index) => (
-                                    <div key={effect.id || index} className="rounded-md border border-emerald-200 bg-white p-3">
+                                    <div key={effect.id || index} className="rounded-md border border-emerald-500/40 bg-stone-50 p-3">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <span className="font-bold text-emerald-900">{effect.name}</span>
-                                            <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">{formatEffectDuration(effect.duration, tr)}</span>
+                                            <span className="font-bold text-emerald-200">{effect.name}</span>
+                                            <span className="rounded bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase text-black">{formatEffectDuration(effect.duration, tr)}</span>
                                         </div>
-                                        <div className="mt-1 text-xs text-emerald-800/70">
+                                        <div className="mt-1 text-xs text-emerald-200/70">
                                             {effect.modifiers.map(modifier =>
                                                 modifier.setTo !== undefined
                                                     ? `${modifier.stat}=${modifier.setTo}`
@@ -1239,8 +1239,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         const all = [...gearAdv, ...featAdv, ...fxAdv];
                         if (!all.length) return null;
                         return (
-                            <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
-                                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-sky-800">{tr.advantagesHeader}</h3>
+                            <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
+                                <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-sky-200">{tr.advantagesHeader}</h3>
                                 <ul className="space-y-1.5">
                                     {all.map((adv, i) => (
                                         <li key={`${adv.tag}-${adv.source}-${i}`} className="flex items-center justify-between gap-2 text-xs text-stone-700">
@@ -1255,9 +1255,9 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
                     {/* ── Compagnons & créatures liées : mini-fiches ── */}
                     {(((character.companions || []).length > 0) || character.subclass === 'Beast Master' || character.mount || character.familiar) && (
-                        <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                        <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                             {/* UI5 — seul bloc du panneau qui restait en français dur. */}
-                            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-emerald-800">
+                            <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-emerald-200">
                                 {tr.companionsHeader}
                             </h3>
                             <div className="space-y-2.5">
@@ -1265,7 +1265,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                     <div key={comp.id} className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="font-bold text-stone-800">{comp.name}</span>
-                                            <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">{tr.lvlShort} {comp.level ?? 1}</span>
+                                            <span className="rounded bg-emerald-400 px-1.5 py-0.5 text-[10px] font-bold text-black">{tr.lvlShort} {comp.level ?? 1}</span>
                                         </div>
                                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
                                             <span>{tr.hpShort} {comp.hp.current}/{comp.hp.max}</span>
@@ -1286,7 +1286,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                             <div className="flex items-center justify-between gap-2">
                                                 <span className="font-bold text-stone-800">🐺 {beast.name} {tr.boundTag}</span>
-                                                <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">4×{tr.lvlShort}</span>
+                                                <span className="rounded bg-emerald-400 px-1.5 py-0.5 text-[10px] font-bold text-black">4×{tr.lvlShort}</span>
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
                                                 <span>{tr.hpShort} {beastCur}/{beastMax}</span>
@@ -1307,7 +1307,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
                                             <div className="flex items-center justify-between gap-2">
                                                 <span className="font-bold text-stone-800">🐴 {character.mount.name}</span>
-                                                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">{character.mount.speed} ft{character.mount.flying ? ' ✈' : ''}</span>
+                                                <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">{character.mount.speed} ft{character.mount.flying ? ' ✈' : ''}</span>
                                             </div>
                                             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600">
                                                 <span>{tr.hpShort} {mCur}/{mMax}</span>
@@ -1322,7 +1322,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                                 const isMounted = character.mount!.mounted !== false;
                                                 return (
                                                     <div className="mt-2 flex items-center justify-between gap-2" title={isMounted ? tr.mountedHint : tr.dismountedHint}>
-                                                        <span className={`text-[11px] font-bold ${isMounted ? 'text-amber-700' : 'text-stone-500'}`}>
+                                                        <span className={`text-[11px] font-bold ${isMounted ? 'text-amber-300' : 'text-stone-500'}`}>
                                                             {isMounted ? tr.mountedOn : tr.mountedOff}
                                                         </span>
                                                         <button
@@ -1332,7 +1332,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                                                 if (!live?.mount) return;
                                                                 useGameStore.getState().setCharacter({ ...live, mount: { ...live.mount, mounted: !isMounted } });
                                                             }}
-                                                            className="rounded border border-stone-400 bg-white px-2 py-0.5 text-[11px] font-bold text-stone-700 hover:bg-stone-100"
+                                                            className="rounded border border-stone-400 bg-stone-50 px-2 py-0.5 text-[11px] font-bold text-stone-700 hover:bg-stone-200"
                                                         >
                                                             {isMounted ? tr.dismount : tr.mountUp}
                                                         </button>
@@ -1353,7 +1353,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         </div>
                     )}
 
-                    <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                    <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                         <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.resources}</h3>
                         <div className="space-y-2">
                             {spellSlots.map(([slot, pool]) => (
@@ -1369,8 +1369,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                     </div>
 
                     {((character.cantrips || []).length > 0 || (character.knownSpells || []).length > 0 || (character.preparedSpells || []).length > 0) && (
-                        <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
-                            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-700">
+                        <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
+                            <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-300">
                                 <Sparkles className="h-4 w-4 text-purple-600" />
                                 {tr.spellsMagic}
                             </h3>
@@ -1380,7 +1380,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">{tr.cantrips}</div>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {character.cantrips?.map(spell => (
-                                                <span key={spell} className="rounded border border-purple-200 bg-purple-50 px-2 py-0.5 text-xs text-purple-900 font-serif">
+                                                <span key={spell} className="rounded border border-purple-500/50 bg-purple-500/15 px-2 py-0.5 text-xs text-purple-200 font-serif">
                                                     {spell}
                                                 </span>
                                             ))}
@@ -1394,7 +1394,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         </div>
                                         <div className="mt-1 flex flex-wrap gap-1">
                                             {(character.preparedSpells?.length ? character.preparedSpells : character.knownSpells)?.map(spell => (
-                                                <span key={spell} className="rounded border border-purple-200 bg-purple-50 px-2 py-0.5 text-xs text-purple-900 font-serif">
+                                                <span key={spell} className="rounded border border-purple-500/50 bg-purple-500/15 px-2 py-0.5 text-xs text-purple-200 font-serif">
                                                     {spell}
                                                 </span>
                                             ))}
@@ -1413,7 +1413,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         </div>
                     )}
 
-                    <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                    <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                         <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-stone-600">
                             <Gem className="h-4 w-4" />
                             {tr.abilitiesTraits}
@@ -1429,7 +1429,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         </div>
                     </div>
 
-                    <div className="rounded-md border-2 border-stone-400 bg-white/45 p-4">
+                    <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-4">
                         <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-stone-600">{tr.proficiencies}</h3>
                         <div className="flex flex-wrap gap-1">
                             {character.proficiencies?.map(proficiency => (
@@ -1447,8 +1447,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
 
 function PaperMetric({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
     return (
-        <div className="rounded-md border-2 border-stone-400 bg-white/45 p-3 text-center">
-            <div className="mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded border border-stone-300 bg-white text-stone-700">{icon}</div>
+        <div className="rounded-md border-2 border-stone-400 bg-stone-50/60 p-3 text-center">
+            <div className="mx-auto mb-1 flex h-7 w-7 items-center justify-center rounded border border-stone-300 bg-stone-50 text-stone-700">{icon}</div>
             <div className="text-[10px] font-bold uppercase tracking-wide text-stone-500">{label}</div>
             <div className="font-fantasy text-3xl font-black">{value}</div>
             {hint && <div className="text-[10px] text-stone-500">{hint}</div>}

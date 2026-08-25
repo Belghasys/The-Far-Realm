@@ -66,7 +66,7 @@ export function ConsoleInput({ onSend, isLoading }: Props) {
                     className={`
                         p-3 mr-2 rounded-full transition-all duration-300
                         ${input.trim()
-                            ? 'bg-gold text-black shadow-[0_0_15px_rgba(255,215,0,0.5)] hover:scale-110 hover:bg-white'
+                            ? 'bg-gold text-black shadow-md hover:scale-110 hover:bg-white'
                             : 'bg-white/5 text-gray-600 cursor-not-allowed'}
                     `}
                 >
