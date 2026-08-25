@@ -32,6 +32,8 @@ SRC = os.path.join(RACINE, "Website Material")
 SRC_RACES = os.path.join(SRC, "Races")
 SRC_COVERS = os.path.join(SRC, "Campgain cover")
 SRC_JEU = os.path.join(SRC, "Game Cover")
+SRC_BG = os.path.join(SRC, "Background")
+SRC_STYLE = os.path.join(SRC, "Fighting Style")
 OUT = os.path.join(RACINE, "public", "art")
 
 # ── Portraits de classe : la version heroique, celle des cadres ───────────────
@@ -72,6 +74,36 @@ RACES = {
     "dwarf": "Dwarf_with_braided_beard", "gnome": "Pencil_sketch_of_gnome",
     "halfling": "Halfling_pencil_sketch", "tiefling": "Tiefling_sketch_with_horns",
     "dragonborn": "Dragonborn_pencil_sketch",
+}
+
+
+# -- Historiques : les dix cles de data/backgrounds.ts -----------------------
+# Les fichiers sont nommes en francais dans « Website Material » ; les cles
+# restent en anglais parce que ce sont elles qui voyagent dans les sauvegardes.
+HISTORIQUES = {
+    "acolyte": "Acolyte",
+    "criminal": "Criminel",
+    "folk-hero": "Folk Hero",
+    "noble": "Noble",
+    "sage": "Sage",
+    "soldier": "Soldier_looking_at_horizon",
+    "urchin": "Gamin des rues",
+    "charlatan": "Charlatan",
+    "hermit": "HErmit",
+    "outlander": "Voyageur",
+}
+
+# -- Styles de combat : les six de data/equipment.ts -------------------------
+# Chaque planche cadre une PAIRE DE MAINS et son arme, jamais un personnage
+# entier : le style est un geste, pas une identite. C'est ce qui les distingue
+# au premier coup d'oeil des portraits de classe.
+STYLES = {
+    "archery": "Hands_drawing_archery_bow",
+    "defense": "Plate_armor_glowing_with_energy",
+    "dueling": "Hand_holding_rapier_sketch",
+    "great-weapon-fighting": "Two_hands_holding_greatsword",
+    "protection": "Shield_in_defensive_blocking_pos",
+    "two-weapon-fighting": "Hands_gripping_swords_in_stance",
 }
 
 # ── Couvertures de campagne, indexees par l'id de data/adventures.ts ──────────
@@ -168,6 +200,30 @@ def paysage(src, dest, largeurs=(820, 1600), qualite=64):
     return total
 
 
+def bandeau(src, dest, largeurs=(480, 960), qualite=68):
+    """
+    Carte paysage 16:9 — historiques et styles de combat.
+
+    Ces planches-la sont COMPOSEES en paysage : le decor de l'historique et le
+    geste du style tiennent la largeur. Les recadrer en 3:4 comme un portrait de
+    classe couperait justement ce qu'elles racontent. Le format different n'est
+    donc pas une fantaisie : il dit au joueur que ces deux choix-la ne sont pas
+    de la meme nature que « qui je suis ».
+    """
+    im = Image.open(src).convert("RGB")
+    L, H = im.size
+    hauteur_crop = int(L * 9 / 16)
+    y = max(0, (H - hauteur_crop) // 2)
+    im = im.crop((0, y, L, y + min(hauteur_crop, H)))
+    total = 0
+    for i, l in enumerate(largeurs):
+        o = im.resize((l, int(l * 9 / 16)), Image.LANCZOS)
+        chemin = dest + ("" if i == 0 else "@2x") + ".webp"
+        o.save(chemin, "WEBP", quality=qualite, method=6)
+        total += os.path.getsize(chemin)
+    return total
+
+
 def vignette(src, dest, largeur=420, qualite=66):
     """
     Vignette du mur, en deux definitions.
@@ -205,7 +261,7 @@ def main():
     if not os.path.isdir(SRC):
         sys.exit(f"Sources introuvables : {SRC}")
 
-    for sous in ("classes", "alter", "races", "covers", "wall"):
+    for sous in ("classes", "alter", "races", "covers", "wall", "backgrounds", "styles"):
         os.makedirs(os.path.join(OUT, sous), exist_ok=True)
 
     manquants, total = [], 0
@@ -222,6 +278,20 @@ def main():
                 manquants.append(f"{groupe}/{cle} ({prefixe})")
                 continue
             octets += portrait(f, os.path.join(OUT, sous, cle))
+        print(f"{groupe:<12} {len(table):>3} sujets  {octets // 1024:>5} Ko")
+        total += octets
+
+    for groupe, table, dossier_src, sous in (
+        ("historiques", HISTORIQUES, SRC_BG, "backgrounds"),
+        ("styles", STYLES, SRC_STYLE, "styles"),
+    ):
+        octets = 0
+        for cle, prefixe in table.items():
+            f = trouver(dossier_src, prefixe)
+            if not f:
+                manquants.append(f"{groupe}/{cle} ({prefixe})")
+                continue
+            octets += bandeau(f, os.path.join(OUT, sous, cle))
         print(f"{groupe:<12} {len(table):>3} sujets  {octets // 1024:>5} Ko")
         total += octets
 

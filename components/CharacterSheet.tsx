@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat,
     getEffectiveMaxHP, getRacialBonus, racialHPBonusPerLevel, DRACONIC_ANCESTRIES } from '../types';
-import { Shield, Heart, Swords, Backpack, Plus, Minus, RefreshCw, UserRound, ScrollText, Sparkles, ChevronLeft, ChevronRight, Eye, Target, CheckCircle2, WandSparkles, Coins, ShoppingCart, Trash2 } from 'lucide-react';
+import { Shield, Swords, Backpack, Plus, Minus, RefreshCw, UserRound, ScrollText, ChevronLeft, ChevronRight, CheckCircle2, WandSparkles, Trash2 } from 'lucide-react';
 
 interface Props {
   initialChar?: CharacterSheet;
@@ -11,9 +11,13 @@ interface Props {
 
 import { MARTIAL_CLASSES, RACE_DATA, RACES, BACKGROUNDS, FIGHTING_STYLES, DEITIES, CLASS_DATA, BASE_STAT, MAX_POINTS, getWeaponFromInventory, DEFAULT_CHAR } from '../data';
 import { CLASS_SKILLS, CLASS_EXPERTISE, ALL_SKILLS } from '../data/classes';
-import { dispClass, dispRace, dispStyle } from '../data/labels';
-import { CLASS_ART, RACE_ART } from '../theme/art';
-import { T, DISP, onTint } from '../theme/tokens';
+import { dispClass, dispRace, dispStyle, dispBackground, dispProf, styleDesc } from '../data/labels';
+import { CLASS_ART, RACE_ART, BACKGROUND_ART, STYLE_ART } from '../theme/art';
+import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
+import {
+    SHEET_CSS, Panneau, Titre, CartePortrait, CartePaysage, CarteTexte,
+    Pastille, Etiquette, Etiqueter, Champ, Ligne, Liste, Compteur, Cartouche, Grille,
+} from './neon/SheetKit';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../data/subclasses';
 import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../services/skillSystem';
 import { hasFeatSpecial } from '../services/rulesEngine';
@@ -28,6 +32,8 @@ type Lang = 'en' | 'fr';
 const TRANS = {
   en: {
     stepIdentity: 'Identity', stepBuild: 'Build', stepGear: 'Equipment', stepSpells: 'Spells', stepStory: 'Story', stepReview: 'Recap',
+    steps: 'Creation steps', vitals: 'Vitals',
+    fullClassSheet: 'Full class sheet', closeSheet: 'Close',
     builderHint: 'Build the sheet, then give the DM enough identity hooks to write a personal campaign opening.',
     name: 'Name', class: 'Class', race: 'Race', background: 'Background', style: 'Style', deity: 'Deity', none: 'None',
     characterName: 'Character name', namePlaceholder: 'Give your hero a name…',
@@ -102,6 +108,8 @@ const TRANS = {
   },
   fr: {
     stepIdentity: 'Identité', stepBuild: 'Build', stepGear: 'Équipement', stepSpells: 'Sorts', stepStory: 'Histoire', stepReview: 'Récap',
+    steps: 'Étapes de création', vitals: 'Constantes',
+    fullClassSheet: 'Fiche complète', closeSheet: 'Fermer',
     builderHint: "Construis la fiche, puis donne au MJ assez d'accroches d'identité pour écrire une ouverture de campagne personnelle.",
     name: 'Nom', class: 'Classe', race: 'Race', background: 'Historique', style: 'Style', deity: 'Divinité', none: 'Aucune',
     characterName: 'Nom du personnage', namePlaceholder: 'Donne un nom à ton héros…',
@@ -193,6 +201,10 @@ const SKILL_FR: Record<string, string> = {
 const ABILITY_FR_SHEET: Record<string, string> = { STR: 'FOR', DEX: 'DEX', CON: 'CON', INT: 'INT', WIS: 'SAG', CHA: 'CHA' };
 // Ability abbreviation by language: English keys for 'en', French D&D abbreviations for 'fr'.
 const dispAbbr = (a: string, lang: 'en' | 'fr') => (lang === 'fr' ? (ABILITY_FR_SHEET[a] || a) : a);
+// `primaryAbility` arrive déjà à moitié traduit dans les données (« STR ou DEX ») :
+// seules les abréviations restent anglaises, on les remplace sur place.
+const dispAbilityExpr = (expr: string, lang: 'en' | 'fr') =>
+  expr.replace(/\b(STR|DEX|CON|INT|WIS|CHA)\b/g, m => dispAbbr(m, lang));
 
 // ── Equipment-shop French labels ────────────────────────────────────────────
 const WEAPON_PROP_FR: Record<string, string> = {
@@ -349,18 +361,26 @@ function defaultCasterState(cls: string): Partial<CharacterSheet> {
   };
 }
 
-// Background-linked Ideals/Bonds/Flaws suggestion chips: click to fill the field.
+// Suggestions d'Ideal / Lien / Defaut liees a l'historique : un clic remplit le
+// champ. Elles sont tronquees a l'affichage mais le `title` porte le texte
+// entier — sans lui, trois suggestions se ressembleraient toutes.
 const IbfChips: React.FC<{ items?: string[]; onPick: (v: string) => void }> = ({ items, onPick }) => {
   if (!items || !items.length) return null;
   return (
-    <div className="mt-1 flex flex-wrap gap-1">
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 }}>
       {items.map(s => (
         <button
           key={s}
           type="button"
           onClick={() => onPick(s)}
           title={s}
-          className="max-w-[220px] truncate rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-700 hover:border-blood hover:bg-blood/10"
+          className="nk-chip"
+          style={{
+            maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontSize: 10, fontWeight: 400, padding: '4px 8px',
+            background: 'transparent', color: 'rgba(237,230,216,.7)',
+            borderColor: 'rgba(237,230,216,.28)',
+          }}
         >
           {s}
         </button>
@@ -381,7 +401,6 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
 
   // Modal and tooltip states
   const [showClassDetails, setShowClassDetails] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
   // Class skill proficiencies the player has chosen (separate from background/race
   // grants so we can enforce the per-class count and re-pick on class change).
   const [classSkillPicks, setClassSkillPicks] = useState<string[]>([]);
@@ -664,6 +683,13 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     }
   };
 
+  useEffect(() => {
+    if (!showClassDetails) return;
+    const auClavier = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowClassDetails(false); };
+    window.addEventListener('keydown', auClavier);
+    return () => window.removeEventListener('keydown', auClavier);
+  }, [showClassDetails]);
+
   const casterConfig = CASTER_SETUP[char.class];
   const cantripOptions = spellsForClass(char.class, 0);
   const levelOneSpellOptions = spellsForClass(char.class, 1);
@@ -713,48 +739,79 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
   const passive = passivePerception(effStats, char.level, char.proficiencies || [], char.expertise || [], hasFeatSpecial(char, 'passive_senses_plus_5') ? 5 : 0);
 
   return (
-    <div className="bg-parchment text-black p-6 rounded-lg border-8 border-double border-gray-800 shadow-2xl max-w-5xl mx-auto font-fantasy h-full overflow-y-auto">
+    <div style={{ maxWidth: 1180, margin: '0 auto', fontFamily: BODY, color: T.paper }}>
+      <style>{SHEET_CSS}</style>
+
+      {/* ─── Le fil des six étapes ───────────────────────────────────────────
+          Toutes les étapes restent cliquables : la fiche n'est pas un tunnel,
+          et un joueur qui veut changer sa classe après avoir acheté son épée
+          ne doit pas avoir à tout recommencer. */}
       {!readOnly && (
-        <div className="mb-6">
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border-2 border-gray-800 bg-gray-900 p-2 text-parchment">
-            {CREATION_STEPS.map((step, index) => (
-              <button
-                key={step.id}
-                type="button"
-                onClick={() => setActiveStep(step.id)}
-                className={`flex min-w-[130px] flex-1 items-center justify-center gap-2 rounded px-3 py-2 text-sm font-bold uppercase tracking-wide transition-colors ${activeStep === step.id ? 'bg-blood text-white shadow' : 'bg-white/5 text-gray-300 hover:bg-white/10'}`}
-              >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full border ${activeStep === step.id ? 'border-white' : 'border-gray-500'}`}>
-                  {index + 1}
-                </span>
-                {step.icon}
-                {STEP_LABELS[language][step.id]}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-center text-xs font-sans text-gray-700">
+        <div style={{ marginBottom: 22 }}>
+          <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }} aria-label={tr.steps}>
+            {CREATION_STEPS.map((step, index) => {
+              const actif = activeStep === step.id;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  className="nk-step"
+                  onClick={() => setActiveStep(step.id)}
+                  aria-current={actif ? 'step' : undefined}
+                  style={{
+                    background: actif ? T.acid : T.violet,
+                    color: actif ? onTint(T.acid) : 'rgba(237,230,216,.72)',
+                    boxShadow: actif ? hardShadow(T.ink, 7) : '3px 3px 0 rgba(5,0,26,.5)',
+                  }}
+                >
+                  <span style={{
+                    display: 'inline-flex', width: 20, height: 20, flex: 'none',
+                    alignItems: 'center', justifyContent: 'center',
+                    background: actif ? T.ink : 'rgba(237,230,216,.14)',
+                    color: actif ? T.acid : 'inherit', fontSize: 10,
+                  }}>{index + 1}</span>
+                  {step.icon}
+                  {STEP_LABELS[language][step.id]}
+                </button>
+              );
+            })}
+          </nav>
+          <p style={{ margin: '10px 2px 0', fontSize: 12.5, lineHeight: 1.5, color: 'rgba(237,230,216,.6)' }}>
             {tr.builderHint}
           </p>
         </div>
       )}
-      {/* ─── Compact static header (review / read-only sheet) ─── */}
+
+      {/* ─── En-tête compacte (fiche en lecture seule) ─── */}
       {readOnly && (
-        <div className="flex flex-col md:flex-row gap-4 border-b-4 border-gray-800 pb-6 mb-6">
-          <div className="flex-1">
-            <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest">{tr.name}</label>
-            <h1 className="text-3xl md:text-5xl font-black text-blood border-b-2 border-gray-400">{char.name}</h1>
+        <Panneau accent={T.pink} style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-end' }}>
+            <div style={{ flex: '1 1 240px' }}>
+              <Etiqueter>{tr.name}</Etiqueter>
+              <h1 style={{ fontFamily: DISP, fontSize: 'clamp(24px, 4vw, 38px)', margin: 0, color: T.acid }}>{char.name}</h1>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
+              {[
+                [tr.class, dispClass(char.class, language)],
+                [tr.race, dispRace(char.race, language)],
+                [tr.background, dispBackground(char.background, language)],
+                ...(MARTIAL_CLASSES.includes(char.class) ? [[tr.style, dispStyle(char.fightingStyle, language)]] : []),
+                [tr.deity, char.deity || tr.none],
+              ].map(([k, v]) => (
+                <div key={String(k)}>
+                  <Etiqueter>{k}</Etiqueter>
+                  <div style={{ fontFamily: DISP, fontSize: 13 }}>{v}</div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-6 items-end flex-wrap">
-            <div><label className="text-xs font-bold uppercase block mb-1">{tr.class}</label><div className="text-xl font-bold">{dispClass(char.class, language)}</div></div>
-            <div><label className="text-xs font-bold uppercase block mb-1">{tr.race}</label><div className="text-xl font-bold">{dispRace(char.race, language)}</div></div>
-            <div><label className="text-xs font-bold uppercase block mb-1">{tr.background}</label><div className="text-xl font-bold">{char.background}</div></div>
-            {MARTIAL_CLASSES.includes(char.class) && <div><label className="text-xs font-bold uppercase block mb-1">{tr.style}</label><div className="text-xl font-bold">{dispStyle(char.fightingStyle, language)}</div></div>}
-            <div><label className="text-xs font-bold uppercase block mb-1">{tr.deity}</label><div className="text-xl font-bold">{char.deity || tr.none}</div></div>
-          </div>
-        </div>
+        </Panneau>
       )}
 
-      {/* ─── Identity step: card pickers with inline descriptions (no hovers) ─── */}
+      {/* ─── Étape IDENTITÉ ──────────────────────────────────────────────────
+          L'ordre est celui de la décision, pas celui de la fiche : le nom, puis
+          les deux choix qui portent le personnage (classe, race), puis ceux qui
+          le situent (historique, style, divinité). */}
       {!readOnly && activeStep === 'identity' && (() => {
         const baseRaces = RACES.filter(r => !RACE_DATA[r].subraceOf);
         const selectedBase = RACE_DATA[char.race]?.subraceOf || char.race;
@@ -765,77 +822,111 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
         };
         const raceASI = (r: string) => (['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as Ability[])
           .map(a => ({ a, v: getRacialBonus(r, a) })).filter(x => x.v).map(x => `+${x.v} ${dispAbbr(x.a, language)}`).join(' ');
-        const cardCls = (s: boolean) =>
-          `text-left rounded-lg border-2 p-3 transition ${s ? 'border-blood bg-blood/5 ring-1 ring-blood/40' : 'border-gray-300 bg-white hover:border-blood/60'}`;
-
-        /**
-         * Carte à portrait — le choix de classe et celui de race.
-         *
-         * Ces deux choix-là sont les seuls de la fiche à avoir une IMAGE, et
-         * c'est mérité : ce sont les seuls que le joueur fait avec les tripes
-         * avant de faire avec les chiffres. Les autres (archétype, sous-race,
-         * historique, style) gardent la carte de texte — leur donner un visuel
-         * de la même force diluerait celui-ci.
-         *
-         * Le portrait est décoratif (`alt` vide) : le nom est juste en dessous,
-         * en toutes lettres, et un lecteur d'écran l'annoncerait deux fois.
-         */
-        const ArtCard = ({ slug, tint, nom, note, desc, choisi, subs, onPick }: {
-          slug: string; tint: string; nom: string; note?: string; desc: string;
-          choisi: boolean; subs?: boolean; onPick: () => void;
-        }) => (
-          <button
-            type="button"
-            onClick={onPick}
-            aria-pressed={choisi}
-            style={{
-              display: 'flex', flexDirection: 'column', textAlign: 'left', padding: 0,
-              background: tint, border: `3px solid ${T.ink}`, cursor: 'pointer', overflow: 'hidden',
-              boxShadow: choisi ? `0 0 0 4px ${T.magenta}, 7px 7px 0 ${T.ink}` : `5px 5px 0 rgba(5,0,26,.35)`,
-              transform: choisi ? 'translate(-2px, -2px)' : undefined,
-              transition: 'box-shadow .15s ease-out, transform .15s ease-out',
-            }}
-          >
-            <img
-              src={`/art/${slug}.webp`}
-              srcSet={`/art/${slug}.webp 1x, /art/${slug}@2x.webp 2x`}
-              alt=""
-              loading="lazy"
-              style={{ display: 'block', width: '100%', aspectRatio: '3 / 4', objectFit: 'cover', background: T.ink }}
-            />
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 3, padding: '9px 10px 11px', color: onTint(tint) }}>
-              <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
-                <span style={{ fontFamily: DISP, fontSize: 12 }}>{nom}</span>
-                {note && <span style={{ fontSize: 10, fontWeight: 700, opacity: .7 }}>{note}</span>}
-              </span>
-              <span style={{ fontSize: 10.5, lineHeight: 1.35, opacity: .78 }}>{desc}</span>
-            </span>
-          </button>
-        );
         const selRace = RACE_DATA[char.race];
         const selClass = CLASS_DATA[char.class];
+
         return (
-          <div className="space-y-6 mb-6">
-            {/* Name */}
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-widest mb-1">{tr.characterName}</label>
+          <div style={{ display: 'grid', gap: 22 }}>
+
+            {/* Le nom. Premier champ de l'écran, et le seul qui mérite d'être
+                grand : c'est la seule chose ici que le joueur invente. */}
+            <Panneau accent={T.magenta}>
+              <Etiqueter>{tr.characterName}</Etiqueter>
               <input
                 value={char.name}
                 onChange={e => setChar({ ...char, name: e.target.value })}
-                className="w-full text-2xl font-black bg-transparent border-b-2 border-black focus:outline-none focus:border-blood placeholder-gray-400"
                 placeholder={tr.namePlaceholder}
+                maxLength={40}
+                className="nk-field"
+                style={{ fontFamily: DISP, fontSize: 'clamp(19px, 3.4vw, 30px)', padding: '15px 17px' }}
               />
-            </div>
+            </Panneau>
+
+            {/* Race + sous-race */}
+            <Panneau accent={T.emerald}>
+              <Titre accent={T.emerald} note={tr.raceHint.replace(/^—\s*/, '')}>{tr.race}</Titre>
+              <Grille min={168}>
+                {baseRaces.map(r => {
+                  const d = RACE_DATA[r];
+                  return (
+                    <CartePortrait
+                      key={r}
+                      slug={RACE_ART[r]?.slug || 'races/human'}
+                      tint={RACE_ART[r]?.tint || T.azure}
+                      nom={dispRace(r, language)}
+                      note={raceASI(r) || '—'}
+                      desc={d.desc}
+                      choisi={selectedBase === r}
+                      onPick={() => pickBaseRace(r)}
+                    />
+                  );
+                })}
+              </Grille>
+
+              {subraces.length > 0 && (
+                <div style={{ marginTop: 18, borderTop: `3px dashed ${T.emerald}`, paddingTop: 16 }}>
+                  <Titre accent={T.emerald} taille={13} note={tr.mandatory.replace(/^—\s*/, '')}>
+                    {tr.subraceOf(dispRace(selectedBase, language))}
+                  </Titre>
+                  <Grille min={220}>
+                    {subraces.map(s => (
+                      <CarteTexte
+                        key={s}
+                        nom={s}
+                        note={raceASI(s) || '—'}
+                        desc={RACE_DATA[s].desc}
+                        accent={T.emerald}
+                        choisi={char.race === s}
+                        onPick={() => handleRaceChange(s)}
+                      />
+                    ))}
+                  </Grille>
+                </div>
+              )}
+
+              {/* Ascendance draconique — drakéide seul. Fixe le type du souffle
+                  et la résistance associée. */}
+              {char.race === 'Dragonborn' && (
+                <div style={{ marginTop: 18, borderTop: `3px dashed ${T.acid}`, paddingTop: 16 }}>
+                  <Titre accent={T.acid} taille={13} note={`${tr.mandatory} ${tr.ancestryHint}`.replace(/—\s*/g, '')}>
+                    {tr.draconicAncestry}
+                  </Titre>
+                  <Grille min={140}>
+                    {DRACONIC_ANCESTRIES.map(a => (
+                      <CarteTexte
+                        key={a.id}
+                        nom={language === 'fr' ? a.fr : a.en}
+                        note={tr.dmgType[a.type] || a.type}
+                        accent={T.acid}
+                        choisi={char.draconicAncestry === a.id}
+                        onPick={() => handleAncestryPick(a.id)}
+                      />
+                    ))}
+                  </Grille>
+                </div>
+              )}
+
+              {selRace && (
+                <div style={{ marginTop: 18, background: T.ink, border: `3px solid rgba(237,230,216,.16)`, padding: '13px 15px' }}>
+                  <Etiqueter note={tr.traits}>{dispRace(char.race, language)}</Etiqueter>
+                  <ul style={{ margin: 0, paddingLeft: 19, display: 'grid', gap: 4, fontSize: 12, lineHeight: 1.45, color: 'rgba(237,230,216,.78)' }}>
+                    {selRace.features.map((f, i) => <li key={i}>{f}</li>)}
+                  </ul>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 11 }}>
+                    {selRace.profs.length > 0 && <Etiquette couleur={T.cyan}>{tr.proficienciesLabel} {selRace.profs.join(', ')}</Etiquette>}
+                    {selRace.resistances?.length ? <Etiquette couleur={T.pink}>{tr.resistancesLabel} {selRace.resistances.join(', ')}</Etiquette> : null}
+                    {selRace.darkvision ? <Etiquette couleur={T.purple}>{tr.darkvision}</Etiquette> : null}
+                  </div>
+                </div>
+              )}
+            </Panneau>
 
             {/* Classe */}
-            <section>
-              <div className="mb-2 flex items-center gap-2">
-                <Swords className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.class}</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">{tr.classHint}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            <Panneau accent={T.azure}>
+              <Titre note={tr.classHint.replace(/^—\s*/, '')}>{tr.class}</Titre>
+              <Grille min={168}>
                 {Object.entries(CLASS_DATA).map(([c, d]) => (
-                  <ArtCard
+                  <CartePortrait
                     key={c}
                     slug={CLASS_ART[c]?.slug || 'classes/fighter'}
                     tint={CLASS_ART[c]?.tint || T.azure}
@@ -846,28 +937,33 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     onPick={() => handleClassChange(c)}
                   />
                 ))}
-              </div>
+              </Grille>
+
               {/* Archétype de niveau 1 (Domaine du Clerc, Patron de l'Occultiste,
-                  Origine du Sorcier) — obligatoire à la création, même pattern
-                  que la sous-race. Les autres classes choisissent au niveau 2-3
-                  via le level-up. */}
+                  Origine de l'Ensorceleur) — obligatoire à la création, même
+                  motif que la sous-race. Les autres classes choisissent au
+                  niveau 2-3 via le level-up. */}
               {SUBCLASS_DATA[char.class]?.level === 1 && (
-                <div className="mt-3 rounded-lg border-2 border-dashed border-purple-600/40 bg-purple-600/5 p-3">
-                  <div className="mb-2 text-xs font-bold uppercase tracking-widest text-purple-700">
-                    {SUBCLASS_DATA[char.class].label} <span className="font-normal normal-case text-gray-500">{tr.mandatoryLvl1}</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                <div style={{ marginTop: 18, borderTop: `3px dashed ${T.purple}`, paddingTop: 16 }}>
+                  <Titre accent={T.purple} taille={13} note={tr.mandatoryLvl1.replace(/^—\s*/, '')}>
+                    {SUBCLASS_DATA[char.class].label}
+                  </Titre>
+                  <Grille min={220}>
                     {SUBCLASS_DATA[char.class].options.map(o => (
-                      <button key={o.id} type="button" onClick={() => handleSubclassPick(o.name)} className={cardCls(char.subclass === o.name)}>
-                        <div className="font-bold">{o.name}</div>
-                        <div className="text-[11px] text-gray-600 mt-0.5">{o.description}</div>
-                      </button>
+                      <CarteTexte
+                        key={o.id}
+                        nom={o.name}
+                        desc={o.description}
+                        accent={T.purple}
+                        choisi={char.subclass === o.name}
+                        onPick={() => handleSubclassPick(o.name)}
+                      />
                     ))}
-                  </div>
+                  </Grille>
                   {char.subclass && (
-                    <ul className="mt-2 list-disc pl-5 space-y-0.5 text-xs text-purple-900/80">
+                    <ul style={{ margin: '12px 0 0', paddingLeft: 20, display: 'grid', gap: 4, fontSize: 12, color: 'rgba(237,230,216,.78)' }}>
                       {getSubclassFeaturesForLevel(char.class, char.subclass, 1).map((f, i) => (
-                        <li key={i}><b>{f.name}</b> — {f.description}</li>
+                        <li key={i}><b style={{ color: T.purple }}>{f.name}</b> — {f.description}</li>
                       ))}
                     </ul>
                   )}
@@ -875,251 +971,140 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               )}
 
               {selClass && (
-                <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-3 text-xs">
-                  <div className="mb-1 font-bold">{dispClass(char.class, language)} {tr.startingAbilities}</div>
-                  <ul className="list-disc pl-5 space-y-0.5 text-gray-700">
-                    {selClass.features.filter(f => f.level <= 3).map((f, i) => <li key={i}><b>{f.name}</b> <span className="text-gray-400">({tr.lvl} {f.level})</span> — {f.desc}</li>)}
-                  </ul>
-                </div>
-              )}
-            </section>
-
-            {/* Race + sous-race */}
-            <section>
-              <div className="mb-2 flex items-center gap-2">
-                <UserRound className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.race}</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">{tr.raceHint}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {baseRaces.map(r => {
-                  const d = RACE_DATA[r];
-                  const hasSubs = RACES.some(x => RACE_DATA[x].subraceOf === r);
-                  return (
-                    <ArtCard
-                      key={r}
-                      slug={RACE_ART[r]?.slug || 'races/human'}
-                      tint={RACE_ART[r]?.tint || T.azure}
-                      nom={dispRace(r, language)}
-                      subs={hasSubs}
-                      note={raceASI(r) || '—'}
-                      desc={d.desc}
-                      choisi={selectedBase === r}
-                      onPick={() => pickBaseRace(r)}
-                    />
-                  );
-                })}
-              </div>
-
-              {subraces.length > 0 && (
-                <div className="mt-3 rounded-lg border-2 border-dashed border-blood/40 bg-blood/5 p-3">
-                  <div className="mb-2 text-xs font-bold uppercase tracking-widest text-blood">
-                    {tr.subraceOf(dispRace(selectedBase, language))} <span className="font-normal normal-case text-gray-500">{tr.mandatory}</span>
+                <div style={{ marginTop: 18, background: T.ink, border: `3px solid rgba(237,230,216,.16)`, padding: '13px 15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <Etiqueter note={tr.startingAbilities}>{dispClass(char.class, language)}</Etiqueter>
+                    <Pastille couleur={T.acid} onClick={() => setShowClassDetails(true)}>
+                      {tr.fullClassSheet} →
+                    </Pastille>
                   </div>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {subraces.map(s => {
-                      const d = RACE_DATA[s];
-                      return (
-                        <button key={s} type="button" onClick={() => handleRaceChange(s)} className={cardCls(char.race === s)}>
-                          <div className="flex items-baseline justify-between gap-2">
-                            <span className="font-bold">{s}</span>
-                            <span className="text-[10px] font-mono text-green-700">{raceASI(s) || '—'}</span>
-                          </div>
-                          <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Draconic ancestry — Dragonborn only. Sets breath-weapon type + resistance. */}
-              {char.race === 'Dragonborn' && (
-                <div className="mt-3 rounded-lg border-2 border-dashed border-amber-500/50 bg-amber-500/5 p-3">
-                  <div className="mb-2 text-xs font-bold uppercase tracking-widest text-amber-700">
-                    {tr.draconicAncestry} <span className="font-normal normal-case text-gray-500">{tr.mandatory} {tr.ancestryHint}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                    {DRACONIC_ANCESTRIES.map(a => (
-                      <button key={a.id} type="button" onClick={() => handleAncestryPick(a.id)} className={cardCls(char.draconicAncestry === a.id)}>
-                        <div className="font-bold">{language === 'fr' ? a.fr : a.en}</div>
-                        <div className="text-[11px] capitalize text-gray-600 mt-0.5">{tr.dmgType[a.type] || a.type}</div>
-                      </button>
+                  <ul style={{ margin: 0, paddingLeft: 19, display: 'grid', gap: 5, fontSize: 12, lineHeight: 1.45, color: 'rgba(237,230,216,.78)' }}>
+                    {selClass.features.filter(f => f.level <= 3).map((f, i) => (
+                      <li key={i}>
+                        <b style={{ color: T.cyan }}>{f.name}</b>{' '}
+                        <span style={{ opacity: .5 }}>({tr.lvl} {f.level})</span> — {f.desc}
+                      </li>
                     ))}
-                  </div>
-                </div>
-              )}
-
-              {selRace && (
-                <div className="mt-3 rounded border border-gray-300 bg-gray-50 p-3 text-xs">
-                  <div className="mb-1 font-bold">{dispRace(char.race, language)} {tr.traits}</div>
-                  <ul className="list-disc pl-5 space-y-0.5 text-gray-700">
-                    {selRace.features.map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
-                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-gray-600">
-                    {selRace.profs.length > 0 && <span><b>{tr.proficienciesLabel}</b> {selRace.profs.join(', ')}</span>}
-                    {selRace.resistances?.length ? <span className="text-orange-700"><b>{tr.resistancesLabel}</b> {selRace.resistances.join(', ')}</span> : null}
-                    {selRace.darkvision ? <span><b>{tr.darkvision}</b></span> : null}
-                  </div>
                 </div>
               )}
-            </section>
+            </Panneau>
 
-            {/* Historique */}
-            <section>
-              <div className="mb-2 flex items-center gap-2">
-                <ScrollText className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.background}</h2>
-                <span className="text-xs font-normal normal-case text-gray-500">{tr.bgHint}</span>
-              </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Historique — cartes paysage : un décor, pas un personnage. */}
+            <Panneau accent={T.acid}>
+              <Titre accent={T.acid} note={tr.bgHint.replace(/^—\s*/, '')}>{tr.background}</Titre>
+              <Grille min={252}>
                 {Object.entries(BACKGROUNDS).map(([b, d]) => (
-                  <button key={b} type="button" onClick={() => handleBackgroundChange(b)} className={cardCls(char.background === b)}>
-                    <div className="font-bold">{b}</div>
-                    <div className="text-[11px] text-gray-600 mt-0.5">{d.desc}</div>
-                    <div className="text-[10px] text-blue-800 mt-1"><b>{tr.skillsAbbr}</b> {d.profs.map(p => language === 'fr' ? (SKILL_FR[p] || p) : p).join(', ')}</div>
-                    <div className="text-[10px] text-yellow-800 mt-0.5"><b>{d.feature.name} :</b> {d.feature.description}</div>
-                  </button>
+                  <CartePaysage
+                    key={b}
+                    slug={BACKGROUND_ART[b]?.slug || 'backgrounds/acolyte'}
+                    tint={BACKGROUND_ART[b]?.tint || T.acid}
+                    nom={dispBackground(b, language)}
+                    desc={d.desc}
+                    choisi={char.background === b}
+                    onPick={() => handleBackgroundChange(b)}
+                    enfants={
+                      <span style={{ display: 'block', marginTop: 5, fontSize: 10.5, lineHeight: 1.4, opacity: .72 }}>
+                        <b>{tr.skillsAbbr}</b> {d.profs.map(p => language === 'fr' ? (SKILL_FR[p] || p) : p).join(', ')}
+                        <br /><b>{d.feature.name} :</b> {d.feature.description}
+                      </span>
+                    }
+                  />
                 ))}
-              </div>
-            </section>
+              </Grille>
+            </Panneau>
 
-            {/* Style de combat (martial) + Divinité */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {MARTIAL_CLASSES.includes(char.class) && (
-                <section>
-                  <div className="mb-2 flex items-center gap-2"><Target className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.fightingStyle}</h2></div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {FIGHTING_STYLES.map(s => (
-                      <button key={s.name} type="button" onClick={() => handleFightingStyleChange(s.name)} className={cardCls(char.fightingStyle === s.name)}>
-                        <div className="font-bold">{dispStyle(s.name, language)}</div>
-                        <div className="text-[11px] text-gray-600 mt-0.5">{s.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              )}
-              <section>
-                <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-blood" /><h2 className="text-sm font-black uppercase tracking-widest">{tr.deity}</h2>
-                  <span className="text-xs font-normal normal-case text-gray-500">{tr.deityHint}</span>
-                </div>
-                <select
-                  value={char.deity || 'Aucune'}
-                  onChange={e => setChar({ ...char, deity: e.target.value })}
-                  className="block w-full rounded border-2 border-gray-300 bg-white p-2 font-bold focus:border-blood focus:outline-none"
-                >
-                  {DEITIES.map(d => (
-                    <option key={d.name} value={d.name}>{d.name}{d.alignment !== '-' ? ` (${d.alignment})` : ''}</option>
+            {/* Style de combat — martial seulement. Un geste, pas une identité :
+                d'où la paire de mains cadrée serré sur chaque planche. */}
+            {MARTIAL_CLASSES.includes(char.class) && (
+              <Panneau accent={T.pink}>
+                <Titre accent={T.pink} note={tr.mandatoryLvl1.replace(/^—\s*/, '')}>{tr.fightingStyle}</Titre>
+                <Grille min={252}>
+                  {FIGHTING_STYLES.map(s => (
+                    <CartePaysage
+                      key={s.name}
+                      slug={STYLE_ART[s.name]?.slug || 'styles/dueling'}
+                      tint={STYLE_ART[s.name]?.tint || T.pink}
+                      nom={dispStyle(s.name, language)}
+                      desc={styleDesc(s.name, s.desc, language)}
+                      choisi={char.fightingStyle === s.name}
+                      onPick={() => handleFightingStyleChange(s.name)}
+                    />
                   ))}
-                </select>
-                {char.deity && DEITIES.find(d => d.name === char.deity)?.desc && (
-                  <div className="mt-2 rounded border border-gray-300 bg-gray-50 p-2 text-[11px] text-gray-600">{DEITIES.find(d => d.name === char.deity)?.desc}</div>
-                )}
-              </section>
-            </div>
+                </Grille>
+              </Panneau>
+            )}
+
+            {/* Divinité */}
+            <Panneau accent={T.purple}>
+              <Titre accent={T.purple} note={tr.deityHint.replace(/^—\s*/, '')}>{tr.deity}</Titre>
+              <Liste value={char.deity || 'Aucune'} onChange={e => setChar({ ...char, deity: e.target.value })}>
+                {DEITIES.map(d => (
+                  <option key={d.name} value={d.name} style={{ background: T.ink, color: T.paper }}>
+                    {d.name}{d.alignment !== '-' ? ` (${d.alignment})` : ''}
+                  </option>
+                ))}
+              </Liste>
+              {char.deity && DEITIES.find(d => d.name === char.deity)?.desc && (
+                <p style={{ margin: '11px 0 0', fontSize: 12, lineHeight: 1.5, color: 'rgba(237,230,216,.65)' }}>
+                  {DEITIES.find(d => d.name === char.deity)?.desc}
+                </p>
+              )}
+            </Panneau>
           </div>
         );
       })()}
 
-      {/* Narrative Identity */}
+      {/* ─── Étape HISTOIRE ─────────────────────────────────────────────────
+          Ces champs ne décorent pas la fiche : ils partent tels quels au MJ,
+          qui écrit l'ouverture de campagne avec. D'où l'astérisque sur les deux
+          seuls qui bloquent le départ. */}
       {!readOnly && activeStep === 'story' && (
-        <div className="mb-6 space-y-5">
-          <div className="rounded-lg border-2 border-gray-800 bg-white p-4">
-            <div className="mb-3 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
-              <Sparkles className="h-5 w-5 text-blood" />
-              <div>
-                <h2 className="text-xl font-black uppercase tracking-wide">{tr.characterBible}</h2>
-                <p className="font-sans text-xs text-gray-600">{tr.bibleHint}</p>
-              </div>
-            </div>
+        <div style={{ display: 'grid', gap: 22 }}>
+          <Panneau accent={T.magenta}>
+            <Titre accent={T.magenta} note={tr.bibleHint}>{tr.characterBible}</Titre>
 
-            <div className="mb-4">
-              <div className="mb-1.5 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.quickArchetype} <span className="font-normal normal-case text-gray-500">{tr.quickArchetypeHint}</span></div>
-              <div className="flex flex-wrap gap-1.5">
+            <div style={{ marginBottom: 18 }}>
+              <Etiqueter note={tr.quickArchetypeHint}>{tr.quickArchetype}</Etiqueter>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                 {ARCHETYPES.map(a => (
-                  <button key={a.nameEn} type="button" onClick={() => updateProfile(language === 'fr' ? a.profileFr : a.profileEn)}
-                    className="rounded-full border border-blood/40 bg-blood/5 px-3 py-1 text-xs font-bold text-blood hover:bg-blood/15">
+                  <Pastille key={a.nameEn} couleur={T.magenta} onClick={() => updateProfile(language === 'fr' ? a.profileFr : a.profileEn)}>
                     {language === 'fr' ? a.nameFr : a.nameEn}
-                  </button>
+                  </Pastille>
                 ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Eye className="h-3.5 w-3.5" /> {tr.appearance} *</span>
-                <textarea
-                  value={profile.appearance || ''}
-                  onChange={e => updateProfile({ appearance: e.target.value })}
-                  placeholder={tr.appearancePh}
-                  className="h-24 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={360}
-                />
-              </label>
+            <div style={{ display: 'grid', gap: 15, gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
+              {([
+                { cle: 'appearance', libelle: `${tr.appearance} *`, ph: tr.appearancePh, max: 360, h: 92 },
+                { cle: 'desire', libelle: `${tr.desire} *`, ph: tr.desirePh, max: 320, h: 92 },
+                { cle: 'personality', libelle: tr.personality, ph: tr.personalityPh, max: 280, h: 78 },
+                { cle: 'fear', libelle: tr.fearWeakness, ph: tr.fearPh, max: 280, h: 78 },
+                { cle: 'bond', libelle: tr.bondLien, ph: tr.bondPh, max: 280, h: 78, chips: BACKGROUNDS[char.background]?.bonds },
+                { cle: 'wound', libelle: tr.woundRegret, ph: tr.woundPh, max: 280, h: 78 },
+              ] as const).map(f => (
+                <label key={f.cle} style={{ display: 'block' }}>
+                  <Etiqueter>{f.libelle}</Etiqueter>
+                  <Champ
+                    value={(profile as Record<string, string | undefined>)[f.cle] || ''}
+                    onChange={e => updateProfile({ [f.cle]: e.target.value })}
+                    placeholder={f.ph}
+                    maxLength={f.max}
+                    style={{ height: f.h }}
+                  />
+                  {'chips' in f && <IbfChips items={f.chips} onPick={v => updateProfile({ bond: v })} />}
+                </label>
+              ))}
 
-              <label className="block">
-                <span className="mb-1 flex items-center gap-1 text-xs font-bold uppercase tracking-widest text-gray-700"><Target className="h-3.5 w-3.5" /> {tr.desire} *</span>
-                <textarea
-                  value={profile.desire || ''}
-                  onChange={e => updateProfile({ desire: e.target.value })}
-                  placeholder={tr.desirePh}
-                  className="h-24 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={320}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.personality}</span>
-                <textarea
-                  value={profile.personality || ''}
-                  onChange={e => updateProfile({ personality: e.target.value })}
-                  placeholder={tr.personalityPh}
-                  className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={280}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.fearWeakness}</span>
-                <textarea
-                  value={profile.fear || ''}
-                  onChange={e => updateProfile({ fear: e.target.value })}
-                  placeholder={tr.fearPh}
-                  className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={280}
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.bondLien}</span>
-                <textarea
-                  value={profile.bond || ''}
-                  onChange={e => updateProfile({ bond: e.target.value })}
-                  placeholder={tr.bondPh}
-                  className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={280}
-                />
-                <IbfChips items={BACKGROUNDS[char.background]?.bonds} onPick={v => updateProfile({ bond: v })} />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.woundRegret}</span>
-                <textarea
-                  value={profile.wound || ''}
-                  onChange={e => updateProfile({ wound: e.target.value })}
-                  placeholder={tr.woundPh}
-                  className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
-                  maxLength={280}
-                />
-              </label>
-
-              <label className="block md:col-span-2">
-                <span className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-700">{tr.secret} <span className="font-normal normal-case text-gray-500">{tr.secretHint}</span></span>
-                <textarea
+              <label style={{ display: 'block', gridColumn: '1 / -1' }}>
+                <Etiqueter note={tr.secretHint}>{tr.secret}</Etiqueter>
+                <Champ
                   value={profile.secret || ''}
                   onChange={e => updateProfile({ secret: e.target.value })}
                   placeholder={tr.secretPh}
-                  className="h-20 w-full resize-none rounded border-2 border-gray-400 bg-parchment/60 p-3 font-serif text-sm focus:border-blood focus:outline-none"
                   maxLength={280}
+                  style={{ height: 78 }}
                 />
               </label>
             </div>
@@ -1132,281 +1117,267 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               onUpdateProfile={updateProfile}
               disabled={readOnly}
             />
-          </div>
+          </Panneau>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
-              <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-                {tr.backstory}
-              </label>
-              <textarea
+          <div style={{ display: 'grid', gap: 22, alignItems: 'start', gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}>
+            <Panneau accent={T.cyan}>
+              <Titre accent={T.cyan} taille={14}>{tr.backstory}</Titre>
+              <Champ
                 value={char.customBackground || ''}
                 onChange={e => setChar({ ...char, customBackground: e.target.value, backstory: e.target.value })}
                 placeholder={tr.backstoryPh}
-                className="w-full h-32 p-3 bg-parchment/60 border-2 border-gray-400 rounded font-serif text-sm focus:outline-none focus:border-blood resize-none"
                 maxLength={700}
+                style={{ height: 128 }}
               />
-              <div className="text-right text-xs text-gray-500">{(char.customBackground || '').length}/700</div>
-            </div>
+              <div style={{ textAlign: 'right', marginTop: 5, fontSize: 10.5, color: 'rgba(237,230,216,.45)' }}>
+                {(char.customBackground || '').length}/700
+              </div>
+            </Panneau>
 
-            <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
-              <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-                {tr.dmHooks}
-              </label>
-              <textarea
+            <Panneau accent={T.acid}>
+              <Titre accent={T.acid} taille={14}>{tr.dmHooks}</Titre>
+              <Champ
                 value={storyHookText}
                 onChange={e => updateHooks(e.target.value)}
                 placeholder={tr.dmHooksPh}
-                className="w-full h-32 p-3 bg-parchment/60 border-2 border-gray-400 rounded font-serif text-sm focus:outline-none focus:border-blood resize-none"
                 maxLength={500}
+                style={{ height: 128 }}
               />
-              <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">{tr.ideal}</span>
-                  <input value={profile.ideal || ''} onChange={e => updateProfile({ ideal: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder={tr.idealPh} />
+              <div style={{ display: 'grid', gap: 13, marginTop: 13, gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))' }}>
+                <label style={{ display: 'block' }}>
+                  <Etiqueter>{tr.ideal}</Etiqueter>
+                  <Ligne value={profile.ideal || ''} onChange={e => updateProfile({ ideal: e.target.value })} placeholder={tr.idealPh} />
                   <IbfChips items={BACKGROUNDS[char.background]?.ideals} onPick={v => updateProfile({ ideal: v })} />
                 </label>
-                <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-widest text-gray-700">{tr.flaw}</span>
-                  <input value={profile.flaw || ''} onChange={e => updateProfile({ flaw: e.target.value })} className="mt-1 w-full rounded border border-gray-400 bg-parchment/60 px-2 py-1 text-sm" placeholder={tr.flawPh} />
+                <label style={{ display: 'block' }}>
+                  <Etiqueter>{tr.flaw}</Etiqueter>
+                  <Ligne value={profile.flaw || ''} onChange={e => updateProfile({ flaw: e.target.value })} placeholder={tr.flawPh} />
                   <IbfChips items={BACKGROUNDS[char.background]?.flaws} onPick={v => updateProfile({ flaw: v })} />
                 </label>
               </div>
-            </div>
+            </Panneau>
           </div>
 
-          <div className="rounded-lg border-2 border-gray-400 bg-white p-4">
-            <label className="block text-sm font-bold text-gray-800 uppercase tracking-widest mb-2">
-              {tr.cinematicTone}
-            </label>
-            <select
+          <Panneau accent={T.purple}>
+            <Titre accent={T.purple} taille={14}>{tr.cinematicTone}</Titre>
+            <Liste
               value={profile.cinematicStyle || 'dark fantasy cinematic'}
               onChange={e => updateProfile({ cinematicStyle: e.target.value })}
-              className="w-full rounded border-2 border-gray-400 bg-parchment/60 px-3 py-2 font-bold"
             >
-              {CINEMATIC_STYLES.map(style => <option key={style} value={style}>{style}</option>)}
-            </select>
-          </div>
+              {CINEMATIC_STYLES.map(style => (
+                <option key={style} value={style} style={{ background: T.ink, color: T.paper }}>{style}</option>
+              ))}
+            </Liste>
+          </Panneau>
         </div>
       )}
 
-
-      {(readOnly || activeStep === 'build') && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Stats Column */}
-        <div className="bg-gray-200/50 p-4 rounded border-2 border-gray-400 relative">
-          <h2 className="text-center font-bold text-xl border-b-2 border-gray-800 mb-4">{tr.abilityScores}</h2>
-
-          {!readOnly && (
-            <>
-              {/* Difficulty toggle: Normal (27, standard 5e) vs Story (37, generous). */}
-              <div className="mb-3">
-                <div className="text-[10px] uppercase tracking-widest text-gray-500 mb-1 text-center">{tr.pointMode}</div>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { id: 'normal' as const, label: tr.modeNormal, hint: tr.modeNormalHint },
-                    { id: 'story' as const, label: tr.modeStory, hint: tr.modeStoryHint },
-                  ]).map(m => {
-                    const active = pointMode === m.id;
-                    return (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => setPointMode(m.id)}
-                        className={`rounded border-2 p-2 text-center transition-colors ${active
-                          ? 'border-blood bg-blood/10'
-                          : 'border-gray-300 bg-white hover:border-gray-400'}`}
-                        title={m.hint}
-                      >
-                        <div className={`text-sm font-bold ${active ? 'text-blood' : 'text-gray-700'}`}>{m.label}</div>
-                        <div className="text-[10px] text-gray-500">{m.hint}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="mb-4 bg-gray-800 text-parchment p-2 rounded text-center">
-                <div className="text-xs uppercase tracking-widest text-gray-400">{tr.pointsRemaining}</div>
-                <div className={`text-2xl font-bold ${pointsRemaining === 0 ? 'text-green-400' : pointsRemaining < 0 ? 'text-red-400' : 'text-gold'}`}>
-                  {pointsRemaining} / {maxPoints}
-                </div>
-              </div>
-            </>
-          )}
-
-          <div className="space-y-4">
-            {(Object.keys(char.stats) as Ability[]).map(stat => {
-              const val = char.stats[stat];
-              const racialBonus = getRacialBonus(char.race, stat);
-              const effectiveVal = val + racialBonus;
-              const mod = getMod(effectiveVal);
-              const increaseCost = pointBuyCost(val + 1) - pointBuyCost(val);
-              return (
-                <div key={stat} className="flex items-center justify-between bg-white p-2 rounded shadow border border-gray-300">
-                  <div className="text-center w-10">
-                    <div className="font-bold text-lg">{stat}</div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {!readOnly && (
-                      <button
-                        onClick={() => handleStatChange(stat, -1)}
-                        disabled={val <= 8}
-                        className="p-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-30"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                    )}
-                    <div className="w-14 text-center">
-                      <div className="text-2xl font-black leading-6">{effectiveVal}</div>
-                      {racialBonus !== 0 && <div className="text-[10px] font-bold text-green-700">{tr.base} {val} +{racialBonus}</div>}
-                    </div>
-                    {!readOnly && (
-                      <button
-                        onClick={() => handleStatChange(stat, 1)}
-                        disabled={val >= 15 || pointsRemaining < increaseCost}
-                        className="p-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-30"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="w-10 h-10 rounded-full border-2 border-black flex items-center justify-center bg-gray-100 font-bold text-lg">
-                    {mod > 0 ? '+' : ''}{mod}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Combat & Inventory */}
-        <div className="col-span-2 space-y-6">
-          {/* Vitals */}
-          <div className="flex gap-4 justify-around bg-gray-800 text-parchment p-4 rounded-lg shadow-inner">
-            <div className="flex flex-col items-center group relative">
-              <Shield className="w-8 h-8 text-gray-400" />
-              <span className="text-3xl font-bold mt-1">{char.ac}</span>
-              <span className="text-xs uppercase tracking-widest text-gray-500">{tr.armorClass}</span>
-              <span className="absolute -bottom-8 opacity-0 group-hover:opacity-100 text-xs bg-black p-1 rounded transition-opacity whitespace-nowrap">
-                {tr.acTooltip}
-              </span>
-            </div>
-            <div className="flex flex-col items-center">
-              <Heart className="w-8 h-8 text-blood" />
-              <span className="text-3xl font-bold mt-1">{char.hp.current} <span className="text-lg text-gray-500">/ {getEffectiveMaxHP(char)}</span></span>
-              <span className="text-xs uppercase tracking-widest text-gray-500">{tr.hitPoints}</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div className="font-fantasy font-black text-2xl border-2 border-gold rounded-full w-10 h-10 flex items-center justify-center text-gold">
-                d{CLASS_DATA[char.class]?.hitDie || 8}
-              </div>
-              <span className="text-xs uppercase tracking-widest text-gray-500 mt-2">{tr.hitDie}</span>
-            </div>
-          </div>
-
-          {/* Inventory */}
-          <div className="bg-white p-4 rounded border-2 border-gray-400 min-h-[300px]">
-            <div className="flex items-center justify-between border-b-2 border-black mb-4 pb-2">
-              <div className="flex items-center gap-2">
-                <Backpack className="w-6 h-6" />
-                <h3 className="font-bold text-xl">{tr.startingEquipment}</h3>
-              </div>
-              {!readOnly && (
-                <button
-                  onClick={() => handleClassChange(char.class)}
-                  className="text-xs flex items-center gap-1 text-gray-500 hover:text-black"
-                >
-                  <RefreshCw className="w-3 h-3" /> {tr.resetKit}
-                </button>
-              )}
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm font-mono">
-                <thead>
-                  <tr className="text-left text-gray-500 border-b">
-                    <th className="pb-2 pl-2">{tr.item}</th>
-                    <th className="pb-2">{tr.qty}</th>
-                    <th className="pb-2">{tr.wgt}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(char.inventory || []).map((item, idx) => (
-                    // Stable key from item identity, not the array index: the inventory
-                    // is mutated (buy/sell/drop) and index keys mis-reconcile on removal.
-                    <tr key={(item as any).id || item.name || idx} className="border-b border-gray-200 last:border-0 hover:bg-gray-50">
-                      <td className="py-2 pl-2 font-bold">{item.name}</td>
-                      <td className="py-2">x{item.quantity}</td>
-                      <td className="py-2">{item.weight} lb</td>
-                    </tr>
-                  ))}
-                  {(char.inventory || []).length === 0 && (
-                    <tr>
-                      <td colSpan={3} className="py-4 text-center text-gray-400 italic">{tr.noEquipment}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>}
-
+      {/* ─── Étape BUILD ────────────────────────────────────────────────────── */}
       {(readOnly || activeStep === 'build') && (
-        <div className="mt-6 bg-gray-200/50 p-4 rounded border-2 border-gray-400">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b-2 border-gray-800 pb-2">
-            <h2 className="text-xl font-bold">{tr.skills}</h2>
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              {classSkillData && !readOnly && (
-                <span className={`font-bold ${classSkillPicks.length === classSkillData.choices ? 'text-green-700' : 'text-blood'}`}>
-                  {classSkillPicks.length}/{classSkillData.choices} {tr.atChoice} ({dispClass(char.class, language)})
-                </span>
+        <div style={{ display: 'grid', gap: 22 }}>
+          <div style={{ display: 'grid', gap: 22, gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))' }}>
+
+            {/* Caractéristiques */}
+            <Panneau accent={T.acid}>
+              <Titre accent={T.acid}>{tr.abilityScores}</Titre>
+
+              {!readOnly && (
+                <>
+                  {/* Difficulté : Normal (27, standard 5e) ou Histoire (37, généreux). */}
+                  <Etiqueter>{tr.pointMode}</Etiqueter>
+                  <Grille min={128} gap={9} style={{ marginBottom: 14 }}>
+                    {([
+                      { id: 'normal' as const, label: tr.modeNormal, hint: tr.modeNormalHint },
+                      { id: 'story' as const, label: tr.modeStory, hint: tr.modeStoryHint },
+                    ]).map(m => (
+                      <CarteTexte
+                        key={m.id}
+                        nom={m.label}
+                        desc={m.hint}
+                        accent={T.acid}
+                        choisi={pointMode === m.id}
+                        onPick={() => setPointMode(m.id)}
+                      />
+                    ))}
+                  </Grille>
+
+                  <div style={{ marginBottom: 16, textAlign: 'center' }}>
+                    <Compteur
+                      valeur={pointsRemaining}
+                      libelle={`${tr.pointsRemaining} / ${maxPoints}`}
+                      depasse={pointsRemaining < 0}
+                    />
+                  </div>
+                </>
               )}
-              <span className="flex items-center gap-1 rounded bg-gray-800 px-2 py-1 text-parchment">
-                <Eye className="h-4 w-4" /> {tr.passivePerception}&nbsp;: <b className="text-gold">{passive}</b>
-              </span>
+
+              <div style={{ display: 'grid', gap: 9 }}>
+                {(Object.keys(char.stats) as Ability[]).map(stat => {
+                  const val = char.stats[stat];
+                  const racialBonus = getRacialBonus(char.race, stat);
+                  const effectiveVal = val + racialBonus;
+                  const mod = getMod(effectiveVal);
+                  const increaseCost = pointBuyCost(val + 1) - pointBuyCost(val);
+                  return (
+                    <div key={stat} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 9,
+                      background: T.ink, border: `3px solid rgba(237,230,216,.16)`, padding: '9px 11px',
+                    }}>
+                      <span style={{ fontFamily: DISP, fontSize: 13, width: 38, color: T.cyan }}>{dispAbbr(stat, language)}</span>
+
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {!readOnly && (
+                          <button
+                            type="button" className="nk-tick" onClick={() => handleStatChange(stat, -1)}
+                            disabled={val <= 8} aria-label={`${dispAbbr(stat, language)} −1`}
+                            style={{ opacity: val <= 8 ? .25 : 1, display: 'grid', placeItems: 'center', width: 26, height: 26, border: `2px solid ${T.paper}` }}
+                          ><Minus className="w-3.5 h-3.5" /></button>
+                        )}
+                        <span style={{ width: 52, textAlign: 'center' }}>
+                          <span style={{ fontFamily: DISP, fontSize: 20, display: 'block', lineHeight: 1.1 }}>{effectiveVal}</span>
+                          {racialBonus !== 0 && (
+                            <span style={{ fontSize: 9.5, fontWeight: 700, color: T.emerald }}>{tr.base} {val} +{racialBonus}</span>
+                          )}
+                        </span>
+                        {!readOnly && (
+                          <button
+                            type="button" className="nk-tick" onClick={() => handleStatChange(stat, 1)}
+                            disabled={val >= 15 || pointsRemaining < increaseCost} aria-label={`${dispAbbr(stat, language)} +1`}
+                            style={{ opacity: (val >= 15 || pointsRemaining < increaseCost) ? .25 : 1, display: 'grid', placeItems: 'center', width: 26, height: 26, border: `2px solid ${T.paper}` }}
+                          ><Plus className="w-3.5 h-3.5" /></button>
+                        )}
+                      </span>
+
+                      <span style={{
+                        display: 'grid', placeItems: 'center', width: 38, height: 38, flex: 'none',
+                        background: T.acid, color: onTint(T.acid), fontFamily: DISP, fontSize: 13,
+                      }}>{mod > 0 ? '+' : ''}{mod}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Panneau>
+
+            {/* Constantes vitales + inventaire */}
+            <div style={{ display: 'grid', gap: 22, alignContent: 'start' }}>
+              <Panneau accent={T.pink}>
+                <Titre accent={T.pink}>{tr.vitals}</Titre>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 11 }}>
+                  <Cartouche titre={tr.armorClass} valeur={char.ac} note={tr.acTooltip} accent={T.cyan} />
+                  <Cartouche titre={tr.hitPoints} valeur={`${char.hp.current}/${getEffectiveMaxHP(char)}`} accent={T.pink} />
+                  <Cartouche titre={tr.hitDie} valeur={`d${CLASS_DATA[char.class]?.hitDie || 8}`} accent={T.acid} />
+                </div>
+              </Panneau>
+
+              <Panneau accent={T.cyan}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                  <Titre accent={T.cyan}>{tr.startingEquipment}</Titre>
+                  {!readOnly && (
+                    <Pastille onClick={() => handleClassChange(char.class)}>
+                      <RefreshCw className="inline w-3 h-3" /> {tr.resetKit}
+                    </Pastille>
+                  )}
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', color: 'rgba(237,230,216,.5)' }}>
+                        <th style={{ padding: '0 0 7px', fontFamily: DISP, fontSize: 10, fontWeight: 400 }}>{tr.item}</th>
+                        <th style={{ padding: '0 0 7px', fontFamily: DISP, fontSize: 10, fontWeight: 400 }}>{tr.qty}</th>
+                        <th style={{ padding: '0 0 7px', fontFamily: DISP, fontSize: 10, fontWeight: 400 }}>{tr.wgt}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(char.inventory || []).map((item, idx) => (
+                        // Clé tirée de l'identité de l'objet, pas de l'index : l'inventaire
+                        // est muté (achat/vente/perte) et un index se réconcilie mal.
+                        <tr key={(item as { id?: string }).id || item.name || idx} style={{ borderTop: `1px solid rgba(237,230,216,.14)` }}>
+                          <td style={{ padding: '7px 0', fontWeight: 700 }}>{itemName(item, language)}</td>
+                          <td style={{ padding: '7px 0', opacity: .7 }}>×{item.quantity}</td>
+                          <td style={{ padding: '7px 0', opacity: .7 }}>{item.weight} lb</td>
+                        </tr>
+                      ))}
+                      {(char.inventory || []).length === 0 && (
+                        <tr><td colSpan={3} style={{ padding: '18px 0', textAlign: 'center', color: 'rgba(237,230,216,.4)' }}>{tr.noEquipment}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </Panneau>
             </div>
           </div>
-          {expertiseMax > 0 && (
-            <p className="mb-2 text-xs text-gray-700">{tr.expertiseHint((char.expertise || []).length, expertiseMax)}</p>
-          )}
-          <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-            {ALL_SKILLS.map(skill => {
-              const abil = SKILL_ABILITIES[skill];
-              const prof = isProficientIn(skill);
-              const expert = hasExpertiseIn(skill);
-              const inClassList = !!classSkillData?.list.includes(skill);
-              const isPick = classSkillPicks.includes(skill);
-              const grantedFree = prof && !isPick; // from background/race — locked
-              const canToggle = !readOnly && inClassList && !grantedFree && (isPick || classSkillPicks.length < (classSkillData?.choices || 0));
-              const mod = getCheckModifier({ effectiveStats: effStats, level: char.level, skill, proficiencies: char.proficiencies || [], expertise: char.expertise || [] }).modifier;
-              return (
-                <div key={skill} className={`flex items-center gap-2 rounded border px-2 py-1.5 text-sm ${prof ? 'border-blood/50 bg-blood/5' : 'border-gray-300 bg-white'}`}>
-                  <button
-                    type="button"
-                    disabled={!canToggle}
-                    onClick={() => toggleClassSkill(skill)}
-                    title={grantedFree ? tr.grantedByBgRace : inClassList ? tr.classSkillChoice : tr.outOfClassList}
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${prof ? 'border-blood bg-blood text-white' : canToggle ? 'border-gray-500 hover:border-blood' : 'border-gray-300 opacity-40'}`}
-                  >
-                    {prof && <CheckCircle2 className="h-3.5 w-3.5" />}
-                  </button>
-                  <span className="flex-1 truncate">
-                    {language === 'fr' ? (SKILL_FR[skill] || skill) : skill} <span className="text-[10px] text-gray-500">({dispAbbr(abil, language)})</span>
-                  </span>
-                  {expertiseMax > 0 && prof && (
-                    <button type="button" onClick={() => toggleExpertise(skill)} title={tr.expertiseTitle}
-                      className={`text-base leading-none ${expert ? 'text-gold' : 'text-gray-300 hover:text-gold'}`}>★</button>
-                  )}
-                  <span className="w-8 text-right font-mono font-bold">{mod >= 0 ? '+' : ''}{mod}</span>
-                </div>
-              );
-            })}
-          </div>
+
+          {/* Compétences */}
+          <Panneau accent={T.emerald}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <Titre accent={T.emerald}>{tr.skills}</Titre>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {classSkillData && !readOnly && (
+                  <Compteur
+                    valeur={classSkillPicks.length}
+                    sur={classSkillData.choices}
+                    libelle={`${tr.atChoice} (${dispClass(char.class, language)})`}
+                  />
+                )}
+                <Etiquette couleur={T.cyan}>{tr.passivePerception} : {passive}</Etiquette>
+              </div>
+            </div>
+            {expertiseMax > 0 && (
+              <p style={{ margin: '0 0 12px', fontSize: 12, color: 'rgba(237,230,216,.62)' }}>
+                {tr.expertiseHint((char.expertise || []).length, expertiseMax)}
+              </p>
+            )}
+            <Grille min={218} gap={8}>
+              {ALL_SKILLS.map(skill => {
+                const abil = SKILL_ABILITIES[skill];
+                const prof = isProficientIn(skill);
+                const expert = hasExpertiseIn(skill);
+                const inClassList = !!classSkillData?.list.includes(skill);
+                const isPick = classSkillPicks.includes(skill);
+                const grantedFree = prof && !isPick; // background/race — verrouillé
+                const canToggle = !readOnly && inClassList && !grantedFree && (isPick || classSkillPicks.length < (classSkillData?.choices || 0));
+                const mod = getCheckModifier({ effectiveStats: effStats, level: char.level, skill, proficiencies: char.proficiencies || [], expertise: char.expertise || [] }).modifier;
+                return (
+                  <div key={skill} style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+                    background: prof ? 'rgba(4,183,125,.14)' : T.ink,
+                    border: `2px solid ${prof ? T.emerald : 'rgba(237,230,216,.16)'}`,
+                  }}>
+                    <button
+                      type="button" className="nk-tick" disabled={!canToggle} onClick={() => toggleClassSkill(skill)}
+                      title={grantedFree ? tr.grantedByBgRace : inClassList ? tr.classSkillChoice : tr.outOfClassList}
+                      aria-pressed={prof}
+                      style={{
+                        display: 'grid', placeItems: 'center', width: 19, height: 19, flex: 'none',
+                        background: prof ? T.emerald : 'transparent',
+                        color: prof ? onTint(T.emerald) : 'inherit',
+                        border: `2px solid ${prof ? T.emerald : canToggle ? 'rgba(237,230,216,.5)' : 'rgba(237,230,216,.2)'}`,
+                        opacity: !canToggle && !prof ? .45 : 1,
+                      }}
+                    >{prof && <CheckCircle2 className="h-3 w-3" />}</button>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {language === 'fr' ? (SKILL_FR[skill] || skill) : skill}{' '}
+                      <span style={{ fontSize: 10, opacity: .5 }}>({dispAbbr(abil, language)})</span>
+                    </span>
+                    {expertiseMax > 0 && prof && (
+                      <button
+                        type="button" className="nk-tick" onClick={() => toggleExpertise(skill)} title={tr.expertiseTitle}
+                        aria-pressed={expert}
+                        style={{ fontSize: 15, lineHeight: 1, color: expert ? T.acid : 'rgba(237,230,216,.28)' }}
+                      >★</button>
+                    )}
+                    <span style={{ width: 28, textAlign: 'right', fontFamily: DISP, fontSize: 11 }}>
+                      {mod >= 0 ? '+' : ''}{mod}
+                    </span>
+                  </div>
+                );
+              })}
+            </Grille>
+          </Panneau>
         </div>
       )}
 
+      {/* ─── Étape ÉQUIPEMENT ───────────────────────────────────────────────── */}
       {!readOnly && activeStep === 'gear' && (() => {
         const gold = char.gold || 0;
         const owned = char.inventory.filter(i => !i.hidden);
@@ -1414,406 +1385,436 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
         const ownedSac = owned.filter(i => i.type !== 'weapon' && i.type !== 'armor');
         const shopWeapons = Object.values(WEAPON_TABLE).filter(w =>
           shopTab === 'simple' ? w.category.startsWith('simple') : shopTab === 'martial' ? w.category.startsWith('martial') : false);
+
+        /** Ligne de boutique — arme ou armure, même gabarit. */
+        const LigneAchat = ({ icone, nom, detail, prix, abordable, onAchat }: {
+          icone: React.ReactNode; nom: string; detail: string; prix: number; abordable: boolean; onAchat: () => void;
+        }) => (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 9, padding: '9px 11px',
+            background: T.ink, border: `2px solid rgba(237,230,216,.16)`,
+          }}>
+            <span style={{ flex: 'none', color: 'rgba(237,230,216,.5)' }}>{icone}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', fontFamily: DISP, fontSize: 11 }}>{nom}</span>
+              <span style={{ display: 'block', fontSize: 10.5, lineHeight: 1.35, opacity: .62 }}>{detail}</span>
+            </span>
+            <span style={{ fontFamily: DISP, fontSize: 10, color: T.acid, whiteSpace: 'nowrap' }}>{prix} {tr.gold}</span>
+            <button
+              type="button" className="nk-chip" disabled={!abordable} onClick={onAchat}
+              style={{
+                background: abordable ? T.acid : 'transparent',
+                color: abordable ? onTint(T.acid) : 'rgba(237,230,216,.35)',
+                borderColor: abordable ? T.ink : 'rgba(237,230,216,.2)',
+                cursor: abordable ? 'pointer' : 'not-allowed',
+              }}
+            >{tr.buy}</button>
+          </div>
+        );
+
         return (
-          <div className="space-y-5">
-            {/* Header + bourse */}
-            <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b-2 border-gray-800 pb-2">
-                <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-blood" />
-                  <h2 className="text-xl font-bold">{tr.gearTitle}</h2>
-                </div>
-                <span className="flex items-center gap-1.5 rounded-full border border-gold bg-gold/20 px-3 py-1 font-bold text-yellow-800">
-                  <Coins className="h-4 w-4" /> {gold} {tr.gold}
-                </span>
+          <div style={{ display: 'grid', gap: 22 }}>
+            <Panneau accent={T.acid}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <Titre accent={T.acid}>{tr.gearTitle}</Titre>
+                <Compteur valeur={gold} libelle={tr.gold} />
               </div>
-              <p className="text-sm text-gray-700">
+              <p style={{ margin: 0, fontSize: 12.5, lineHeight: 1.55, color: 'rgba(237,230,216,.7)' }}>
                 {tr.gearIntro1} <b>{tr.gearIntroPack}</b> {tr.gearIntro2} <b>{tr.gearIntroFree}</b>{tr.gearIntro3} <b>{tr.gearIntroDefaultKit}</b> {tr.gearIntro4} <b>{tr.gearIntroBuy}</b>, <b>{tr.gearIntroSell}</b> {language === 'fr' ? 'et' : 'and'} <b>{tr.gearIntroEquip}</b> {tr.gearIntro5}
               </p>
-            </div>
+            </Panneau>
 
-            {/* Ton équipement */}
-            <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-              <h3 className="mb-3 flex items-center gap-2 text-lg font-bold"><Backpack className="h-5 w-5" /> {tr.yourEquipment}</h3>
-              {ownedGear.length === 0 && <p className="text-sm italic text-gray-500">{tr.nothingEquippable}</p>}
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <Panneau accent={T.emerald}>
+              <Titre accent={T.emerald}>{tr.yourEquipment}</Titre>
+              {ownedGear.length === 0 && (
+                <p style={{ margin: 0, fontSize: 12.5, fontStyle: 'italic', color: 'rgba(237,230,216,.5)' }}>{tr.nothingEquippable}</p>
+              )}
+              <Grille min={266} gap={9}>
                 {ownedGear.map(item => (
-                  <div key={item.id} className={`flex items-center gap-2 rounded border p-2 ${item.equipped ? 'border-green-600 bg-green-50' : 'border-gray-300 bg-gray-50'}`}>
-                    {item.type === 'weapon' ? <Swords className="h-4 w-4 shrink-0 text-gray-600" /> : <Shield className="h-4 w-4 shrink-0 text-gray-600" />}
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-bold">{itemName(item, language)}</div>
-                      <div className="text-[11px] text-gray-600">{item.type === 'weapon' ? `${item.damageDice || ''} ${dmgLabel(item.damageType, language)}`.trim() : acLabel(item, language)}</div>
-                    </div>
-                    <button type="button" onClick={() => toggleEquip(item)}
-                      className={`rounded px-2 py-1 text-xs font-bold ${item.equipped ? 'bg-green-600 text-white' : 'bg-gray-700 text-white hover:bg-gray-800'}`}>
+                  <div key={item.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 9, padding: '9px 11px',
+                    background: T.ink,
+                    border: `2px solid ${item.equipped ? T.emerald : 'rgba(237,230,216,.16)'}`,
+                  }}>
+                    <span style={{ flex: 'none', color: 'rgba(237,230,216,.5)' }}>
+                      {item.type === 'weapon' ? <Swords className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontFamily: DISP, fontSize: 11, lineHeight: 1.3 }}>
+                        {itemName(item, language)}
+                      </span>
+                      <span style={{ display: 'block', fontSize: 10.5, opacity: .62 }}>
+                        {item.type === 'weapon' ? `${item.damageDice || ''} ${dmgLabel(item.damageType, language)}`.trim() : acLabel(item, language)}
+                      </span>
+                    </span>
+                    <Pastille couleur={T.emerald} actif={item.equipped} onClick={() => toggleEquip(item)}>
                       {item.equipped ? tr.equipped : tr.equip}
-                    </button>
-                    <button type="button" onClick={() => sellItem(item)} title={tr.resellTitle} className="rounded p-1 text-gray-400 hover:bg-blood/10 hover:text-blood">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    </Pastille>
+                    <button
+                      type="button" className="nk-tick" onClick={() => sellItem(item)} title={tr.resellTitle}
+                      aria-label={tr.resellTitle}
+                      style={{ color: 'rgba(237,230,216,.4)', display: 'grid', placeItems: 'center' }}
+                    ><Trash2 className="h-4 w-4" /></button>
                   </div>
                 ))}
-              </div>
+              </Grille>
               {ownedSac.length > 0 && (
-                <div className="mt-3 border-t border-gray-200 pt-2">
-                  <div className="mb-1 text-[11px] uppercase tracking-wide text-gray-500">{tr.packIncluded}</div>
-                  <div className="flex flex-wrap gap-1.5">
+                <div style={{ marginTop: 15, borderTop: `2px solid rgba(237,230,216,.14)`, paddingTop: 12 }}>
+                  <Etiqueter>{tr.packIncluded}</Etiqueter>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {ownedSac.map(item => (
-                      <span key={item.id} className="rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700">
-                        {itemName(item, language)}{item.quantity > 1 ? ` ×${item.quantity}` : ''}
-                      </span>
+                      <Etiquette key={item.id}>{itemName(item, language)}{item.quantity > 1 ? ` ×${item.quantity}` : ''}</Etiquette>
                     ))}
                   </div>
                 </div>
               )}
-            </div>
+            </Panneau>
 
-            {/* Boutique */}
-            <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-              <div className="mb-3 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
-                <Coins className="h-5 w-5 text-blood" />
-                <h3 className="text-lg font-bold">{tr.shop}</h3>
-              </div>
-              <div className="mb-3 flex flex-wrap gap-2">
+            <Panneau accent={T.magenta}>
+              <Titre accent={T.magenta}>{tr.shop}</Titre>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
                 {([['simple', tr.simpleWeapons], ['martial', tr.martialWeapons], ['armor', tr.armors]] as const).map(([id, label]) => (
-                  <button key={id} type="button" onClick={() => setShopTab(id)}
-                    className={`rounded border-2 px-3 py-1.5 text-sm font-bold ${shopTab === id ? 'border-blood bg-blood text-white' : 'border-gray-300 bg-white text-gray-700 hover:border-blood'}`}>
-                    {label}
-                  </button>
+                  <Pastille key={id} couleur={T.magenta} actif={shopTab === id} onClick={() => setShopTab(id)}>{label}</Pastille>
                 ))}
               </div>
 
-              {shopTab !== 'armor' ? (
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                  {shopWeapons.map(w => {
+              <Grille min={296} gap={9}>
+                {shopTab !== 'armor'
+                  ? shopWeapons.map(w => {
                     const cost = parsePriceToGp(w.price);
-                    const afford = gold >= cost;
                     return (
-                      <div key={w.name} className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2">
-                        <Swords className="h-4 w-4 shrink-0 text-gray-500" />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold">{language === 'fr' ? w.nameFr : w.name}</div>
-                          <div className="text-[11px] text-gray-600">
-                            {w.damage} {dmgLabel(w.damageType, language)}{w.versatile ? ` (${w.versatile} ${tr.twoHanded})` : ''}{w.range ? ` · ${w.range} m` : ''}
-                            {w.properties.length ? ` · ${w.properties.map(p => language === 'fr' ? (WEAPON_PROP_FR[p] || p) : p).join(', ')}` : ''}
-                          </div>
-                        </div>
-                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{cost} {tr.gold}</span>
-                        <button type="button" disabled={!afford} onClick={() => buyWeapon(w)}
-                          className={`rounded px-2 py-1 text-xs font-bold ${afford ? 'bg-gold text-gray-900 hover:brightness-95' : 'cursor-not-allowed bg-gray-200 text-gray-400'}`}>
-                          {tr.buy}
-                        </button>
-                      </div>
+                      <LigneAchat
+                        key={w.name}
+                        icone={<Swords className="h-4 w-4" />}
+                        nom={language === 'fr' ? w.nameFr : w.name}
+                        detail={`${w.damage} ${dmgLabel(w.damageType, language)}${w.versatile ? ` (${w.versatile} ${tr.twoHanded})` : ''}${w.range ? ` · ${w.range} m` : ''}${w.properties.length ? ` · ${w.properties.map(p => language === 'fr' ? (WEAPON_PROP_FR[p] || p) : p).join(', ')}` : ''}`}
+                        prix={cost}
+                        abordable={gold >= cost}
+                        onAchat={() => buyWeapon(w)}
+                      />
                     );
-                  })}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                  {ARMOR_CATALOG.map(a => {
-                    const afford = gold >= a.price;
-                    return (
-                      <div key={a.key} className="flex items-center gap-2 rounded border border-gray-300 bg-gray-50 p-2">
-                        <Shield className="h-4 w-4 shrink-0 text-gray-500" />
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-bold">{language === 'fr' ? a.nameFr : a.name}</div>
-                          <div className="text-[11px] text-gray-600">
-                            {a.armorType === 'shield' ? `+${a.acBonus} ${language === 'fr' ? 'CA' : 'AC'}` : `${language === 'fr' ? 'CA' : 'AC'} ${a.baseAC}${a.maxDexBonus !== undefined ? ` + DEX (max ${a.maxDexBonus})` : a.armorType === 'light' ? ' + DEX' : ''}`}
-                            {' · '}{armorTypeLabel(a.armorType, language)}{a.stealthDisadvantage ? ` · ${tr.stealthDisadv}` : ''}
-                          </div>
-                        </div>
-                        <span className="whitespace-nowrap font-mono text-xs text-yellow-800">{a.price} {tr.gold}</span>
-                        <button type="button" disabled={!afford} onClick={() => buyArmor(a)}
-                          className={`rounded px-2 py-1 text-xs font-bold ${afford ? 'bg-gold text-gray-900 hover:brightness-95' : 'cursor-not-allowed bg-gray-200 text-gray-400'}`}>
-                          {tr.buy}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                  })
+                  : ARMOR_CATALOG.map(a => (
+                    <LigneAchat
+                      key={a.key}
+                      icone={<Shield className="h-4 w-4" />}
+                      nom={language === 'fr' ? a.nameFr : a.name}
+                      detail={`${a.armorType === 'shield' ? `+${a.acBonus} ${language === 'fr' ? 'CA' : 'AC'}` : `${language === 'fr' ? 'CA' : 'AC'} ${a.baseAC}${a.maxDexBonus !== undefined ? ` + DEX (max ${a.maxDexBonus})` : a.armorType === 'light' ? ' + DEX' : ''}`} · ${armorTypeLabel(a.armorType, language)}${a.stealthDisadvantage ? ` · ${tr.stealthDisadv}` : ''}`}
+                      prix={a.price}
+                      abordable={gold >= a.price}
+                      onAchat={() => buyArmor(a)}
+                    />
+                  ))}
+              </Grille>
+            </Panneau>
           </div>
         );
       })()}
 
+      {/* ─── Étape SORTS ────────────────────────────────────────────────────── */}
       {!readOnly && activeStep === 'spells' && (
-        <div className="space-y-5">
-          <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-            <div className="mb-4 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
-              <WandSparkles className="h-5 w-5 text-blood" />
-              <div>
-                <h2 className="text-2xl font-black uppercase tracking-wide">{tr.casterSetup}</h2>
-                <p className="font-sans text-xs text-gray-600">
-                  {casterConfig
-                    ? tr.casterIntro(casterConfig.cantrips, casterConfig.spells, casterConfig.mode === 'prepared' ? tr.prepared : tr.known)
-                    : tr.noCasterSetup}
-                </p>
-              </div>
-            </div>
+        <div style={{ display: 'grid', gap: 22 }}>
+          <Panneau accent={T.purple}>
+            <Titre accent={T.purple} note={casterConfig
+              ? tr.casterIntro(casterConfig.cantrips, casterConfig.spells, casterConfig.mode === 'prepared' ? tr.prepared : tr.known)
+              : tr.noCasterSetup}>
+              {tr.casterSetup}
+            </Titre>
 
             {!casterConfig ? (
-              <div className="rounded border border-gray-300 bg-parchment/60 p-4 font-serif text-sm text-gray-700">
+              <p style={{ margin: 0, padding: '15px 16px', background: T.ink, border: `3px solid rgba(237,230,216,.16)`, fontSize: 13, lineHeight: 1.55 }}>
                 {tr.noCasterClass(dispClass(char.class, language))}
-              </div>
+              </p>
             ) : (
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.castingAbility}</div>
-                    <div className="mt-1 text-2xl font-black">{dispAbbr(casterConfig.ability, language)}</div>
-                  </div>
-                  <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.focus}</div>
-                    <input
+              <div style={{ display: 'grid', gap: 20 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 11 }}>
+                  <Cartouche titre={tr.castingAbility} valeur={dispAbbr(casterConfig.ability, language)} accent={T.purple} />
+                  <div style={{ flex: '1 1 180px', background: T.ink, border: `3px solid ${T.cyan}`, padding: '13px 14px' }}>
+                    <Etiqueter>{tr.focus}</Etiqueter>
+                    <Ligne
                       value={char.spellcastingFocus || casterConfig.focus}
                       onChange={e => setChar(prev => ({ ...prev, spellcastingFocus: e.target.value }))}
-                      className="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-1 text-sm font-bold"
+                      style={{ padding: '8px 10px', fontSize: 12.5 }}
                     />
                   </div>
-                  <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                    <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.spellSlots}</div>
-                    <div className="mt-1 text-sm font-bold">{char.spellSlots ? (Object.entries(char.spellSlots) as [string, { current: number; max: number }][]).map(([slot, pool]) => `${language === 'fr' ? 'N' : 'L'}${slot}: ${pool.current}/${pool.max}`).join(', ') : tr.cantripsOnly}</div>
-                  </div>
+                  <Cartouche
+                    titre={tr.spellSlots}
+                    valeur={char.spellSlots
+                      ? (Object.entries(char.spellSlots) as [string, { current: number; max: number }][])
+                        .map(([slot, pool]) => `${language === 'fr' ? 'N' : 'L'}${slot}: ${pool.current}/${pool.max}`).join(' · ')
+                      : tr.cantripsOnly}
+                    accent={T.acid}
+                  />
                 </div>
 
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-lg font-black uppercase tracking-wide">{tr.cantrips}</h3>
-                    <span className={(char.cantrips || []).length >= Math.min(casterConfig.cantrips, cantripOptions.length) ? 'text-sm font-bold text-green-700' : 'text-sm font-bold text-blood'}>
-                      {(char.cantrips || []).length}/{Math.min(casterConfig.cantrips, cantripOptions.length)}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    {cantripOptions.map(spell => {
-                      const selected = (char.cantrips || []).includes(spell.name);
-                      return (
-                        <button
+                {([
+                  { titre: tr.cantrips, liste: 'cantrips' as const, options: cantripOptions, choisis: char.cantrips || [], max: Math.min(casterConfig.cantrips, cantripOptions.length), detail: false },
+                  { titre: tr.level1Spells, liste: 'level1' as const, options: levelOneSpellOptions, choisis: selectedLevelOneSpells, max: Math.min(casterConfig.spells, levelOneSpellOptions.length), detail: true },
+                ]).map(bloc => (
+                  <div key={bloc.liste}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 11, flexWrap: 'wrap' }}>
+                      <Titre accent={T.cyan} taille={13}>{bloc.titre}</Titre>
+                      <Compteur valeur={bloc.choisis.length} sur={bloc.max} />
+                    </div>
+                    <Grille min={252} gap={9}>
+                      {bloc.options.map(spell => (
+                        <CarteTexte
                           key={spell.id}
-                          type="button"
-                          onClick={() => toggleSpellChoice('cantrips', spell.name)}
-                          className={`rounded border-2 p-3 text-left transition-colors ${selected ? 'border-blood bg-blood/10' : 'border-gray-300 bg-parchment/60 hover:border-gray-600'}`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-black">{spell.name}</span>
-                            {selected && <CheckCircle2 className="h-4 w-4 text-blood" />}
-                          </div>
-                          <p className="mt-1 font-serif text-xs text-gray-700">{spell.effectSummary}</p>
-                        </button>
-                      );
-                    })}
+                          nom={spell.name}
+                          desc={spell.effectSummary}
+                          accent={T.cyan}
+                          choisi={bloc.choisis.includes(spell.name)}
+                          onPick={() => toggleSpellChoice(bloc.liste, spell.name)}
+                          enfants={bloc.detail ? (
+                            <span style={{ display: 'block', marginTop: 5, fontFamily: DISP, fontSize: 9, opacity: .7 }}>
+                              {spell.castingTime} / {spell.range}{spell.concentration ? ` / ${tr.concentration}` : ''}
+                            </span>
+                          ) : undefined}
+                        />
+                      ))}
+                    </Grille>
                   </div>
-                </div>
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-lg font-black uppercase tracking-wide">{tr.level1Spells}</h3>
-                    <span className={selectedLevelOneSpells.length >= Math.min(casterConfig.spells, levelOneSpellOptions.length) ? 'text-sm font-bold text-green-700' : 'text-sm font-bold text-blood'}>
-                      {selectedLevelOneSpells.length}/{Math.min(casterConfig.spells, levelOneSpellOptions.length)}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    {levelOneSpellOptions.map(spell => {
-                      const selected = selectedLevelOneSpells.includes(spell.name);
-                      return (
-                        <button
-                          key={spell.id}
-                          type="button"
-                          onClick={() => toggleSpellChoice('level1', spell.name)}
-                          className={`rounded border-2 p-3 text-left transition-colors ${selected ? 'border-blood bg-blood/10' : 'border-gray-300 bg-parchment/60 hover:border-gray-600'}`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-black">{spell.name}</span>
-                            {selected && <CheckCircle2 className="h-4 w-4 text-blood" />}
-                          </div>
-                          <p className="mt-1 font-serif text-xs text-gray-700">{spell.effectSummary}</p>
-                          <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">{spell.castingTime} / {spell.range}{spell.concentration ? ` / ${tr.concentration}` : ''}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                ))}
               </div>
             )}
-          </div>
+          </Panneau>
         </div>
       )}
 
+      {/* ─── Étape RÉCAP ────────────────────────────────────────────────────── */}
       {!readOnly && activeStep === 'review' && (
-        <div className="space-y-5">
-          <div className="rounded-lg border-2 border-gray-800 bg-white p-5">
-            <div className="mb-4 flex items-center gap-2 border-b-2 border-gray-800 pb-2">
-              <CheckCircle2 className="h-5 w-5 text-blood" />
-              <h2 className="text-2xl font-black uppercase tracking-wide">{tr.heroBrief}</h2>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.identity}</div>
-                <div className="mt-1 text-xl font-black">{char.name || tr.unnamedHero}</div>
-                <p className="text-sm">{dispRace(char.race, language)} {dispClass(char.class, language)} / {char.background}</p>
-                <p className="text-sm text-gray-600">{tr.deityColon} {char.deity || tr.none}</p>
-              </div>
-              <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.mechanics}</div>
-                <p className="mt-1 text-sm">{language === 'fr' ? 'PV' : 'HP'} {char.hp.current}/{getEffectiveMaxHP(char)} / {language === 'fr' ? 'CA' : 'AC'} {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
-                <p className="text-sm">{tr.weapon} {char.weapon?.name || tr.unarmed} ({char.weapon?.damage || '1d4'})</p>
-                <p className={pointsRemaining === 0 ? 'text-sm text-green-700' : 'text-sm text-blood'}>{tr.pointBuy} {pointsRemaining === 0 ? tr.complete : `${pointsRemaining} ${tr.remaining}`}</p>
-              </div>
-              <div className="rounded border border-gray-300 bg-parchment/60 p-3">
-                <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.cinematic}</div>
-                <p className="mt-1 text-sm">{profile.cinematicStyle || 'dark fantasy cinematic'}</p>
-                <p className={requiredNarrativeReady ? 'text-sm text-green-700' : 'text-sm text-blood'}>
-                  {requiredNarrativeReady ? tr.readyForIntro : tr.appearanceDesireRequired}
-                </p>
-              </div>
-            </div>
+        <Panneau accent={T.emerald}>
+          <Titre accent={T.emerald} taille={19}>{tr.heroBrief}</Titre>
 
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {casterConfig && (
-                <div className="md:col-span-2">
-                  <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.magic}</h3>
-                  <div className="grid grid-cols-1 gap-3 rounded border border-gray-200 bg-parchment/60 p-3 text-sm md:grid-cols-2">
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-widest text-gray-500">{tr.cantrips}</div>
-                      <p className={(char.cantrips || []).length ? 'font-serif' : 'font-serif text-blood'}>
-                        {(char.cantrips || []).join(', ') || tr.chooseCantrips}
-                      </p>
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        {casterConfig.mode === 'prepared' ? tr.preparedSpells : tr.knownSpells}
-                      </div>
-                      <p className={selectedLevelOneSpells.length ? 'font-serif' : 'font-serif text-blood'}>
-                        {selectedLevelOneSpells.join(', ') || tr.chooseLvl1}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div>
-                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.appearance}</h3>
-                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.appearance || tr.appearanceMissing}</p>
-              </div>
-              <div>
-                <h3 className="mb-1 text-sm font-black uppercase tracking-widest">{tr.coreDesire}</h3>
-                <p className="min-h-16 rounded border border-gray-200 bg-parchment/60 p-3 font-serif text-sm">{profile.desire || tr.desireMissing}</p>
-              </div>
+          <Grille min={244} gap={13}>
+            <div style={{ background: T.ink, border: `3px solid ${T.magenta}`, padding: '13px 15px' }}>
+              <Etiqueter>{tr.identity}</Etiqueter>
+              <div style={{ fontFamily: DISP, fontSize: 16, color: T.magenta }}>{char.name || tr.unnamedHero}</div>
+              <p style={{ margin: '5px 0 0', fontSize: 12.5 }}>{dispRace(char.race, language)} {dispClass(char.class, language)} / {dispBackground(char.background, language)}</p>
+              <p style={{ margin: 0, fontSize: 12, opacity: .6 }}>{tr.deityColon} {char.deity || tr.none}</p>
             </div>
+            <div style={{ background: T.ink, border: `3px solid ${T.cyan}`, padding: '13px 15px' }}>
+              <Etiqueter>{tr.mechanics}</Etiqueter>
+              <p style={{ margin: '5px 0 0', fontSize: 12.5 }}>{language === 'fr' ? 'PV' : 'HP'} {char.hp.current}/{getEffectiveMaxHP(char)} / {language === 'fr' ? 'CA' : 'AC'} {char.ac} / d{CLASS_DATA[char.class]?.hitDie || 8}</p>
+              <p style={{ margin: 0, fontSize: 12.5 }}>{tr.weapon} {char.weapon?.name || tr.unarmed} ({char.weapon?.damage || '1d4'})</p>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: pointsRemaining === 0 ? T.emerald : T.pink }}>
+                {tr.pointBuy} {pointsRemaining === 0 ? tr.complete : `${pointsRemaining} ${tr.remaining}`}
+              </p>
+            </div>
+            <div style={{ background: T.ink, border: `3px solid ${T.purple}`, padding: '13px 15px' }}>
+              <Etiqueter>{tr.cinematic}</Etiqueter>
+              <p style={{ margin: '5px 0 0', fontSize: 12.5 }}>{profile.cinematicStyle || 'dark fantasy cinematic'}</p>
+              <p style={{ margin: '3px 0 0', fontSize: 12, color: requiredNarrativeReady ? T.emerald : T.pink }}>
+                {requiredNarrativeReady ? tr.readyForIntro : tr.appearanceDesireRequired}
+              </p>
+            </div>
+          </Grille>
 
-            {(profile.dmHooks || []).length > 0 && (
-              <div className="mt-4">
-                <h3 className="mb-2 text-sm font-black uppercase tracking-widest">{tr.dmHooks}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {(profile.dmHooks || []).map(hook => (
-                    <span key={hook} className="rounded-full border border-blood/30 bg-blood/10 px-3 py-1 text-xs font-bold text-blood">{hook}</span>
-                  ))}
+          {casterConfig && (
+            <div style={{ marginTop: 18 }}>
+              <Titre accent={T.purple} taille={13}>{tr.magic}</Titre>
+              <Grille min={244} gap={13}>
+                <div style={{ background: T.ink, border: `2px solid rgba(237,230,216,.16)`, padding: '11px 13px' }}>
+                  <Etiqueter>{tr.cantrips}</Etiqueter>
+                  <p style={{ margin: 0, fontSize: 12.5, color: (char.cantrips || []).length ? T.paper : T.pink }}>
+                    {(char.cantrips || []).join(', ') || tr.chooseCantrips}
+                  </p>
                 </div>
-              </div>
-            )}
+                <div style={{ background: T.ink, border: `2px solid rgba(237,230,216,.16)`, padding: '11px 13px' }}>
+                  <Etiqueter>{casterConfig.mode === 'prepared' ? tr.preparedSpells : tr.knownSpells}</Etiqueter>
+                  <p style={{ margin: 0, fontSize: 12.5, color: selectedLevelOneSpells.length ? T.paper : T.pink }}>
+                    {selectedLevelOneSpells.join(', ') || tr.chooseLvl1}
+                  </p>
+                </div>
+              </Grille>
+            </div>
+          )}
+
+          <div style={{ marginTop: 18, display: 'grid', gap: 13, gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))' }}>
+            <div>
+              <Etiqueter>{tr.appearance}</Etiqueter>
+              <p style={{ margin: 0, minHeight: 62, padding: '11px 13px', background: T.ink, border: `2px solid rgba(237,230,216,.16)`, fontSize: 12.5, lineHeight: 1.5 }}>
+                {profile.appearance || tr.appearanceMissing}
+              </p>
+            </div>
+            <div>
+              <Etiqueter>{tr.coreDesire}</Etiqueter>
+              <p style={{ margin: 0, minHeight: 62, padding: '11px 13px', background: T.ink, border: `2px solid rgba(237,230,216,.16)`, fontSize: 12.5, lineHeight: 1.5 }}>
+                {profile.desire || tr.desireMissing}
+              </p>
+            </div>
           </div>
-        </div>
+
+          {(profile.dmHooks || []).length > 0 && (
+            <div style={{ marginTop: 18 }}>
+              <Etiqueter>{tr.dmHooks}</Etiqueter>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+                {(profile.dmHooks || []).map(hook => <Etiquette key={hook} couleur={T.acid}>{hook}</Etiquette>)}
+              </div>
+            </div>
+          )}
+        </Panneau>
       )}
 
+      {/* ─── Le pied : reculer, avancer, partir ──────────────────────────────
+          Le bouton de départ DIT ce qui manque au lieu d'être simplement gris.
+          Un bouton désactivé muet est la première cause d'abandon à la
+          création : le joueur ne sait pas ce qu'on attend de lui. */}
       {!readOnly && (
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 11, marginTop: 26 }}>
           <button
-            type="button"
-            onClick={() => goToStep(-1)}
-            disabled={currentStepIndex <= 0}
-            className="flex items-center justify-center gap-2 rounded-lg border-2 border-gray-700 bg-white px-4 py-3 font-bold text-gray-800 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <ChevronLeft className="h-5 w-5" /> {tr.back}
-          </button>
+            type="button" className="nk-step" onClick={() => goToStep(-1)} disabled={currentStepIndex <= 0}
+            style={{
+              flex: '0 1 150px', padding: '16px 20px', background: 'transparent',
+              color: T.paper, borderColor: 'rgba(237,230,216,.4)',
+              opacity: currentStepIndex <= 0 ? .35 : 1,
+              cursor: currentStepIndex <= 0 ? 'not-allowed' : 'pointer',
+            }}
+          ><ChevronLeft className="h-4 w-4" /> {tr.back}</button>
+
           {activeStep !== 'review' ? (
             <button
-              type="button"
-              onClick={() => goToStep(1)}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-3 font-fantasy text-xl text-white shadow-lg transition-colors hover:bg-gray-800"
-            >
-              {tr.continue} <ChevronRight className="h-5 w-5" />
-            </button>
+              type="button" className="nk-step" onClick={() => goToStep(1)}
+              style={{
+                flex: '1 1 240px', padding: '16px 20px', fontSize: 14,
+                background: T.cyan, color: onTint(T.cyan), boxShadow: hardShadow(T.ink, 8),
+              }}
+            >{tr.continue} <ChevronRight className="h-4 w-4" /></button>
           ) : (
             <button
+              type="button" className="nk-step"
               onClick={() => onSave({ ...char, storyMode: pointMode === 'story' })}
               disabled={!canVenture}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blood px-4 py-4 font-fantasy text-2xl text-white shadow-lg transition-colors hover:bg-red-900 disabled:cursor-not-allowed disabled:bg-gray-600"
+              style={{
+                flex: '1 1 240px', padding: '19px 22px', fontSize: 15,
+                background: canVenture ? T.acid : T.violet,
+                color: canVenture ? onTint(T.acid) : 'rgba(237,230,216,.62)',
+                borderColor: canVenture ? T.ink : 'rgba(237,230,216,.3)',
+                boxShadow: canVenture ? hardShadow(T.ink, 9) : 'none',
+                cursor: canVenture ? 'pointer' : 'not-allowed',
+              }}
             >
-              {!char.name ? (
-                <>{tr.nameRequired}</>
-              ) : pointsRemaining > 0 ? (
-                <>{tr.spendPoints(pointsRemaining)}</>
-              ) : !subclassReady ? (
-                <>{tr.chooseYour(SUBCLASS_DATA[char.class]?.label || tr.archetype)}</>
-              ) : !requiredNarrativeReady ? (
-                <>{tr.addAppearanceDesire}</>
-              ) : !casterReady ? (
-                <>{tr.chooseStartingSpells}</>
-              ) : (
-                <><Swords className="w-6 h-6" /> {tr.toAdventure}</>
-              )}
+              {!char.name ? tr.nameRequired
+                : pointsRemaining > 0 ? tr.spendPoints(pointsRemaining)
+                  : !subclassReady ? tr.chooseYour(SUBCLASS_DATA[char.class]?.label || tr.archetype)
+                    : !requiredNarrativeReady ? tr.addAppearanceDesire
+                      : !casterReady ? tr.chooseStartingSpells
+                        : <><Swords className="h-5 w-5" /> {tr.toAdventure}</>}
             </button>
           )}
         </div>
       )}
 
-      {/* Class Details Modal */}
-      {showClassDetails && CLASS_DATA[char.class] && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-parchment text-black p-6 rounded-lg border-4 border-gray-800 max-w-lg max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4 border-b-2 border-gray-800 pb-2">
-              <h2 className="text-2xl font-bold">{dispClass(char.class, language)}</h2>
-              <button onClick={() => setShowClassDetails(false)} className="text-2xl hover:text-blood">&times;</button>
-            </div>
+      {/* ─── Fiche de classe, en surimpression ──────────────────────────────
+          Le portrait à GAUCHE, les chiffres à DROITE.
 
-            <p className="text-gray-600 mb-4">{CLASS_DATA[char.class].desc}</p>
+          Ce panneau existait depuis le premier commit sans que rien ne puisse
+          l'ouvrir, en une colonne et sans illustration. Il sert à répondre à
+          une question précise — « jusqu'où va cette classe ? » — que la carte
+          et l'encart des aptitudes ne traitent pas : eux s'arrêtent au niveau 3.
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="bg-gray-100 p-2 rounded">
-                <div className="text-xs text-gray-500 uppercase">{tr.hitDiceLabel}</div>
-                <div className="text-xl font-bold text-blood">d{CLASS_DATA[char.class].hitDie}</div>
-              </div>
-              <div className="bg-gray-100 p-2 rounded">
-                <div className="text-xs text-gray-500 uppercase">{tr.primaryAbility}</div>
-                <div className="text-lg font-bold">{CLASS_DATA[char.class].primaryAbility}</div>
-              </div>
-            </div>
+          Le portrait n'est pas décoratif ici : c'est le même que la carte qu'on
+          vient de cliquer, et il dit au joueur de quelle classe on parle sans
+          qu'il ait à relire le titre. */}
+      {showClassDetails && CLASS_DATA[char.class] && (() => {
+        const cls = CLASS_DATA[char.class];
+        const art = CLASS_ART[char.class];
+        return (
+          <div
+            role="dialog" aria-modal="true" aria-label={dispClass(char.class, language)}
+            style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'grid', placeItems: 'center', background: 'rgba(5,0,26,.84)', padding: 'clamp(10px, 3vw, 26px)' }}
+            onClick={() => setShowClassDetails(false)}
+          >
+            <div onClick={e => e.stopPropagation()} style={{ maxWidth: 760, width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <Panneau accent={art?.tint || T.acid}>
 
-            <div className="bg-gray-100 p-2 rounded mb-4">
-              <div className="text-xs text-gray-500 uppercase">{tr.savingThrows}</div>
-              <div className="font-bold">{CLASS_DATA[char.class].savingThrows.join(', ')}</div>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+                  <h2 style={{ fontFamily: DISP, fontSize: 'clamp(18px, 3.4vw, 25px)', margin: 0 }}>
+                    {dispClass(char.class, language)}
+                  </h2>
+                  <button
+                    type="button" className="nk-tick" onClick={() => setShowClassDetails(false)}
+                    aria-label={tr.closeSheet} title={`${tr.closeSheet} (Échap)`}
+                    style={{ fontFamily: DISP, fontSize: 19, lineHeight: 1, padding: '4px 9px', border: `2px solid rgba(237,230,216,.4)` }}
+                  >×</button>
+                </div>
 
-            <div className="bg-gray-100 p-2 rounded mb-4">
-              <div className="text-xs text-gray-500 uppercase">{tr.proficiencies}</div>
-              <div className="text-sm">{CLASS_DATA[char.class].profs.join(', ')}</div>
-            </div>
+                {/* Le portrait ne rétrécit pas sous 190 px — en dessous il
+                    devient une vignette et ne vaut plus la place qu'il prend.
+                    Sur mobile la colonne passe donc entière au-dessus. */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
+                  {art && (
+                    <img
+                      src={`/art/${art.slug}.webp`}
+                      srcSet={`/art/${art.slug}.webp 1x, /art/${art.slug}@2x.webp 2x`}
+                      alt="" loading="lazy"
+                      style={{
+                        flex: '1 1 190px', maxWidth: 232, aspectRatio: '3 / 4', objectFit: 'cover',
+                        display: 'block', background: T.ink, border: `3px solid ${T.ink}`,
+                        boxShadow: hardShadow(T.ink, 8),
+                      }}
+                    />
+                  )}
 
-            {/* Features */}
-            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">{tr.classFeatures}</h3>
-            <div className="space-y-2 mb-4">
-              {CLASS_DATA[char.class].features.map((f, i) => (
-                <div key={i} className="bg-white p-2 rounded border border-gray-300">
-                  <div className="flex justify-between">
-                    <span className="font-bold">{f.name}</span>
-                    <span className="text-xs bg-blood text-white px-2 py-0.5 rounded">{tr.levelAbbr}. {f.level}</span>
+                  <div style={{ flex: '999 1 300px', display: 'grid', gap: 13 }}>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{cls.desc}</p>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                      <Cartouche titre={tr.hitDiceLabel} valeur={`d${cls.hitDie}`} accent={T.pink} />
+                      <Cartouche titre={tr.primaryAbility} valeur={dispAbilityExpr(cls.primaryAbility, language)} accent={T.cyan} />
+                    </div>
+
+                    <div>
+                      <Etiqueter>{tr.savingThrows}</Etiqueter>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {cls.savingThrows.map(j => <Etiquette key={j} couleur={T.emerald}>{dispAbbr(j, language)}</Etiquette>)}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Etiqueter>{tr.proficiencies}</Etiqueter>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {cls.profs.map(p => <Etiquette key={p}>{dispProf(p, language)}</Etiquette>)}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">{f.desc}</div>
                 </div>
-              ))}
-            </div>
 
-            {/* XP Thresholds */}
-            <h3 className="font-bold text-lg border-b border-gray-400 mb-2">{tr.xpPerLevel}</h3>
-            <div className="grid grid-cols-4 gap-1 text-xs">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(lvl => (
-                <div key={lvl} className="bg-gray-100 p-1 rounded text-center">
-                  <span className="font-bold">{tr.levelAbbr} {lvl}:</span> {[0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000][lvl - 1]} XP
+                {/* Les capacités passent en pleine largeur : leur description
+                    est du texte courant, illisible en colonne étroite. */}
+                <div style={{ marginTop: 22 }}>
+                  <Titre accent={art?.tint || T.acid} taille={13}>{tr.classFeatures}</Titre>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {cls.features.map((f, i) => (
+                      <div key={i} style={{ background: T.ink, border: `2px solid rgba(237,230,216,.16)`, padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+                          <span style={{ fontFamily: DISP, fontSize: 11.5 }}>{f.name}</span>
+                          <span style={{
+                            flex: 'none', fontFamily: DISP, fontSize: 9, padding: '3px 8px',
+                            background: T.pink, color: onTint(T.pink),
+                          }}>{tr.levelAbbr}. {f.level}</span>
+                        </div>
+                        <div style={{ fontSize: 11.5, lineHeight: 1.45, opacity: .74, marginTop: 4 }}>{f.desc}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
+
+                <div style={{ marginTop: 22 }}>
+                  <Titre accent={art?.tint || T.acid} taille={13}>{tr.xpPerLevel}</Titre>
+                  <Grille min={112} gap={6}>
+                    {[0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000].map((xp, i) => (
+                      <div key={i} style={{ background: T.ink, border: `2px solid rgba(237,230,216,.16)`, padding: '7px 8px', textAlign: 'center', fontSize: 10.5 }}>
+                        <b style={{ color: T.cyan }}>{tr.levelAbbr} {i + 1}</b> · {xp} XP
+                      </div>
+                    ))}
+                  </Grille>
+                </div>
+              </Panneau>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

@@ -17,30 +17,73 @@ export type ArtEntry = { slug: string; tint: string };
 /** Douze classes, exactement les clés de CLASS_DATA. */
 export const CLASS_ART: Record<string, ArtEntry> = {
     Fighter: { slug: 'classes/fighter', tint: T.azure },
-    Paladin: { slug: 'classes/paladin', tint: T.paper },
+    Paladin: { slug: 'classes/paladin', tint: T.azure },
     Ranger: { slug: 'classes/ranger', tint: T.emerald },
-    Rogue: { slug: 'classes/rogue', tint: T.magenta },
-    Cleric: { slug: 'classes/cleric', tint: T.emerald },
-    Druid: { slug: 'classes/druid', tint: T.purple },
-    Mage: { slug: 'classes/mage', tint: T.azure },
+    Rogue: { slug: 'classes/rogue', tint: T.emerald },
+    Cleric: { slug: 'classes/cleric', tint: T.acid },
+    Druid: { slug: 'classes/druid', tint: T.acid },
+    Mage: { slug: 'classes/mage', tint: T.purple },
     Barbarian: { slug: 'classes/barbarian', tint: T.pink },
-    Bard: { slug: 'classes/bard', tint: T.acid },
-    Monk: { slug: 'classes/monk', tint: T.cyan },
+    Bard: { slug: 'classes/bard', tint: T.magenta },
+    Monk: { slug: 'classes/monk', tint: T.acid },
     Warlock: { slug: 'classes/warlock', tint: T.purple },
-    Sorcerer: { slug: 'classes/sorcerer', tint: T.acid },
+    Sorcerer: { slug: 'classes/sorcerer', tint: T.purple },
 };
 
 /** Neuf races de base. Les sous-races héritent du portrait de leur race mère. */
 export const RACE_ART: Record<string, ArtEntry> = {
-    Human: { slug: 'races/human', tint: T.azure },
-    Elf: { slug: 'races/elf', tint: T.emerald },
-    'Half-Elf': { slug: 'races/half-elf', tint: T.cyan },
-    'Half-Orc': { slug: 'races/half-orc', tint: T.pink },
+    Human: { slug: 'races/human', tint: T.purple },
+    Elf: { slug: 'races/elf', tint: T.paper },
+    'Half-Elf': { slug: 'races/half-elf', tint: T.acid },
+    'Half-Orc': { slug: 'races/half-orc', tint: T.paper },
     Dwarf: { slug: 'races/dwarf', tint: T.acid },
-    Gnome: { slug: 'races/gnome', tint: T.magenta },
-    Halfling: { slug: 'races/halfling', tint: T.emerald },
-    Tiefling: { slug: 'races/tiefling', tint: T.purple },
-    Dragonborn: { slug: 'races/dragonborn', tint: T.azure },
+    Gnome: { slug: 'races/gnome', tint: T.emerald },
+    Halfling: { slug: 'races/halfling', tint: T.paper },
+    Tiefling: { slug: 'races/tiefling', tint: T.pink },
+    Dragonborn: { slug: 'races/dragonborn', tint: T.pink },
+};
+
+
+/**
+ * Historiques — les dix cles de data/backgrounds.ts.
+ *
+ * Format PAYSAGE, contrairement aux classes et aux races. Ce n'est pas une
+ * fantaisie de grille : ces planches-la sont composees en largeur (un decor,
+ * pas un personnage), et les recadrer en 3:4 couperait ce qu'elles racontent.
+ * Le format different signale aussi au joueur que « d'ou je viens » n'est pas
+ * un choix de la meme nature que « qui je suis ».
+ *
+ * Les teintes sont echantillonnees dans l'aplat dominant de chaque planche
+ * (mesure de teinte, pas de distance RVB : l'orange du Voyageur tombe du bon
+ * cote du jaune acide, ce qu'une distance RVB ratait).
+ */
+export const BACKGROUND_ART: Record<string, ArtEntry> = {
+    Acolyte: { slug: 'backgrounds/acolyte', tint: T.paper },
+    Charlatan: { slug: 'backgrounds/charlatan', tint: T.cyan },
+    Criminal: { slug: 'backgrounds/criminal', tint: T.emerald },
+    'Folk Hero': { slug: 'backgrounds/folk-hero', tint: T.acid },
+    Hermit: { slug: 'backgrounds/hermit', tint: T.purple },
+    Noble: { slug: 'backgrounds/noble', tint: T.acid },
+    Outlander: { slug: 'backgrounds/outlander', tint: T.acid },
+    Sage: { slug: 'backgrounds/sage', tint: T.purple },
+    Soldier: { slug: 'backgrounds/soldier', tint: T.pink },
+    Urchin: { slug: 'backgrounds/urchin', tint: T.acid },
+};
+
+/**
+ * Styles de combat — les six de data/equipment.ts.
+ *
+ * Chaque planche cadre une paire de mains et son arme, jamais un personnage
+ * entier : un style est un geste, pas une identite. C'est ce qui les empeche
+ * d'entrer en concurrence avec le portrait de classe, choisi juste au-dessus.
+ */
+export const STYLE_ART: Record<string, ArtEntry> = {
+    Archery: { slug: 'styles/archery', tint: T.acid },
+    Defense: { slug: 'styles/defense', tint: T.purple },
+    Dueling: { slug: 'styles/dueling', tint: T.magenta },
+    'Great Weapon Fighting': { slug: 'styles/great-weapon-fighting', tint: T.pink },
+    Protection: { slug: 'styles/protection', tint: T.acid },
+    'Two-Weapon Fighting': { slug: 'styles/two-weapon-fighting', tint: T.acid },
 };
 
 /** Bandeaux d'ambiance, et la couverture du jeu. */

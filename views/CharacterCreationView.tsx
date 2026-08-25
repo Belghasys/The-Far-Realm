@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Loader2 } from 'lucide-react';
 import { CharacterSheetUI } from '../components/CharacterSheet';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/saveService';
@@ -11,10 +10,32 @@ import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAI
 import { ensureProgressionState } from '../services/rulesEngine';
 import { getAdventureById } from '../data/adventures';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
-import { T, BODY } from '../theme/tokens';
+import { T, DISP, BODY } from '../theme/tokens';
+import { Panneau, Titre } from '../components/neon/SheetKit';
+import { NeonButton } from '../components/neon/NeonButton';
 import { getAuthoredCampaign } from '../data/campaigns';
 import { buildSlimManifestPayload } from '../services/manifestTokens';
 import { personalizeAuthoredManifest } from '../services/llmService';
+
+/**
+ * Les trois animations de l'ecran de forge.
+ *
+ * Injectees ici et non dans index.css : elles ne servent qu'a cet ecran, et une
+ * feuille globale qui grossit a chaque ecran finit par n'appartenir a personne.
+ * Le respect de « animations reduites » est porte par la feuille et non par le
+ * composant — le style en ligne ne sait pas lire une media query.
+ */
+const FORGE_CSS = `
+@keyframes cc-spin { to { transform: rotate(360deg); } }
+@keyframes cc-pulse { 50% { opacity: .55; } }
+@keyframes cc-scroll { from { transform: translateY(0); } to { transform: translateY(-60%); } }
+.cc-spin { animation: cc-spin 5.5s linear infinite; transform-origin: 50% 50%; }
+.cc-pulse { animation: cc-pulse 2.2s ease-in-out infinite; }
+.cc-scroll { animation: cc-scroll 20s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .cc-spin, .cc-pulse, .cc-scroll { animation: none; }
+}
+`;
 
 function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntimeState {
     const firstChapter = manifest.chapters?.[0];
@@ -358,36 +379,74 @@ export function CharacterCreationView() {
     };
 
     if (isGenerating) {
+        /**
+         * L'ecran de forge — le dernier avant la partie.
+         *
+         * Il dure une quinzaine de secondes, et pendant ce temps le joueur n'a
+         * rien a faire. On lui donne donc a LIRE ce qui se fabrique plutot
+         * qu'un sablier : les etapes defilent en clair, et le manifeste s'ecrit
+         * sous ses yeux. C'est aussi la derniere image de la charte avant que
+         * le jeu ne bascule sur sa table medievale.
+         */
         return (
-            <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/black-paper.png')] font-serif relative overflow-hidden">
-                <div className="absolute top-4 right-4 z-20"><MenuMusicToggle /></div>
-                <div className="max-w-2xl w-full text-center space-y-8 z-10">
+            <div style={{
+                minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY,
+                display: 'grid', placeItems: 'center', padding: 'clamp(16px, 4vw, 40px)',
+            }}>
+                <style>{FORGE_CSS}</style>
+                <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 20 }}><MenuMusicToggle /></div>
+
+                <div style={{ width: '100%', maxWidth: 620 }}>
                     {generationError ? (
-                        <div className="bg-red-900/80 border border-red-500 rounded-lg p-6 space-y-4">
-                            <h2 className="text-2xl font-fantasy text-red-300">{tr.genErrorTitle}</h2>
-                            <p className="text-red-200 text-sm font-mono whitespace-pre-wrap">{generationError}</p>
-                            <button
-                                onClick={() => { setIsGenerating(false); setGenerationError(null); }}
-                                className="px-6 py-2 bg-red-700 hover:bg-red-600 rounded text-white transition-colors"
-                            >
+                        <Panneau accent={T.pink}>
+                            <Titre accent={T.pink}>{tr.genErrorTitle}</Titre>
+                            <p style={{
+                                margin: '0 0 18px', padding: '13px 15px', background: T.ink,
+                                border: `2px solid ${T.pink}`, fontSize: 12.5, lineHeight: 1.55,
+                                whiteSpace: 'pre-wrap', fontFamily: 'ui-monospace, monospace',
+                            }}>{generationError}</p>
+                            <NeonButton variante="danger" onClick={() => { setIsGenerating(false); setGenerationError(null); }}>
                                 {tr.back}
-                            </button>
-                        </div>
+                            </NeonButton>
+                        </Panneau>
                     ) : (
                         <>
-                            <Loader2 className="w-24 h-24 text-gold animate-spin mx-auto" />
-                            <h2 className="text-4xl font-fantasy text-gold animate-pulse">{generationStep}</h2>
-                            <div className="bg-gray-900/80 p-6 rounded border border-gray-700 h-64 overflow-hidden relative shadow-2xl">
-                                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-gray-900 to-transparent z-10"></div>
-                                <div className="animate-[scroll_20s_linear_infinite] space-y-6 text-gray-300 opacity-90 font-mono text-sm leading-relaxed pb-32">
-                                    <p className="text-gold font-bold uppercase tracking-widest text-center border-b border-gray-700 pb-2 mb-4">{tr.adventureManifest}</p>
-                                    <p>{tr.initSeeds}</p>
-                                    <p>{tr.checkingAlignment} {selectedAdventure}...</p>
-                                    <p>{tr.preparingSave}</p>
-                                    <p>{tr.readyingDice}</p>
-                                </div>
-                                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
+                            {/* Le d20 qui tourne. Une seule piece en mouvement sur
+                                l'ecran : deux en feraient une salle d'attente. */}
+                            <div style={{ display: 'grid', placeItems: 'center', marginBottom: 26 }}>
+                                <svg className="cc-spin" width="86" height="86" viewBox="0 0 100 100" aria-hidden="true"
+                                    fill="none" stroke={T.acid} strokeWidth="4" strokeLinejoin="round">
+                                    <path d="M50 6 92 30v40L50 94 8 70V30z" />
+                                    <path d="M50 6 26 50l24 44M50 6l24 44-24 44M8 30l18 20-18 20M92 30 74 50l18 20M26 50h48" strokeWidth="3" />
+                                </svg>
                             </div>
+
+                            <h2 className="cc-pulse" style={{
+                                fontFamily: DISP, fontSize: 'clamp(17px, 3.2vw, 26px)', textAlign: 'center',
+                                margin: '0 0 26px', color: T.acid, lineHeight: 1.35,
+                            }}>{generationStep}</h2>
+
+                            <Panneau accent={T.cyan} style={{ padding: 0, overflow: 'hidden' }}>
+                                <div style={{
+                                    fontFamily: DISP, fontSize: 11, textAlign: 'center', padding: '13px 16px',
+                                    borderBottom: `3px solid ${T.ink}`, background: T.ink, color: T.cyan,
+                                }}>{tr.adventureManifest}</div>
+                                <div style={{ position: 'relative', height: 210, overflow: 'hidden' }}>
+                                    <div className="cc-scroll" style={{
+                                        display: 'grid', gap: 22, padding: '22px 20px 120px',
+                                        fontSize: 12.5, lineHeight: 1.6, color: 'rgba(237,230,216,.74)',
+                                    }}>
+                                        <p style={{ margin: 0 }}>{tr.initSeeds}</p>
+                                        <p style={{ margin: 0 }}>{tr.checkingAlignment} {selectedAdventure}...</p>
+                                        <p style={{ margin: 0 }}>{tr.preparingSave}</p>
+                                        <p style={{ margin: 0 }}>{tr.readyingDice}</p>
+                                    </div>
+                                    {/* Fondus haut et bas : le texte entre et sort du cadre
+                                        au lieu d'y apparaitre d'un coup. */}
+                                    <div aria-hidden="true" style={{ position: 'absolute', inset: '0 0 auto', height: 44, background: `linear-gradient(${T.violet}, transparent)` }} />
+                                    <div aria-hidden="true" style={{ position: 'absolute', inset: 'auto 0 0', height: 44, background: `linear-gradient(transparent, ${T.violet})` }} />
+                                </div>
+                            </Panneau>
                         </>
                     )}
                 </div>
@@ -397,8 +456,10 @@ export function CharacterCreationView() {
 
     return (
         <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
-            {/* Le hall garde sa charte jusqu'au dernier écran avant la partie ;
-                la fiche elle-même reste sur parchemin, comme en jeu. */}
+            {/* La charte du hall va maintenant jusqu'au bout : la fiche de
+                création est peinte comme le menu, cartes illustrées comprises.
+                La bascule vers le parchemin et l'or n'a lieu qu'au premier
+                écran de partie — c'est le passage de la vitrine à la table. */}
             <header style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 gap: 16, padding: '18px clamp(16px, 4vw, 40px)', borderBottom: `2px solid ${T.cyan}59`,
