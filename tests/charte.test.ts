@@ -20,11 +20,14 @@ const RE_HEX = /\b(?:bg|text|border|ring|from|to|via)-\[#[0-9a-fA-F]{3,8}\]/g;
 
 function sources(): [string, string][] {
     const out: [string, string][] = [];
-    for (const d of DOSSIERS) {
-        for (const f of fs.readdirSync(path.join(RACINE, d))) {
-            if (/\.tsx?$/.test(f)) out.push([`${d}/${f}`, fs.readFileSync(path.join(RACINE, d, f), 'utf8')]);
+    const marcher = (rel: string) => {
+        for (const f of fs.readdirSync(path.join(RACINE, rel), { withFileTypes: true })) {
+            const suivant = `${rel}/${f.name}`;
+            if (f.isDirectory()) marcher(suivant);
+            else if (/\.tsx?$/.test(f.name)) out.push([suivant, fs.readFileSync(path.join(RACINE, suivant), 'utf8')]);
         }
-    }
+    };
+    for (const d of DOSSIERS) marcher(d);
     for (const f of FICHIERS) out.push([f, fs.readFileSync(path.join(RACINE, f), 'utf8')]);
     return out;
 }

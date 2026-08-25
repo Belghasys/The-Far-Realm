@@ -6,6 +6,10 @@ import { useDMConnection } from '../hooks/useDMConnection';
 import { useToolProcessor } from '../hooks/useToolProcessor';
 import { useMusicDirector } from '../hooks/useMusicDirector';
 import { useReconnectCountdown } from '../hooks/useReconnectCountdown';
+import { useRailWidth } from '../hooks/useRailWidth';
+import { GAME_SESSION_TRANS as TRANS } from './gameSession/translations';
+import { mergeTranscriptText } from './gameSession/transcriptText';
+import { NavButton, HeaderActionButton, HudMeter } from './gameSession/HudControls';
 
 /** Fenêtre annoncée au joueur pendant une reconnexion (backoff réel : 2+4+8 s
  *  sur trois tentatives, plus l'ouverture de chaque session). */
@@ -46,7 +50,7 @@ import { SettingsPanel } from './SettingsPanel';
 import type { ClassAbilityId } from './CombatActionsPanel';
 import { AbilityHotbar } from './AbilityHotbar';
 import { usePortrait, heroPortraitKey, heroPortraitPrompt } from '../services/portraitService';
-import { useSettingsStore } from '../store/settingsStore';
+import { useSettingsStore, RAIL_WIDTH } from '../store/settingsStore';
 import { lyriaMusicService } from '../services/lyriaMusic';
 import { getCreature, getCreatureAttacks, getMultiattackCount } from '../data/bestiary';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
@@ -76,288 +80,6 @@ const RuleCodexPanel = React.lazy(() =>
   import('./RuleCodexPanel').then(module => ({ default: module.RuleCodexPanel }))
 );
 
-const TRANS = {
-  en: {
-    devModeOn: '🛠️ *[DEVELOPER MODE ON — the DM now obeys your direct orders. Type IDDAD again to disable.]*',
-    devModeOff: '🛠️ *[Developer mode disabled — the DM resumes its normal arbitration.]*',
-    connectionRestored: '🔗 Connection restored. You may continue.',
-    connectionLostRetry: '⚠️ Connection lost. Reconnecting…',
-    connectionLostNotSent: '⚠️ Connection lost. Message not sent. Reconnecting…',
-    sendError: '❌ Send error. Please try again.',
-    nothingToSave: 'Nothing to save!',
-    gameSaved: '💾 Game saved!',
-    saveErrorConcurrency: 'Save error (concurrency or empty data).',
-    saveError: 'Save error!',
-    sagaBegins: 'The saga begins…',
-    hero: 'Hero',
-    dm: 'DM',
-    talkToDM: 'Talk to the DM…',
-    reconnecting: 'Reconnecting…',
-    send: 'Send',
-    micActive: 'Mic active',
-    enableMic: 'Enable mic',
-    pendingReconnect: 'message(s) awaiting reconnection',
-    reconnectTitle: 'Connection lost',
-    reconnectReassure: 'The Dungeon Master is coming back. Nothing is lost — your game is saved and your last words are queued.',
-    reconnectIn: 'Back in',
-    reconnectSeconds: 's',
-    reconnectLastTry: 'Last attempt in progress…',
-    reconnectAttemptOf: 'Attempt {n} of 3',
-    generatingScene: 'Generating the scene…',
-    npcTurnInProgress: '🎲 NPC turn in progress…',
-    campaign: 'Campaign',
-    codex: 'Codex',
-    spellbook: 'Spellbook',
-    connectionLostSimple: 'Unable to reconnect to the server.',
-    reference: 'Reference',
-    connected: 'Connected',
-    disconnected: 'Disconnected',
-    waiting: 'waiting',
-    saving: 'Saving…',
-    save: 'Save',
-    saveFailed: '☁️ Not synced',
-    saveFailedTooltip: 'Cloud save is failing — recent progress may not be persisted. Check your connection, then click Save.',
-    music: 'Music',
-    shortRest: 'Short rest',
-    longRest: 'Long rest',
-    devBanner: '🛠️ Developer mode — the DM obeys',
-    auditTitle: "Audit console (separate window) — system prompts, Gemini, image, SFX, music, combat",
-    audit: '🔍 Audit',
-    devTooltip: 'Developer mode (the DM obeys your direct orders). Same as typing IDDAD in the chat.',
-    dev: '🛠 Dev',
-    on: 'ON',
-    off: 'OFF',
-    loadingCodex: 'Loading the Codex…',
-    hp: 'HP',
-    levelWord: 'Level',
-    combatEndedManually: '⚔️ Combat ended manually.',
-    appliedToAttack: 'applied to your attack',
-    damage: 'Damage',
-    hit: 'HIT!',
-    miss: 'MISS',
-    critHit: 'CRITICAL HIT',
-    touched: 'hit',
-    missed: 'missed',
-    attackLabel: 'Attack',
-    attackN: (n: number, max: number) => max > 1 ? `Attack ${n}/${max}` : 'Attack',
-    frenzy: 'Frenzy',
-    warPriest: 'War Priest',
-    offhandAttack: 'Off-hand attack',
-    shieldBash: 'Shield bash',
-    vs: 'vs',
-    dodgeDesc: 'Active defense. Attacks against you have disadvantage.',
-    test: 'check',
-    saveWord: 'save',
-    saveSuccess: 'succeeded',
-    saveFail: 'failed',
-    checkSuccess: 'success',
-    checkFail: 'failure',
-    target: 'target',
-    takes: 'takes',
-    enemyTargets: (npc: string, t: string) => `🎯 ${npc} targets ${t} (DM's choice)`,
-    ac: 'AC',
-    potion: 'Potion',
-    healing: 'healing',
-    abilitySecondWindLabel: 'Second Wind',
-    abilityLayOnHandsLabel: 'Lay on Hands',
-    abilityBardicLabel: 'Bardic Inspiration',
-    abilityFlurryLabel: 'Flurry of Blows',
-    abilityPatientLabel: 'Patient Defense',
-    abilitySmiteLabel: 'Divine Smite',
-    abilityRecklessLabel: 'Reckless Attack',
-    abilityStunningLabel: 'Stunning Strike',
-    abilityStepWindLabel: 'Step of the Wind',
-    abilityTurnUndeadLabel: 'Turn Undead',
-    abilityPactFocusLabel: 'Pact Focus',
-    abilityNaturalRecoveryLabel: 'Natural Recovery',
-    slotsRecovered: (n: number) => `${n} spell slot(s) recovered`,
-    martialArts: 'Martial Arts',
-    abilityDivineSenseLabel: 'Divine Sense',
-    abilitySacredWeaponLabel: 'Sacred Weapon',
-    abilityVowLabel: 'Vow of Enmity',
-    abilityWrathLabel: "Nature's Wrath",
-    abilityChallengeLabel: 'Cavalier Challenge',
-    abilityInterventionLabel: 'Divine Intervention',
-    abilityPrimevalLabel: 'Primeval Awareness',
-    abilityQuickenedLabel: 'Quickened Spell',
-    abilityHeightenedLabel: 'Heightened Spell',
-    abilityWholenessLabel: 'Wholeness of Body',
-    rerollIndomitable: 'Reroll with Indomitable',
-    reactionUncanny: 'Uncanny Dodge — damage halved',
-    reactionDeflect: (n: number) => `Deflect Missiles — ${n} damage deflected`,
-    relentlessLine: 'RELENTLESS RAGE — refuses to fall (1 HP)!',
-    shieldReactionTitle: 'Incoming hit!',
-    shieldReactionDetail: (attacker: string, total: number, ac: number) => `${attacker} hits you (${total} vs AC ${ac}) — Shield would turn it into a miss (AC ${ac + 5}).`,
-    shieldCastLine: (attacker: string) => `🛡️ SHIELD! ${attacker}'s attack shatters against the arcane barrier (+5 AC until your next turn).`,
-    dayWord: 'Day',
-    // UI5 — textes de progression / overlays qui restaient en dur.
-    levelUpLine: (lvl: number, hp: number) => `🎊 LEVEL UP! Level ${lvl}! Max HP: ${hp}!`,
-    xpChronicleDesc: (amount: number, total: number) => `Gained ${amount} XP. Total now: ${total}.`,
-    reasonCombatVictory: 'Combat victory',
-    castHealedLabel: (spell: string, n: number) => `Cast: ${spell} (Healed: ${n} HP)`,
-    consumesPotionLabel: (name: string, n: number) => `Potion: ${name} (+${n} HP)`,
-    moraleCheckLabel: (name: string) => `${name} — morale check (Wisdom Save vs DC ${MORALE_DC})`,
-    moraleFledLine: (name: string, total: number) => `${name} failed their morale check (WIS save ${total} vs DC ${MORALE_DC}) and FLEES the fight — alive!`,
-    moraleHeldLine: (name: string, total: number) => `${name} passed their morale check (WIS save ${total} vs DC ${MORALE_DC}) and keeps fighting.`,
-    attacksWith: 'attacks with',
-    attackWord: 'Attack',
-    saveNoun: 'Save',
-    successWord: 'Success',
-    failureWord: 'Failure',
-    deathSaveRequired: 'Death save required. Roll a d20.',
-    chronicleHeader: 'Chronicle',
-    lvlAbbrev: 'Lvl',
-  },
-  fr: {
-    devModeOn: '🛠️ *[MODE DÉVELOPPEUR ACTIVÉ — le MJ obéit désormais à tes ordres directs. Retape IDDAD pour désactiver.]*',
-    devModeOff: '🛠️ *[Mode développeur désactivé — le MJ reprend son arbitrage normal.]*',
-    connectionRestored: '🔗 Connexion rétablie. Vous pouvez continuer.',
-    connectionLostRetry: '⚠️ Connexion perdue. Tentative de reconnexion...',
-    connectionLostNotSent: '⚠️ Connexion perdue. Message non envoyé. Tentative de reconnexion...',
-    sendError: '❌ Erreur d\'envoi. Veuillez réessayer.',
-    nothingToSave: 'Rien à sauvegarder !',
-    gameSaved: '💾 Partie sauvegardée !',
-    saveErrorConcurrency: 'Erreur de sauvegarde (concurrence ou données vides).',
-    saveError: 'Erreur de sauvegarde !',
-    sagaBegins: 'La saga commence…',
-    hero: 'Héros',
-    dm: 'MJ',
-    talkToDM: 'Parler avec le DM...',
-    reconnecting: 'Reconnexion en cours...',
-    send: 'Envoyer',
-    micActive: 'Micro actif',
-    enableMic: 'Activer le micro',
-    pendingReconnect: 'message(s) en attente de reconnexion',
-    reconnectTitle: 'Connexion perdue',
-    reconnectReassure: "Le Maître du Jeu revient. Rien n'est perdu — la partie est sauvegardée et vos dernières paroles sont en attente.",
-    reconnectIn: 'Retour dans',
-    reconnectSeconds: 's',
-    reconnectLastTry: 'Dernière tentative en cours…',
-    reconnectAttemptOf: 'Tentative {n} sur 3',
-    generatingScene: 'Génération de la scène…',
-    npcTurnInProgress: '🎲 Tour des PNJ en cours…',
-    campaign: 'Campagne',
-    codex: 'Codex',
-    spellbook: 'Grimoire',
-    connectionLostSimple: 'Impossible de se reconnecter au serveur.',
-    reference: 'Référence',
-    connected: 'Connecté',
-    disconnected: 'Déconnecté',
-    waiting: 'en attente',
-    saving: 'Sauvegarde…',
-    save: 'Sauver',
-    saveFailed: '☁️ Non synchronisé',
-    saveFailedTooltip: 'La sauvegarde cloud échoue — la progression récente risque de ne pas être conservée. Vérifiez votre connexion, puis cliquez sur Sauver.',
-    music: 'Musique',
-    shortRest: 'Repos court',
-    longRest: 'Repos long',
-    devBanner: '🛠️ Mode développeur — le MJ obéit',
-    auditTitle: "Console d'audit (fenêtre séparée) — system prompts, Gemini, image, SFX, musique, combat",
-    audit: '🔍 Audit',
-    devTooltip: 'Mode développeur (le MJ obéit à tes ordres directs). Équivaut à taper IDDAD dans le chat.',
-    dev: '🛠 Dév',
-    on: 'ON',
-    off: 'OFF',
-    loadingCodex: 'Chargement du Codex…',
-    hp: 'PV',
-    levelWord: 'Niveau',
-    combatEndedManually: '⚔️ Combat terminé manuellement.',
-    appliedToAttack: 'appliqué à votre attaque',
-    damage: 'Dégâts',
-    hit: 'TOUCHÉ !',
-    miss: 'MANQUÉ',
-    critHit: 'COUP CRITIQUE',
-    touched: 'touché',
-    missed: 'manqué',
-    attackLabel: 'Attaque',
-    attackN: (n: number, max: number) => max > 1 ? `Attaque ${n}/${max}` : 'Attaque',
-    frenzy: 'Frénésie',
-    warPriest: 'Prêtre de guerre',
-    offhandAttack: 'Attaque off-hand',
-    shieldBash: 'Coup de bouclier',
-    vs: 'vs',
-    dodgeDesc: 'Défense active. Les attaques contre vous ont un désavantage.',
-    test: 'test',
-    saveWord: 'sauvegarde',
-    saveSuccess: 'réussie',
-    saveFail: 'ratée',
-    checkSuccess: 'réussi',
-    checkFail: 'raté',
-    target: 'cible',
-    takes: 'subit',
-    enemyTargets: (npc: string, t: string) => `🎯 ${npc} cible ${t} (choix du MJ)`,
-    ac: 'CA',
-    potion: 'Potion',
-    healing: 'soin',
-    abilitySecondWindLabel: 'Second souffle',
-    abilityLayOnHandsLabel: 'Imposition des mains',
-    abilityBardicLabel: 'Inspiration bardique',
-    abilityFlurryLabel: 'Déluge de coups',
-    abilityPatientLabel: 'Défense patiente',
-    abilitySmiteLabel: 'Châtiment divin',
-    abilityRecklessLabel: 'Attaque téméraire',
-    abilityStunningLabel: 'Frappe étourdissante',
-    abilityStepWindLabel: 'Pas du vent',
-    abilityTurnUndeadLabel: 'Renvoi des morts-vivants',
-    abilityPactFocusLabel: 'Focalisation du pacte',
-    abilityNaturalRecoveryLabel: 'Récupération naturelle',
-    slotsRecovered: (n: number) => `${n} emplacement(s) de sort récupéré(s)`,
-    martialArts: 'Arts martiaux',
-    abilityDivineSenseLabel: 'Perception divine',
-    abilitySacredWeaponLabel: 'Arme sacrée',
-    abilityVowLabel: "Vœu d'inimitié",
-    abilityWrathLabel: 'Courroux de la nature',
-    abilityChallengeLabel: 'Défi du cavalier',
-    abilityInterventionLabel: 'Intervention divine',
-    abilityPrimevalLabel: 'Conscience primitive',
-    abilityQuickenedLabel: 'Sort accéléré',
-    abilityHeightenedLabel: 'Sort intensifié',
-    abilityWholenessLabel: 'Plénitude du corps',
-    rerollIndomitable: 'Relancer avec Inflexible',
-    reactionUncanny: 'Esquive instinctive — dégâts divisés par deux',
-    reactionDeflect: (n: number) => `Déviation de projectiles — ${n} dégâts déviés`,
-    relentlessLine: 'RAGE IMPLACABLE — refuse de tomber (1 PV) !',
-    shieldReactionTitle: 'Coup imminent !',
-    shieldReactionDetail: (attacker: string, total: number, ac: number) => `${attacker} te touche (${total} vs CA ${ac}) — Bouclier transformerait le coup en échec (CA ${ac + 5}).`,
-    shieldCastLine: (attacker: string) => `🛡️ BOUCLIER ! L'attaque de ${attacker} se brise sur la barrière arcanique (+5 CA jusqu'à ton prochain tour).`,
-    dayWord: 'Jour',
-    // UI5 — textes de progression / overlays qui restaient en dur.
-    levelUpLine: (lvl: number, hp: number) => `🎊 NIVEAU SUPÉRIEUR ! Niveau ${lvl} ! PV max : ${hp} !`,
-    xpChronicleDesc: (amount: number, total: number) => `${amount} XP gagnés. Total : ${total}.`,
-    reasonCombatVictory: 'Victoire au combat',
-    castHealedLabel: (spell: string, n: number) => `Sort : ${spell} (+${n} PV)`,
-    consumesPotionLabel: (name: string, n: number) => `Potion : ${name} (+${n} PV)`,
-    moraleCheckLabel: (name: string) => `${name} — test de moral (sauvegarde de Sagesse vs DD ${MORALE_DC})`,
-    moraleFledLine: (name: string, total: number) => `${name} rate son test de moral (sauvegarde SAG ${total} vs DD ${MORALE_DC}) et S'ENFUIT du combat — vivant !`,
-    moraleHeldLine: (name: string, total: number) => `${name} réussit son test de moral (sauvegarde SAG ${total} vs DD ${MORALE_DC}) et continue de se battre.`,
-    attacksWith: 'attaque avec',
-    attackWord: 'Attaque',
-    saveNoun: 'Sauvegarde',
-    successWord: 'Réussite',
-    failureWord: 'Échec',
-    deathSaveRequired: 'Jet de mort requis. Lance un d20.',
-    chronicleHeader: 'Chronique',
-    lvlAbbrev: 'Niv',
-  },
-} as const;
-
-function mergeTranscriptText(previous: string, incoming: string): string {
-  const prev = previous.trimEnd();
-  const next = incoming.trim();
-  if (!next) return previous;
-  if (!prev) return next;
-  if (prev.endsWith(next)) return prev;
-  if (next.startsWith(prev)) return next;
-
-  const maxOverlap = Math.min(prev.length, next.length, 240);
-  for (let size = maxOverlap; size >= 12; size--) {
-    if (prev.slice(-size).toLowerCase() === next.slice(0, size).toLowerCase()) {
-      return `${prev}${next.slice(size)}`;
-    }
-  }
-
-  return `${prev} ${next}`;
-}
 
 interface Props {
   character: CharacterSheet;
@@ -381,6 +103,7 @@ interface Props {
 
 export function GameSession({ character, adventure, adventureManifest = '', adventureManifestData = null, campaignRuntime, onLeave, onCharacterUpdate, language = 'en', initialHistory = [], initialJournal, saveId }: Props) {
   const tr = TRANS[language === 'fr' ? 'fr' : 'en'];
+  const rail = useRailWidth();
   const [activePanel, setActivePanel] = useState<'none' | 'inventory' | 'character' | 'journal' | 'codex' | 'campaign' | 'spells' | 'settings'>('none');
   const [chatInput, setChatInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -4736,7 +4459,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       )}
 
       {/* LEFT SIDEBAR: Logs & Dice (Fixed width) */}
-      <div className="w-80 flex flex-col border-r border-gray-800 bg-gray-950/90 z-20 hidden md:flex shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+      <div style={{ width: rail.width }} className="shrink-0 flex flex-col border-r border-gray-800 bg-gray-950/90 z-20 hidden md:flex">
         <div className="flex-1 flex flex-col overflow-hidden">
 
           {/* Chronicle Log */}
@@ -4809,6 +4532,23 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           </div>
         </div>
       </div>
+
+      {/* Poignée du rail : la chronique est la lecture principale du jeu, sa
+          largeur appartient au joueur. Glisser, ◀ ▶, Début ou double-clic pour
+          revenir à l'origine. Cachée sous md, comme le rail qu'elle règle. */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label={tr.railHandle}
+        aria-valuemin={RAIL_WIDTH.min}
+        aria-valuemax={RAIL_WIDTH.max}
+        aria-valuenow={rail.width}
+        tabIndex={0}
+        onPointerDown={rail.onPointerDown}
+        onKeyDown={rail.onKeyDown}
+        onDoubleClick={rail.reset}
+        className={`hidden md:block w-1.5 shrink-0 cursor-col-resize z-20 transition-colors focus-visible:outline-none focus-visible:bg-cyan-400 hover:bg-cyan-400 ${rail.dragging ? 'bg-cyan-400' : 'bg-gray-800'}`}
+      />
 
       {/* MAIN CONTENT Area */}
       <div className="flex-1 relative bg-black flex flex-col items-center justify-center">
@@ -5446,55 +5186,6 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         />
       )}
 
-    </div>
-  );
-}
-
-function NavButton({ icon, label, onClick, active, danger }: any) {
-  return (
-    <button
-      onClick={onClick}
-      title={label}
-      className={`group flex h-14 w-[4.35rem] flex-col items-center justify-center gap-1 rounded-md border text-[10px] font-bold uppercase tracking-wide transition
-           ${active ? 'border-amber-400/40 bg-amber-400/15 text-gold' : 'border-white/10 bg-white/[0.03] text-white/45 hover:bg-white/10 hover:text-white'}
-           ${danger ? 'hover:border-red-400/40 hover:text-red-300' : ''}
-        `}
-    >
-      <div className="flex h-6 items-center justify-center">
-        {icon}
-      </div>
-      <span className="max-w-full truncate px-1 opacity-80 group-hover:opacity-100">{label}</span>
-    </button>
-  )
-}
-
-function HeaderActionButton({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className="inline-flex h-9 items-center gap-2 rounded-md border border-white/10 bg-zinc-950/75 px-3 text-xs font-bold uppercase tracking-wide text-white/60 shadow-lg backdrop-blur-xl transition hover:border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-100"
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
-  );
-}
-
-function HudMeter({ label, value, percent, tone }: { label: string; value: string; percent: number; tone: 'red' | 'gold' }) {
-  const fill = tone === 'red' ? 'bg-red-600' : 'bg-amber-400';
-  const text = tone === 'red' ? 'text-red-300' : 'text-amber-200';
-
-  return (
-    <div className="min-w-0 rounded-md border border-white/10 bg-black/30 px-3 py-2">
-      <div className={`mb-1 flex justify-between gap-2 text-[10px] font-bold uppercase tracking-wide ${text}`}>
-        <span className="truncate">{label}</span>
-        <span className="shrink-0 font-mono">{value}</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full border border-white/10 bg-zinc-900">
-        <div className={`h-full transition-all ${fill}`} style={{ width: `${Math.max(0, Math.min(100, percent))}%` }} />
-      </div>
     </div>
   );
 }

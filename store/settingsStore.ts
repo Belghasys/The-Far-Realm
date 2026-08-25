@@ -37,7 +37,16 @@ export interface AppSettings {
      * See CLOUD_MODELS in services/runwareImageService.ts for the licence note.
      */
     imageQuality: ImageQuality;
+    /**
+     * Largeur du rail de chronique en partie, en px. Réglée par la poignée
+     * (hooks/useRailWidth). 320 = l'ancien `w-80`, pour que personne ne voie
+     * son écran changer sans y avoir touché.
+     */
+    railWidth: number;
 }
+
+/** Bornes de la largeur du rail : en dessous la chronique ne se lit plus, au-dessus la scène disparaît. */
+export const RAIL_WIDTH = { min: 260, max: 720, default: 320 } as const;
 
 export const DM_VOICES = ['Charon', 'Puck', 'Kore', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'] as const;
 
@@ -56,6 +65,7 @@ const DEFAULT_SETTINGS: AppSettings = {
     localMusic: true,
     portraits: true,
     imageQuality: 'fast',
+    railWidth: RAIL_WIDTH.default,
 };
 
 function loadSettings(): AppSettings {
