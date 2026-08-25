@@ -1,0 +1,191 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; position: relative; background: #05001A; overflow: hidden;">
+  <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .17;">
+  <div style="position: absolute; inset: 0; background: rgba(5,0,26,.62);"></div>
+
+  <div style="position: absolute; inset: 46px 90px; display: flex; flex-direction: column; background: #1F0458; border: 4px solid #05001A; border-top: 8px solid #8C01FE; box-shadow: 16px 16px 0 rgba(5,0,26,.65);">
+
+    <div style="display: flex; align-items: center; gap: 16px; padding: 20px 26px; border-bottom: 3px solid #05001A;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+      <div>
+        <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 19px;">TABLEAU DE CAMPAGNE</div>
+        <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.55);">&Eacute;tat du metteur en sc&egrave;ne &middot; plan d'embranchement &middot; chronologie</div>
+      </div>
+      <div style="flex: 1;"></div>
+      <div style="width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid rgba(237,230,216,.35); font-family: 'Bungee', Impact, sans-serif; font-size: 15px;">&times;</div>
+    </div>
+
+    <div style="display: flex; gap: 8px; padding: 18px 26px 0;">
+      <div style="padding: 11px 19px; background: #8C01FE; color: #EDE6D8; border: 3px solid #05001A; box-shadow: 5px 5px 0 #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px;">TRAME</div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">EMBRANCHEMENT</div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">&Eacute;TAT</div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">CHRONOLOGIE</div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex; gap: 22px; padding: 22px 26px 26px;">
+
+      <!-- ═══ La trame : l'antagoniste et les dix-huit chapitres ═══ -->
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 15px;">
+
+        <div style="background: rgba(140,1,254,.1); border: 3px solid #8C01FE; padding: 18px 20px;">
+          <div style="display: flex; align-items: center; gap: 11px; margin-bottom: 11px;">
+            <span style="padding: 4px 10px; background: #8C01FE; color: #EDE6D8; font-family: 'Bungee', Impact, sans-serif; font-size: 9.5px;">ANTAGONISTE</span>
+            <span style="padding: 3px 9px; border: 2px solid rgba(237,230,216,.28); font-size: 9.5px; font-weight: 700; color: rgba(237,230,216,.6);">arch&eacute;type&nbsp;: Successeur</span>
+          </div>
+          <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 17px;">S&Eacute;VERIN, L'OURDISSEUR</div>
+          <p style="margin: 10px 0 0; font-size: 12.5px; line-height: 1.6; color: rgba(237,230,216,.75);">
+            Il ne menace jamais. Il accueille. Il aide le h&eacute;ros sinc&egrave;rement d&egrave;s le premier soir &mdash; et c'est pire qu'un pi&egrave;ge, parce que c'est vrai.
+          </p>
+
+          <!-- Le secret est SOUS SCELLÉ tant que le chapitre de révélation n'est pas atteint.
+               C'est le verrou qui empêche le MJ de vendre la mèche au chapitre 1. -->
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 15px; background: #05001A; border: 2px dashed rgba(237,230,216,.32);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+            <span style="flex: 1; font-size: 11.5px; line-height: 1.45; color: rgba(237,230,216,.6);">Secret scell&eacute; &mdash; le MJ ne peut pas le r&eacute;v&eacute;ler avant l'Acte II.</span>
+            <span style="padding: 4px 10px; background: rgba(242,230,55,.16); color: #F2E637; font-size: 9.5px; font-weight: 700; flex: none;">OUVRE AU CH. 5</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <span style="width: 11px; height: 11px; background: #22E9FF;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">CHAPITRES</span>
+            <span style="font-size: 11px; color: rgba(237,230,216,.5);">18 chapitres &middot; 6 actes &middot; niveaux 1 &agrave; 16</span>
+          </div>
+
+          <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 7px;">
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.14); opacity: .55;">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.45);">1</span>
+              <span style="flex: 1; font-size: 12.5px; text-decoration: line-through;">La Mauvaise Porte</span>
+              <span style="font-size: 10.5px; color: rgba(237,230,216,.4);">Acte I</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 13px 14px; background: rgba(242,230,55,.11); border: 3px solid #F2E637;">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 12px; color: #F2E637;">2</span>
+              <span style="flex: 1; font-size: 13px; font-weight: 700;">Les Quais d'Os</span>
+              <span style="padding: 3px 10px; background: #F2E637; color: #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 9px;">EN COURS</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.5);">3</span>
+              <span style="flex: 1; font-size: 12.5px;">La Ville dans le Corps</span>
+              <span style="font-size: 10.5px; color: rgba(237,230,216,.4);">Acte I</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.5);">4</span>
+              <span style="flex: 1; font-size: 12.5px;">Le refuge des Combleurs</span>
+              <span style="font-size: 10.5px; color: rgba(237,230,216,.4);">Acte I</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.5);">5</span>
+              <span style="flex: 1; font-size: 12.5px;">Le lamaneur cousu</span>
+              <span style="padding: 3px 9px; background: rgba(140,1,254,.3); font-size: 9px; font-weight: 700;">R&Eacute;V&Eacute;LATION</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="width: 26px; font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.5);">6</span>
+              <span style="flex: 1; font-size: 12.5px;">Les pistes crois&eacute;es</span>
+              <span style="font-size: 10.5px; color: rgba(237,230,216,.4);">Acte II</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 13px; padding: 9px 14px; background: transparent; opacity: .4;">
+              <span style="width: 26px;"></span>
+              <span style="flex: 1; font-size: 11.5px;">&hellip; 12 chapitres jusqu'au <b>Prix du Passage</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ L'état du metteur en scène : les horloges et le fil tiré ═══ -->
+      <div style="width: 400px; flex: none; display: flex; flex-direction: column; gap: 14px;">
+
+        <!-- Les horloges d'escalade : le monde avance même quand le joueur traîne. -->
+        <div style="background: #05001A; border: 3px solid rgba(237,230,216,.18); padding: 17px 18px;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 14px;">
+            <span style="width: 11px; height: 11px; background: #F43292;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">HORLOGES</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            <div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px;">
+                <span style="font-size: 12.5px; font-weight: 700;">La Tapisserie se resserre</span>
+                <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #F43292;">3/8</span>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <span style="flex: 1; height: 11px; background: #F43292;"></span>
+                <span style="flex: 1; height: 11px; background: #F43292;"></span>
+                <span style="flex: 1; height: 11px; background: #F43292;"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+              </div>
+              <div style="font-size: 10.5px; margin-top: 6px; color: rgba(237,230,216,.5);">Chaque porte franchie librement tire un fil.</div>
+            </div>
+
+            <div>
+              <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px;">
+                <span style="font-size: 12.5px; font-weight: 700;">La confiance des Combleurs</span>
+                <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #04B77D;">5/6</span>
+              </div>
+              <div style="display: flex; gap: 4px;">
+                <span style="flex: 1; height: 11px; background: #04B77D;"></span>
+                <span style="flex: 1; height: 11px; background: #04B77D;"></span>
+                <span style="flex: 1; height: 11px; background: #04B77D;"></span>
+                <span style="flex: 1; height: 11px; background: #04B77D;"></span>
+                <span style="flex: 1; height: 11px; background: #04B77D;"></span>
+                <span style="flex: 1; height: 11px; background: #14023C; border: 2px solid rgba(237,230,216,.22);"></span>
+              </div>
+              <div style="font-size: 10.5px; margin-top: 6px; color: rgba(237,230,216,.5);">Tu as refus&eacute; leur or devant t&eacute;moins.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Le canon : les faits que le MJ ne peut plus contredire. -->
+        <div style="flex: 1; min-height: 0; background: #05001A; border: 3px solid rgba(237,230,216,.18); padding: 17px 18px; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 13px;">
+            <span style="width: 11px; height: 11px; background: #22E9FF;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">FAITS &Eacute;TABLIS</span>
+            <span style="flex: 1;"></span>
+            <span style="font-size: 10.5px; color: rgba(237,230,216,.45);">7</span>
+          </div>
+          <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 10px; font-size: 11.5px; line-height: 1.5; color: rgba(237,230,216,.72);">
+            <div style="display: flex; gap: 10px;"><span style="color: #22E9FF; flex: none;">&#8226;</span><span>La Mauvaise Porte s'est referm&eacute;e derri&egrave;re Vaudran. Elle ne se rouvrira pas.</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: #22E9FF; flex: none;">&#8226;</span><span>Isaure a une s&oelig;ur. Elle est pass&eacute;e avant lui.</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: #22E9FF; flex: none;">&#8226;</span><span>S&eacute;verin loge les r&eacute;fugi&eacute;s des mondes morts. Gratuitement.</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: #22E9FF; flex: none;">&#8226;</span><span>Halvard doit un service &agrave; Vaudran, pas l'inverse.</span></div>
+            <div style="display: flex; gap: 10px;"><span style="color: rgba(237,230,216,.35); flex: none;">&#8226;</span><span style="color: rgba(237,230,216,.45);">Le Ma&icirc;tre-Quai per&ccedil;oit un p&eacute;age en nature.</span></div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 11px; padding: 12px 15px; background: rgba(140,1,254,.1); border-left: 4px solid #8C01FE;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="2" stroke-linecap="round" style="flex: none;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style="font-size: 11.5px; line-height: 1.45; color: rgba(237,230,216,.72);">Vue d'auteur. Le MJ lit ce tableau&nbsp;; le joueur, lui, a le journal.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

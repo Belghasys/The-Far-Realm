@@ -1,0 +1,210 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; position: relative; background: #05001A; overflow: hidden;">
+
+  <!-- La scène reste derrière, assombrie : on n'a pas quitté la partie, on ouvre un sac. -->
+  <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .17;">
+  <div style="position: absolute; inset: 0; background: rgba(5,0,26,.62);"></div>
+
+  <div style="position: absolute; inset: 46px 90px; display: flex; flex-direction: column; background: #1F0458; border: 4px solid #05001A; border-top: 8px solid #F2E637; box-shadow: 16px 16px 0 rgba(5,0,26,.65);">
+
+    <!-- ── En-tête : ce qu'on porte, ce qu'on peut porter, ce qu'on a en poche ── -->
+    <div style="display: flex; align-items: center; gap: 20px; padding: 20px 26px; border-bottom: 3px solid #05001A;">
+      <div style="display: flex; align-items: center; gap: 13px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 10h8"/><path d="M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6"/></svg>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 19px;">INVENTAIRE</span>
+      </div>
+      <div style="flex: 1;"></div>
+
+      <div style="display: flex; align-items: baseline; gap: 8px; padding: 8px 14px; background: #F2E637; color: #05001A;">
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 15px;">218</span>
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: .08em;">PO</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; width: 190px;">
+        <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: rgba(237,230,216,.6);">
+          <span>Charge</span><span>96 / 240 lb</span>
+        </div>
+        <div style="height: 9px; background: #05001A; border: 2px solid rgba(237,230,216,.22); display: flex;">
+          <div style="width: 40%; background: #04B77D;"></div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding: 8px 13px; border: 2px solid #8C01FE;">
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: .07em; color: rgba(237,230,216,.6);">HARMONIS&Eacute;S</span>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 13px; color: #8C01FE;">1/3</span>
+      </div>
+      <div style="width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid rgba(237,230,216,.35); font-family: 'Bungee', Impact, sans-serif; font-size: 15px;">&times;</div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex;">
+
+      <!-- ═══ Les emplacements portés. Silhouette, pas liste : on voit ce qui est VIDE. ═══ -->
+      <div style="width: 476px; flex: none; padding: 24px 26px; border-right: 3px solid #05001A; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <span style="width: 12px; height: 12px; background: #22E9FF;"></span>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">PORT&Eacute;</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px;">
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">T&Ecirc;TE</div>
+            <div style="font-size: 12px; margin-top: 3px; color: rgba(237,230,216,.32);">Vide</div>
+          </div>
+          <div style="background: #05001A; border: 2px solid #8C01FE; padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">COU</div>
+            <div style="display: flex; align-items: baseline; gap: 7px; margin-top: 3px;">
+              <span style="font-size: 12px; font-weight: 700;">Amulette du Portier</span>
+              <span style="padding: 1px 5px; background: #8C01FE; color: #05001A; font-size: 8px; font-weight: 700;">&#9679;</span>
+            </div>
+          </div>
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">DOS</div>
+            <div style="font-size: 12px; margin-top: 3px;">Cape de voyage</div>
+          </div>
+          <div style="background: #05001A; border: 2px solid #22E9FF; padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">TORSE</div>
+            <div style="display: flex; align-items: baseline; gap: 7px; margin-top: 3px;">
+              <span style="font-size: 12px; font-weight: 700;">Cotte de mailles</span>
+              <span style="font-size: 10px; color: #22E9FF;">CA 16</span>
+            </div>
+          </div>
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">CEINTURE</div>
+            <div style="font-size: 12px; margin-top: 3px; color: rgba(237,230,216,.32);">Vide</div>
+          </div>
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">MAINS</div>
+            <div style="font-size: 12px; margin-top: 3px;">Gantelets de cuir</div>
+          </div>
+
+          <div style="grid-column: 1 / -1; height: 2px; background: rgba(237,230,216,.14); margin: 4px 0;"></div>
+
+          <div style="background: rgba(242,230,55,.1); border: 3px solid #F2E637; padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: #F2E637;">PRINCIPALE</div>
+            <div style="font-size: 12.5px; font-weight: 700; margin-top: 3px;">Hache &agrave; deux mains</div>
+            <div style="font-size: 10px; margin-top: 2px; color: rgba(237,230,216,.6);">1d12 tranchant &middot; lourde</div>
+          </div>
+          <div style="background: #05001A; border: 2px dashed rgba(237,230,216,.28); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">MAIN GAUCHE</div>
+            <div style="font-size: 11px; margin-top: 3px; color: rgba(237,230,216,.35); line-height: 1.3;">Occup&eacute;e &mdash; arme &agrave; deux mains</div>
+          </div>
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">&Agrave; DISTANCE</div>
+            <div style="font-size: 12px; margin-top: 3px;">Javelines &times;3</div>
+          </div>
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">ANNEAU</div>
+            <div style="font-size: 12px; margin-top: 3px; color: rgba(237,230,216,.32);">Vide</div>
+          </div>
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">ANNEAU 2</div>
+            <div style="font-size: 12px; margin-top: 3px; color: rgba(237,230,216,.32);">Vide</div>
+          </div>
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">JAMBES</div>
+            <div style="font-size: 12px; margin-top: 3px;">Braies renforc&eacute;es</div>
+          </div>
+
+          <div style="background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 10px 11px;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.42);">PIEDS</div>
+            <div style="font-size: 12px; margin-top: 3px;">Bottes clout&eacute;es</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Le contenu : trois onglets, une seule liste à la fois ═══ -->
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+
+        <div style="display: flex; gap: 9px; padding: 20px 26px 0;">
+          <div style="padding: 11px 20px; background: #22E9FF; color: #05001A; border: 3px solid #05001A; box-shadow: 5px 5px 0 #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">&Eacute;QUIPEMENT</div>
+          <div style="padding: 11px 20px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.6);">SAC &Agrave; DOS</div>
+          <div style="padding: 11px 20px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: rgba(237,230,216,.6);">CONSOMMABLES</div>
+        </div>
+
+        <div style="flex: 1; min-height: 0; padding: 20px 26px 24px; display: flex; flex-direction: column; gap: 10px;">
+
+          <div style="display: flex; align-items: center; gap: 14px; padding: 13px 15px; background: rgba(242,230,55,.1); border: 3px solid #F2E637;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2"/></svg>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">HACHE &Agrave; DEUX MAINS</div>
+              <div style="font-size: 11px; margin-top: 2px; color: rgba(237,230,216,.65);">1d12 tranchant &middot; lourde, &agrave; deux mains &middot; 7 lb</div>
+            </div>
+            <span style="padding: 6px 13px; background: #F2E637; color: #05001A; font-size: 10.5px; font-weight: 700;">&Eacute;QUIP&Eacute;E</span>
+            <span style="padding: 6px 11px; border: 2px solid rgba(237,230,216,.3); font-size: 10.5px; font-weight: 700; color: rgba(237,230,216,.65);">D&eacute;poser</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; padding: 13px 15px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">COTTE DE MAILLES</div>
+              <div style="font-size: 11px; margin-top: 2px; color: rgba(237,230,216,.65);">CA 16 &middot; interm&eacute;diaire &middot; discr&eacute;tion d&eacute;savantag&eacute;e &middot; 55 lb</div>
+            </div>
+            <span style="padding: 6px 13px; background: #F2E637; color: #05001A; font-size: 10.5px; font-weight: 700;">&Eacute;QUIP&Eacute;E</span>
+            <span style="padding: 6px 11px; border: 2px solid rgba(237,230,216,.3); font-size: 10.5px; font-weight: 700; color: rgba(237,230,216,.65);">D&eacute;poser</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; padding: 13px 15px; background: rgba(140,1,254,.12); border: 3px solid #8C01FE;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="12" cy="14" r="6"/><path d="M9 8V4h6v4"/></svg>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: baseline; gap: 9px;">
+                <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">AMULETTE DU PORTIER</span>
+                <span style="padding: 2px 7px; background: #8C01FE; color: #05001A; font-size: 8.5px; font-weight: 700;">HARMONIS&Eacute;E</span>
+              </div>
+              <div style="font-size: 11px; margin-top: 2px; color: rgba(237,230,216,.65);">Les portes closes te r&eacute;pondent. Le MJ sait laquelle. &middot; 1 lb</div>
+            </div>
+            <span style="padding: 6px 13px; background: #8C01FE; color: #05001A; font-size: 10.5px; font-weight: 700;">PORT&Eacute;E</span>
+            <span style="padding: 6px 11px; border: 2px solid rgba(237,230,216,.3); font-size: 10.5px; font-weight: 700; color: rgba(237,230,216,.65);">D&eacute;poser</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; padding: 13px 15px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M12 2 4 7v10l8 5 8-5V7z"/><path d="m12 12 8-5M12 12v10M12 12 4 7"/></svg>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">JAVELINE &times;3</div>
+              <div style="font-size: 11px; margin-top: 2px; color: rgba(237,230,216,.65);">1d6 perforant &middot; de jet, 9/36 m &middot; 6 lb</div>
+            </div>
+            <span style="padding: 6px 13px; border: 2px solid rgba(237,230,216,.42); font-size: 10.5px; font-weight: 700;">&Eacute;quiper</span>
+            <span style="padding: 6px 11px; border: 2px solid rgba(237,230,216,.3); font-size: 10.5px; font-weight: 700; color: rgba(237,230,216,.65);">D&eacute;poser</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 14px; padding: 13px 15px; background: #05001A; border: 2px solid rgba(237,230,216,.18); opacity: .55;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.5)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><circle cx="12" cy="12" r="9"/><path d="M9 12h6"/></svg>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">BOUCLIER</div>
+              <div style="font-size: 11px; margin-top: 2px; color: rgba(237,230,216,.65);">+2 CA &middot; incompatible avec une arme &agrave; deux mains &middot; 6 lb</div>
+            </div>
+            <span style="padding: 6px 13px; border: 2px solid rgba(237,230,216,.25); font-size: 10.5px; font-weight: 700; color: rgba(237,230,216,.4);">Bloqu&eacute;</span>
+          </div>
+
+          <div style="flex: 1;"></div>
+
+          <!-- La règle SRD est rappelée là où on la heurte, pas dans un manuel. -->
+          <div style="display: flex; align-items: center; gap: 11px; padding: 11px 14px; background: rgba(140,1,254,.1); border-left: 4px solid #8C01FE;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="2" stroke-linecap="round" style="flex: none;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+            <span style="font-size: 11.5px; line-height: 1.45; color: rgba(237,230,216,.72);">Trois objets magiques harmonis&eacute;s au maximum &mdash; il t'en reste deux.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

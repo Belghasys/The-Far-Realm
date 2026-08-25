@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; position: relative; background: #05001A; overflow: hidden;">
+  <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .17;">
+  <div style="position: absolute; inset: 0; background: rgba(5,0,26,.62);"></div>
+
+  <div style="position: absolute; inset: 46px 90px; display: flex; flex-direction: column; background: #1F0458; border: 4px solid #05001A; border-top: 8px solid #04B77D; box-shadow: 16px 16px 0 rgba(5,0,26,.65);">
+
+    <div style="display: flex; align-items: center; gap: 16px; padding: 20px 26px; border-bottom: 3px solid #05001A;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#04B77D" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex: none;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <div>
+        <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 19px;">JOURNAL D'AVENTURE</div>
+        <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.55);">3 qu&ecirc;tes actives &middot; 14 entr&eacute;es de chronique</div>
+      </div>
+      <div style="flex: 1;"></div>
+      <div style="width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid rgba(237,230,216,.35); font-family: 'Bungee', Impact, sans-serif; font-size: 15px;">&times;</div>
+    </div>
+
+    <!-- ── Six onglets. Le journal n'est pas un carnet de notes : c'est la mémoire
+         que le MJ et le joueur partagent, et chaque onglet est un type de souvenir. ── -->
+    <div style="display: flex; gap: 8px; padding: 18px 26px 0;">
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">PROLOGUE</div>
+      <div style="padding: 11px 19px; background: #04B77D; color: #05001A; border: 3px solid #05001A; box-shadow: 5px 5px 0 #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px;">QU&Ecirc;TES</div>
+      <div style="position: relative; padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">
+        PNJ
+        <span style="position: absolute; top: -8px; right: -8px; min-width: 17px; height: 17px; padding: 0 4px; display: grid; place-items: center; background: #F2E637; color: #05001A; font-size: 9px;">2</span>
+      </div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">LIEUX</div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">CHRONIQUE</div>
+      <div style="padding: 11px 19px; background: #05001A; border: 3px solid rgba(237,230,216,.22); font-family: 'Bungee', Impact, sans-serif; font-size: 10.5px; color: rgba(237,230,216,.6);">GALERIE</div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex; gap: 22px; padding: 22px 26px 26px;">
+
+      <!-- ═══ Les quêtes. L'objectif en cours d'abord, gros ; le reste dessous. ═══ -->
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+
+        <div style="background: rgba(242,230,55,.09); border: 3px solid #F2E637; padding: 18px 20px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <span style="padding: 4px 10px; background: #F2E637; color: #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 9.5px;">OBJECTIF EN COURS</span>
+            <span style="font-size: 11px; color: rgba(237,230,216,.55);">Chapitre 2 &mdash; Les Quais d'Os</span>
+          </div>
+          <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 16px; line-height: 1.4;">Franchir les Quais d'Os sans y laisser ton nom</div>
+          <p style="margin: 10px 0 0; font-size: 12.5px; line-height: 1.6; color: rgba(237,230,216,.72);">
+            Le Ma&icirc;tre-Quai per&ccedil;oit un p&eacute;age sur tout ce qui traverse. Il accepte l'or, mais il pr&eacute;f&egrave;re autre chose.
+          </p>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; padding: 14px 18px; background: #05001A; border-left: 4px solid #04B77D;">
+          <span style="padding: 4px 10px; background: #04B77D; color: #05001A; font-size: 9.5px; font-weight: 700; flex: none;">ACTIVE</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 700;">Retrouver la s&oelig;ur d'Isaure la Carti&egrave;re</div>
+            <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.6);">&laquo;&nbsp;Elle est pass&eacute;e par la Mauvaise Porte. Elle n'en est pas revenue.&nbsp;&raquo;</div>
+          </div>
+          <span style="font-size: 10.5px; color: rgba(237,230,216,.4); flex: none;">ch. 1</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; padding: 14px 18px; background: #05001A; border-left: 4px solid #04B77D;">
+          <span style="padding: 4px 10px; background: #04B77D; color: #05001A; font-size: 9.5px; font-weight: 700; flex: none;">ACTIVE</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 700;">Comprendre ce que veut Ma&icirc;tre S&eacute;verin</div>
+            <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.6);">Il t'a log&eacute;, nourri, soign&eacute;. Sans rien demander. Pas encore.</div>
+          </div>
+          <span style="font-size: 10.5px; color: rgba(237,230,216,.4); flex: none;">ch. 2</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; padding: 14px 18px; background: #05001A; border-left: 4px solid rgba(237,230,216,.25); opacity: .55;">
+          <span style="padding: 4px 10px; background: rgba(237,230,216,.2); font-size: 9.5px; font-weight: 700; flex: none;">TERMIN&Eacute;E</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 700; text-decoration: line-through;">Trouver un toit pour la nuit</div>
+            <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.6);">Le refuge des Combleurs t'a ouvert sa porte.</div>
+          </div>
+          <span style="font-size: 10.5px; color: rgba(237,230,216,.4); flex: none;">ch. 1</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 15px; padding: 14px 18px; background: #05001A; border-left: 4px solid #F43292; opacity: .7;">
+          <span style="padding: 4px 10px; background: #F43292; color: #05001A; font-size: 9.5px; font-weight: 700; flex: none;">&Eacute;CHOU&Eacute;E</span>
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 13px; font-weight: 700;">Emp&ecirc;cher la saisie de l'&eacute;choppe de Rossignole</div>
+            <div style="font-size: 11.5px; margin-top: 3px; color: rgba(237,230,216,.6);">Tu es arriv&eacute; le lendemain. Les Combleurs avaient d&eacute;j&agrave; tout rachet&eacute;.</div>
+          </div>
+          <span style="font-size: 10.5px; color: rgba(237,230,216,.4); flex: none;">ch. 2</span>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div style="display: flex; align-items: center; gap: 11px; padding: 12px 15px; background: rgba(34,233,255,.08); border-left: 4px solid #22E9FF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22E9FF" stroke-width="2" stroke-linecap="round" style="flex: none;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.01"/></svg>
+          <span style="font-size: 11.5px; line-height: 1.45; color: rgba(237,230,216,.72);">Le MJ tient ce journal lui-m&ecirc;me. Tout ce qui est &eacute;crit ici, il s'en souvient.</span>
+        </div>
+      </div>
+
+      <!-- ═══ Ce que le MJ vient d'inscrire, en marge ═══ -->
+      <div style="width: 386px; flex: none; display: flex; flex-direction: column; gap: 14px;">
+
+        <div style="background: #05001A; border: 3px solid rgba(237,230,216,.18); padding: 17px 18px;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 13px;">
+            <span style="width: 11px; height: 11px; background: #F900FA;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">RENCONTR&Eacute;S R&Eacute;CEMMENT</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 11px;">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span style="width: 5px; align-self: stretch; background: #F900FA; flex: none;"></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                  <span style="font-size: 12.5px; font-weight: 700;">Ma&icirc;tre S&eacute;verin</span>
+                  <span style="padding: 1px 6px; background: #F2E637; color: #05001A; font-size: 8px; font-weight: 700;">NOUVEAU</span>
+                </div>
+                <div style="font-size: 11px; margin-top: 3px; line-height: 1.45; color: rgba(237,230,216,.62);">Fondateur des Combleurs. Manteau cousu d'&eacute;toffes de tous les mondes. T'a aid&eacute; sans rien demander.</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span style="width: 5px; align-self: stretch; background: #F900FA; flex: none;"></span>
+              <div style="min-width: 0;">
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                  <span style="font-size: 12.5px; font-weight: 700;">Isaure la Carti&egrave;re</span>
+                  <span style="padding: 1px 6px; background: #F2E637; color: #05001A; font-size: 8px; font-weight: 700;">NOUVEAU</span>
+                </div>
+                <div style="font-size: 11px; margin-top: 3px; line-height: 1.45; color: rgba(237,230,216,.62);">Dessine des cartes de mondes qui n'existent plus. Cherche sa s&oelig;ur.</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span style="width: 5px; align-self: stretch; background: rgba(237,230,216,.28); flex: none;"></span>
+              <div style="min-width: 0;">
+                <div style="font-size: 12.5px; font-weight: 700;">Capitaine Halvard</div>
+                <div style="font-size: 11px; margin-top: 3px; line-height: 1.45; color: rgba(237,230,216,.62);">Garde des seuils. T'a laiss&eacute; entrer, contre un service &agrave; rendre.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- La chronique : ce que le MJ retient quand la conversation, elle, est purgée. -->
+        <div style="flex: 1; min-height: 0; background: #05001A; border: 3px solid rgba(237,230,216,.18); padding: 17px 18px; display: flex; flex-direction: column;">
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 13px;">
+            <span style="width: 11px; height: 11px; background: #8C01FE;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">CHRONIQUE</span>
+          </div>
+          <div style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 13px;">
+            <div>
+              <div style="font-size: 9.5px; font-weight: 700; letter-spacing: .08em; color: #8C01FE;">CHAPITRE 2</div>
+              <p style="margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: rgba(237,230,216,.72);">Tu as refus&eacute; l'or des Combleurs devant t&eacute;moins. Rossignole s'en souvient.</p>
+            </div>
+            <div>
+              <div style="font-size: 9.5px; font-weight: 700; letter-spacing: .08em; color: #8C01FE;">CHAPITRE 2</div>
+              <p style="margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: rgba(237,230,216,.72);">Un racleur de quai t'a fui plut&ocirc;t que de mourir. Il conna&icirc;t ton visage.</p>
+            </div>
+            <div>
+              <div style="font-size: 9.5px; font-weight: 700; letter-spacing: .08em; color: rgba(237,230,216,.4);">CHAPITRE 1</div>
+              <p style="margin: 4px 0 0; font-size: 11.5px; line-height: 1.55; color: rgba(237,230,216,.55);">Tu es pass&eacute; par la Mauvaise Porte. Elle s'est referm&eacute;e derri&egrave;re toi.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

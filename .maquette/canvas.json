@@ -1,0 +1,41 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",       "x": 0,    "y": 0,    "w": 1440, "h": 900, "title": "HUD de partie" },
+    { "file": "Combat.dc.html",     "x": 1560, "y": 0,    "w": 1440, "h": 900, "title": "HUD de combat" },
+    { "file": "Inventaire.dc.html", "x": 3120, "y": 0,    "w": 1440, "h": 900, "title": "Inventaire" },
+    { "file": "Fiche.dc.html",      "x": 0,    "y": 1080, "w": 1440, "h": 900, "title": "Fiche de personnage" },
+    { "file": "Journal.dc.html",    "x": 1560, "y": 1080, "w": 1440, "h": 900, "title": "Journal d'aventure" },
+    { "file": "Campagne.dc.html",   "x": 3120, "y": 1080, "w": 1440, "h": 900, "title": "Tableau de campagne" }
+  ],
+  "annotations": [
+    {
+      "id": "charte",
+      "x": 0,
+      "y": -240,
+      "w": 640,
+      "text": "LA CHARTE, DESCENDUE DANS LE JEU\n\nMêmes jetons que le hall (theme/tokens.ts) : fond #14023C, panneaux #1F0458, encre #05001A, accents cyan / acide / rose / émeraude / violet.\nBungee pour la titraille, Space Grotesk pour le texte.\n\nUne seule règle non négociable : l'ombre est TOUJOURS dure et décalée, jamais floue. Un seul blur et l'écran retombe dans le générique."
+    },
+    {
+      "id": "lecture",
+      "x": 3120,
+      "y": -240,
+      "w": 640,
+      "text": "CE QUI PORTE LA LISIBILITÉ\n\n· La couleur porte l'ÉTAT, jamais la décoration : acide = à toi de jouer, émeraude = disponible, rose = blessure ou danger, violet = magie et coulisses.\n· Tout chiffre qu'on lit à chaque tour est en Bungee et gros. Tout ce qu'on lit une fois est en petit.\n· Les jauges (PV, horloges, charge) sont des barres segmentées : on voit l'état sans lire le ratio."
+    },
+    {
+      "id": "note-combat",
+      "x": 1560,
+      "y": -240,
+      "w": 640,
+      "text": "HUD DE COMBAT — la colonne de droite ne bouge jamais.\n\n462 px fixes : initiative, ennemis, jets. Le joueur apprend où regarder une fois et n'y revient plus par tâtonnement.\n\nLe « Racleur EN FUITE » n'est pas du décor : c'est le registre `departed` du moteur de moral — un ennemi qui fuit n'est pas mort, il se souvient de ton visage."
+    },
+    {
+      "id": "note-campagne",
+      "x": 3120,
+      "y": 2040,
+      "w": 640,
+      "text": "TABLEAU DE CAMPAGNE — vue d'auteur, pas vue joueur.\n\nLe secret de Séverin s'affiche SOUS SCELLÉ avec son chapitre d'ouverture. C'est le verrou anti-spoiler du moteur, rendu visible : le MJ ne peut pas vendre la mèche au chapitre 1.\n\nLes horloges avancent même quand le joueur traîne — c'est ce qui empêche le monde de l'attendre."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

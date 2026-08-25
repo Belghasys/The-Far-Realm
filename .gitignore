@@ -80,3 +80,7 @@ desktop.ini
 Website Material/
 *.mp3
 !public/media/**/*.mp3
+
+# Maquette UI (Claude Design) : la page assemblee pese 2,4 Mo et se regenere
+# depuis les .dc.html ; seules les sources sont versionnees.
+.maquette/ui-en-jeu-*.html

@@ -1,0 +1,285 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; display: flex; background: #05001A; overflow: hidden;">
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       LE RAIL. Tout ce qui s'ÉCRIT vit ici, en colonne, du haut vers le bas :
+       ce que le MJ a dit, ce qu'on lui répond, ce que les dés ont donné.
+       La scène, elle, ne porte jamais de texte long — c'est ce qui permet de
+       la regarder.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div style="width: 300px; flex: none; display: flex; flex-direction: column; background: #14023C; border-right: 3px solid #22E9FF;">
+
+    <!-- ── Chronique ──────────────────────────────────────────────────── -->
+    <div style="display: flex; align-items: center; gap: 9px; padding: 12px 15px; background: #05001A; border-bottom: 2px solid rgba(237,230,216,.14);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 10px; color: #22E9FF;">CHRONIQUE</span>
+    </div>
+
+    <div style="flex: 1; min-height: 0; overflow: hidden; padding: 15px 15px 6px; display: flex; flex-direction: column; gap: 15px;">
+
+      <!-- Le MJ occupe toute la laisse ; le héros est repoussé à droite.
+           On lit qui parle sans lire l'étiquette. -->
+      <div>
+        <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .13em; color: rgba(237,230,216,.38); margin-bottom: 5px;">MJ</div>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.62; color: rgba(237,230,216,.86);">
+          Le Ma&icirc;tre-Quai pose sa gaffe en travers de la passerelle, sans h&acirc;te. &laquo;&nbsp;Personne ne franchit les Quais d'Os sans laisser quelque chose derri&egrave;re lui. Un nom, une dent, un souvenir &mdash; je ne suis pas regardant.&nbsp;&raquo; Derri&egrave;re lui, les c&ocirc;tes du grand poisson mort gr&eacute;sillent sous les lanternes.
+        </p>
+      </div>
+
+      <div style="align-self: flex-end; max-width: 84%;">
+        <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .13em; color: #F2E637; margin-bottom: 5px; text-align: right;">H&Eacute;ROS</div>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.55; text-align: right; color: #EDE6D8;">
+          Je lui montre l'insigne de mon ancienne unit&eacute;. &laquo;&nbsp;Ce nom-l&agrave;, je l'ai d&eacute;j&agrave; laiss&eacute; quelque part.&nbsp;&raquo;
+        </p>
+      </div>
+
+      <div>
+        <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .13em; color: rgba(237,230,216,.38); margin-bottom: 5px;">MJ</div>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.62; color: rgba(237,230,216,.86);">
+          Il prend l'insigne, le tourne dans la lumi&egrave;re, et son sourire tombe d'un coup. &laquo;&nbsp;La Onzi&egrave;me. Vous &eacute;tiez &agrave; la Mauvaise Porte.&nbsp;&raquo; Il recule d'un pas et lib&egrave;re le passage. Derri&egrave;re toi, un racleur d&eacute;tale vers les quais &mdash; il a entendu.
+        </p>
+      </div>
+
+      <div style="align-self: flex-end; max-width: 84%;">
+        <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .13em; color: #F2E637; margin-bottom: 5px; text-align: right;">H&Eacute;ROS</div>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.55; text-align: right; color: #EDE6D8;">
+          Je le laisse partir. Je veux savoir &agrave; qui il court le dire.
+        </p>
+      </div>
+
+      <div>
+        <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .13em; color: rgba(237,230,216,.38); margin-bottom: 5px;">MJ</div>
+        <p style="margin: 0; font-size: 11.5px; line-height: 1.62; color: rgba(237,230,216,.86);">
+          Il file vers le refuge des Combleurs. Tu le suis&nbsp;?
+        </p>
+      </div>
+    </div>
+
+    <!-- ── La saisie. Écrire OU parler, au même endroit, sans changer de mode. ── -->
+    <div style="padding: 10px 12px; display: flex; align-items: center; gap: 8px; border-top: 2px solid rgba(237,230,216,.14);">
+      <div style="flex: 1; min-width: 0; padding: 11px 12px; background: #05001A; border: 2px solid rgba(237,230,216,.24); font-size: 11.5px; color: rgba(237,230,216,.38);">Parler avec le DM&hellip;</div>
+      <div style="width: 34px; height: 34px; flex: none; display: grid; place-items: center; background: #05001A; border: 2px solid rgba(237,230,216,.24);">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.62)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div style="width: 34px; height: 34px; flex: none; display: grid; place-items: center; background: #F43292; border: 2px solid #05001A; box-shadow: 3px 3px 0 #05001A;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#05001A" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+      </div>
+    </div>
+
+    <!-- ── Les jets. Le seul endroit du jeu où l'on peut VÉRIFIER le MJ :
+         chaque ligne montre le calcul, pas seulement le verdict. ── -->
+    <div style="height: 300px; flex: none; display: flex; flex-direction: column; border-top: 3px solid #05001A;">
+      <div style="display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #05001A;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="2" stroke-linejoin="round"><path d="M12 2 4 7v10l8 5 8-5V7z"/><path d="m12 12 8-5M12 12v10M12 12 4 7"/></svg>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 9.5px; color: #F2E637;">JETS</span>
+        <span style="flex: 1;"></span>
+        <span style="padding: 3px 8px; background: #F2E637; color: #05001A; font-size: 8.5px; font-weight: 700;">TOUS 96</span>
+        <span style="padding: 3px 8px; border: 1px solid rgba(237,230,216,.28); font-size: 8.5px; font-weight: 700; color: rgba(237,230,216,.55);">COMBAT 73</span>
+        <span style="padding: 3px 8px; border: 1px solid rgba(237,230,216,.28); font-size: 8.5px; font-weight: 700; color: rgba(237,230,216,.55);">COMP. 23</span>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px;">
+
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(242,230,55,.1); border-left: 5px solid #F2E637;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">D&eacute;g&acirc;ts&nbsp;: Hache &agrave; 2 mains</div>
+            <div style="font-size: 9.5px; margin-top: 2px; color: rgba(237,230,216,.5);">1d12+4 = 13 (tranchant)</div>
+          </div>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 15px; color: #F2E637; flex: none;">13</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(4,183,125,.1); border-left: 5px solid #04B77D;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Reconna&icirc;tre l'insigne de la Onzi&egrave;me</div>
+            <div style="font-size: 9.5px; margin-top: 2px; color: rgba(237,230,216,.5);">14 +6 = 20 vs DD 15 &nbsp;&#10003;&nbsp;R&Eacute;USSITE</div>
+          </div>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 15px; color: #04B77D; flex: none;">20</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(244,50,146,.1); border-left: 5px solid #F43292;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Rattraper le racleur qui d&eacute;tale</div>
+            <div style="font-size: 9.5px; margin-top: 2px; color: rgba(237,230,216,.5);">5 +1 = 6 vs DD 13 &nbsp;&#10007;&nbsp;&Eacute;CHEC</div>
+          </div>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 15px; color: #F43292; flex: none;">6</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: rgba(140,1,254,.12); border-left: 5px solid #8C01FE;">
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Jet de moral &mdash; Racleur</div>
+            <div style="font-size: 9.5px; margin-top: 2px; color: rgba(237,230,216,.5);">7 vs DD 12 &nbsp;&#10007;&nbsp;IL FUIT</div>
+          </div>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 15px; color: #8C01FE; flex: none;">7</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; padding: 8px 12px; background: #05001A; border-top: 2px solid rgba(237,230,216,.1);">
+      <span style="display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; color: rgba(237,230,216,.45);">
+        <span style="width: 7px; height: 7px; background: #22E9FF;"></span>Audit
+      </span>
+      <span style="display: flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700; color: rgba(237,230,216,.32);">
+        <span style="width: 7px; height: 7px; background: rgba(237,230,216,.25);"></span>D&eacute;v OFF
+      </span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       LA SCÈNE. Elle prend tout le reste, et ne porte que des surcouches
+       COURTES : qui je suis, quel jour on est, ma vie, mes menus.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div style="flex: 1; min-width: 0; position: relative; background: #05001A;">
+    <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block;">
+    <div style="position: absolute; inset: 0 0 auto 0; height: 26%; background: linear-gradient(to bottom, rgba(5,0,26,.88), rgba(5,0,26,0));"></div>
+    <div style="position: absolute; inset: auto 0 0 0; height: 30%; background: linear-gradient(to top, rgba(5,0,26,.92), rgba(5,0,26,0));"></div>
+
+    <!-- ── Qui je suis. Le point vert dit une seule chose : le MJ est en ligne. ── -->
+    <div style="position: absolute; top: 18px; left: 22px; display: flex; align-items: center; gap: 11px;">
+      <span style="width: 10px; height: 10px; background: #04B77D; flex: none;"></span>
+      <div>
+        <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 17px; letter-spacing: .01em;">VAUDRAN</div>
+        <div style="font-size: 10.5px; margin-top: 2px; color: rgba(237,230,216,.62);">Niv 3 &middot; Nain des montagnes &middot; Guerrier</div>
+      </div>
+    </div>
+
+    <!-- ── Où on en est dans le temps, et dans quelle campagne. ── -->
+    <div style="position: absolute; top: 18px; right: 22px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 7px; padding: 5px 11px; background: rgba(5,0,26,.72); border: 2px solid rgba(237,230,216,.24);">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <span style="font-size: 10px; font-weight: 700; letter-spacing: .05em;">JOUR 6 &mdash; JOURN&Eacute;E</span>
+        </div>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #F2E637; letter-spacing: .03em;">PORTES_EXIL</span>
+      </div>
+
+      <div style="display: flex; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(5,0,26,.78); border: 2px solid rgba(237,230,216,.24); font-size: 9.5px; font-weight: 700; letter-spacing: .05em;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#22E9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          SAUVER
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(5,0,26,.78); border: 2px solid rgba(237,230,216,.24); font-size: 9.5px; font-weight: 700; letter-spacing: .05em;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#F900FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          MUSIQUE
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(5,0,26,.78); border: 2px solid rgba(237,230,216,.24); font-size: 9.5px; font-weight: 700; letter-spacing: .05em;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#04B77D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20v-6a8 8 0 0 1 16 0v6z"/><path d="M2 20h20M9 8V4M15 8V4"/></svg>
+          REPOS COURT
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(5,0,26,.78); border: 2px solid rgba(237,230,216,.24); font-size: 9.5px; font-weight: 700; letter-spacing: .05em;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14a8 8 0 1 1-9.5-9.9A7 7 0 0 0 20 14z"/></svg>
+          REPOS LONG
+        </div>
+        <div style="width: 32px; display: grid; place-items: center; background: rgba(5,0,26,.78); border: 2px solid rgba(237,230,216,.24);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.75)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 7 19.4a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0-1.2-2.9H1a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 2.6 7a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H7a1.7 1.7 0 0 0 1-1.5V1a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V7a1.7 1.7 0 0 0 1.5 1H23a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── L'invite discrète, au milieu de la scène : le seul texte que la
+         scène accepte, parce qu'il disparaît dès qu'on a compris. ── -->
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11.5px; color: rgba(237,230,216,.24); letter-spacing: .04em;">
+      Maintiens la barre d'espace pour parler, ou &eacute;cris au MJ
+    </div>
+
+    <!-- ── Les capacités, calées à droite au-dessus de la barre : ce qui est
+         pr&ecirc;t à être dépensé, sans ouvrir de fenêtre. ── -->
+    <div style="position: absolute; right: 22px; bottom: 122px; width: 96px; background: rgba(5,0,26,.85); border: 2px solid #8C01FE; padding: 9px 10px; text-align: center;">
+      <div style="font-size: 8.5px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.55);">CAPACIT&Eacute;S</div>
+      <div style="display: flex; gap: 5px; justify-content: center; margin-top: 7px;">
+        <span style="width: 22px; height: 22px; display: grid; place-items: center; background: #8C01FE; color: #05001A;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#05001A" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M5 8l7-5 7 5"/></svg>
+        </span>
+      </div>
+      <div style="font-size: 8.5px; margin-top: 6px; color: rgba(237,230,216,.5);">1 emplacement</div>
+    </div>
+
+    <!-- ── LA BARRE. Deux jauges qu'on lit sans compter, puis huit portes. ── -->
+    <div style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 20px; display: flex; align-items: stretch; gap: 12px;">
+
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 9px; width: 224px; padding: 13px 16px; background: rgba(5,0,26,.9); border: 3px solid rgba(237,230,216,.22);">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.5);">PV</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #F43292;">24 / 31</span>
+          </div>
+          <div style="height: 9px; background: #14023C; border: 1px solid rgba(237,230,216,.2); display: flex;">
+            <div style="width: 77%; background: #F43292;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: .1em; color: rgba(237,230,216,.5);">XP</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #F2E637;">1 340 / 2 700</span>
+          </div>
+          <div style="height: 9px; background: #14023C; border: 1px solid rgba(237,230,216,.2); display: flex;">
+            <div style="width: 49%; background: #F2E637;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Huit portes, toujours dans le même ordre, jamais réordonnées :
+           c'est ce qui permet de les atteindre sans les lire. -->
+      <div style="display: flex; gap: 7px; padding: 11px 13px; background: rgba(5,0,26,.9); border: 3px solid rgba(237,230,216,.22);">
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22E9FF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">PERSONNAGE</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2); position: relative;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#04B77D" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">JOURNAL</span>
+          <span style="position: absolute; top: -6px; right: -5px; min-width: 15px; height: 15px; padding: 0 3px; display: grid; place-items: center; background: #F2E637; color: #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 8px;">2</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C01FE" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">CAMPAGNE</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2AA9F6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h7a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H2z"/><path d="M22 4h-7a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H22z"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">CODEX</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F900FA" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M15 9h.01M17.8 6.2 19 5M3 21l9-9M12.2 6.2 11 5"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">GRIMOIRE</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F43292" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6M16 16l4 4M19 21l2-2M5 21 3 19l2-2"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">COMBAT</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F2E637" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M8 10h8"/><path d="M8 22v-6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v6"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em;">INVENTAIRE</span>
+        </div>
+
+        <div style="width: 66px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 4px; background: #1F0458; border: 2px solid rgba(237,230,216,.2);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(237,230,216,.6)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+          <span style="font-size: 8px; font-weight: 700; letter-spacing: .05em; color: rgba(237,230,216,.6);">QUITTER</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

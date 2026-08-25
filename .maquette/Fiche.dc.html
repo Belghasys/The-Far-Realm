@@ -1,0 +1,216 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; position: relative; background: #05001A; overflow: hidden;">
+  <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .17;">
+  <div style="position: absolute; inset: 0; background: rgba(5,0,26,.62);"></div>
+
+  <div style="position: absolute; inset: 46px 90px; display: flex; flex-direction: column; background: #1F0458; border: 4px solid #05001A; border-top: 8px solid #2AA9F6; box-shadow: 16px 16px 0 rgba(5,0,26,.65);">
+
+    <!-- ── En-tête : qui est ce personnage, en une ligne ── -->
+    <div style="display: flex; align-items: center; gap: 22px; padding: 20px 26px; border-bottom: 3px solid #05001A;">
+      <img src="portrait.webp" alt="" style="width: 62px; height: 62px; object-fit: cover; object-position: 50% 22%; border: 3px solid #05001A; box-shadow: 5px 5px 0 #05001A; flex: none;">
+      <div style="min-width: 0;">
+        <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 22px;">VAUDRAN</div>
+        <div style="font-size: 12px; margin-top: 3px; color: rgba(237,230,216,.6);">Nain des montagnes &middot; Guerrier (Champion) &middot; niv. 3 &middot; Soldat</div>
+      </div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="padding: 7px 13px; background: rgba(4,183,125,.16); border: 2px solid #04B77D; font-size: 11px; font-weight: 700; color: #04B77D;">Pr&ecirc;t au combat</span>
+        <span style="padding: 7px 13px; background: #05001A; border: 2px solid rgba(237,230,216,.28); font-size: 11px; font-weight: 700;">XP 1 340 / 2 700</span>
+      </div>
+      <div style="width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid rgba(237,230,216,.35); font-family: 'Bungee', Impact, sans-serif; font-size: 15px;">&times;</div>
+    </div>
+
+    <div style="flex: 1; min-height: 0; display: flex;">
+
+      <!-- ═══ Colonne gauche : les chiffres qu'on regarde à chaque tour ═══ -->
+      <div style="width: 392px; flex: none; padding: 22px 24px; border-right: 3px solid #05001A; display: flex; flex-direction: column; gap: 16px;">
+
+        <div style="display: flex; gap: 10px;">
+          <div style="flex: 1; background: #05001A; border: 3px solid #22E9FF; padding: 13px 12px; text-align: center;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">CLASSE D'ARMURE</div>
+            <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 26px; color: #22E9FF; line-height: 1.25; margin-top: 2px;">18</div>
+            <div style="font-size: 10px; color: rgba(237,230,216,.45);">base 16 &middot; +2 bouclier</div>
+          </div>
+          <div style="flex: 1; background: #05001A; border: 3px solid #F2E637; padding: 13px 12px; text-align: center;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">INITIATIVE</div>
+            <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 26px; color: #F2E637; line-height: 1.25; margin-top: 2px;">+1</div>
+            <div style="font-size: 10px; color: rgba(237,230,216,.45);">mod. DEX</div>
+          </div>
+          <div style="flex: 1; background: #05001A; border: 3px solid #04B77D; padding: 13px 12px; text-align: center;">
+            <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">VITESSE</div>
+            <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 26px; color: #04B77D; line-height: 1.25; margin-top: 2px;">25</div>
+            <div style="font-size: 10px; color: rgba(237,230,216,.45);">pieds</div>
+          </div>
+        </div>
+
+        <!-- Les PV : une barre, pas un ratio. On doit voir la blessure, pas la calculer. -->
+        <div style="background: #05001A; border: 3px solid #F43292; padding: 15px 16px;">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px;">
+            <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">POINTS DE VIE</span>
+            <span style="font-size: 10.5px; color: rgba(237,230,216,.5);">d&eacute;s de vie 3d10</span>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 9px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 30px; color: #F43292;">24</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 17px; color: rgba(237,230,216,.4);">/ 31</span>
+            <span style="flex: 1;"></span>
+            <span style="padding: 3px 9px; background: #22E9FF; color: #05001A; font-size: 9.5px; font-weight: 700;">+4 TEMP</span>
+          </div>
+          <div style="height: 14px; background: #14023C; border: 2px solid rgba(237,230,216,.22); display: flex; margin-top: 11px;">
+            <div style="width: 77%; background: #F43292;"></div>
+            <div style="width: 13%; background: #22E9FF;"></div>
+          </div>
+        </div>
+
+        <!-- Les six caractéristiques. Le modificateur est ce qu'on joue, il est donc gros. -->
+        <div>
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 11px;">
+            <span style="width: 11px; height: 11px; background: #F2E637;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">CARACT&Eacute;RISTIQUES</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px;">
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">FOR</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">+4</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">18</div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">DEX</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">+1</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">12</div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">CON</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">+3</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">16</div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">INT</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">&minus;1</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">9</div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">SAG</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">+1</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">13</div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.18); padding: 11px 8px; text-align: center;">
+              <div style="font-size: 9px; font-weight: 700; letter-spacing: .09em; color: #22E9FF;">CHA</div>
+              <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 20px; margin: 2px 0;">+0</div>
+              <div style="font-size: 10px; color: rgba(237,230,216,.42);">10</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Colonne droite : ce qu'il sait faire, et avec quoi ═══ -->
+      <div style="flex: 1; min-width: 0; padding: 22px 26px; display: flex; flex-direction: column; gap: 18px;">
+
+        <div>
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 11px;">
+            <span style="width: 11px; height: 11px; background: #F43292;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">ATTAQUES &Eacute;QUIP&Eacute;ES</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+            <div style="background: rgba(242,230,55,.1); border: 3px solid #F2E637; padding: 13px 14px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">HACHE &Agrave; 2 MAINS</span>
+                <span style="padding: 2px 7px; background: #F2E637; color: #05001A; font-size: 8.5px; font-weight: 700;">PRINCIPALE</span>
+              </div>
+              <div style="display: flex; gap: 16px; margin-top: 7px; font-size: 12px;">
+                <span><b style="color: #F2E637;">+7</b> &agrave; l'attaque</span>
+                <span><b style="color: #F2E637;">1d12+4</b> tranchant</span>
+              </div>
+            </div>
+            <div style="background: #05001A; border: 2px solid rgba(237,230,216,.2); padding: 13px 14px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">JAVELINE</span>
+                <span style="padding: 2px 7px; background: rgba(237,230,216,.16); font-size: 8.5px; font-weight: 700;">&Agrave; DISTANCE</span>
+              </div>
+              <div style="display: flex; gap: 16px; margin-top: 7px; font-size: 12px; color: rgba(237,230,216,.75);">
+                <span><b>+7</b> &agrave; l'attaque</span>
+                <span><b>1d6+4</b> perforant</span>
+                <span>9/36 m</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 11px;">
+            <span style="width: 11px; height: 11px; background: #04B77D;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">COMP&Eacute;TENCES MA&Icirc;TRIS&Eacute;ES</span>
+            <span style="flex: 1;"></span>
+            <span style="padding: 4px 11px; background: rgba(34,233,255,.14); border: 2px solid #22E9FF; font-size: 10.5px; font-weight: 700;">Perception passive 11</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <span style="padding: 6px 12px; background: rgba(4,183,125,.14); border: 2px solid #04B77D; font-size: 11.5px; font-weight: 700;">Athl&eacute;tisme <b style="color: #04B77D;">+6</b></span>
+            <span style="padding: 6px 12px; background: rgba(4,183,125,.14); border: 2px solid #04B77D; font-size: 11.5px; font-weight: 700;">Intimidation <b style="color: #04B77D;">+2</b></span>
+            <span style="padding: 6px 12px; background: rgba(4,183,125,.14); border: 2px solid #04B77D; font-size: 11.5px; font-weight: 700;">Survie <b style="color: #04B77D;">+3</b></span>
+            <span style="padding: 6px 12px; background: rgba(4,183,125,.14); border: 2px solid #04B77D; font-size: 11.5px; font-weight: 700;">Perspicacit&eacute; <b style="color: #04B77D;">+3</b></span>
+            <span style="padding: 6px 12px; border: 2px solid rgba(237,230,216,.22); font-size: 11.5px; color: rgba(237,230,216,.55);">Discr&eacute;tion &minus;1</span>
+            <span style="padding: 6px 12px; border: 2px solid rgba(237,230,216,.22); font-size: 11.5px; color: rgba(237,230,216,.55);">Arcanes &minus;1</span>
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 11px;">
+            <span style="width: 11px; height: 11px; background: #8C01FE;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">APTITUDES</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="flex: 1; font-size: 12.5px;"><b>Second Souffle</b> &mdash; r&eacute;cup&egrave;re 1d10+3 PV, action bonus</span>
+              <span style="padding: 4px 10px; background: #04B77D; color: #05001A; font-size: 9.5px; font-weight: 700;">1 / 1</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="flex: 1; font-size: 12.5px;"><b>Fougue</b> &mdash; une action suppl&eacute;mentaire</span>
+              <span style="padding: 4px 10px; background: rgba(237,230,216,.16); font-size: 9.5px; font-weight: 700; color: rgba(237,230,216,.55);">0 / 1</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="flex: 1; font-size: 12.5px;"><b>Style : Arme lourde</b> &mdash; relance les 1 et les 2 aux d&eacute;g&acirc;ts</span>
+              <span style="padding: 4px 10px; border: 2px solid rgba(237,230,216,.25); font-size: 9.5px; font-weight: 700; color: rgba(237,230,216,.5);">PASSIF</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 13px; padding: 11px 14px; background: #05001A; border: 2px solid rgba(237,230,216,.18);">
+              <span style="flex: 1; font-size: 12.5px;"><b>Critique am&eacute;lior&eacute;</b> &mdash; coup critique sur 19 et 20</span>
+              <span style="padding: 4px 10px; border: 2px solid rgba(237,230,216,.25); font-size: 9.5px; font-weight: 700; color: rgba(237,230,216,.5);">PASSIF</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Les créatures liées existent dans le moteur : familier, monture, compagnon. -->
+        <div>
+          <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 11px;">
+            <span style="width: 11px; height: 11px; background: #F900FA;"></span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">COMPAGNONS &amp; CR&Eacute;ATURES LI&Eacute;ES</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 15px; padding: 13px 15px; background: rgba(249,0,250,.1); border: 2px solid #F900FA;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">BRINDILLE</span>
+            <span style="font-size: 11.5px; color: rgba(237,230,216,.7);">mule de b&acirc;t &middot; li&eacute;e</span>
+            <span style="flex: 1;"></span>
+            <span style="font-size: 11.5px;">11 PV</span>
+            <span style="font-size: 11.5px;">CA 10</span>
+            <span style="padding: 5px 12px; border: 2px solid rgba(237,230,216,.3); font-size: 10.5px; font-weight: 700;">&Agrave; pied</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

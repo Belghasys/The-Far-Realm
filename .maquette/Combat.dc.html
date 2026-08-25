@@ -1,0 +1,231 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&display=swap">
+  <style>
+    body { margin: 0; background: #14023C; font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif; color: #EDE6D8; }
+    a { color: #22E9FF; } a:hover { color: #F2E637; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; display: flex; background: #14023C; overflow: hidden;">
+
+  <!-- ═══ La scène et les actions du joueur ═══ -->
+  <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+
+    <div style="display: flex; align-items: center; gap: 14px; padding: 13px 24px; background: #05001A; border-bottom: 3px solid #F43292;">
+      <div style="width: 13px; height: 26px; background: #F43292; flex: none;"></div>
+      <div style="font-family: 'Bungee', Impact, sans-serif; font-size: 14px;">COMBAT</div>
+      <div style="font-size: 11.5px; color: rgba(237,230,216,.55);">Les Quais d'Os &mdash; appontement nord</div>
+      <div style="flex: 1;"></div>
+      <div style="display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; background: #F43292; color: #05001A;">
+        <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em;">PV</span>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 14px;">17/31</span>
+      </div>
+      <div style="display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; background: #22E9FF; color: #05001A;">
+        <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em;">CA</span>
+        <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 14px;">20</span>
+      </div>
+    </div>
+
+    <div style="flex: 1; position: relative; min-height: 0; background: #05001A;">
+      <img src="scene.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; filter: saturate(.85);">
+      <div style="position: absolute; inset: auto 0 0 0; height: 74%; background: linear-gradient(to top, #05001A 10%, rgba(5,0,26,.9) 46%, rgba(5,0,26,0) 100%);"></div>
+
+      <div style="position: absolute; inset: auto 22px 20px 22px; display: flex; flex-direction: column; gap: 13px;">
+
+        <!-- ── Ce qui est posé sur le héros en ce moment : couvert, bénédictions, poisons.
+             Chaque jeton porte sa DURÉE — un bonus dont on ignore la fin ne se joue pas. ── -->
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(42,169,246,.16); border: 2px solid #2AA9F6;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2AA9F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style="font-size: 11.5px; font-weight: 700;">Demi-couvert</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 10px; color: #2AA9F6;">+2 CA</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(4,183,125,.16); border: 2px solid #04B77D;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#04B77D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.2 5.6L20 10l-4.4 3.6L17 20l-5-3.2L7 20l1.4-6.4L4 10l5.8-1.4z"/></svg>
+            <span style="font-size: 11.5px; font-weight: 700;">B&eacute;n&eacute;diction</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 10px; color: #04B77D;">+1d4</span>
+            <span style="padding: 2px 6px; background: #04B77D; color: #05001A; font-size: 9px; font-weight: 700;">3 t</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(244,50,146,.16); border: 2px solid #F43292;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F43292" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l4 8h-8z"/><path d="M12 22a6 6 0 0 0 6-6c0-3-6-10-6-10S6 13 6 16a6 6 0 0 0 6 6z"/></svg>
+            <span style="font-size: 11.5px; font-weight: 700;">Saignement</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 10px; color: #F43292;">1d4/tour</span>
+            <span style="padding: 2px 6px; background: #F43292; color: #05001A; font-size: 9px; font-weight: 700;">2 t</span>
+          </div>
+        </div>
+
+        <!-- ── L'économie du tour, en pastilles.
+             Un guerrier de niveau 5 a DEUX attaques : on montre deux pastilles,
+             pas un compteur — le joueur voit d'un coup ce qu'il lui reste. ── -->
+        <div style="display: flex; align-items: center; gap: 22px; padding: 12px 18px; background: rgba(5,0,26,.8); border: 2px solid rgba(237,230,216,.2);">
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">ATTAQUES</span>
+            <span style="width: 15px; height: 15px; background: #04B77D;"></span>
+            <span style="width: 15px; height: 15px; background: rgba(237,230,216,.16);"></span>
+          </div>
+          <div style="width: 2px; height: 18px; background: rgba(237,230,216,.15);"></div>
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">BONUS</span>
+            <span style="width: 15px; height: 15px; background: #F2E637;"></span>
+          </div>
+          <div style="width: 2px; height: 18px; background: rgba(237,230,216,.15);"></div>
+          <div style="display: flex; align-items: center; gap: 9px;">
+            <span style="font-size: 9.5px; font-weight: 700; letter-spacing: .09em; color: rgba(237,230,216,.5);">R&Eacute;ACTION</span>
+            <span style="width: 15px; height: 15px; background: #8C01FE;"></span>
+          </div>
+          <div style="flex: 1;"></div>
+          <span style="font-size: 11px; color: rgba(237,230,216,.5);">Second Souffle disponible &mdash; 1/repos court</span>
+        </div>
+
+        <!-- ── Les actions. Ce que le joueur peut faire MAINTENANT, avec son arme à lui. ── -->
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;">
+          <div style="background: #F2E637; color: #05001A; border: 3px solid #05001A; box-shadow: 6px 6px 0 #05001A; padding: 13px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">HACHE &Agrave; 2 MAINS</span>
+            <span style="font-size: 10.5px; line-height: 1.35; opacity: .78;">+7 &agrave; l'attaque &middot; 1d12+4 tranchant</span>
+          </div>
+          <div style="background: #1F0458; border: 3px solid rgba(237,230,216,.28); padding: 13px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">BOUSCULER</span>
+            <span style="font-size: 10.5px; line-height: 1.35; color: rgba(237,230,216,.6);">Ath. contest&eacute;e &mdash; &agrave; terre</span>
+          </div>
+          <div style="background: #1F0458; border: 3px solid rgba(237,230,216,.28); padding: 13px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">SE D&Eacute;FENDRE</span>
+            <span style="font-size: 10.5px; line-height: 1.35; color: rgba(237,230,216,.6);">D&eacute;savantage aux attaques subies</span>
+          </div>
+          <div style="background: #1F0458; border: 3px solid rgba(237,230,216,.28); padding: 13px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">SECOND SOUFFLE</span>
+            <span style="font-size: 10.5px; line-height: 1.35; color: #F2E637;">Bonus &middot; 1d10+3 PV</span>
+          </div>
+          <div style="background: #1F0458; border: 3px solid rgba(237,230,216,.28); padding: 13px 12px; display: flex; flex-direction: column; gap: 5px;">
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">AUTRE CHOSE</span>
+            <span style="font-size: 10.5px; line-height: 1.35; color: rgba(237,230,216,.6);">D&eacute;cris-le, le MJ arbitre</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Le suivi de combat. Colonne fixe : elle ne bouge jamais, on la lit d'un coup d'œil. ═══ -->
+  <div style="width: 462px; flex: none; display: flex; flex-direction: column; background: #14023C; border-left: 4px solid #05001A;">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 20px; background: #05001A; border-bottom: 4px solid #F2E637;">
+      <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 13px;">INITIATIVE</span>
+      <span style="padding: 5px 12px; background: #F2E637; color: #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">ROUND 3</span>
+    </div>
+
+    <div style="flex: 1; overflow: hidden; padding: 18px 20px; display: flex; flex-direction: column; gap: 18px;">
+
+      <!-- ── L'ordre de passage. Celui qui joue porte un liseré, pas une nuance de gris. ── -->
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 11px; padding: 11px 13px; background: rgba(242,230,55,.12); border: 3px solid #F2E637;">
+          <span style="width: 30px; text-align: center; font-family: 'Bungee', Impact, sans-serif; font-size: 13px; color: #F2E637;">18</span>
+          <span style="flex: 1; font-size: 13px; font-weight: 700;">Vaudran</span>
+          <span style="padding: 3px 9px; background: #F2E637; color: #05001A; font-family: 'Bungee', Impact, sans-serif; font-size: 9px;">&Agrave; TOI</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 10px 13px; background: #05001A; border: 2px solid rgba(237,230,216,.16);">
+          <span style="width: 30px; text-align: center; font-family: 'Bungee', Impact, sans-serif; font-size: 12px; color: rgba(237,230,216,.5);">15</span>
+          <span style="flex: 1; font-size: 12.5px;">&Eacute;corcheur de quai</span>
+          <span style="font-size: 10px; color: rgba(237,230,216,.4);">ennemi</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 10px 13px; background: #05001A; border: 2px solid rgba(237,230,216,.16);">
+          <span style="width: 30px; text-align: center; font-family: 'Bungee', Impact, sans-serif; font-size: 12px; color: rgba(237,230,216,.5);">12</span>
+          <span style="flex: 1; font-size: 12.5px;">Ma&icirc;tre-Quai Brochet</span>
+          <span style="font-size: 10px; color: rgba(237,230,216,.4);">ennemi</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 11px; padding: 10px 13px; background: #05001A; border: 2px solid rgba(237,230,216,.1); opacity: .5;">
+          <span style="width: 30px; text-align: center; font-family: 'Bungee', Impact, sans-serif; font-size: 12px;">9</span>
+          <span style="flex: 1; font-size: 12.5px; text-decoration: line-through;">Racleur</span>
+          <span style="padding: 3px 8px; background: rgba(140,1,254,.35); font-size: 9px; font-weight: 700;">EN FUITE</span>
+        </div>
+      </div>
+
+      <!-- ── Les ennemis. Portée et points de vie : les deux seules choses
+           qui changent la décision du joueur. ── -->
+      <div>
+        <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 10px;">
+          <span style="width: 11px; height: 11px; background: #F43292;"></span>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">ENNEMIS</span>
+          <span style="font-size: 10.5px; color: rgba(237,230,216,.45);">2 debout &middot; 1 en fuite</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 9px;">
+          <div style="background: #1F0458; border: 3px solid #F43292; padding: 12px 13px;">
+            <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 9px;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F43292" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.4"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg>
+              <span style="flex: 1; font-size: 12.5px; font-weight: 700;">&Eacute;corcheur de quai</span>
+              <span style="padding: 3px 9px; background: #04B77D; color: #05001A; font-size: 9.5px; font-weight: 700;">&#8596; PR&Egrave;S</span>
+            </div>
+            <div style="height: 12px; background: #05001A; border: 2px solid rgba(237,230,216,.2); display: flex;">
+              <div style="width: 50%; background: #F43292;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 10.5px; color: rgba(237,230,216,.55);">
+              <span>11 / 22 PV</span><span>CA 13</span>
+            </div>
+          </div>
+
+          <div style="background: #1F0458; border: 2px solid rgba(237,230,216,.2); padding: 12px 13px;">
+            <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 9px;">
+              <span style="width: 15px; height: 15px; border: 2px solid rgba(237,230,216,.3); flex: none;"></span>
+              <span style="flex: 1; font-size: 12.5px; font-weight: 700;">Ma&icirc;tre-Quai Brochet</span>
+              <span style="padding: 3px 9px; background: rgba(242,230,55,.2); color: #F2E637; font-size: 9.5px; font-weight: 700;">&#127993; LOIN</span>
+            </div>
+            <div style="height: 12px; background: #05001A; border: 2px solid rgba(237,230,216,.2); display: flex;">
+              <div style="width: 100%; background: rgba(244,50,146,.55);"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 10.5px; color: rgba(237,230,216,.55);">
+              <span>38 / 38 PV</span><span>CA 15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Le journal des jets. Qui a lancé quoi, et ce que ça a donné. ── -->
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
+        <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 10px;">
+          <span style="width: 11px; height: 11px; background: #22E9FF;"></span>
+          <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px;">JETS DE COMBAT</span>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow: hidden; background: #05001A; border: 2px solid rgba(237,230,216,.16); padding: 11px 12px; display: flex; flex-direction: column; gap: 8px; font-size: 11.5px;">
+          <div style="display: flex; gap: 9px; align-items: baseline;">
+            <span style="width: 7px; height: 7px; background: #22E9FF; flex: none; transform: translateY(-1px);"></span>
+            <span style="flex: 1; color: rgba(237,230,216,.8);">Vaudran &mdash; hache, attaque</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #F2E637;">21</span>
+          </div>
+          <div style="display: flex; gap: 9px; align-items: baseline;">
+            <span style="width: 7px; height: 7px; background: #22E9FF; flex: none; transform: translateY(-1px);"></span>
+            <span style="flex: 1; color: rgba(237,230,216,.8);">D&eacute;g&acirc;ts 1d12+4</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #04B77D;">13</span>
+          </div>
+          <div style="display: flex; gap: 9px; align-items: baseline;">
+            <span style="width: 7px; height: 7px; background: #F43292; flex: none; transform: translateY(-1px);"></span>
+            <span style="flex: 1; color: rgba(237,230,216,.8);">Racleur &mdash; jet de moral</span>
+            <span style="font-family: 'Bungee', Impact, sans-serif; font-size: 11px; color: #8C01FE;">&Eacute;CHEC</span>
+          </div>
+          <div style="display: flex; gap: 9px; align-items: baseline;">
+            <span style="width: 7px; height: 7px; background: #F43292; flex: none; transform: translateY(-1px);"></span>
+            <span style="flex: 1; color: rgba(237,230,216,.55);">Racleur quitte le combat &mdash; vivant</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; margin-top: 8px; font-size: 10px; color: rgba(237,230,216,.4);">
+          <span>&#9679; joueur</span><span>&#9679; ennemi / MJ</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding: 16px 20px; border-top: 3px solid #05001A;">
+      <div style="background: #F2E637; color: #05001A; border: 3px solid #05001A; box-shadow: 7px 7px 0 #05001A; padding: 17px; text-align: center; font-family: 'Bungee', Impact, sans-serif; font-size: 13px;">
+        TERMINER MON TOUR
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
