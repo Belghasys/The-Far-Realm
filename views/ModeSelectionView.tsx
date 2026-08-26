@@ -13,6 +13,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
+import { AccountPanel } from '../components/hall/AccountPanel';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/persistence/saveService';
 import { memoryManager } from '../services/persistence/memoryManager';
@@ -140,6 +141,8 @@ export function ModeSelectionView() {
     const t = TRANS[language as keyof typeof TRANS];
     const lang = language as 'en' | 'fr';
 
+    const [showAccount, setShowAccount] = useState(false);
+
     const handleLogout = async () => {
         await signOut(auth);
         navigate('/');
@@ -206,6 +209,19 @@ export function ModeSelectionView() {
                     <MenuMusicToggle />
                     <TavernLink label={t.tavern} onClick={versLaTaverne} />
                     <button
+                        onClick={() => setShowAccount(true)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                            background: 'transparent', border: '2px solid rgba(237,230,216,.3)',
+                            padding: '9px 16px', fontFamily: BODY, fontSize: 13, color: 'rgba(237,230,216,.7)',
+                        }}
+                    >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+                        </svg>
+                        {lang === 'fr' ? 'Compte' : 'Account'}
+                    </button>
+                    <button
                         onClick={handleLogout}
                         style={{
                             display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
@@ -220,6 +236,7 @@ export function ModeSelectionView() {
                     </button>
                 </div>
             </header>
+            {showAccount && <AccountPanel onClose={() => setShowAccount(false)} />}
 
             {/* ── Héros ───────────────────────────────────────────────────── */}
             <div style={{ position: 'relative', overflow: 'hidden', padding: 'clamp(40px, 6vw, 74px) clamp(20px, 5vw, 64px) 0' }}>

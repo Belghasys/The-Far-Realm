@@ -18,6 +18,15 @@ service cloud.firestore {
     // ne doit pouvoir lire ni remettre à zéro son compteur. Le default-deny
     // final couvre déjà ce cas — ces blocs le rendent EXPLICITE pour que de
     // futures éditions des règles ne les ouvrent pas par accident.
+    // Plan d'abonnement : le joueur lit le sien ; seul le webhook Paddle
+    // (Admin SDK) écrit. Les traces de suppression ne sont lisibles par personne.
+    match /plans/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+    match /deletions/{doc} {
+      allow read, write: if false;
+    }
     match /usage/{doc} {
       allow read, write: if false;
     }

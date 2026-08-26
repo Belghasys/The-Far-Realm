@@ -27,6 +27,7 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const RUNWARE_API_KEY = defineSecret("RUNWARE_API_KEY");
+const { limitsFor } = require("./plans");
 
 // ---------------------------------------------------------------------------
 // Réglages — ajuster ici, pas dans le code plus bas.
@@ -47,7 +48,9 @@ const MODELS = {
     fast: { air: "runware:400@4", steps: 4 },
     high: { air: "runware:400@2", steps: 4 },
 };
-const USER_DAILY_LIMIT = 60;      // images / joueur / jour (~4,7 ¢ au pire en `high`)
+// Plafond par joueur : voir plans.js (free 15, adventurer 60). Ce nom reste
+// pour le message d'erreur et le `remainingToday` ; la valeur vient du plan.
+let USER_DAILY_LIMIT = 60;
 const GLOBAL_DAILY_LIMIT = 2000;  // toutes images confondues / jour (~$1.56 au pire en `high`)
 const MAX_PROMPT_LENGTH = 1200;
 // Images de référence : FLUX.2 klein en accepte 4 au maximum. Le plafond de
@@ -152,13 +155,15 @@ exports.generateImage = onCall(
         const userRef = db.collection("usage").doc(`${uid}_${day}`);
         const globalRef = db.collection("usage").doc(`global_${day}`);
         const configRef = db.collection("config").doc("media");
+        const planRef = db.collection("plans").doc(uid);
 
         let userCount;
         try {
             userCount = await db.runTransaction(async (tx) => {
-                const [userSnap, globalSnap, configSnap] = await Promise.all([
-                    tx.get(userRef), tx.get(globalRef), tx.get(configRef),
+                const [userSnap, globalSnap, configSnap, planSnap] = await Promise.all([
+                    tx.get(userRef), tx.get(globalRef), tx.get(configRef), tx.get(planRef),
                 ]);
+                USER_DAILY_LIMIT = limitsFor(planSnap.exists ? planSnap.data() : null).images;
                 if (configSnap.exists && configSnap.data().enabled === false) {
                     throw new HttpsError("failed-precondition", "La génération d'images est temporairement désactivée.");
                 }
@@ -243,3 +248,6 @@ exports.generateImage = onCall(
 
 // Voix (jeton éphémère) et texte (relais) — clé Gemini côté serveur.
 Object.assign(exports, require("./gemini"));
+// Compte (suppression RGPD) et paiement (webhook Paddle → plans/{uid}).
+Object.assign(exports, require("./account"));
+Object.assign(exports, require("./paddle"));

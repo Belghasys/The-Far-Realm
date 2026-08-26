@@ -101,3 +101,20 @@ firebase functions:secrets:set GEMINI_API_KEY
 cd functions && npm install && cd ..
 firebase deploy --only functions
 ```
+
+## Compte et paiement (2026-08-27)
+
+- `deleteAccount` (onCall) — suppression RGPD : `users/{uid}/**`, `plans/{uid}`,
+  `usage/{uid}_*`, puis le compte Auth. Trace `deletions/{uid}` (uid seul).
+- `paddleWebhook` (onRequest) — Paddle Billing → `plans/{uid}`. Signature
+  vérifiée (`paddleSignature.js`, testé), `custom_data.uid` posé par le checkout.
+  Plans et quotas par joueur : `plans.js` (free / adventurer) — lus dans la
+  transaction de quota par `generateImage`, `liveToken`, `geminiText`.
+
+```bash
+firebase functions:secrets:set PADDLE_WEBHOOK_SECRET   # Paddle → Notifications → secret du endpoint
+firebase deploy --only functions,firestore:rules
+# URL du webhook à déclarer chez Paddle :
+#   https://europe-west1-<projet>.cloudfunctions.net/paddleWebhook
+# Événements : transaction.completed, subscription.activated/updated/canceled/past_due/paused/resumed
+```

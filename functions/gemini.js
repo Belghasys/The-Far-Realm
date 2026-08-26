@@ -25,19 +25,19 @@ const { GoogleGenAI } = require("@google/genai");
 const db = admin.firestore();
 const REGION = "europe-west1"; // garder synchrone avec index.js et le client
 
+const { limitsFor } = require("./plans");
+
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
 
-// Jetons voix : une partie d'une heure consomme 1 jeton + 1 par reconnexion
-// (mesuré : 3-8 reconnexions/h dans les pires sessions). 60/jour laisse jouer
-// toute une journée ; au-delà c'est un script, pas un joueur.
-const LIVE_USER_DAILY_LIMIT = 60;
+// Plafonds PAR JOUEUR : dans plans.js (free / adventurer), lus dans la
+// transaction. Une partie d'une heure consomme 1 jeton + 1 par reconnexion
+// (mesuré : 3-8 reconnexions/h dans les pires sessions).
 const LIVE_GLOBAL_DAILY_LIMIT = 3000;
 const LIVE_TOKEN_TTL_MIN = 30;           // durée de vie de la session ouverte avec ce jeton
 const LIVE_TOKEN_CONNECT_WINDOW_MIN = 2; // délai pour OUVRIR la session après émission
 
 // Appels texte : ~1 résumé + 1 greffier + 1 audit par chapitre, quelques
-// branches — une partie longue fait ~40 appels. 400/jour est très large.
-const TEXT_USER_DAILY_LIMIT = 400;
+// branches — une partie longue fait ~40 appels.
 const TEXT_GLOBAL_DAILY_LIMIT = 20000;
 const TEXT_MAX_PAYLOAD_BYTES = 400 * 1024; // contents + config sérialisés
 
@@ -61,16 +61,18 @@ function requireModel(raw) {
  * champ (count = images, live = jetons voix, text = appels texte).
  * Retourne le compteur du joueur après réservation.
  */
-async function reserveCredit(uid, field, userLimit, globalLimit, humanLabel) {
+async function reserveCredit(uid, field, globalLimit, humanLabel) {
     const day = todayKey();
     const userRef = db.collection("usage").doc(`${uid}_${day}`);
     const globalRef = db.collection("usage").doc(`global_${day}`);
     const configRef = db.collection("config").doc("gemini");
+    const planRef = db.collection("plans").doc(uid);
     try {
         return await db.runTransaction(async (tx) => {
-            const [userSnap, globalSnap, configSnap] = await Promise.all([
-                tx.get(userRef), tx.get(globalRef), tx.get(configRef),
+            const [userSnap, globalSnap, configSnap, planSnap] = await Promise.all([
+                tx.get(userRef), tx.get(globalRef), tx.get(configRef), tx.get(planRef),
             ]);
+            const userLimit = limitsFor(planSnap.exists ? planSnap.data() : null)[field];
             if (configSnap.exists && configSnap.data().enabled === false) {
                 throw new HttpsError("failed-precondition", "Le Maître de jeu est temporairement indisponible.");
             }
@@ -85,7 +87,7 @@ async function reserveCredit(uid, field, userLimit, globalLimit, humanLabel) {
             const stamp = admin.firestore.FieldValue.serverTimestamp();
             tx.set(userRef, { [field]: uCount, uid, day, updatedAt: stamp }, { merge: true });
             tx.set(globalRef, { [field]: gCount, day, updatedAt: stamp }, { merge: true });
-            return uCount;
+            return { count: uCount, limit: userLimit };
         });
     } catch (err) {
         if (err instanceof HttpsError) throw err;
@@ -117,7 +119,7 @@ exports.liveToken = onCall(
         const uid = request.auth.uid;
         const model = requireModel(request.data?.model);
 
-        const userCount = await reserveCredit(uid, "live", LIVE_USER_DAILY_LIMIT, LIVE_GLOBAL_DAILY_LIMIT, "sessions vocales");
+        const { count: userCount, limit: userLimit } = await reserveCredit(uid, "live", LIVE_GLOBAL_DAILY_LIMIT, "sessions vocales");
 
         const now = Date.now();
         const expireTime = new Date(now + LIVE_TOKEN_TTL_MIN * 60_000).toISOString();
@@ -135,7 +137,7 @@ exports.liveToken = onCall(
                 },
             });
             if (!token?.name) throw new Error("Jeton sans nom.");
-            return { token: token.name, expiresAt: expireTime, remainingToday: LIVE_USER_DAILY_LIMIT - userCount };
+            return { token: token.name, expiresAt: expireTime, remainingToday: userLimit - userCount };
         } catch (err) {
             await refundCredit(uid, "live");
             console.error("liveToken failed:", err);
@@ -162,7 +164,7 @@ exports.geminiText = onCall(
             throw new HttpsError("invalid-argument", "Requête trop volumineuse.");
         }
 
-        await reserveCredit(uid, "text", TEXT_USER_DAILY_LIMIT, TEXT_GLOBAL_DAILY_LIMIT, "appels");
+        await reserveCredit(uid, "text", TEXT_GLOBAL_DAILY_LIMIT, "appels");
 
         try {
             const response = await client().models.generateContent({ model, contents, config });

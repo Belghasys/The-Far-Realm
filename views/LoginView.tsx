@@ -187,6 +187,12 @@ export function LoginView() {
                         <GoogleMark />
                         {tr.signInGoogle}
                     </button>
+
+                    <nav style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 14, fontSize: 11, fontFamily: BODY }}>
+                        {([['terms', language === 'fr' ? 'Conditions d’utilisation' : 'Terms of Use'], ['privacy', language === 'fr' ? 'Confidentialité' : 'Privacy'], ['notice', language === 'fr' ? 'Mentions légales' : 'Legal notice']] as const).map(([p, label]) => (
+                            <a key={p} href={`/legal/${p}`} style={{ color: 'rgba(237,230,216,.55)', textDecoration: 'underline' }}>{label}</a>
+                        ))}
+                    </nav>
                 </div>
 
             </div>
