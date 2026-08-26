@@ -22,11 +22,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const RACINE = path.resolve(__dirname, '..');
-const EXCLUS = new Set(['node_modules', 'dist', '.git', 'installer', '.maquette', 'functions', 'public', 'tests', 'tools']);
+// Exclus À LA RACINE seulement : `services/dm/tools/` (les outils du MJ) doit
+// être scanné — revue du 2026-08-26 : une exclusion par nom de dossier rendait
+// les 62 outils invisibles au garde, et une mutation y passait sans être vue.
+const EXCLUS_RACINE = new Set(['node_modules', 'dist', '.git', 'installer', '.maquette', 'functions', 'public', 'tests', 'tools']);
 
 function fichiers(dir: string, acc: string[] = []): string[] {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (EXCLUS.has(e.name)) continue;
+        if (dir === RACINE && EXCLUS_RACINE.has(e.name)) continue;
+        if (e.name === 'node_modules' || e.name === '__pycache__') continue;
         const p = path.join(dir, e.name);
         if (e.isDirectory()) fichiers(p, acc);
         else if (/\.tsx?$/.test(e.name) && !e.name.endsWith('.d.ts')) acc.push(path.relative(RACINE, p).replace(/\\/g, '/'));
