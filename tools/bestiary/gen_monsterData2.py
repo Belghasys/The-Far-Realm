@@ -110,10 +110,10 @@ def action(a):
                 out['onHitSave'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1))}
     elif a['name'] == 'Frightful Presence':
         out['kind'] = 'presence'
-    elif 'dc' in a and a.get('usage', {}).get('type') == 'recharge on roll' and a.get('damage'):
+    elif 'dc' in a and a.get('usage', {}).get('type') == 'recharge on roll':
         # un souffle SANS degats (sommeil, affaiblissement, ralentissement…) reste
         # narratif : decision du 2026-08-26, trop complique a jouer pour ce qu'il apporte
-        out['kind'] = 'breath'
+        out['kind'] = 'breath' if a.get('damage') else 'narrative'
     elif 'dc' in a:
         out['kind'] = 'save'
     elif 'damage' in a:

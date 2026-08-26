@@ -4,7 +4,7 @@
 // Complement de data/monsterData.ts (CSV, intouchable) : 401 fiches, dont
 // 317 du SRD (source 'srd') et 84 hors SRD lues par regex dans le
 // texte du CSV (source 'csv-regex') et completees de memoire ('memoire', a relire).
-// Actions : attack 642, multiattack 185, narrative 77, save 58, breath 54, presence 22, damage 2.
+// Actions : attack 642, multiattack 185, narrative 104, breath 54, save 31, presence 22, damage 2.
 import type { SrdMonster } from './srdMonsterTypes';
 
 export const SRD_MONSTERS: Record<string, SrdMonster> = {
@@ -907,7 +907,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Sleep Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 45 (13d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 18,
@@ -1148,7 +1148,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Repulsion Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 90-foot line that is 5 feet wide. Each creature in that line must make a DC 19 Dexterity saving throw, taking 66 (12d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 19 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 19,
@@ -1393,7 +1393,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Slowing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 54 (12d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 18,
@@ -1635,7 +1635,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Weakening Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 66 (12d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 21 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 21,
@@ -2350,7 +2350,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Paralyzing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 60-foot cone. Each creature in that area must make a DC 20 Constitution saving throw, taking 58 (13d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 60-foot cone. Each creature in that area must succeed on a DC 20 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 20,
@@ -3634,7 +3634,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Sleep Breath",
         "desc": "The dragon uses one of the following breath weapons:\nFire Breath. The dragon exhales fire in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 21 Dexterity saving throw, taking 56 (16d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 90-foot cone. Each creature in that area must succeed on a DC 21 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 21,
@@ -3880,7 +3880,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Repulsion Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 120-foot line that is 10 feet wide. Each creature in that line must make a DC 23 Dexterity saving throw, taking 88 (16d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 23 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 23,
@@ -4130,7 +4130,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Slowing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 22 Dexterity saving throw, taking 63 (14d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 22 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 22,
@@ -4377,7 +4377,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Weakening Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 90-foot cone. Each creature in that area must make a DC 24 Dexterity saving throw, taking 71 (13d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 24,
@@ -5188,7 +5188,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Paralyzing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 67 (15d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 24,
@@ -10187,7 +10187,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Sleep Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 14 (4d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw or fall unconscious for 1 minute. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 11,
@@ -10325,7 +10325,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Repulsion Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 12 Dexterity saving throw, taking 16 (3d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 12 Strength saving throw. On a failed save, the creature is pushed 30 feet away from the dragon.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 12,
@@ -12307,7 +12307,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Slowing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 18 (4d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 11,
@@ -20048,7 +20048,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Possession",
         "desc": "One humanoid that the ghost can see within 5 ft. of it must succeed on a DC 13 Charisma saving throw or be possessed by the ghost; the ghost then disappears, and the target is incapacitated and loses control of its body. The ghost now controls the body but doesn't deprive the target of awareness. The ghost can't be targeted by any attack, spell, or other effect, except ones that turn undead, and it retains its alignment, Intelligence, Wisdom, Charisma, and immunity to being charmed and frightened. It otherwise uses the possessed target's statistics, but doesn't gain access to the target's knowledge, class features, or proficiencies.\nThe possession lasts until the body drops to 0 hit points, the ghost ends it as a bonus action, or the ghost is turned or forced out by an effect like the dispel evil and good spell. When the possession ends, the ghost reappears in an unoccupied space within 5 ft. of the body. The target is immune to this ghost's Possession for 24 hours after succeeding on the saving throw or after the possession ends.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CHA",
           "value": 13,
@@ -22802,7 +22802,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Blinding Spittle",
         "desc": "The mouther spits a chemical glob at a point it can see within 15 feet of it. The glob explodes in a blinding flash of light on impact. Each creature within 5 feet of the flash must succeed on a DC 13 Dexterity saving throw or be blinded until the end of the mouther's next turn.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "DEX",
           "value": 13,
@@ -23499,7 +23499,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Blinding Breath",
         "desc": "The mephit exhales a 15-foot cone of blinding dust. Each creature in that area must succeed on a DC 10 Dexterity saving throw or be blinded for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "DEX",
           "value": 10,
@@ -23865,7 +23865,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Weakening Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 15-foot cone. Each creature in that area must make a DC 13 Dexterity saving throw, taking 22 (4d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 13,
@@ -23991,7 +23991,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Petrifying Breath",
         "desc": "The gorgon exhales petrifying gas in a 30-foot cone. Each creature in that area must succeed on a DC 13 Constitution saving throw. On a failed save, a target begins to turn to stone and is restrained. The restrained target must repeat the saving throw at the end of its next turn. On a success, the effect ends on the target. On a failure, the target is petrified until freed by the greater restoration spell or other magic.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 13,
@@ -33544,7 +33544,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Horror Nimbus",
         "desc": "The nalfeshnee magically emits scintillating, multicolored light. Each creature within 15 feet of the nalfeshnee that can see the light must succeed on a DC 15 Wisdom saving throw or be frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the nalfeshnee's Horror Nimbus for the next 24 hours.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "WIS",
           "value": 15,
@@ -41302,7 +41302,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Paralyzing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 15-foot cone. Each creature in that area must make a DC 13 Constitution saving throw, taking 18 (4d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 13,
@@ -43003,7 +43003,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Slow",
         "desc": "The golem targets one or more creatures it can see within 10 ft. of it. Each target must make a DC 17 Wisdom saving throw against this magic. On a failed save, a target can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the target can take either an action or a bonus action on its turn, not both. These effects last for 1 minute. A target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "WIS",
           "value": 17,
@@ -46644,7 +46644,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Spores",
         "desc": "A 15-foot-radius cloud of toxic spores extends out from the vrock. The spores spread around corners. Each creature in that area must succeed on a DC 14 Constitution saving throw or become poisoned. While poisoned in this way, a target takes 5 (1d10) poison damage at the start of each of its turns. A target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success. Emptying a vial of holy water on the target also ends the effect on it.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 14,
@@ -50033,7 +50033,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Sleep Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 42 (12d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw or fall unconscious for 5 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 14,
@@ -50205,7 +50205,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Repulsion Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 60-foot line that is 5 feet wide. Each creature in that line must make a DC 15 Dexterity saving throw, taking 55 (10d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 15 Strength saving throw. On a failed save, the creature is pushed 40 feet away from the dragon.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 15,
@@ -50382,7 +50382,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Slowing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 40 (9d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 14,
@@ -50555,7 +50555,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Weakening Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 30-foot cone. Each creature in that area must make a DC 17 Dexterity saving throw, taking 55 (10d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "STR",
           "value": 17,
@@ -51063,7 +51063,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       {
         "name": "Paralyzing Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 30-foot cone. Each creature in that area must make a DC 17 Constitution saving throw, taking 54 (12d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "save",
+        "kind": "narrative",
         "dc": {
           "ability": "CON",
           "value": 17,
