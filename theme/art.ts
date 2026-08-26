@@ -190,13 +190,3 @@ export const coverArt = (id: string) => COVER_ART[id] || COVER_IMPROVISED;
  */
 export const WALL_COUNT = 53;
 export const wallSlug = (i: number) => `wall/w${String(i).padStart(2, '0')}`;
-
-/**
- * Portrait d'une race, sous-race comprise : « Nain des montagnes » retombe sur
- * le portrait du Nain. Sans ce repli, choisir une sous-race afficherait un
- * cadre vide — le cas le plus facile à rater puisqu'il n'arrive qu'après un
- * second clic.
- */
-export function raceArt(raceKey: string, subraceOf?: string): ArtEntry | undefined {
-    return RACE_ART[raceKey] || (subraceOf ? RACE_ART[subraceOf] : undefined);
-}

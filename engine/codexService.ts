@@ -212,10 +212,6 @@ export function lookupRule(name: string): RuleEntry | null {
     return exactThenFuzzy(SRD51_RULES, name, (rule, n) => textIncludes(rule, n));
 }
 
-export function lookupAction(name: string) {
-    return exactThenFuzzy(SRD51_ACTIONS, name, (action, n) => textIncludes(action, n));
-}
-
 export function lookupCondition(name: string): ConditionEntry | null {
     return exactThenFuzzy(SRD51_CONDITIONS, name, (condition, n) => textIncludes(condition, n));
 }
@@ -512,8 +508,4 @@ export function buildEncounter(request: EncounterBuildRequest): EncounterBuildRe
             attribution: 'SRD 5.1 encounter XP thresholds with monsters selected from the current project bestiary.',
         },
     };
-}
-
-export function getCodexAttribution(): CodexSource[] {
-    return [SRD_SOURCE, BESTIARY_SOURCE];
 }

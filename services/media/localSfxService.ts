@@ -233,8 +233,8 @@ class LocalSfxService {
         // AudioLDM prompts (sword clash, bowstring, claw, spell whoosh) below —
         // previously 'attack' short-circuited here, making those prompts dead code.
         if (entry.type === 'initiative' || entry.type === 'check' || entry.type === 'save') {
-            log.info(`🔊 Playing local dice roll SFX: Dice sound.mp3 for type ${entry.type}`);
-            const diceSoundUrl = new URL('../Dice sound.mp3', import.meta.url).href;
+            log.info(`🔊 Playing local dice roll SFX: dice.mp3 for type ${entry.type}`);
+            const diceSoundUrl = '/media/dice.mp3';
             this.playAudio(diceSoundUrl);
             return;
         }

@@ -1,5 +1,5 @@
 // Manual smoke test for configured Gemini models.
-// Usage: node --env-file=.env test-models.mjs
+// Usage: node --env-file=.env tools/test-models.mjs
 import { GoogleGenAI } from '@google/genai';
 
 const required = (name) => {

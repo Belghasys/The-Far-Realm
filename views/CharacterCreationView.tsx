@@ -6,7 +6,7 @@ import { saveService } from '../services/persistence/saveService';
 import { adventureService } from '../services/dm/adventureService';
 import { memoryManager } from '../services/persistence/memoryManager';
 import { campaignEventLog } from '../services/persistence/campaignEventLog';
-import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
+import { AdventureManifest, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME } from '../types';
 import { ensureProgressionState } from '../engine/rulesEngine';
 import { getAdventureById } from '../data/adventures';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';

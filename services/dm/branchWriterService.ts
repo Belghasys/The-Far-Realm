@@ -1,17 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
 import type { CampaignSubBranchPlan, CampaignSubBranchScene, CharacterSheet, JournalState } from '../../types';
 import type { CampaignEvent } from '../persistence/campaignEventLog';
 import { requireViteEnv } from '../infra/modelConfig';
+import { getGeminiClient } from '../infra/geminiClient';
 
-const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const BRANCH_MODEL = requireViteEnv('VITE_BRANCH_MODEL', import.meta.env.VITE_BRANCH_MODEL);
-
-let ai: GoogleGenAI | null = null;
-
-function getClient(): GoogleGenAI {
-    if (!ai) ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
-    return ai;
-}
 
 export type BranchSeverity = 'minor_detour' | 'major_detour' | 'campaign_rupture';
 
@@ -39,7 +31,6 @@ export interface BranchWriterRequest {
     };
 }
 
-export type SubBranchScene = CampaignSubBranchScene;
 export type SubBranchPlan = CampaignSubBranchPlan;
 
 const BRANCH_WRITER_SYSTEM_PROMPT = `
@@ -231,7 +222,7 @@ function normalizePlan(parsed: any): SubBranchPlan {
 }
 
 export async function generateSubBranchPlan(request: BranchWriterRequest): Promise<SubBranchPlan> {
-    const response = await getClient().models.generateContent({
+    const response = await getGeminiClient().models.generateContent({
         model: BRANCH_MODEL,
         contents: [{
             role: 'user',

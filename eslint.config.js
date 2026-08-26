@@ -39,9 +39,9 @@ export default tseslint.config(
             globals: { AudioWorkletProcessor: 'readonly', registerProcessor: 'readonly', sampleRate: 'readonly', currentTime: 'readonly' },
         },
     },
-    // Scripts Node à la racine (test-models.mjs…).
+    // Scripts Node (tools/test-models.mjs…).
     {
-        files: ['*.mjs'],
+        files: ['*.mjs', 'tools/*.mjs'],
         languageOptions: {
             globals: { console: 'readonly', process: 'readonly', fetch: 'readonly', URL: 'readonly' },
         },

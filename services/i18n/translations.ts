@@ -544,9 +544,3 @@ export function t(key: string, lang: Language): string {
 
     return key;
 }
-
-// Get browser language preference
-export function getBrowserLanguage(): Language {
-    const browserLang = navigator.language.substring(0, 2);
-    return browserLang === 'fr' ? 'fr' : 'en';
-}

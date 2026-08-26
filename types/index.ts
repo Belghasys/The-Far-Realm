@@ -651,14 +651,6 @@ export enum AppState {
 
 export type Language = 'en' | 'fr';
 
-export interface GameSessionState {
-  isConnected: boolean;
-  isMicOn: boolean;
-  transcript: { speaker: 'user' | 'dm'; text: string }[];
-  volume: number; // For visualization
-  activeEngine: 'narrative'; // Only narrative mode — battle grid removed in Phase 11
-}
-
 // ─── Journal ────────────────────────────────────────────────────────────────
 
 export interface QuestStep {

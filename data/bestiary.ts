@@ -240,18 +240,3 @@ export function getCreature(name: string): CreatureStats | null {
 
     return null;
 }
-
-// Create instance of creature with rolled HP
-export function spawnCreature(name: string, id?: string): CreatureStats | null {
-    const template = getCreature(name);
-    if (!template) return null;
-
-    return {
-        ...template,
-        id: id || `${template.id}_${Date.now()}`,
-        hp: {
-            ...template.hp,
-            base: template.hp.base  // Could roll dice here for variation
-        }
-    };
-}

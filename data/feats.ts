@@ -421,6 +421,3 @@ export function meetsFeatPrerequisites(
     }
     return true;
 }
-
-/** All feat ids, in display order (handy for validation and pickers). */
-export const FEAT_IDS: string[] = FEATS.map(f => f.id);

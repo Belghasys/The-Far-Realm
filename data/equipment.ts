@@ -422,8 +422,6 @@ export function repairCharacterWeapons<T extends { inventory?: Item[]; weapon?: 
     return { ...character, inventory, weapon: hasEquippedWeapon ? getWeaponFromInventory(inventory) : character.weapon };
 }
 
-export const defaultInventory = getStartingEquipment('Fighter', 'Soldier', 'Dueling');
-
 // ════════════════════════════════════════════════════════════════════════════
 //  STARTING-WEALTH SHOP MODEL (buy your own gear with gold)
 //  The player gets a free base PACKAGE (focus + pack + background flavour) and a

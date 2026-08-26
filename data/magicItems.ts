@@ -715,8 +715,3 @@ export function magicItemToInventoryItem(def: MagicItemDef, lang: 'en' | 'fr' = 
         value: `${def.value} po`,
     };
 }
-
-/** All items of one rarity (useful for shops and DM listings). */
-export function getMagicItemsByRarity(rarity: MagicItemRarity): MagicItemDef[] {
-    return MAGIC_ITEMS.filter(item => item.rarity === rarity);
-}

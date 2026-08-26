@@ -479,9 +479,6 @@ const CLASS_EXTRA_ASI: Record<string, number[]> = {
 export function asiLevelsFor(className?: string): number[] {
     return [...ASI_LEVELS, ...(CLASS_EXTRA_ASI[String(className || '')] || [])].sort((a, b) => a - b);
 }
-export function isASILevel(level: number, className?: string): boolean {
-    return asiLevelsFor(className).includes(level);
-}
 
 /** ASI levels crossed by a level-up from `from` (exclusive) to `to` (inclusive).
  *  A big XP grant can jump several levels at once — each crossed ASI level counts. */

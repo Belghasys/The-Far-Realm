@@ -1,17 +1,14 @@
-import { GoogleGenAI } from '@google/genai';
 import { AdventureManifest, CharacterSheet } from '../../types';
 import { generateGeminiImage, stripNegations } from './geminiImageService';
-import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { viteEnv } from '../infra/modelConfig';
+import { getGeminiClient } from '../infra/geminiClient';
 import { log } from '../infra/logger';
 
-const API_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 // GM2 — lus via viteEnv (runtime launcher > build Vite > défaut), comme tous
 // les autres services : la lecture directe d'import.meta.env figeait le modèle
 // au build et rendait runtime.env inopérant dans le jeu installé.
 const TTS_MODEL = viteEnv('VITE_TTS_MODEL', import.meta.env.VITE_TTS_MODEL, 'gemini-3.1-flash-tts-preview');
 const TTS_VOICE = viteEnv('VITE_TTS_VOICE', import.meta.env.VITE_TTS_VOICE, 'Charon');
-
-let ai: GoogleGenAI | null = null;
 
 export interface IntroCinematicAssets {
     script: string;
@@ -20,11 +17,6 @@ export interface IntroCinematicAssets {
     visualPrompt: string;
     musicPrompt: string;
     firstSceneText: string;
-}
-
-function getClient(): GoogleGenAI {
-    if (!ai) ai = new GoogleGenAI({ apiKey: API_KEY });
-    return ai;
 }
 
 function compact(value: string | undefined | null, max = 900): string {
@@ -151,7 +143,7 @@ function pcmBase64ToWavDataUrl(base64: string, mimeType: string): string {
 
 export async function generateIntroNarrationAudio(script: string): Promise<string | undefined> {
     try {
-        const fetchPromise = getClient().models.generateContent({
+        const fetchPromise = getGeminiClient().models.generateContent({
             model: TTS_MODEL,
             contents: [{
                 role: 'user',

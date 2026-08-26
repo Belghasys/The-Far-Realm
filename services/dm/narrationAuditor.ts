@@ -11,11 +11,10 @@
  * contradictions. A false positive (nagging the DM wrongly) costs more
  * immersion than a missed minor slip.
  */
-import { GoogleGenAI } from '@google/genai';
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { getGeminiClient } from '../infra/geminiClient';
 
-const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 // Passe fréquente et mécanique → modèle léger dédié (VITE_AUDIT_MODEL, ex.
 // gemini-3.5-flash-lite) pour épargner le quota du Flash principal. Retombe
 // sur VITE_SUMMARY_MODEL si non configuré (comportement historique).
@@ -24,12 +23,6 @@ const AUDIT_MODEL = viteEnv(
     import.meta.env.VITE_AUDIT_MODEL,
     requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL)
 );
-
-let ai: GoogleGenAI | null = null;
-function getClient(): GoogleGenAI {
-    if (!ai) ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
-    return ai;
-}
 
 export interface NarrationAuditInput {
     /** The DM's most recent narration block (already merged/complete). */
@@ -90,7 +83,7 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
 `;
 
     try {
-        const result = await getClient().models.generateContent({
+        const result = await getGeminiClient().models.generateContent({
             model: AUDIT_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {

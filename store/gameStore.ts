@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import type { User } from 'firebase/auth';
 import {
     AdventureManifest,
-    CampaignLogEntry,
     CampaignRuntimeState,
     CampaignSubBranchPlan,
     CharacterSheet,

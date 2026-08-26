@@ -74,16 +74,6 @@ export function maxRollOfFormula(formula: string): number {
     return Math.max(0, total);
 }
 
-/** Roll a single d20. */
-export function rollD20(): number {
-    return Math.floor(Math.random() * 20) + 1;
-}
-
-/** Standard D&D modifier from an ability score. */
-export function getModifier(stat: number): number {
-    return Math.floor((stat - 10) / 2);
-}
-
 // ========== STRUCTURED LOGGING ==========
 
 export const LOG = {

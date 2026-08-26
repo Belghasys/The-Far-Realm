@@ -32,7 +32,7 @@ import { CombatTracker } from '../combat/CombatTracker';
 import { combatantSide, isHero } from '../../engine/combatants';
 import { AuditWindow } from './AuditConsole';
 import { ActionPrompt } from './ActionPrompt';
-import { JournalPanel, Quest, NPC, ChronicleEntry } from '../panels/JournalPanel';
+import { JournalPanel } from '../panels/JournalPanel';
 import { CampaignBoardPanel } from '../panels/CampaignBoardPanel';
 import { saveService } from '../../services/persistence/saveService';
 import { memoryManager } from '../../services/persistence/memoryManager';
@@ -66,17 +66,6 @@ import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDi
 import { getCheckModifier } from '../../engine/skillSystem';
 import { getCasterKit, type MonsterSpell, type CasterKit } from '../../data/casterKits';
 import { waitDice } from '../../services/media/diceTiming';
-
-// ========== STRUCTURED LOGGING ==========
-const LOG = {
-  combat: (msg: string, data?: any) => console.log(`⚔️ [COMBAT] ${msg}`, data ?? ''),
-  xp: (msg: string, data?: any) => console.log(`⭐ [XP] ${msg}`, data ?? ''),
-  engine: (msg: string, data?: any) => console.log(`🔧 [ENGINE] ${msg}`, data ?? ''),
-  sync: (msg: string, data?: any) => console.log(`🔄 [SYNC] ${msg}`, data ?? ''),
-  tag: (msg: string, data?: any) => console.log(`🏷️ [TAG] ${msg}`, data ?? ''),
-  save: (msg: string, data?: any) => console.log(`💾 [SAVE] ${msg}`, data ?? ''),
-  dm: (msg: string, data?: any) => console.log(`🎭 [DM] ${msg}`, data ?? ''),
-};
 
 const RuleCodexPanel = React.lazy(() =>
   import('../panels/RuleCodexPanel').then(module => ({ default: module.RuleCodexPanel }))
@@ -164,7 +153,6 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   const setCurrentRoll = useGameStore(s => s.setCurrentRoll);
   const activePrompt = useGameStore(s => s.activePrompt);
   const setActivePrompt = useGameStore(s => s.setActivePrompt);
-  const setTranscriptStore = useGameStore(s => s.setTranscript);
   const proposedActions = useGameStore(s => s.proposedActions);
   const removeProposedAction = useGameStore(s => s.removeProposedAction);
   const clearProposedActions = useGameStore(s => s.clearProposedActions);

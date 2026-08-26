@@ -1,5 +1,4 @@
 import { AdventureManifest } from '../../../types/index';
-import { AdventureOption, requireAdventure } from '../../adventures';
 import { CB_VILLAIN, CB_INTRODUCTION, CB_CINEMATIC, CB_FIRST_SCENE, CB_WORLD_CLOCKS, CB_PROTECTED_SECRETS, CB_CANON_FACTS, CB_MONSTER_IDS, CB_REWARDS } from './foundations';
 import { CB_ACT_I } from './actI';
 import { CB_ACT_II } from './actII';
@@ -58,10 +57,3 @@ export const CHANT_BRISE: AdventureManifest = {
     CB_DUNGEONS_1, CB_DUNGEONS_2, CB_LORE, CB_BESTIARY_NOTES, CB_ENDINGS,
   ].join('\n\n'),
 };
-
-/**
- * Carte de sélection — DÉRIVÉE de data/adventures.ts, qui reste l'unique
- * source de vérité. La fiche était recopiée ici jusqu'au 2026-08-23 : deux
- * exemplaires du même texte, à maintenir en parallèle.
- */
-export const CHANT_BRISE_OPTION: AdventureOption = requireAdventure('chant_brise');

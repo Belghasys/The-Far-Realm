@@ -1,10 +1,10 @@
 import { CharacterSheet, AdventureManifest } from "../../types";
-import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
+import type { GenerateContentResponse } from '@google/genai';
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { getGeminiClient } from '../infra/geminiClient';
 import { collectTokens, substituteTokens } from '../persistence/manifestTokens';
 
-const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);
 const SUMMARY_MODEL = requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL);
 // Extraction de faits = tâche mécanique (schema JSON) → modèle léger dédié
@@ -31,13 +31,6 @@ const SUMMARY_CHAIN = [...new Set([
     'gemini-flash-lite-latest',
 ].filter(Boolean))];
 
-let ai: GoogleGenAI | null = null;
-
-function getClient(): GoogleGenAI {
-    if (!ai) ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
-    return ai;
-}
-
 /** generateContent avec bascule : chaque modèle de la chaîne est tenté dans
  *  l'ordre ; on ne relance PAS sur le même modèle (le repli suffit, et un
  *  prompt réellement invalide échouera de toute façon sur les trois). */
@@ -45,7 +38,7 @@ async function generateWithFallback(chain: string[], request: Record<string, unk
     let lastError: unknown;
     for (let i = 0; i < chain.length; i++) {
         try {
-            return await getClient().models.generateContent({ ...request, model: chain[i] } as any);
+            return await getGeminiClient().models.generateContent({ ...request, model: chain[i] } as any);
         } catch (e) {
             lastError = e;
             const next = chain[i + 1];
@@ -260,7 +253,7 @@ export async function extractCampaignFacts(
     knownFacts: string[],
     language: string = 'fr'
 ): Promise<ExtractedCampaignFacts | null> {
-    const client = getClient();
+    const client = getGeminiClient();
     const historyText = history.map(h => `${h.speaker.toUpperCase()}: ${h.text}`).join('\n');
     const langInstruction = language === 'fr' ? 'Écris les faits en FRANÇAIS.' : 'Write the facts in ENGLISH.';
 

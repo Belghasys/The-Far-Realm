@@ -124,10 +124,6 @@ export function getRunwareKey(): string {
     return viteEnv('RUNWARE_API_KEY', undefined);
 }
 
-export function isRunwareConfigured(): boolean {
-    return Boolean(getRunwareKey());
-}
-
 // Dimensions par ratio — multiples de 64 (le `clampDim` du proxy arrondit au
 // multiple de 64 le plus proche : choisir autre chose ferait diverger le
 // direct et le proxy), surface ≤ 1024² (au-delà, Runware facture plus cher).

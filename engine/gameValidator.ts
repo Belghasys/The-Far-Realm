@@ -42,13 +42,6 @@ export function clampStatModifier(modifier: number): number {
 }
 
 /**
- * Clamp an ability score to D&D 5e bounds (1-30).
- */
-export function clampAbilityScore(score: number): number {
-    return Math.max(1, Math.min(30, score));
-}
-
-/**
  * Clamp AC to reasonable D&D 5e bounds (5-30).
  */
 export function clampAC(ac: number): number {

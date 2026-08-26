@@ -11,11 +11,10 @@
  * dans la fiction et qui manque au journal. Un journal silencieux vaut mieux
  * qu'un journal pollué.
  */
-import { GoogleGenAI } from '@google/genai';
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { getGeminiClient } from '../infra/geminiClient';
 
-const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 // Même famille que l'auditeur : extraction mécanique fréquente → modèle léger
 // (VITE_AUDIT_MODEL), fallback sur le modèle de résumé si absent.
 const KEEPER_MODEL = viteEnv(
@@ -23,12 +22,6 @@ const KEEPER_MODEL = viteEnv(
     import.meta.env.VITE_AUDIT_MODEL,
     requireViteEnv('VITE_SUMMARY_MODEL', import.meta.env.VITE_SUMMARY_MODEL)
 );
-
-let ai: GoogleGenAI | null = null;
-function getClient(): GoogleGenAI {
-    if (!ai) ai = new GoogleGenAI({ apiKey: GEMINI_KEY });
-    return ai;
-}
 
 export interface JournalKeeperInput {
     /** Recent transcript lines (already filtered of [SYSTEM] noise). */
@@ -93,7 +86,7 @@ ${dialogue}
 `;
 
     try {
-        const result = await getClient().models.generateContent({
+        const result = await getGeminiClient().models.generateContent({
             model: KEEPER_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {

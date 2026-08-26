@@ -107,14 +107,6 @@ export async function generateGeminiImage(prompt: string, options: GeminiImageOp
     throw new Error('Local FLUX image server is not configured.');
 }
 
-/**
- * Get a monster portrait URL directly from the bestiary.
- * This NEVER calls Gemini — it uses the pre-existing imageUrl.
- */
-export function getMonsterPortrait(imageUrl: string | undefined): string | undefined {
-    return imageUrl; // Pass-through — just a semantic alias for clarity
-}
-
 // ─── Prompt Builders ─────────────────────────────────────────────────────────
 
 /**

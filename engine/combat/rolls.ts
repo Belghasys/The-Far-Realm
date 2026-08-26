@@ -3,11 +3,11 @@ import { Combatant } from '../combatants';
 import { getFeatById } from '../../data/feats';
 import { CLASS_DATA } from '../../data/classes';
 import { RACE_DATA } from '../../data/races';
-import { ActiveEffect, Ability, CharacterSheet, ConditionEntry, StoryRollModifier, getEffectiveAC, getEffectiveStat, getDraconicDamageType } from '../../types';
+import { ActiveEffect, Ability, CharacterSheet, ConditionEntry, StoryRollModifier, getEffectiveStat, getDraconicDamageType } from '../../types';
 import { lookupCondition, lookupMonster, normalizeDamageType } from '../codexService';
 import { rollDice } from '../utils';
+import { proficiencyBonus } from '../skillSystem';
 import { makeId } from './encounter';
-import { castSpell } from './spells';
 import { ActionCapability, AdvantageMode, RollContextInput, RollContextResult, RollKind, RollOutcome, RollPromptState, StoryModifierApplication } from './types';
 
 const TYPE_KEYWORDS: Array<[RollKind, string[]]> = [
@@ -26,9 +26,7 @@ function normalizeAdvantage(value: unknown): AdvantageMode {
     if (text === 'adv' || text.includes('advantage')) return 'advantage';
     return 'normal';
 }
-export function proficiencyBonus(level: number): number {
-    return Math.floor((Math.max(1, level) - 1) / 4) + 2;
-}
+export { proficiencyBonus };
 export function normalizeAbility(value?: string): Ability {
     const upper = String(value || '').toUpperCase();
     if (upper === 'STR' || upper === 'DEX' || upper === 'CON' || upper === 'INT' || upper === 'WIS' || upper === 'CHA') return upper;

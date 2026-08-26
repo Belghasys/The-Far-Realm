@@ -1,5 +1,4 @@
 import { AdventureManifest } from '../../types/index';
-import { AdventureOption, requireAdventure } from '../adventures';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -513,10 +512,3 @@ export const HIVER_SANS_AUBE: AdventureManifest = {
     "## Notes de personnalisation (passe Flash)\n" +
     "Remplir TOUS les jetons {{...}} depuis la fiche + storyProfile ; AUCUN jeton brut ne doit subsister dans le texte final. {{PERSONAL_LOSS}} est le PIVOT du miroir — il DOIT désigner une personne / un être cher NOMMÉ et concret (jamais un concept abstrait), car il est rendu littéralement (une silhouette debout qui sourit) et matérialisé en ennemi au Ch5. Ordre de priorité : (1) une perte explicite du profil ; (2) à défaut, dériver depuis le lien (bond = une personne) ou la blessure (wound) ; (3) DERNIER recours, fallback FIGÉ : « un compagnon de route mort de froid dans le Nord, que {{HERO_NAME}} n’a pas su sauver ». NE PAS toucher au secret, aux beats, aux twists, au gazetteer, aux paliers du Gel Profond ni aux dénouements — seulement substituer les jetons, ajuster la couleur, et lier les hallucinations du Ch5 à cette perte.",
 };
-
-/**
- * Carte de sélection — DÉRIVÉE de data/adventures.ts, qui reste l'unique
- * source de vérité. La fiche était recopiée ici jusqu'au 2026-08-23 : deux
- * exemplaires du même texte, à maintenir en parallèle.
- */
-export const HIVER_SANS_AUBE_OPTION: AdventureOption = requireAdventure('hiver_sans_aube');

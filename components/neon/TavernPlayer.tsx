@@ -158,6 +158,3 @@ export function TavernLink({ label, onClick }: { label: string; onClick: () => v
         </button>
     );
 }
-
-/** Encre lisible sur l'aplat acide — exporté pour l'en-tête qui l'utilise. */
-export const encreAcide = onTint(T.acid);
