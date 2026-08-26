@@ -54,7 +54,7 @@ export interface ToolRefs {
 }
 
 /** Les outils qui ont besoin du bestiaire charge avant de tourner. */
-export const TOOLS_NEEDING_BESTIARY = ['lookup_monster', 'build_encounter', 'add_enemy_init', 'resolve_attack', 'apply_damage'];
+export const TOOLS_NEEDING_BESTIARY = ['lookup_monster', 'lookup_creature', 'build_encounter', 'add_enemy_init', 'add_ally_init', 'recruit_companion', 'resolve_attack', 'apply_damage'];
 
 export function makeToolContext(refs: ToolRefs, call: { name: string; args: any }) {
     const { depsRef, lastImageStartedAtRef, imageInFlightRef, lastScenePromptRef, pendingImageRef, imageTimerRef } = refs;

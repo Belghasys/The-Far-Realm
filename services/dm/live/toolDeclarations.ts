@@ -2,12 +2,12 @@
 export const GAME_TOOL_DECLARATIONS = [
     {
         name: "lookup_creature",
-        description: "Look up a creature from the bestiary by name.",
-        parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any, description: "Name of the creature" } }, required: ["name"] }
+        description: "The FULL sheet of a bestiary creature: stats, the attacks the engine will play (with on-hit saves), breath weapons and their recharge, frightful presence, legendary actions, spellcasting, traits, resistances. Call it BEFORE a fight to describe the foe truthfully — the engine plays all of it on the creature's turns.",
+        parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any, description: "Creature name (English or French)" } }, required: ["name"] }
     },
     {
         name: "lookup_weapon",
-        description: "Look up a weapon from the D&D 5e weapon table.",
+        description: "A weapon from the SRD table as the engine equips it: damage dice and type, properties (finesse, heavy, two-handed, reach, thrown…), range.",
         parameters: { type: "OBJECT" as any, properties: { name: { type: "STRING" as any, description: "Name of the weapon" } }, required: ["name"] }
     },
     {
@@ -86,7 +86,6 @@ export const GAME_TOOL_DECLARATIONS = [
             type: "OBJECT" as any,
             properties: {
                 partyLevel: { type: "INTEGER" as any },
-                partySize: { type: "INTEGER" as any },
                 difficulty: { type: "STRING" as any, description: "easy, medium, hard, deadly" },
                 biome: { type: "STRING" as any },
                 role: { type: "STRING" as any, description: "brute, skirmisher, artillery, controller, minion, solo" },

@@ -12,6 +12,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TOOLS } from '../services/dm/tools';
 import { runTool, type ToolRefs } from '../services/dm/tools/context';
+import { GAME_TOOL_DECLARATIONS } from '../services/dm/live/toolDeclarations';
+import fs from 'node:fs';
+import path from 'node:path';
 import { useGameStore } from '../store/gameStore';
 import { DEFAULT_CHAR } from '../data/character';
 
@@ -48,6 +51,58 @@ describe('Les outils du MJ', () => {
     it('la table porte chaque outil que le MJ connaît, et rien que des fonctions', () => {
         const manquants = NOMS.filter(n => typeof TOOLS[n] !== 'function');
         expect(manquants).toEqual([]);
+    });
+
+    // ── LE CONTRAT DES DÉCLARATIONS (contre-audit du 2026-08-26) ──────────
+    // Ce que Gemini lit (toolDeclarations) doit exister côté moteur. Deux
+    // outils étaient déclarés depuis le premier commit sans jamais avoir été
+    // implémentés (lookup_creature, lookup_weapon) : le MJ recevait « Unknown
+    // tool » avant chaque combat. Et un paramètre annoncé mais jamais lu est
+    // une promesse creuse (build_encounter.partySize).
+    it('toute déclaration a une implémentation, et toute implémentation une déclaration', () => {
+        const declares = GAME_TOOL_DECLARATIONS.map(t => t.name);
+        const implementes = Object.keys(TOOLS);
+        expect(declares.filter(n => !implementes.includes(n))).toEqual([]);
+        expect(implementes.filter(n => !declares.includes(n))).toEqual([]);
+    });
+
+    it('tout paramètre déclaré est lu par le code de l\'outil (ou args est passé en bloc)', () => {
+        const sources = fs.readdirSync(path.resolve(__dirname, '../services/dm/tools'), { recursive: true, withFileTypes: true })
+            .filter(e => e.isFile() && e.name.endsWith('.ts'))
+            .map(e => fs.readFileSync(path.join(e.parentPath ?? (e as any).path, e.name), 'utf-8'))
+            .join('\n');
+        const corps = (nom: string): string => {
+            const m = new RegExp(`export async function ${nom}\\b`).exec(sources);
+            if (!m) return '';
+            const fin = sources.indexOf('\nexport async function', m.index + 1);
+            return sources.slice(m.index, fin > 0 ? fin : undefined);
+        };
+        const fautes: string[] = [];
+        for (const t of GAME_TOOL_DECLARATIONS as any[]) {
+            const body = corps(t.name);
+            if (!body) continue;
+            // `args` passé entier à une autre fonction : le contrat est tenu ailleurs
+            if (/[(,]\s*args\s*[,)]|\.\.\.args\b/.test(body)) continue;
+            for (const p of Object.keys(t.parameters?.properties || {})) {
+                if (!new RegExp(`args\\??[.\\[]['"]?${p}\\b`).test(body)) fautes.push(`${t.name}.${p}`);
+            }
+        }
+        expect(fautes).toEqual([]);
+    });
+
+    it('lookup_creature rend la fiche complète, capacités SRD comprises ; lookup_weapon rend l\'arme', async () => {
+        const r: any = await runTool(refs(), { name: 'lookup_creature', args: { name: 'Dragon rouge adulte' } });
+        expect(r.success).toBe(true);
+        expect(r.creature.name).toBe('Adult Red Dragon');
+        expect(r.creature.attacks.map((a: any) => a.name)).toEqual(expect.arrayContaining(['Bite', 'Claw', 'Tail']));
+        expect(r.creature.abilities.some((a: any) => a.name === 'Fire Breath' && a.recharge === '5-6')).toBe(true);
+        expect(r.creature.legendary.length).toBe(3);
+        const w: any = await runTool(refs(), { name: 'lookup_weapon', args: { name: 'Longsword' } });
+        expect(w.success).toBe(true);
+        expect(w.weapon.damage).toMatch(/1d8/);
+        const inconnu: any = await runTool(refs(), { name: 'lookup_creature', args: { name: 'Dragounet mauve' } });
+        expect(inconnu.success).toBe(false);
+        expect(inconnu.suggestions.length).toBeGreaterThan(0);
     });
 
     it('un nom inconnu est refusé proprement, sans lever', async () => {
