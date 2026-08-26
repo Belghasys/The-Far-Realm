@@ -10,20 +10,20 @@
  * fermetures internes, comme ils l'etaient dans le composant.
  */
 import { useGameStore } from '../../store/gameStore';
-import { auditBus } from '../../services/infra/auditBus';
+import { auditBus } from '../infra/auditBus';
 import { Ability, getEffectiveAC, getEffectiveStat } from '../../types';
 import { combatantSide, isHero } from '../../engine/combatants';
-import { campaignEventLog } from '../../services/persistence/campaignEventLog';
+import { campaignEventLog } from '../persistence/campaignEventLog';
 import { advanceTurn, resolveConcentrationAfterDamage, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, releaseNpcConcentrationEffect, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, concentrationBreakOnDeparture, MORALE_DC } from '../../engine/rulesEngine';
 import { getCreature } from '../../data/bestiary';
 import { getCreatureAttacks, getMultiattackCount } from '../../engine/monsterAttacks';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/companionOptions';
 import { lookupMonster, lookupCondition } from '../../engine/codexService';
 import { rollDice } from '../../engine/utils';
-import { playDamageImpact, playPlayerHurt } from '../../services/media/combatSfx';
+import { playDamageImpact, playPlayerHurt } from '../media/combatSfx';
 import { getCheckModifier } from '../../engine/skillSystem';
 import { getCasterKit, type MonsterSpell, type CasterKit } from '../../data/casterKits';
-import { waitDice } from '../../services/media/diceTiming';
+import { waitDice } from '../media/diceTiming';
 import type { SessionContext } from './context';
 
 export async function runNPCTurn(ctx: SessionContext, npc: any) {

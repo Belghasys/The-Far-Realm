@@ -84,13 +84,18 @@ Chaque dossier dit ce qu'il contient ; `tests/layout.test.ts` le vérifie.
 | `services/dm/` | tout ce qui parle à Gemini ou écrit pour lui : session live, prompt, directeur de campagne, greffier |
 | `services/media/` | images, musique, bruitages, rythme des dés |
 | `services/persistence/` | Firebase, sauvegardes, mémoire du MJ, journal d'événements |
-| `services/infra/` · `services/i18n/` | logger, bus d'audit, trace de session · traductions |
-| `hooks/` | dont `useToolProcessor` : les outils que le MJ peut appeler |
+| `services/infra/` · `services/i18n/` | logger, bus d'audit, trace de session, client Gemini · traductions |
+| `services/session/` | les actions de session hors du composant : sort du joueur, capacité de classe, tour des PNJ (`SessionContext`) |
+| `services/dm/tools/` · `hooks/` | les outils que le MJ peut appeler, une fonction par outil · les hooks React de l'écran de partie |
 | `components/session/` · `combat/` · `panels/` | l'écran de partie et son HUD · le suivi de combat · les fenêtres en partie |
 | `components/hall/` · `neon/` · `shared/` · `views/` | la création · le kit visuel de la charte · le transverse · les écrans routés |
+| `*/texts.ts` | les textes fr/en des écrans d'un dossier, une table par composant |
 | `data/` · `theme/` · `store/` | données du jeu (SRD, campagnes, bestiaire) · charte · état Zustand |
 
-Déplacer un module : `python tools/move_modules.py mapping.json` réécrit tous les imports relatifs.
+Outils de rangement (`tools/`, Python, sans dépendance) — chacun réécrit les imports et laisse les corps intacts :
+`move_modules.py` déplace des fichiers, `split_module.py` découpe un module en plusieurs (plan JSON, baril d'exports),
+`move_symbols.py` déplace des fonctions d'un fichier à un autre, `delete_symbols.py` supprime des déclarations,
+`prune_imports.py` retire des noms d'imports ; `tsblocks.py` est le découpeur en blocs qu'ils partagent.
 
 ## 📄 Licence & attribution
 

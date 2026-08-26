@@ -10,8 +10,8 @@ import { combatantSide } from '../../engine/combatants';
 import { resolvePendingSpellRoll, resolveRollPrompt, castSpell, applyStoryModifiersToPrompt, worldHourOf, resolveSpellAgainstTargets, applyAutoDamageSpell } from '../../engine/rulesEngine';
 import { getCreature } from '../../data/bestiary';
 import { lookupMonster, lookupSpell } from '../../engine/codexService';
-import { playSpellSfx } from '../../services/media/combatSfx';
-import { waitDice } from '../../services/media/diceTiming';
+import { playSpellSfx } from '../media/combatSfx';
+import { waitDice } from '../media/diceTiming';
 import type { SessionContext } from './context';
 
 export async function handlePlayerCastSpell(ctx: SessionContext, spellName: string, slotLevel: string | null, targetId: string) {

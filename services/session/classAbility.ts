@@ -14,7 +14,7 @@ import type { ClassAbilityId } from '../../components/combat/CombatActionsPanel'
 import { getCreature } from '../../data/bestiary';
 import { lookupMonster } from '../../engine/codexService';
 import { rollDice } from '../../engine/utils';
-import { waitDice } from '../../services/media/diceTiming';
+import { waitDice } from '../media/diceTiming';
 import type { SessionContext } from './context';
 
 export async function handleUseClassAbility(ctx: SessionContext, abilityId: ClassAbilityId, targetId?: string) {
