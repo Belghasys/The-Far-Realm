@@ -62,7 +62,7 @@ Pour lancer le client seul en dev :
 
 ```bash
 npm install
-cp .env.example .env.local   # puis renseignez VITE_GEMINI_API_KEY
+cp .env.example .env.local   # aucune clé Gemini : elle vit dans Secret Manager (functions/README.md)
 npm run dev
 ```
 

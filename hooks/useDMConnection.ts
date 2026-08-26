@@ -42,8 +42,11 @@ export function useDMConnection({
         const config = liveConnectionConfigSummary();
         const hints: string[] = [];
 
-        if (!config.hasApiKey) {
-            hints.push('Missing VITE_GEMINI_API_KEY in the deployed build.');
+        if (/unauthenticated|connexion requise/i.test(message)) {
+            hints.push('Sign in again — the voice session needs a signed-in account.');
+        }
+        if (/quota|resource-exhausted|plafond/i.test(message)) {
+            hints.push('Daily voice-session quota reached; it resets at midnight UTC.');
         }
         if (/api key|permission|forbidden|unauthorized|referer|referrer|origin|403/i.test(message)) {
             hints.push(`Check Google Cloud API key restrictions and allow this website origin: ${config.origin}`);

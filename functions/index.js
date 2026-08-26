@@ -240,3 +240,6 @@ exports.generateImage = onCall(
         }
     }
 );
+
+// Voix (jeton éphémère) et texte (relais) — clé Gemini côté serveur.
+Object.assign(exports, require("./gemini"));

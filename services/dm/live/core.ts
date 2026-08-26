@@ -20,7 +20,8 @@ import { sessionTrace } from '../../infra/sessionTrace';
 import { arrayBufferToBase64, base64ToFloat32, floatTo16BitPCM } from './audio';
 import { GAME_TOOL_DECLARATIONS } from './toolDeclarations';
 import { appendTranscriptChunk } from './transcript';
-import { AUDIO_MODEL, GEMINI_KEY, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
+import { fetchLiveToken } from './liveToken';
+import { AUDIO_MODEL, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
 
 // --- Live Client ---
 
@@ -165,10 +166,6 @@ export class LiveDungeonMaster {
     async connect(): Promise<void> {
         log.info('🔌 Connecting to Gemini Live API...');
 
-        if (!GEMINI_KEY) {
-            throw new Error('Missing VITE_GEMINI_API_KEY. Add it to .env.local and rebuild before deploying.');
-        }
-
         // Close gate BEFORE connecting so stale worklets from previous connections can't send
         this._sendGate = false;
         // IJ5 — jamais de résidu de transcription d'une session précédente qui
@@ -202,9 +199,14 @@ export class LiveDungeonMaster {
         auditBus.publish('gemini-system', `Live system prompt (${systemPrompt.length} chars, model ${AUDIO_MODEL})`, systemPrompt);
         auditBus.publish('engine', `Live connect — ${this.sessionResumptionHandle ? 'reprise par handle' : 'session FRAÎCHE'}, prompt ${systemPrompt.length} chars, ${this.initialHistory.length} répliques en mémoire`);
 
+        // Jamais la clé : un jeton éphémère par (re)connexion, émis par la
+        // Cloud Function liveToken (auth + quota), verrouillé sur AUDIO_MODEL.
+        // Les jetons ne sont acceptés que sur l'API v1alpha.
+        const { token, remainingToday } = await fetchLiveToken(AUDIO_MODEL);
+        auditBus.publish('engine', `Live token — reste ${remainingToday} sessions vocales aujourd'hui`);
         const ai = new GoogleGenAI({
-            apiKey: GEMINI_KEY,
-            httpOptions: { apiVersion: 'v1beta' }
+            apiKey: token,
+            httpOptions: { apiVersion: 'v1alpha' }
         });
         const resumingFromHandle = Boolean(this.sessionResumptionHandle);
 

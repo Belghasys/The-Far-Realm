@@ -6,7 +6,7 @@
  * 1 MiB par document — une campagne plus grosse faisait échouer TOUTES les
  * sauvegardes en silence) mais {authoredRef, tokenValues, chapterStatuses}
  * (~2 Ko), et le store devait lire cette forme sans importer llmService,
- * dont le chargement exige VITE_GEMINI_API_KEY.
+ * dont le chargement exigeait alors la clé Gemini (relais Firebase depuis).
  *
  * Scindé le 2026-08-25 : la RÉHYDRATATION (qui a besoin des gabarits de
  * campagne, 550 Ko de source) est partie dans manifestHydration.ts. Ce

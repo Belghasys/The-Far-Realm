@@ -2,7 +2,6 @@
 import { Session } from '@google/genai';
 import { requireViteEnv } from '../../infra/modelConfig';
 
-export const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 
 /**
  * Check the REAL WebSocket readyState by reaching into the SDK internals.
@@ -46,7 +45,6 @@ export const AUDIO_MODEL = normalizeLiveModelName(requireViteEnv('VITE_AUDIO_MOD
 export function liveConnectionConfigSummary() {
     return {
         model: AUDIO_MODEL,
-        hasApiKey: Boolean(GEMINI_KEY),
         origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
     };
 }

@@ -1,8 +1,7 @@
 import { CharacterSheet, AdventureManifest } from "../../types";
-import type { GenerateContentResponse } from '@google/genai';
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
-import { getGeminiClient } from '../infra/geminiClient';
+import { getGeminiClient, type GeminiTextResponse } from '../infra/geminiClient';
 import { collectTokens, substituteTokens } from '../persistence/manifestTokens';
 
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);
@@ -34,7 +33,7 @@ const SUMMARY_CHAIN = [...new Set([
 /** generateContent avec bascule : chaque modèle de la chaîne est tenté dans
  *  l'ordre ; on ne relance PAS sur le même modèle (le repli suffit, et un
  *  prompt réellement invalide échouera de toute façon sur les trois). */
-async function generateWithFallback(chain: string[], request: Record<string, unknown>): Promise<GenerateContentResponse> {
+async function generateWithFallback(chain: string[], request: Record<string, unknown>): Promise<GeminiTextResponse> {
     let lastError: unknown;
     for (let i = 0; i < chain.length; i++) {
         try {

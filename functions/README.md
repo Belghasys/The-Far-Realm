@@ -77,3 +77,27 @@ image servie par `im.runware.ai`. Identifiants AIR confirmés via `modelSearch`.
 - [ ] App Check (optionnel, fragile en Electron — les vraies protections sont
       Auth + quotas + kill-switch + plafond de dépense côté Runware)
 - [ ] Plafond de dépense dans le dashboard Runware (dernière ligne de défense)
+
+## Gemini — voix et texte (2026-08-27)
+
+La clé Gemini vit elle aussi dans **Secret Manager** (`functions/gemini.js`).
+Le navigateur ne la voit jamais :
+
+- `liveToken` — la voix (Live API) se connecte en WebSocket depuis le
+  navigateur ; elle reçoit un **jeton éphémère** (30 min, un usage, verrouillé
+  sur le modèle demandé), émis après auth + quota (60 sessions/joueur/jour,
+  3 000/jour global). Client : `services/dm/live/liveToken.ts`, utilisé à
+  chaque (re)connexion dans `live/core.ts` avec `apiVersion: 'v1alpha'`.
+- `geminiText` — relais des appels `generateContent` (résumés, greffier,
+  auditeur, branches, intro TTS) : auth + quota (400 appels/joueur/jour,
+  20 000/jour global), modèles `gemini-*` uniquement, charge ≤ 400 Ko.
+  Client : `services/infra/geminiClient.ts` (même forme d'appel qu'avant).
+- Kill-switch : `config/gemini { enabled: false }`. Compteurs dans
+  `usage/{uid}_{jour}` (champs `live` et `text`, à côté de `count` = images).
+
+```bash
+# GÉNÉRER UNE NOUVELLE CLÉ Gemini (l'ancienne a été livrée dans dist/ → la révoquer)
+firebase functions:secrets:set GEMINI_API_KEY
+cd functions && npm install && cd ..
+firebase deploy --only functions
+```
