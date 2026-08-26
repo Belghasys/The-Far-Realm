@@ -18,11 +18,11 @@ import {
     resolvePendingSpellRoll,
     resolveRollPrompt,
     startEncounter,
-} from '../services/rulesEngine';
+} from '../engine/rulesEngine';
 import { enrichWeaponItem, getWeaponFromInventory, repairCharacterWeapons } from '../data/equipment';
 import { DEFAULT_CHAR } from '../data/character';
 import { isRangedWeapon, getPlayerAttackModifier } from '../types';
-import { rollDice } from '../services/utils';
+import { rollDice } from '../engine/utils';
 
 const EMPTY_ENCOUNTER: any = {
     isActive: false, combatants: [], currentTurn: '', round: 1, turnIndex: 0, actionEconomy: {}, logs: [],

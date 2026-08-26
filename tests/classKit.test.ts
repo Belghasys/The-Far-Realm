@@ -16,7 +16,7 @@ import {
     rageEffect,
     resolveAttackAction,
     startEncounter,
-} from '../services/rulesEngine';
+} from '../engine/rulesEngine';
 import { DEFAULT_CHAR } from '../data/character';
 import { SUBCLASS_DATA } from '../data/subclasses';
 

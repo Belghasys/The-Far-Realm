@@ -8,7 +8,7 @@ import { useGameStore } from '../store/gameStore';
 import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { ChatMessage } from './useTranscript';
-import { foldText } from '../services/skillSystem';
+import { foldText } from '../engine/skillSystem';
 
 // Firestore hard-caps a document at 1 MiB. A long campaign's transcript + event
 // log can blow past that, which makes the ENTIRE setDoc throw — losing the whole

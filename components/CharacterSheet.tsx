@@ -19,8 +19,8 @@ import {
     Pastille, Etiquette, Etiqueter, Champ, Ligne, Liste, Compteur, Cartouche, Grille,
 } from './neon/SheetKit';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../data/subclasses';
-import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../services/skillSystem';
-import { hasFeatSpecial } from '../services/rulesEngine';
+import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../engine/skillSystem';
+import { hasFeatSpecial } from '../engine/rulesEngine';
 import { SRD51_SPELLS } from '../data/srd51/spells';
 import { WEAPON_TABLE, WeaponTemplate } from '../data/weapons';
 import { ARMOR_CATALOG, ArmorTemplate, parsePriceToGp, startingGoldFor, getDefaultLoadout, weaponTemplateToItem, armorTemplateToItem } from '../data/equipment';

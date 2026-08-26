@@ -16,11 +16,11 @@ import {
     castSpell,
     MORALE_DC,
     CLASS_CASTER_ABILITY,
-} from '../services/rulesEngine';
-import { lookupMonster, lookupCondition } from '../services/codexService';
+} from '../engine/rulesEngine';
+import { lookupMonster, lookupCondition } from '../engine/codexService';
 import { SRD51_CONDITIONS } from '../data/srd51/rules';
 import { isProficientWithWeapon, findWeaponTemplate } from '../data/weapons';
-import { foldText, armorStealthPenalty } from '../services/skillSystem';
+import { foldText, armorStealthPenalty } from '../engine/skillSystem';
 import { ATTUNEMENT_LIMIT, getPlayerAttackModifier, getRollBonus } from '../types';
 import { DEFAULT_CHAR } from '../data/character';
 import { CSV_MONSTERS } from '../data/monsterData';

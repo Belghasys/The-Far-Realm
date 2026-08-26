@@ -15,8 +15,8 @@ import {
     resolveAttackAction,
     resolveRollPrompt,
     tickRoundEffects,
-} from '../services/rulesEngine';
-import { foldText } from '../services/skillSystem';
+} from '../engine/rulesEngine';
+import { foldText } from '../engine/skillSystem';
 import { DEFAULT_CHAR } from '../data/character';
 
 function hero(overrides: any = {}) {
@@ -206,7 +206,7 @@ describe('DA4 — French spell aliases', () => {
     });
 
     it('lookupSpell finds spells by French name (accents included)', async () => {
-        const { lookupSpell } = await import('../services/codexService');
+        const { lookupSpell } = await import('../engine/codexService');
         expect(lookupSpell('Boule de feu')?.name).toBe('Fireball');
         expect(lookupSpell('boule de feu')?.name).toBe('Fireball');
         expect(lookupSpell('Soins')?.name).toBe('Cure Wounds');
@@ -244,7 +244,7 @@ describe('DA5 — Hill Dwarf Dwarven Toughness', () => {
 // ═══════════════ NF2 — avantages d'équipement ═══════════════
 describe('NF2 — gear-granted advantages', () => {
     it('detects structured advantageOn and French/English item text', async () => {
-        const { getGearAdvantages, gearAdvantageFor } = await import('../services/skillSystem');
+        const { getGearAdvantages, gearAdvantageFor } = await import('../engine/skillSystem');
         const c: any = {
             inventory: [
                 { id: '1', name: 'Bottes elfiques', type: 'armor', equipped: true, quantity: 1, weight: 1, slot: 'feet',
@@ -397,7 +397,7 @@ describe('NF3 — merchant stocks', () => {
 // ═══════════════ PL11/PL14 — objets défensifs et talismans portés ═══════════════
 describe('PL11/PL14 — defensive gear and carried trinkets', () => {
     it('PL11: a cloak granting attackers disadvantage is detected (tag defense)', async () => {
-        const { gearAdvantageFor } = await import('../services/skillSystem');
+        const { gearAdvantageFor } = await import('../engine/skillSystem');
         const c: any = {
             inventory: [{
                 id: 'c1', name: 'Cape de déplacement', type: 'armor', equipped: true, quantity: 1, weight: 1, slot: 'back',
@@ -408,7 +408,7 @@ describe('PL11/PL14 — defensive gear and carried trinkets', () => {
     });
 
     it('PL14: a carried (non-equippable) lucky stone grants its advantage without being equipped', async () => {
-        const { gearAdvantageFor } = await import('../services/skillSystem');
+        const { gearAdvantageFor } = await import('../engine/skillSystem');
         const c: any = {
             inventory: [{
                 id: 's1', name: 'Pierre de chance', type: 'misc', equipped: false, quantity: 1, weight: 0.1, slot: 'none',

@@ -4,7 +4,7 @@
  * Run: npx vitest run
  */
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
-import { calculateSkillModifier, calculateSaveModifier, getSkillAbility, rollWithAdvantage } from '../services/skillSystem';
+import { calculateSkillModifier, calculateSaveModifier, getSkillAbility, rollWithAdvantage } from '../engine/skillSystem';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
 import {
     addEnemyToEncounter,
@@ -29,7 +29,7 @@ import {
     resolveConcentrationAfterDamage,
     resolveAttackAction,
     startEncounter,
-} from '../services/rulesEngine';
+} from '../engine/rulesEngine';
 import {
     buildEncounter,
     lookupCondition,
@@ -37,7 +37,7 @@ import {
     lookupSpell,
     preloadCodexBestiary,
     structureInventoryItem
-} from '../services/codexService';
+} from '../engine/codexService';
 import { DEFAULT_CHAR } from '../data/character';
 import { getStartingEquipment } from '../data/equipment';
 import { getPlayerAttackModifier, getEffectiveAC, getEffectiveSpeed, getEffectiveStat, getXPProgress } from '../types';
@@ -1427,7 +1427,7 @@ describe('getXPProgress (XP bar)', () => {
 // ─── Magic item catalog & loot tables ────────────────────────────────────────
 import { MAGIC_ITEMS, getMagicItemByName, magicItemToInventoryItem, rollLootTable, pickMagicItem } from '../data/magicItems';
 import { FEATS, getFeatById } from '../data/feats';
-import { featNumericBonus, featGrantsAdvantageOn } from '../services/rulesEngine';
+import { featNumericBonus, featGrantsAdvantageOn } from '../engine/rulesEngine';
 
 describe('magic item catalog & loot tables', () => {
     it('ships a substantial SRD catalog with bilingual names', () => {
@@ -1525,9 +1525,9 @@ describe('feats', () => {
 });
 
 // ─── 2026-08-08 global audit regression tests ───────────────────────────────
-import { applyDamageToCharacter, playerResistances, sanitizeXPGrant, updateEnemyHP } from '../services/rulesEngine';
-import { getCheckModifier, canonicalSkillName } from '../services/skillSystem';
-import { getEnemyXP } from '../services/xpSystem';
+import { applyDamageToCharacter, playerResistances, sanitizeXPGrant, updateEnemyHP } from '../engine/rulesEngine';
+import { getCheckModifier, canonicalSkillName } from '../engine/skillSystem';
+import { getEnemyXP } from '../engine/xpSystem';
 
 describe('audit fixes (combat/XP/skills/damage)', () => {
     beforeAll(async () => {
@@ -1659,8 +1659,8 @@ describe('audit fixes (combat/XP/skills/damage)', () => {
 });
 
 // ─── Feature batch: durations, class abilities, companions, 11-20 content ───
-import { tickRoundEffects, rageEffect, monkMartialArtsDie, syncCompanionsFromState } from '../services/rulesEngine';
-import { maxSpellLevelForClass } from '../services/codexService';
+import { tickRoundEffects, rageEffect, monkMartialArtsDie, syncCompanionsFromState } from '../engine/rulesEngine';
+import { maxSpellLevelForClass } from '../engine/codexService';
 import { buildChronicleHtml } from '../services/galleryService';
 
 describe('feature batch (durations, abilities, companions, high levels)', () => {
@@ -1751,8 +1751,8 @@ describe('feature batch (durations, abilities, companions, high levels)', () => 
 });
 
 // ─── 24-point batch: hour expiry, riders, distance, AoE, XP, FR parsing ─────
-import { worldHourOf, stampEffectExpiry, sweepExpiredEffects, resolveSpellAgainstTargets, hasFeatSpecial } from '../services/rulesEngine';
-import { estimateXPFromHP } from '../services/xpSystem';
+import { worldHourOf, stampEffectExpiry, sweepExpiredEffects, resolveSpellAgainstTargets, hasFeatSpecial } from '../engine/rulesEngine';
+import { estimateXPFromHP } from '../engine/xpSystem';
 import { parseItemStatModifier, parseItemSpeedModifier, getRollBonus, getGearSkillBonus, getEffectiveAttackBonus } from '../types';
 
 describe('24-point batch (hour expiry, riders, distance, AoE, FR parsing)', () => {
@@ -1905,8 +1905,8 @@ describe('24-point batch (hour expiry, riders, distance, AoE, FR parsing)', () =
 });
 
 // ─── Batch montures / mode histoire / effets combattants / double équipement ─
-import { combatantEffectBonus } from '../services/rulesEngine';
-import { maxRollOfFormula } from '../services/utils';
+import { combatantEffectBonus } from '../engine/rulesEngine';
+import { maxRollOfFormula } from '../engine/utils';
 
 describe('mounts, story-mode healing, combatant effects', () => {
     it('maxRollOfFormula computes the maximum of dice formulas', () => {
@@ -1997,7 +1997,7 @@ describe('mounts, story-mode healing, combatant effects', () => {
 
 // ─── Créatures liées : montures typées, bêtes du rôdeur, familiers ──────────
 import { MOUNT_TYPES, getMountType, BEAST_COMPANIONS, getBeastCompanion, getFamiliarType, FAMILIAR_CLASSES } from '../data/companionOptions';
-import { ensureProgressionState as ensureProgression } from '../services/rulesEngine';
+import { ensureProgressionState as ensureProgression } from '../engine/rulesEngine';
 
 describe('typed mounts, ranger beasts, familiars', () => {
     it('mount catalog resolves by id or French/English name (accent-insensitive)', () => {
@@ -2047,7 +2047,7 @@ describe('typed mounts, ranger beasts, familiars', () => {
 });
 
 // ─── Alliés autonomes : monture combattante, level-up des compagnons ────────
-import { levelUpCompanions } from '../services/rulesEngine';
+import { levelUpCompanions } from '../engine/rulesEngine';
 import { MOUNT_TYPES as MOUNTS_FOR_COMBAT } from '../data/companionOptions';
 
 describe('fighting mounts and companion level-ups', () => {

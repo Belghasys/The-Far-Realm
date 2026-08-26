@@ -4,7 +4,7 @@ import { GoogleGenAI, Modality, Session, LiveServerMessage } from '@google/genai
 import pcmProcessorUrl from './pcm-processor.js?url';
 import { memoryManager } from './memoryManager';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
-import { preloadCodexBestiary } from './codexService';
+import { preloadCodexBestiary } from '../engine/codexService';
 import { getWeapon, weaponSummary } from '../data/weapons';
 import { log } from './logger';
 import { buildSystemPrompt } from './systemPrompt';

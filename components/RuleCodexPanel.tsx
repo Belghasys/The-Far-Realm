@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { BookOpen, ExternalLink, Search, Shield, Swords, Wand2 } from 'lucide-react';
-import { preloadCodexBestiary, searchCodex } from '../services/codexService';
+import { preloadCodexBestiary, searchCodex } from '../engine/codexService';
 import { formatCR } from '../data/bestiary';
 import { CodexEntry, CodexEntryKind } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';

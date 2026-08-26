@@ -17,7 +17,7 @@ import { viteEnv } from '../services/modelConfig';
 import { isSlimManifestPayload } from '../services/manifestTokens';
 import type { ChatMessage } from '../hooks/useTranscript';
 import type { Combatant } from '../components/CombatTracker';
-import type { DepartedCombatant } from '../services/rulesEngine';
+import type { DepartedCombatant } from '../engine/rulesEngine';
 
 // Seed the UI language from a previous choice, else the browser, defaulting to English.
 function getInitialLanguage(): Language {

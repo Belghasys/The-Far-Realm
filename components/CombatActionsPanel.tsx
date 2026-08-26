@@ -4,8 +4,8 @@ import { getPlayerAttackModifier, getPlayerAttackCount, isRangedWeapon } from '.
 import { combatantSide, buildDisplayNames } from './CombatTracker';
 import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield, Flame, Wind, HandHeart, Music2, Zap, Dices, EyeOff, Footprints, Cross, Crosshair, Wand2, PawPrint } from 'lucide-react';
 import { getFeatById } from '../data/feats';
-import { monkMartialArtsDie, getActionCapability, hasFeatSpecial } from '../services/rulesEngine';
-import { lookupSpell, isAreaSpell } from '../services/codexService';
+import { monkMartialArtsDie, getActionCapability, hasFeatSpecial } from '../engine/rulesEngine';
+import { lookupSpell, isAreaSpell } from '../engine/codexService';
 
 const TRANS = {
     en: {

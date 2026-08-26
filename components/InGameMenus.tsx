@@ -20,9 +20,9 @@ import {
 } from '../types';
 import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Star, Sword, User, Zap } from 'lucide-react';
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../data/subclasses';
-import { structureInventoryItem } from '../services/codexService';
-import { ensureProgressionState, featNumericBonus } from '../services/rulesEngine';
-import { getGearAdvantages, SKILL_TRANSLATIONS } from '../services/skillSystem';
+import { structureInventoryItem } from '../engine/codexService';
+import { ensureProgressionState, featNumericBonus } from '../engine/rulesEngine';
+import { getGearAdvantages, SKILL_TRANSLATIONS } from '../engine/skillSystem';
 import { getFeatById } from '../data/feats';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { GameWindow, WindowTabs } from './GameWindow';

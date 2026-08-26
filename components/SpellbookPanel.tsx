@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { Sparkles, BookOpen, Search, Check, Trash2, RotateCcw, Info } from 'lucide-react';
 import { CharacterSheet, getEffectiveStat, SpellEntry } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';
-import { spellsForClass, lookupSpell } from '../services/codexService';
+import { spellsForClass, lookupSpell } from '../engine/codexService';
 import { playSpellSfx } from '../services/combatSfx';
-import { CLASS_CASTER_ABILITY } from '../services/rulesEngine';
+import { CLASS_CASTER_ABILITY } from '../engine/rulesEngine';
 import { useGameStore } from '../store/gameStore';
 
 type Language = 'en' | 'fr';

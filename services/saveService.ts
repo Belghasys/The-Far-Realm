@@ -4,7 +4,7 @@ import { db } from './firebase';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet } from '../types';
 import type { SlimManifestPayload } from './manifestTokens';
 import type { CampaignEvent } from './campaignEventLog';
-import type { DepartedCombatant } from './rulesEngine';
+import type { DepartedCombatant } from '../engine/rulesEngine';
 
 // Minimal Combatant interface for GameSave, as requested
 interface Combatant {

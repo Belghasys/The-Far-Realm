@@ -13,8 +13,8 @@ import { getNewFeaturesAtLevel, asiLevelsBetween, getFeaturesForLevel, CLASS_FEA
 import { getSubclassConfig, getSubclassFeaturesForLevel, getNewSubclassFeaturesAtLevel, SUBCLASS_DATA } from '../data/subclasses';
 import { FEATS, getFeatById, meetsFeatPrerequisites } from '../data/feats';
 import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus, Award, BookOpen } from 'lucide-react';
-import { ensureProgressionState } from '../services/rulesEngine';
-import { maxSpellLevelForClass, spellsForClass } from '../services/codexService';
+import { ensureProgressionState } from '../engine/rulesEngine';
+import { maxSpellLevelForClass, spellsForClass } from '../engine/codexService';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {

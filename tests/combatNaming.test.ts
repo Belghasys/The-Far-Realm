@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { addEnemyToEncounter, matchPlayerClassAbility } from '../services/rulesEngine';
+import { addEnemyToEncounter, matchPlayerClassAbility } from '../engine/rulesEngine';
 
 /**
  * TR10 — Régression du nommage en combat.

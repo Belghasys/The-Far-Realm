@@ -7,7 +7,7 @@ import { adventureService } from '../services/adventureService';
 import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
-import { ensureProgressionState } from '../services/rulesEngine';
+import { ensureProgressionState } from '../engine/rulesEngine';
 import { getAdventureById } from '../data/adventures';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { T, DISP, BODY } from '../theme/tokens';

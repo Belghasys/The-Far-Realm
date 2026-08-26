@@ -5,7 +5,7 @@ import { freezeChapterDigest, reconcileMissingDigests } from '../services/chapte
 import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, buildMomentImagePrompt, type ScenePromptOptions } from '../services/geminiImageService';
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/imageReferences';
 import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../types';
-import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../services/skillSystem';
+import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../engine/skillSystem';
 import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/campaignDirector';
 import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
@@ -50,7 +50,7 @@ import {
     findDeparted,
     concentrationBreakOnDeparture,
     type DepartedReason,
-} from '../services/rulesEngine';
+} from '../engine/rulesEngine';
 import {
     assessEncounterPressure,
     buildEncounter,
@@ -62,17 +62,17 @@ import {
     preloadCodexBestiary,
     searchCodex,
     structureInventoryItem
-} from '../services/codexService';
+} from '../engine/codexService';
 import { cooldownRemainingMs, MEDIA_GENERATION_COOLDOWN_MS } from '../services/mediaThrottle';
 import { getCreature } from '../data/bestiary';
 import { getMagicItemByName, magicItemToInventoryItem, pickMagicItem, rollLootTable, MagicItemRarity } from '../data/magicItems';
 import { buildMerchantStock, normalizeMerchantType } from '../data/merchants';
 import { enrichWeaponItem } from '../data/equipment';
-import { rollDice } from '../services/utils';
+import { rollDice } from '../engine/utils';
 import { galleryService } from '../services/galleryService';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
 import { getAppSettings } from '../store/settingsStore';
-import { syncCompanionsFromState, worldHourOf, ensureProgressionState, classSavePassives, classCheckPassives, hasEvasion, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves, featGrantsAdvantageOn } from '../services/rulesEngine';
+import { syncCompanionsFromState, worldHourOf, ensureProgressionState, classSavePassives, classCheckPassives, hasEvasion, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves, featGrantsAdvantageOn } from '../engine/rulesEngine';
 import { getMountType, MOUNT_TYPES, getBeastCompanion, BEAST_COMPANIONS, getFamiliarType, FAMILIAR_TYPES, FAMILIAR_CLASSES } from '../data/companionOptions';
 import type { CompanionSheet, TimeOfDay } from '../types';
 

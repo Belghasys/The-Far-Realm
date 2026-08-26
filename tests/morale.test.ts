@@ -19,8 +19,8 @@ import {
     startEncounter,
     victoryXP,
     withdrawCombatant,
-} from '../services/rulesEngine';
-import { preloadCodexBestiary } from '../services/codexService';
+} from '../engine/rulesEngine';
+import { preloadCodexBestiary } from '../engine/codexService';
 import { describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
 import { buildDisplayNames, combatantMapKey } from '../components/CombatTracker';
 import { DEFAULT_CHAR } from '../data/character';

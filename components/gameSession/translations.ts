@@ -5,7 +5,7 @@
  * d'un fichier de 5 500 lignes, avant la première ligne de logique. Les clés
  * sont les mêmes qu'avant — le composant les lit sous le nom TRANS.
  */
-import { MORALE_DC } from '../../services/rulesEngine';
+import { MORALE_DC } from '../../engine/rulesEngine';
 
 export const GAME_SESSION_TRANS = {
   en: {

@@ -168,7 +168,7 @@ export const CLASS_DATA: Record<string, {
 };
 
 // Per-class skill proficiencies (SRD 5.1): how many the player chooses and the
-// list to choose from. Skill names match SKILL_ABILITIES in services/skillSystem.ts.
+// list to choose from. Skill names match SKILL_ABILITIES in engine/skillSystem.ts.
 export const CLASS_SKILLS: Record<string, { choices: number; list: string[] }> = {
     Fighter: { choices: 2, list: ['Acrobatics', 'Animal Handling', 'Athletics', 'History', 'Insight', 'Intimidation', 'Perception', 'Survival'] },
     Paladin: { choices: 2, list: ['Athletics', 'Insight', 'Intimidation', 'Medicine', 'Persuasion', 'Religion'] },

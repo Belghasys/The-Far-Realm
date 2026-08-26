@@ -4,7 +4,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { GameSession } from '../components/GameSession';
 import { IntroCinematic } from '../components/IntroCinematic';
 import { useGameStore } from '../store/gameStore';
-import { ensureProgressionState } from '../services/rulesEngine';
+import { ensureProgressionState } from '../engine/rulesEngine';
 
 export function GameSessionView() {
     const navigate = useNavigate();

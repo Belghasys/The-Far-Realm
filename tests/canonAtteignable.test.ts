@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { buildCampaignDirectorContext } from '../services/campaignDirector';
-import { advanceClocksForNight } from '../services/rulesEngine';
+import { advanceClocksForNight } from '../engine/rulesEngine';
 import { uniqueAppend } from '../hooks/useToolProcessor';
 import { DEFAULT_CHAR } from '../data/character';
 import { PORTES_EXIL } from '../data/campaigns/portesExil';

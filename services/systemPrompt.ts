@@ -1,4 +1,4 @@
-import { hasFeatSpecial } from './rulesEngine';
+import { hasFeatSpecial } from '../engine/rulesEngine';
 /**
  * systemPrompt.ts
  * Extracted DM system prompt from gemini.ts.
@@ -6,7 +6,7 @@ import { hasFeatSpecial } from './rulesEngine';
  */
 import { CharacterSheet, getEffectiveAC, getEffectiveStat, getDraconicDamageType, isRangedWeapon } from '../types';
 import { memoryManager } from './memoryManager';
-import { passivePerception, SKILL_ABILITIES } from './skillSystem';
+import { passivePerception, SKILL_ABILITIES } from '../engine/skillSystem';
 import { CLASS_DATA } from '../data/classes';
 import { RACE_DATA } from '../data/races';
 import { getFeatById } from '../data/feats';
