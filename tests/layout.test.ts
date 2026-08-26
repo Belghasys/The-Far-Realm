@@ -12,6 +12,7 @@
  *   services/persistence/   Firebase, sauvegardes, mémoire, journal d'événements
  *   services/infra/         logger, bus d'audit, trace de session, config modèle
  *   services/i18n/          traductions
+ *   services/session/       les actions de session (sorts, capacites, tour des PNJ) hors du composant
  *   components/session/     l'écran de partie et son HUD
  *   components/combat/      suivi de combat et panneau d'actions
  *   components/panels/      fenêtres en partie (inventaire, grimoire, journal…)
@@ -50,7 +51,7 @@ describe('Disposition du code', () => {
     it('les dossiers attendus existent, et seulement eux', () => {
         const dossiers = (rel: string) => fs.readdirSync(path.join(RACINE, rel), { withFileTypes: true })
             .filter(e => e.isDirectory()).map(e => e.name).sort();
-        expect(dossiers('services')).toEqual(['dm', 'i18n', 'infra', 'media', 'persistence']);
+        expect(dossiers('services')).toEqual(['dm', 'i18n', 'infra', 'media', 'persistence', 'session']);
         expect(dossiers('components')).toEqual(['combat', 'hall', 'neon', 'panels', 'session', 'shared']);
     });
 
