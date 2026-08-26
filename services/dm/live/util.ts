@@ -1,7 +1,8 @@
 /** Constantes, diagnostics et nom de modele de la session Live. */
 import { Session } from '@google/genai';
 import { requireViteEnv } from '../../infra/modelConfig';
-import { GEMINI_KEY } from './core';
+
+export const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 
 /**
  * Check the REAL WebSocket readyState by reaching into the SDK internals.

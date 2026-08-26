@@ -11,7 +11,7 @@ import type { SessionContext } from '../../services/session/context';
 import { handlePlayerCastSpell as handlePlayerCastSpellAction } from '../../services/session/playerSpell';
 import { handleUseClassAbility as handleUseClassAbilityAction } from '../../services/session/classAbility';
 import { runNPCTurn as runNPCTurnAction } from '../../services/session/npcTurn';
-import { GAME_SESSION_TRANS as TRANS } from './translations';
+import { GAME_SESSION_TEXTS as TRANS } from './texts';
 import { mergeTranscriptText } from './transcriptText';
 import { NavButton, HeaderActionButton, HudMeter } from './HudControls';
 

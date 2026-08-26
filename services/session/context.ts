@@ -23,7 +23,7 @@ import type { useTranscript } from '../../hooks/useTranscript';
 import type { useSaveSync } from '../../hooks/useSaveSync';
 import type { DiceTrayRef } from '../../components/session/DiceTray';
 import type { ReactionRequest } from '../../components/session/ReactionPrompt';
-import type { GAME_SESSION_TRANS } from '../../components/session/translations';
+import type { GAME_SESSION_TEXTS } from '../../components/session/texts';
 
 type Store = ReturnType<typeof useGameStore.getState>;
 type Combat = ReturnType<typeof useCombatState>;
@@ -69,7 +69,7 @@ export interface SessionContext {
     setReactionRequest: Dispatch<SetStateAction<ReactionRequest | null>>;
     dayCount: number;
     timeOfDay: TimeOfDay;
-    tr: (typeof GAME_SESSION_TRANS)['fr'] | (typeof GAME_SESSION_TRANS)['en'];
+    tr: (typeof GAME_SESSION_TEXTS)['fr'] | (typeof GAME_SESSION_TEXTS)['en'];
 
     // ── aides de GameSession (economie de tour, fin de combat, journal des jets) ──
     guardPlayerAction: () => boolean;

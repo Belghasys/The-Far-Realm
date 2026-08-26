@@ -9,7 +9,14 @@
  * tient a l'etat de l'ecran. Corps inchange.
  */
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../../types';
-import { PLACEHOLDER_FALLBACKS } from '../../views/CharacterCreationView';
+
+// Per-token fallbacks so an unfilled authored template (one not yet run through
+// the Flash personalization pass) never shows raw {{TOKENS}} to the player.
+export const PLACEHOLDER_FALLBACKS: Record<string, string> = {
+    HERO_NAME: 'le héros', HERO_RACE_CLASS: 'aventurier', HERO_DESIRE: 'ce qu’il cherche',
+    HERO_WOUND: 'sa vieille blessure', HERO_BOND: 'ce qui lui est cher', HERO_HOOK: 'le destin',
+    PERSONAL_LOSS: 'un être cher perdu à jamais', HERO_CONTACT: 'une vieille connaissance',
+};
 
 export function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntimeState {
     const firstChapter = manifest.chapters?.[0];

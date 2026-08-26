@@ -28,7 +28,7 @@ import { getCreature } from '../../data/bestiary';
 import { getCreatureAttacks, getMultiattackCount } from '../../engine/monsterAttacks';
 import { DEFAULT_CHAR } from '../../data/character';
 import { useGameStore } from '../../store/gameStore';
-import { GAME_SESSION_TRANS } from '../../components/session/translations';
+import { GAME_SESSION_TEXTS } from '../../components/session/texts';
 import { runNPCTurn } from '../../services/session/npcTurn';
 import type { SessionContext } from '../../services/session/context';
 import type { CharacterSheet } from '../../types';
@@ -87,7 +87,7 @@ function setup(enemyName: string) {
         setReactionRequest: () => {},
         dayCount: 1,
         timeOfDay: 'day',
-        tr: GAME_SESSION_TRANS.fr,
+        tr: GAME_SESSION_TEXTS.fr,
         guardPlayerAction: () => false,
         hasPlayerMainSlice: () => true,
         hasPlayerBonusFree: () => true,

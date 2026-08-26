@@ -20,12 +20,11 @@ import { sessionTrace } from '../../infra/sessionTrace';
 import { arrayBufferToBase64, base64ToFloat32, floatTo16BitPCM } from './audio';
 import { GAME_TOOL_DECLARATIONS } from './toolDeclarations';
 import { appendTranscriptChunk } from './transcript';
-import { AUDIO_MODEL, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
+import { AUDIO_MODEL, GEMINI_KEY, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
 
 // --- Live Client ---
 
 let activeInstance: LiveDungeonMaster | null = null;
-export const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 export class LiveDungeonMaster {
     private session: Session | null = null;
     private inputContext: AudioContext | null = null;
