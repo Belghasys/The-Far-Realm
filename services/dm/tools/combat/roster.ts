@@ -10,7 +10,7 @@ import { foldText } from '../../../../engine/skillSystem';
 import { campaignEventLog } from '../../../../services/persistence/campaignEventLog';
 import { addEnemyToEncounter, addAllyToEncounter, advanceTurn, combatantSide, encounterAlreadyRunning, resolveCombatantReference, sanitizeXPGrant, startEncounter, withdrawCombatant, concentrationBreakOnDeparture, DepartedReason } from '../../../../engine/rulesEngine';
 import { assessEncounterPressure, buildEncounter, lookupSpell } from '../../../../engine/codexService';
-import { getCreature } from '../../../../data/bestiary';
+import { getCreature, suggestCreatures } from '../../../../data/bestiary';
 import { syncCompanionsFromState, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
@@ -120,6 +120,21 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     // retenu 90 s) peut avoir modifié le combat depuis le snapshot.
     const live = useGameStore.getState();
     const character = live.character;
+    // AUCUN MONSTRE INVENTÉ (2026-08-26) : le MJ ne fait apparaître que des
+    // créatures du bestiaire. Un nom qui ne résout pas est REFUSÉ, avec les
+    // fiches les plus proches pour qu'il se corrige — jamais de PV, CA ou XP
+    // sortis de l'imagination du modèle.
+    const requestedName = String(args.name || '').trim();
+    if (!getCreature(requestedName)) {
+        const suggestions = suggestCreatures(requestedName);
+        return {
+            success: false,
+            error: `UNKNOWN CREATURE — "${requestedName}" is not in the bestiary and the engine only fields bestiary creatures (never homebrew). `
+                + (suggestions.length ? `Closest matches: ${suggestions.join(', ')}. ` : '')
+                + `Re-call add_enemy_init with one of them, or use search_codex / build_encounter to pick a fitting creature.`,
+            suggestions,
+        };
+    }
     const baseState = character ? startEncounter(character, live.combatState) : { ...live.combatState, isActive: true };
     const hadPlayerBefore = live.combatState.combatants.some((c: any) => c.isPlayer);
      // GARDE-FOU DE DIFFICULTÉ (audit 2026-08-21) : budget XP SRD

@@ -240,3 +240,36 @@ export function getCreature(name: string): CreatureStats | null {
 
     return null;
 }
+
+/**
+ * Les fiches les plus proches d'un nom que getCreature n'a pas résolu — pour
+ * que le MJ, refusé, puisse se corriger au lieu d'inventer (2026-08-26 : le
+ * MJ ne fait plus apparaître que des créatures du bestiaire). Similarité par
+ * bigrammes de lettres (coefficient de Dice), le dictionnaire français
+ * appliqué mot à mot d'abord.
+ */
+export function suggestCreatures(name: string, count = 5): string[] {
+    const words = String(name || '').toLowerCase().replace(/\s+\d+$/, '').split(/[^\p{L}]+/u).filter(Boolean)
+        .map(w => FRENCH_BESTIARY_DICT[w] ? FRENCH_BESTIARY_DICT[w].replace(/_/g, ' ') : w);
+    const needle = words.join(' ');
+    if (needle.length < 2) return [];
+    const bigrams = (s: string): Map<string, number> => {
+        const m = new Map<string, number>();
+        const t = ` ${s} `;
+        for (let i = 0; i < t.length - 1; i++) {
+            const b = t.slice(i, i + 2);
+            m.set(b, (m.get(b) || 0) + 1);
+        }
+        return m;
+    };
+    const a = bigrams(needle);
+    const sizeA = [...a.values()].reduce((s, v) => s + v, 0);
+    const scored = Object.values(BESTIARY).map(c => {
+        const b = bigrams(c.name.toLowerCase());
+        let shared = 0;
+        for (const [k, v] of a) shared += Math.min(v, b.get(k) || 0);
+        const sizeB = [...b.values()].reduce((s, v) => s + v, 0);
+        return { name: c.name, score: (2 * shared) / (sizeA + sizeB) };
+    });
+    return scored.filter(s => s.score > 0.2).sort((x, y) => y.score - x.score).slice(0, count).map(s => s.name);
+}

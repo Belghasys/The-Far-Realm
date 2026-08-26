@@ -224,16 +224,11 @@ export const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "add_enemy_init",
-        description: "Add an enemy to the combat initiative tracker. If the monster exists in the bestiary, local HP, AC, DEX, portrait, and attacks are used; hp/ac are fallback only for homebrew. For HOMEBREW enemies (not in the bestiary), ALWAYS pass hp and ac — omitted hp falls back to a level-scaled default, not the stats you had in mind. SIZE THE FIGHT TO THE HERO'S LEVEL: the engine enforces an SRD XP budget and REJECTS spawns past the deadly threshold (+25%) — the error tells you the remaining headroom. At level 1-2, one or two weak creatures IS a real fight.",
+        description: "Add a BESTIARY creature to the combat initiative tracker. The engine reads HP, AC, DEX, portrait and attacks from the creature's sheet. The name MUST resolve to one of the 401 bestiary creatures (a flavour epithet is fine: 'Gobelin borgne' resolves to Goblin); an unknown name is REFUSED and the answer lists the closest matches — re-call with one of them, or use search_codex / build_encounter. Never invent a creature, never pass HP/AC/XP. SIZE THE FIGHT TO THE HERO'S LEVEL: the engine enforces an SRD XP budget and REJECTS spawns past the deadly threshold (+25%) — the error tells you the remaining headroom. At level 1-2, one or two weak creatures IS a real fight.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                name: { type: "STRING" as any },
-                hp: { type: "INTEGER" as any, description: "HP for homebrew enemies — STRONGLY recommended for any creature not in the bestiary (omitted = level-scaled default)." },
-                ac: { type: "INTEGER" as any, description: "Fallback AC for homebrew enemies only." },
-                strMod: { type: "INTEGER" as any, description: "Fallback STR modifier for homebrew enemies only." },
-                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for homebrew enemies only." },
-                xp: { type: "INTEGER" as any, description: "XP award for defeating this HOMEBREW enemy (SRD CR table). Omit for bestiary monsters." },
+                name: { type: "STRING" as any, description: "Bestiary creature name (English or French), optionally with a flavour epithet." },
                 range: { type: "STRING" as any, description: "Starting distance from the player: 'melee' (adjacent), 'near' (a few strides), 'far' (needs a full move or ranged attack). Default: near." },
                 force: { type: "BOOLEAN" as any, description: "Set true ONLY after the engine rejected the spawn as over-budget AND the campaign manifest explicitly scripts this fight as a deadly set-piece. Never use it to pad ordinary encounters." }
             },

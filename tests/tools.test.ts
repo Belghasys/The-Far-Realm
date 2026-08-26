@@ -12,6 +12,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TOOLS } from '../services/dm/tools';
 import { runTool, type ToolRefs } from '../services/dm/tools/context';
+import { useGameStore } from '../store/gameStore';
+import { DEFAULT_CHAR } from '../data/character';
 
 /** Les 64 noms que le MJ peut appeler (62 corps + 2 étiquettes partagées). */
 const NOMS = [
@@ -51,6 +53,22 @@ describe('Les outils du MJ', () => {
     it('un nom inconnu est refusé proprement, sans lever', async () => {
         const r = await runTool(refs(), { name: 'invoquer_cthulhu', args: {} });
         expect(r).toEqual({ success: false, error: 'Unknown tool' });
+    });
+
+    it('le MJ ne peut pas inventer un monstre : add_enemy_init refuse un nom hors bestiaire et propose les plus proches', async () => {
+        useGameStore.setState({ character: { ...DEFAULT_CHAR, name: 'Hero', level: 3 }, combatState: { isActive: false, combatants: [], currentTurn: '' } } as any);
+        const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'Dragounet mauve des égouts', hp: 40, ac: 15 } });
+        expect(r.success).toBe(false);
+        expect(r.error).toMatch(/UNKNOWN CREATURE/);
+        expect(r.suggestions.length).toBeGreaterThan(0);
+        expect(r.suggestions.some((s: string) => /Dragon/.test(s))).toBe(true);
+        expect(useGameStore.getState().combatState.combatants.some((c: any) => /Dragounet/.test(c.name))).toBe(false);
+    });
+
+    it('un nom du bestiaire, même avec une épithète, est accepté (« Gobelin borgne » → Goblin)', async () => {
+        const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'Gobelin borgne' } });
+        expect(r.success).toBe(true);
+        expect(useGameStore.getState().combatState.combatants.some((c: any) => /Gobelin borgne/i.test(c.name))).toBe(true);
     });
 
     it('le distributeur construit le contexte et exécute un outil réel (recherche dans le codex)', async () => {
