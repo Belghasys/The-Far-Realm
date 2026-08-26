@@ -1,5 +1,5 @@
 import { AdventureManifest, CharacterSheet } from '../../types';
-import { formatCR } from '../../data/bestiary';
+import { formatCR, loadBestiary } from '../../data/bestiary';
 import { log } from '../infra/logger';
 
 /**
@@ -7,8 +7,8 @@ import { log } from '../infra/logger';
  * Only includes ID, Name, and CR for tokens efficiency.
  */
 export async function getLightweightBestiary(): Promise<string> {
-    const { CSV_MONSTERS } = await import('../../data/monsterData');
-    return Object.values(CSV_MONSTERS)
+    const monsters = await loadBestiary();
+    return Object.values(monsters)
         .map(m => `${m.id}: ${m.name} (CR: ${formatCR(m.cr)})`)
         .join('\n');
 }

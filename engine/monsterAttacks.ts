@@ -8,7 +8,7 @@
  * 2026-08-25 (R7 du rangement), corps inchange. Le jour ou les fiches
  * porteront des blocs structures (SRD), ce module lira ces blocs d'abord.
  */
-import { AttackDamagePart, Attack, CreatureStats, normalizeDamageType, _WORD_NUM, getMonsterAbilities } from '../data/bestiary';
+import { AttackDamagePart, Attack, CreatureStats, normalizeDamageType, _WORD_NUM, getMonsterAbilities, playableActions } from '../data/bestiary';
 
 export function normalizeDiceFormula(value: string): string {
     return value.replace(/\s+/g, '').replace(/([+-])/g, '$1');
@@ -76,7 +76,7 @@ export function srdAttacks(creature?: { id?: string } | null): Attack[] {
     const bloc = getMonsterAbilities(creature);
     if (!bloc) return [];
     const attacks: Attack[] = [];
-    for (const a of bloc.actions) {
+    for (const a of playableActions(bloc)) {
         if (a.kind !== 'attack' || a.attackBonus === undefined) continue;
         const damageParts: AttackDamagePart[] = [];
         for (const d of a.damage || []) {
@@ -105,7 +105,7 @@ export function srdAttacks(creature?: { id?: string } | null): Attack[] {
  *  (présence terrifiante) exclues. Vide si la fiche n'en a pas. */
 export function getMultiattackSequence(creature?: { id?: string } | null): string[] {
     const bloc = getMonsterAbilities(creature);
-    const multi = bloc?.actions.find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
+    const multi = playableActions(bloc).find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
     if (!multi || multi.multiattack?.type !== 'actions') return [];
     const seq: string[] = [];
     for (const s of multi.multiattack.steps) {
@@ -119,7 +119,7 @@ export function getMultiattackSequence(creature?: { id?: string } | null): strin
 export function getMultiattackCount(creature?: { id?: string; action?: string } | null): number {
     // Le bloc SRD d'abord : la séquence de la multiattaque, quand elle est structurée.
     const bloc = getMonsterAbilities(creature);
-    const multi = bloc?.actions.find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
+    const multi = playableActions(bloc).find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
     if (multi && multi.multiattack?.type === 'actions') {
         const n = multi.multiattack.steps
             .filter(s => s.type !== 'ability')

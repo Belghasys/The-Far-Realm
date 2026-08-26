@@ -1,4 +1,4 @@
-import { BESTIARY, type CreatureStats } from '../data/bestiary';
+import { BESTIARY, loadBestiary, type CreatureStats } from '../data/bestiary';
 import { getCreatureAttacks } from './monsterAttacks';
 import { SRD51_ACTIONS, SRD51_CONDITIONS, SRD51_ITEMS, SRD51_RULES, SRD51_SPELLS } from '../data/srd51';
 import {
@@ -95,10 +95,13 @@ let monsterLoadPromise: Promise<Record<string, CreatureStats>> | null = null;
 export async function preloadCodexBestiary(): Promise<Record<string, CreatureStats>> {
     if (monsterCache && Object.keys(monsterCache).length > 0) return monsterCache;
     if (!monsterLoadPromise) {
-        monsterLoadPromise = import('../data/monsterData').then(({ CSV_MONSTERS }) => {
-            monsterCache = CSV_MONSTERS;
-            Object.assign(BESTIARY, CSV_MONSTERS);
-            return CSV_MONSTERS;
+        // Un seul chargeur (contre-audit du 2026-08-26) : le bestiaire ET ses
+        // capacités SRD arrivent ensemble — avant, les outils attendaient le
+        // vieux monsterData.ts et un combat pouvait commencer avec un dragon
+        // sans souffle si le second morceau n'était pas encore là.
+        monsterLoadPromise = loadBestiary().then((monsters) => {
+            monsterCache = monsters;
+            return monsters;
         });
     }
     return monsterLoadPromise;

@@ -121,6 +121,24 @@ let _lazyBestiary: Record<string, CreatureStats> | null = null;
 /** Les capacités structurées (SRD 5.1) par id de fiche, chargées avec le bestiaire. */
 export const SRD_ABILITIES: Record<string, SrdMonster> = {};
 
+/** LE chargeur du bestiaire — unique depuis le 2026-08-26 (contre-audit) :
+ *  le codex (preloadCodexBestiary) passe par ici, plus par monsterData.ts. */
+export async function loadBestiary(): Promise<Record<string, CreatureStats>> {
+    return getBestiary();
+}
+
+/**
+ * Les actions d'un bloc SRD que le moteur a le droit de jouer : tout, SAUF
+ * les capacités complétées de mémoire sur une fiche de confiance « basse »
+ * (Moloch, Laeral…) — leurs chiffres n'ont pas été relus, ils restent du
+ * texte pour le MJ. Contre-audit du 2026-08-26.
+ */
+export function playableActions(bloc: SrdMonster | null | undefined): SrdMonster['actions'] {
+    if (!bloc) return [];
+    if (bloc.confidence !== 'basse') return bloc.actions;
+    return bloc.actions.filter(a => a.source !== 'memoire');
+}
+
 async function getBestiary(): Promise<Record<string, CreatureStats>> {
     if (!_lazyBestiary) {
         // Depuis le 2026-08-26, la source est data/monsterData2.ts : chaque fiche

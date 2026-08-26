@@ -15,7 +15,7 @@ import { Ability, getEffectiveAC, getEffectiveStat } from '../../types';
 import { combatantSide, isHero } from '../../engine/combatants';
 import { campaignEventLog } from '../persistence/campaignEventLog';
 import { advanceTurn, resolveConcentrationAfterDamage, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, releaseNpcConcentrationEffect, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, concentrationBreakOnDeparture, MORALE_DC } from '../../engine/rulesEngine';
-import { getCreature, getMonsterAbilities } from '../../data/bestiary';
+import { getCreature, getMonsterAbilities, playableActions } from '../../data/bestiary';
 import { getCreatureAttacks, getMultiattackCount, getMultiattackSequence } from '../../engine/monsterAttacks';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/companionOptions';
 import { lookupMonster, lookupCondition } from '../../engine/codexService';
@@ -415,7 +415,8 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       const used: Record<string, number> = { ...(liveRow?.abilityUses || {}) };
       const ready: Record<string, boolean> = { ...(liveRow?.abilityReady || {}) };
       const heroesUp = useGameStore.getState().combatState.combatants.filter((c: any) => isHero(c) && c.hp.current > 0);
-      const breaths = srdBlock.actions.filter(a => a.kind === 'breath' && a.dc && (a.damage || []).some(d => 'dice' in d));
+      const jouables = playableActions(srdBlock);
+      const breaths = jouables.filter(a => a.kind === 'breath' && a.dc && (a.damage || []).some(d => 'dice' in d));
       for (const b of breaths) {
         if (used[b.name] && !ready[b.name]) {
           const roll = rollDice('1d6').total;
@@ -433,7 +434,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         }));
       };
       const kit0 = { dc: 10, attackBonus: 0, spells: [] as MonsterSpell[] };
-      const presence = srdBlock.actions.find(a => a.kind === 'presence' && a.dc);
+      const presence = jouables.find(a => a.kind === 'presence' && a.dc);
       if (presence && presence.dc && !used[presence.name] && heroesUp.length) {
         marquer(presence.name);
         setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 😱 ${npc.name} — ${presence.name}]*` }]);
@@ -737,9 +738,10 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       // EFFET SUR TOUCHE (bloc SRD, 2026-08-26) : la queue de la tarrasque
       // renverse (STR 20 → à terre), le toucher de la liche paralyse (CON 18)…
       // Joué APRÈS la synchronisation des PV, sur la fiche fraîche. Sans
-      // condition nommée dans le bloc, l'effet reste narratif.
+      // condition nommée dans le bloc, l'effet reste narratif. Vaut pour le
+      // héros ET ses alliés (contre-audit du 2026-08-26).
       const onHit = (attack as any).onHitSave as { ability: any; value: number; condition?: string } | undefined;
-      if (res.hit && onHit?.condition && target.isPlayer) {
+      if (res.hit && onHit?.condition) {
         await runEnemySaveSpell(npc, target, { name: attack.name, kind: 'save', saveAbility: onHit.ability, dc: onHit.value, condition: onHit.condition, conditionOnly: true }, { dc: onHit.value, attackBonus: 0, spells: [] }, []);
       }
     }
