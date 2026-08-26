@@ -44,6 +44,12 @@ describe('secrets — rien côté client', () => {
         expect(core).toMatch(/apiVersion:\s*'v1alpha'/);
     });
 
+    it('vite.config.ts n’inline aucune clé via define', () => {
+        const cfg = readFileSync(join(ROOT, 'vite.config.ts'), 'utf8');
+        expect(cfg).not.toMatch(/process\.env\.\w*(KEY|SECRET|TOKEN)/);
+        expect(cfg).not.toMatch(/env\.\w*(KEY|SECRET|TOKEN)/);
+    });
+
     it('.env.example ne propose plus de clé Gemini', () => {
         expect(readFileSync(join(ROOT, '.env.example'), 'utf8')).not.toContain('VITE_GEMINI_API_KEY');
     });

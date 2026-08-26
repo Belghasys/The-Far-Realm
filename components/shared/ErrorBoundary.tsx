@@ -1,6 +1,7 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { ERROR_BOUNDARY_TEXTS as TRANS } from './texts';
+import { captureError } from '../../services/infra/monitoring';
 
 interface Props {
     children: ReactNode;
@@ -36,6 +37,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
         this.setState({ errorInfo });
         console.error('🛑 [ErrorBoundary] Caught:', error, errorInfo);
+        captureError(error, { componentStack: errorInfo.componentStack?.slice(0, 2000) });
     }
 
     handleRetry = () => {

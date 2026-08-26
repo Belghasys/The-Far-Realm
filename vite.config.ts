@@ -1,6 +1,9 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'fs';
+
+const { version } = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string };
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
@@ -11,12 +14,11 @@ export default defineConfig(({ mode }) => {
     },
     plugins: [react()],
     define: {
-      // Non-VITE name kept for the @google/genai SDK's process.env.API_KEY fallback.
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      // NOTE: all VITE_-prefixed vars are auto-exposed by Vite via import.meta.env,
-      // which is exactly how the code reads them — so defining process.env.VITE_* was
-      // redundant and has been removed.
+      // Version affichée dans les réglages et envoyée à Sentry (release).
+      __APP_VERSION__: JSON.stringify(version),
+      // Aucune clé ici : un `define` inline sa valeur dans le bundle public.
+      // (Les anciens define de la clé Gemini ont été retirés le 2026-08-27 —
+      // elle vit dans Secret Manager, voir functions/.)
     },
     resolve: {
       alias: {

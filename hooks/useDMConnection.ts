@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { trackEvent } from '../services/infra/monitoring';
 import { LiveDungeonMaster, LiveConnectionManager, liveConnectionConfigSummary } from '../services/dm/geminiRealtime';
 import { CharacterSheet } from '../types';
 
@@ -29,6 +30,7 @@ export function useDMConnection({
 }: UseDMConnectionProps) {
     const [dm, setDm] = useState<LiveDungeonMaster | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const connectCountRef = useRef(0);
     const [audioLevel, setAudioLevel] = useState(0);
     const [isMicOn, setIsMicOn] = useState(false);
     const [isReconnecting, setIsReconnecting] = useState(false);
@@ -98,7 +100,10 @@ export function useDMConnection({
         const unsubscribe = manager.subscribe({
             onTranscript: onMessage,
             onVolume: (vol) => setAudioLevel(vol),
-            onConnectionChange: (connected) => setIsConnected(connected),
+            onConnectionChange: (connected) => {
+                setIsConnected(connected);
+                if (connected) trackEvent(connectCountRef.current++ === 0 ? 'dm_connected' : 'dm_reconnect');
+            },
             onReconnecting: (attempt, maxAttempts) => {
                 setIsReconnecting(true);
                 setReconnectAttempt(attempt);

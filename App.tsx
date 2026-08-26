@@ -1,7 +1,8 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './services/persistence/firebase';
+import { auth, firebaseApp } from './services/persistence/firebase';
+import { initAnalytics, setMonitoringUser, trackEvent } from './services/infra/monitoring';
 import { memoryManager } from './services/persistence/memoryManager';
 import { saveService } from './services/persistence/saveService';
 import { useGameStore } from './store/gameStore';
@@ -26,11 +27,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function App() {
    const setUser = useGameStore(state => state.setUser);
 
+   useEffect(() => { void initAnalytics(firebaseApp); }, []);
+
    useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (u) => {
          const previous = useGameStore.getState().user;
          setUser(u);
          memoryManager.setUserId(u?.uid || null);
+         setMonitoringUser(u?.uid || null);
+         if (u && !previous) trackEvent('login', { method: u.providerData[0]?.providerId || 'unknown' });
          if (u) {
             saveService.setUser(u.uid);
          } else {

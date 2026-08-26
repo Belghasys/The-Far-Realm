@@ -6,6 +6,7 @@ import { useSettingsStore, DM_VOICES, DiceSpeed } from '../../store/settingsStor
 import type { ImageQuality } from '../../services/media/runwareImageService';
 import { lyriaMusicService } from '../../services/media/lyriaMusic';
 import { SETTINGS_PANEL_TEXTS as TRANS } from './texts';
+import { APP_VERSION } from '../../services/infra/monitoring';
 
 interface Props {
     onClose: () => void;
@@ -114,6 +115,8 @@ export function SettingsPanel({ onClose, storyMode, onToggleStoryMode }: Props) 
                 </select>
                 <p className="mt-1 text-[11px] text-white/35">{tr.imageQualityHint}</p>
             </section>
+
+            <p className="pt-2 text-center text-[10px] uppercase tracking-widest text-white/25">The Last Basement · v{APP_VERSION}</p>
         </GameWindow>
     );
 }
