@@ -5,7 +5,7 @@ import { auth } from './services/persistence/firebase';
 import { memoryManager } from './services/persistence/memoryManager';
 import { saveService } from './services/persistence/saveService';
 import { useGameStore } from './store/gameStore';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 const LoginView = React.lazy(() => import('./views/LoginView').then(module => ({ default: module.LoginView })));
 const ModeSelectionView = React.lazy(() => import('./views/ModeSelectionView').then(module => ({ default: module.ModeSelectionView })));

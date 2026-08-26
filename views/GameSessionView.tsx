@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-import { GameSession } from '../components/GameSession';
-import { IntroCinematic } from '../components/IntroCinematic';
+import { ErrorBoundary } from '../components/shared/ErrorBoundary';
+import { GameSession } from '../components/session/GameSession';
+import { IntroCinematic } from '../components/session/IntroCinematic';
 import { useGameStore } from '../store/gameStore';
 import { ensureProgressionState } from '../engine/rulesEngine';
 

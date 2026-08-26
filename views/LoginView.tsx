@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../services/persistence/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
-import { MenuMusicToggle } from '../components/MenuMusicToggle';
+import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { NeonButton, NeonInput } from '../components/neon/NeonButton';

@@ -1,5 +1,5 @@
-import { Combatant, combatantSide, isHero, displayNameFor } from '../components/CombatTracker';
-export { combatantSide, isHero } from '../components/CombatTracker';
+import { Combatant, combatantSide, isHero, displayNameFor } from '../components/combat/CombatTracker';
+export { combatantSide, isHero } from '../components/combat/CombatTracker';
 import { getCreature, getCreatureAttacks } from '../data/bestiary';
 import { getFeatById } from '../data/feats';
 import { CLASS_DATA } from '../data/classes';

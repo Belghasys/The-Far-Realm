@@ -4,7 +4,7 @@
  * chronique et dans la sauvegarde, à chaque reprise de flux.
  */
 import { describe, it, expect } from 'vitest';
-import { mergeTranscriptText } from '../components/gameSession/transcriptText';
+import { mergeTranscriptText } from '../components/session/transcriptText';
 
 describe('mergeTranscriptText', () => {
     it('ignore un fragment vide et repart d’un précédent vide', () => {

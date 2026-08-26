@@ -46,7 +46,7 @@ vi.mock('../../services/media/youtubeMusic', () => ({ chargerApiYouTube: H.charg
 // Le menu de chargement est réduit à sa surface utile : un bouton qui rend la
 // main avec un identifiant. Ce qui nous intéresse est ce que la VUE fait de
 // cet identifiant, pas la liste elle-même.
-vi.mock('../../components/LoadGameMenu', () => ({
+vi.mock('../../components/hall/LoadGameMenu', () => ({
     LoadGameMenu: ({ onLoad, onClose }: { onLoad: (id: string) => void; onClose: () => void }) => (
         <div>
             <button onClick={() => onLoad('save-42')}>continuer-save-42</button>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CharacterSheetUI } from '../components/CharacterSheet';
+import { CharacterSheetUI } from '../components/hall/CharacterSheet';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/persistence/saveService';
 import { adventureService } from '../services/dm/adventureService';
@@ -9,7 +9,7 @@ import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
 import { ensureProgressionState } from '../engine/rulesEngine';
 import { getAdventureById } from '../data/adventures';
-import { MenuMusicToggle } from '../components/MenuMusicToggle';
+import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { T, DISP, BODY } from '../theme/tokens';
 import { Panneau, Titre } from '../components/neon/SheetKit';
 import { NeonButton } from '../components/neon/NeonButton';

@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { Share2, MessageCircle, Send, Mail, Layers, Clock, Gauge, Book } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useGameStore } from '../store/gameStore';
-import { MenuMusicToggle } from '../components/MenuMusicToggle';
+import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { saveService } from '../services/persistence/saveService';
 import { memoryManager } from '../services/persistence/memoryManager';
 import { campaignEventLog } from '../services/persistence/campaignEventLog';

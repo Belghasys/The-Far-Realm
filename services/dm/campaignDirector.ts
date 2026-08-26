@@ -1,4 +1,4 @@
-import { Combatant } from '../../components/CombatTracker';
+import { Combatant } from '../../components/combat/CombatTracker';
 import type { DepartedCombatant } from '../../engine/rulesEngine';
 import { AdventureManifest, CampaignRuntimeState, JournalState, CharacterSheet, getEffectiveAC } from '../../types';
 import { CampaignEvent } from '../persistence/campaignEventLog';

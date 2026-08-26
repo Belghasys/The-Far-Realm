@@ -23,7 +23,7 @@ const H = vi.hoisted(() => ({
 }));
 
 // La forge de portrait appelle un service d'images ; hors sujet ici.
-vi.mock('../../components/HeroPortraitForge', () => ({
+vi.mock('../../components/hall/HeroPortraitForge', () => ({
     HeroPortraitForge: () => <div data-testid="forge" />,
 }));
 
@@ -34,7 +34,7 @@ vi.mock('../../store/gameStore', () => ({
     },
 }));
 
-import { CharacterSheetUI } from '../../components/CharacterSheet';
+import { CharacterSheetUI } from '../../components/hall/CharacterSheet';
 
 const monter = () => render(<CharacterSheetUI onSave={vi.fn()} />);
 
