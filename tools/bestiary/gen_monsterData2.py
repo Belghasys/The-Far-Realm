@@ -160,6 +160,26 @@ def legendaire(l):
     return out
 
 
+def actions_srd(liste):
+    """Les actions, avec les OPTIONS depliees : « Breath Weapons » d'un dragon
+    metallique contient deux souffles (feu / sommeil) dans a['options'] — sans
+    ce depliage, 20 fiches perdaient leurs souffles (revue du 2026-08-26)."""
+    out = []
+    for a in liste:
+        if 'options' in a and a['options'].get('from', {}).get('options'):
+            for o in a['options']['from']['options']:
+                sous = {'name': o.get('name') or a['name'], 'desc': o.get('desc') or a['desc']}
+                for k in ('attack_bonus', 'dc', 'damage', 'usage'):
+                    if k in o:
+                        sous[k] = o[k]
+                if 'usage' not in sous and 'usage' in a:
+                    sous['usage'] = a['usage']
+                out.append(action(sous))
+            continue
+        out.append(action(a))
+    return out
+
+
 def monstre(csv_id, m):
     speed = {}
     for k, v in m['speed'].items():
@@ -195,9 +215,13 @@ def monstre(csv_id, m):
         'damageResistances': m.get('damage_resistances', []),
         'damageImmunities': m.get('damage_immunities', []),
         'conditionImmunities': [c['index'] for c in m.get('condition_immunities', [])],
-        'actions': [action(a) for a in m.get('actions', [])],
+        'actions': actions_srd(m.get('actions', [])),
         'traits': [trait(s) for s in m.get('special_abilities', [])],
     }
+    # narration : ce que le MJ demande via lookup_monster (le CSV ne les a pas)
+    for k_json, k in (('alignment', 'alignment'), ('languages', 'languages'), ('subtype', 'subtype'), ('desc', 'desc')):
+        if m.get(k_json):
+            out[k] = m[k_json]
     if m.get('legendary_actions'):
         out['legendary'] = {'count': 3, 'actions': [legendaire(l) for l in m['legendary_actions']]}
     if m.get('reactions'):

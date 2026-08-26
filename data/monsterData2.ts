@@ -4,7 +4,7 @@
 // Complement de data/monsterData.ts (CSV, intouchable) : 401 fiches, dont
 // 317 du SRD (source 'srd') et 84 hors SRD lues par regex dans le
 // texte du CSV (source 'csv-regex') et completees de memoire ('memoire', a relire).
-// Actions : attack 642, multiattack 185, narrative 97, breath 43, save 29, presence 22, damage 2.
+// Actions : attack 642, multiattack 185, breath 83, narrative 77, save 29, presence 22, damage 2.
 import type { SrdMonster } from './srdMonsterTypes';
 
 export const SRD_MONSTERS: Record<string, SrdMonster> = {
@@ -121,6 +121,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "If a creature communicates telepathically with the aboleth, the aboleth learns the creature's greatest desires if the aboleth can see the creature."
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Deep Speech, telepathy 120 ft.",
     "legendary": {
       "count": 3,
       "actions": [
@@ -220,7 +222,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The thug has advantage on an attack roll against a creature if at least one of the thug's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "any non-good alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Thugs are ruthless enforcers skilled at intimidation and violence. They work for money and have few scruples."
   },
   "adult_black_dragon": {
     "id": "adult_black_dragon",
@@ -370,6 +376,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -546,6 +554,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -689,9 +699,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 45 (13d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "13d6",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 18,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Sleep Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 45 (13d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 18,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -709,6 +745,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -851,9 +889,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Lightning Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 90-foot line that is 5 feet wide. Each creature in that line must make a DC 19 Dexterity saving throw, taking 66 (12d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 19 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "12d10",
+            "type": "lightning"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 19,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Repulsion Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 90-foot line that is 5 feet wide. Each creature in that line must make a DC 19 Dexterity saving throw, taking 66 (12d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 19 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 19,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -875,6 +939,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1017,9 +1083,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Acid Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 54 (12d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "12d8",
+            "type": "acid"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 18,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Slowing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 60-foot line that is 5 feet wide. Each creature in that line must make a DC 18 Dexterity saving throw, taking 54 (12d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 18 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 18,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -1037,6 +1129,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1180,9 +1274,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 66 (12d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 21 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "12d10",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 21,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Weakening Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 60-foot cone. Each creature in that area must make a DC 21 Dexterity saving throw, taking 66 (12d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 60-foot cone. Each creature in that area must succeed on a DC 21 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 21,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -1204,6 +1324,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1389,6 +1511,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1565,6 +1689,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1707,9 +1833,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Cold Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 60-foot cone. Each creature in that area must make a DC 20 Constitution saving throw, taking 58 (13d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 60-foot cone. Each creature in that area must succeed on a DC 20 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "13d8",
+            "type": "cold"
+          }
+        ],
+        "dc": {
+          "ability": "CON",
+          "value": 20,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Paralyzing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 60-foot cone. Each creature in that area must make a DC 20 Constitution saving throw, taking 58 (13d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 60-foot cone. Each creature in that area must succeed on a DC 20 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 20,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -1727,6 +1879,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -1908,6 +2062,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -2021,7 +2177,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Air Form",
         "desc": "The elemental can enter a hostile creature's space and stop there. It can move through a space as narrow as 1 inch wide without squeezing."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Auran"
   },
   "satyr": {
     "id": "satyr",
@@ -2095,7 +2253,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The satyr has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "chaotic neutral",
+    "languages": "Common, Elvish, Sylvan"
   },
   "allosaurus": {
     "id": "allosaurus",
@@ -2296,6 +2456,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -2472,6 +2634,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -2615,9 +2779,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons:\nFire Breath. The dragon exhales fire in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 21 Dexterity saving throw, taking 56 (16d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 90-foot cone. Each creature in that area must succeed on a DC 21 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "16d6",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 21,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Sleep Breath",
+        "desc": "The dragon uses one of the following breath weapons:\nFire Breath. The dragon exhales fire in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 21 Dexterity saving throw, taking 56 (16d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 90-foot cone. Each creature in that area must succeed on a DC 21 Constitution saving throw or fall unconscious for 10 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 21,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -2640,6 +2830,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -2782,9 +2974,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Lightning Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 120-foot line that is 10 feet wide. Each creature in that line must make a DC 23 Dexterity saving throw, taking 88 (16d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 23 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "16d10",
+            "type": "lightning"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 23,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Repulsion Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 120-foot line that is 10 feet wide. Each creature in that line must make a DC 23 Dexterity saving throw, taking 88 (16d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 23 Strength saving throw. On a failed save, the creature is pushed 60 feet away from the dragon.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 23,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -2811,6 +3029,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -2953,9 +3173,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Acid Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 22 Dexterity saving throw, taking 63 (14d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 22 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "14d8",
+            "type": "acid"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 22,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Slowing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 90-foot line that is 10 feet wide. Each creature in that line must make a DC 22 Dexterity saving throw, taking 63 (14d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 22 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 22,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -2978,6 +3224,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -3121,9 +3369,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 90-foot cone. Each creature in that area must make a DC 24 Dexterity saving throw, taking 71 (13d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "13d10",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 24,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Weakening Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 90-foot cone. Each creature in that area must make a DC 24 Dexterity saving throw, taking 71 (13d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 24,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -3150,6 +3424,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -3335,6 +3611,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -3511,6 +3789,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -3707,9 +3987,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       },
       {
-        "name": "Breath Weapons",
+        "name": "Cold Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 67 (15d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "15d8",
+            "type": "cold"
+          }
+        ],
+        "dc": {
+          "ability": "CON",
+          "value": 24,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Paralyzing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 90-foot cone. Each creature in that area must make a DC 24 Constitution saving throw, taking 67 (15d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 90-foot cone. Each creature in that area must succeed on a DC 24 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 24,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -3732,6 +4038,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -3913,6 +4221,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic",
     "legendary": {
       "count": 3,
       "actions": [
@@ -4111,6 +4421,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful neutral",
+    "languages": "Common, Sphinx",
     "legendary": {
       "count": 3,
       "actions": [
@@ -4203,7 +4515,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the armor remains motionless, it is indistinguishable from a normal suit of armor."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "ankheg": {
     "id": "ankheg",
@@ -4267,7 +4580,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "ankylosaurus": {
     "id": "ankylosaurus",
@@ -4434,7 +4748,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "mud_mephit": {
     "id": "mud_mephit",
@@ -4701,7 +5016,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any six languages",
+    "subtype": "any race",
+    "desc": "Archmages are powerful (and usually quite old) spellcasters dedicated to the study of the arcane arts. Benevolent ones counsel kings and queens, while evil ones rule as tyrants and pursue lichdom. Those who are neither good nor evil sequester themselves in remote towers to practice their magic without interruption. \n\nAn archmage typically has one or more apprentice mages, and an archmage’s abode has numerous magical wards and guardians to discourage interlopers."
   },
   "assassin": {
     "id": "assassin",
@@ -4807,7 +5126,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sneak Attack (1/Turn)",
         "desc": "The assassin deals an extra 13 (4d6) damage when it hits a target with a weapon attack and has advantage on the attack roll, or when the target is within 5 ft. of an ally of the assassin that isn't incapacitated and the assassin doesn't have disadvantage on the attack roll."
       }
-    ]
+    ],
+    "alignment": "any non-good alignment",
+    "languages": "Thieves' cant plus any two languages",
+    "subtype": "any race",
+    "desc": "Trained in the use of poison, assassins are remorseless killers who work for nobles, guildmasters, sovereigns, and anyone else who can afford them."
   },
   "astral_dreadnought": {
     "id": "astral_dreadnought",
@@ -4985,7 +5308,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the shrub remains motionless, it is indistinguishable from a normal shrub."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "one language known by its creator",
+    "desc": "An awakened shrub is an ordinary shrub given sentience and mobility by the awaken spell or similar magic."
   },
   "awakened_tree": {
     "id": "awakened_tree",
@@ -5031,7 +5357,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the tree remains motionless, it is indistinguishable from a normal tree."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "one language known by its creator",
+    "desc": "An awakened tree is an ordinary tree given sentience and mobility by the awaken spell or similar magic."
   },
   "rust_monster": {
     "id": "rust_monster",
@@ -5082,7 +5411,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Rust Metal",
         "desc": "Any nonmagical weapon made of metal that hits the rust monster corrodes. After dealing damage, the weapon takes a permanent and cumulative -1 penalty to damage rolls. If its penalty drops to -5, the weapon is destroyed. Nonmagical ammunition made of metal that hits the rust monster is destroyed after dealing damage."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "azer": {
     "id": "azer",
@@ -5154,7 +5484,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Illumination",
         "desc": "The azer sheds bright light in a 10-foot radius and dim light for an additional 10 ft.."
       }
-    ]
+    ],
+    "alignment": "lawful neutral",
+    "languages": "Ignan"
   },
   "baboon": {
     "id": "baboon",
@@ -5196,7 +5528,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The baboon has advantage on an attack roll against a creature if at least one of the baboon's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "badger": {
     "id": "badger",
@@ -5239,7 +5572,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The badger has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "balor": {
     "id": "balor",
@@ -5375,7 +5709,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Weapons",
         "desc": "The balor's weapon attacks are magical."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon"
   },
   "bandit_captain": {
     "id": "bandit_captain",
@@ -5445,6 +5782,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       }
     ],
     "traits": [],
+    "alignment": "any non-lawful alignment",
+    "languages": "any two languages",
+    "subtype": "any race",
+    "desc": "It takes a strong personality, ruthless cunning, and a silver tongue to keep a gang of bandits in line. The **bandit captain** has these qualities in spades.\n\nIn addition to managing a crew of selfish malcontents, the **pirate captain** is a variation of the bandit captain, with a ship to protect and command. To keep the crew in line, the captain must mete out rewards and punishment on a regular basis.\n\nMore than treasure, a bandit captain or pirate captain craves infamy. A prisoner who appeals to the captain’s vanity or ego is more likely to be treated fairly than a prisoner who does not or claims not to know anything of the captain’s colorful reputation.",
     "reactions": [
       {
         "name": "Parry",
@@ -5638,7 +5979,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The devil has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "barghest": {
     "id": "barghest",
@@ -5890,7 +6234,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "bat": {
     "id": "bat",
@@ -5937,7 +6282,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing",
         "desc": "The bat has advantage on Wisdom (Perception) checks that rely on hearing."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "bearded_devil": {
     "id": "bearded_devil",
@@ -6040,7 +6386,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Steadfast",
         "desc": "The devil can't be frightened while it can see an allied creature within 30 feet of it."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "behir": {
     "id": "behir",
@@ -6152,7 +6501,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "neutral evil",
+    "languages": "Draconic"
   },
   "belaphoss": {
     "id": "belaphoss",
@@ -6270,7 +6621,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Reckless",
         "desc": "At the start of its turn, the berserker can gain advantage on all melee weapon attack rolls during that turn, but attack rolls against it have advantage until the start of its next turn."
       }
-    ]
+    ],
+    "alignment": "any chaotic alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race"
   },
   "worg": {
     "id": "worg",
@@ -6318,7 +6672,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Smell",
         "desc": "The worg has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Goblin, Worg",
+    "desc": "A worg is an evil predator that delights in hunting and devouring creatures weaker than itself. Cunning and malevolent, worgs roam across the remote wilderness or are raised by goblins and hobgoblins. Those creatures use worgs as mounts, but a worg will turn on its rider if it feels mistreated or malnourished. Worgs speak in their own language and Goblin, and a few learn to speak Common as well."
   },
   "black_dragon_wyrmling": {
     "id": "black_dragon_wyrmling",
@@ -6398,7 +6755,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Draconic"
   },
   "black_pudding": {
     "id": "black_pudding",
@@ -6471,6 +6830,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The pudding can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
       }
     ],
+    "alignment": "unaligned",
     "reactions": [
       {
         "name": "Split",
@@ -6535,7 +6895,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Swarm",
         "desc": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny rat. The swarm can't regain hit points or gain temporary hit points."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "swarm_of_ravens": {
     "id": "swarm_of_ravens",
@@ -6590,7 +6951,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Swarm",
         "desc": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny raven. The swarm can't regain hit points or gain temporary hit points."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "blue_dragon_wyrmling": {
     "id": "blue_dragon_wyrmling",
@@ -6665,7 +7027,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil",
+    "languages": "Draconic"
   },
   "blink_dog": {
     "id": "blink_dog",
@@ -6719,7 +7083,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Smell",
         "desc": "The dog has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Blink Dog, understands Sylvan but can't speak it",
+    "desc": "A blink dog takes its name from its ability to blink in and out of existence, a talent it uses to aid its attacks and to avoid harm."
   },
   "bone_devil": {
     "id": "bone_devil",
@@ -6822,7 +7189,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The devil has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "brass_dragon_wyrmling": {
     "id": "brass_dragon_wyrmling",
@@ -6872,9 +7242,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 14 (4d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw or fall unconscious for 1 minute. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "4d6",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 11,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Sleep Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 14 (4d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw or fall unconscious for 1 minute. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 11,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -6882,7 +7278,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic good",
+    "languages": "Draconic"
   },
   "bronze_dragon_wyrmling": {
     "id": "bronze_dragon_wyrmling",
@@ -6932,9 +7330,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Lightning Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 12 Dexterity saving throw, taking 16 (3d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 12 Strength saving throw. On a failed save, the creature is pushed 30 feet away from the dragon.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "3d10",
+            "type": "lightning"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 12,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Repulsion Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 12 Dexterity saving throw, taking 16 (3d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 12 Strength saving throw. On a failed save, the creature is pushed 30 feet away from the dragon.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 12,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -6947,7 +7371,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Draconic"
   },
   "brown_bear": {
     "id": "brown_bear",
@@ -7024,7 +7450,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The bear has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "bugbear": {
     "id": "bugbear",
@@ -7090,7 +7517,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Surprise Attack",
         "desc": "If the bugbear surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 7 (2d6) damage from the attack."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Goblin",
+    "subtype": "goblinoid"
   },
   "bulette": {
     "id": "bulette",
@@ -7141,7 +7571,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Standing Leap",
         "desc": "The bulette's long jump is up to 30 ft. and its high jump is up to 15 ft., with or without a running start."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "darkmantle": {
     "id": "darkmantle",
@@ -7199,7 +7630,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the darkmantle remains motionless, it is indistinguishable from a cave formation such as a stalactite or stalagmite."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "cat": {
     "id": "cat",
@@ -7244,7 +7676,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The cat has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "centaur": {
     "id": "centaur",
@@ -7333,7 +7766,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           }
         ]
       }
-    ]
+    ],
+    "alignment": "neutral good",
+    "languages": "Elvish, Sylvan"
   },
   "chain_devil": {
     "id": "chain_devil",
@@ -7419,6 +7854,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The devil has advantage on saving throws against spells and other magical effects."
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil",
     "reactions": [
       {
         "name": "Unnerving Mask",
@@ -7520,7 +7958,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "understands Draconic but can't speak"
   },
   "chuul": {
     "id": "chuul",
@@ -7592,7 +8032,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sense Magic",
         "desc": "The chuul senses magic within 120 feet of it at will. This trait otherwise works like the detect magic spell but isn't itself magical."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "understands Deep Speech but can't speak"
   },
   "clay_golem": {
     "id": "clay_golem",
@@ -7691,7 +8133,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Weapons",
         "desc": "The golem's weapon attacks are magical."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "understands the languages of its creator but can't speak"
   },
   "cloaker": {
     "id": "cloaker",
@@ -7799,7 +8243,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Light Sensitivity",
         "desc": "While in bright light, the cloaker has disadvantage on attack rolls and Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "chaotic neutral",
+    "languages": "Deep Speech, Undercommon"
   },
   "cloud_giant": {
     "id": "cloud_giant",
@@ -7956,7 +8402,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral good (50%) or neutral evil (50%)",
+    "languages": "Common, Giant"
   },
   "giant_bat": {
     "id": "giant_bat",
@@ -8003,7 +8451,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing",
         "desc": "The bat has advantage on Wisdom (Perception) checks that rely on hearing."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "commoner": {
     "id": "commoner",
@@ -8039,7 +8488,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Commoners include peasants, serfs, slaves, servants, pilgrims, merchants, artisans, and hermits."
   },
   "gnoll": {
     "id": "gnoll",
@@ -8123,7 +8576,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Rampage",
         "desc": "When the gnoll reduces a creature to 0 hit points with a melee attack on its turn, the gnoll can take a bonus action to move up to half its speed and make a bite attack."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Gnoll",
+    "subtype": "gnoll"
   },
   "copper_dragon_wyrmling": {
     "id": "copper_dragon_wyrmling",
@@ -8173,9 +8629,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Acid Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 18 (4d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "4d8",
+            "type": "acid"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 11,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Slowing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 20-foot line that is 5 feet wide. Each creature in that line must make a DC 11 Dexterity saving throw, taking 18 (4d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 11 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 11,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -8183,7 +8665,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic good",
+    "languages": "Draconic"
   },
   "couatl": {
     "id": "couatl",
@@ -8372,7 +8856,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Shielded Mind",
         "desc": "The couatl is immune to scrying and to any effect that would sense its emotions, read its thoughts, or detect its location."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "all, telepathy 120 ft."
   },
   "crab": {
     "id": "crab",
@@ -8417,7 +8903,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The crab can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "crawling_claw": {
     "id": "crawling_claw",
@@ -8515,7 +9002,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the ooze remains motionless, it is indistinguishable from an oily pool or wet rock."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "cult_fanatic": {
     "id": "cult_fanatic",
@@ -8628,7 +9116,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any non-good alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Fanatics are often part of a cult’s leadership, using their charisma and dogma to influence and prey on those of weak will. Most are interested in personal power above all else."
   },
   "lizardfolk": {
     "id": "lizardfolk",
@@ -8726,7 +9218,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Hold Breath",
         "desc": "The lizardfolk can hold its breath for 15 minutes."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Draconic",
+    "subtype": "lizardfolk"
   },
   "cyclops": {
     "id": "cyclops",
@@ -8966,7 +9461,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Ignan, Terran"
   },
   "death_dog": {
     "id": "death_dog",
@@ -9030,7 +9527,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Two-Headed",
         "desc": "The dog has advantage on Wisdom (Perception) checks and on saving throws against being blinded, charmed, deafened, frightened, stunned, or knocked unconscious."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "desc": "A death dog is an ugly two-headed hound that roams plains, and deserts. Hate burns in a death dog’s heart, and a taste for humanoid flesh drives it to attack travelers and explorers. Death dog saliva carries a foul disease that causes a victim’s flesh to slowly rot off the bone."
   },
   "piercer": {
     "id": "piercer",
@@ -9103,7 +9602,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "reef_shark": {
     "id": "reef_shark",
@@ -9151,7 +9651,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The shark can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Smaller than giant sharks and hunter sharks, reef sharks inhabit shallow waters and coral reefs, gathering in small packs to hunt. A full-grown specimen measures 6 to 10 feet long."
   },
   "deva": {
     "id": "deva",
@@ -9277,7 +9779,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The deva has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "all, telepathy 120 ft."
   },
   "devilroot": {
     "id": "devilroot",
@@ -9430,7 +9934,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Shark Telepathy",
         "desc": "The sahuagin can magically command any shark within 120 feet of it, using a limited telepathy."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Sahuagin",
+    "subtype": "sahuagin"
   },
   "dire_wolf": {
     "id": "dire_wolf",
@@ -9482,7 +9989,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The wolf has advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "djinni": {
     "id": "djinni",
@@ -9676,7 +10184,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "chaotic good",
+    "languages": "Auran"
   },
   "smoke_mephit": {
     "id": "smoke_mephit",
@@ -9806,7 +10316,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Surprise Attack",
         "desc": "If the doppelganger surprises a creature and hits it with an attack during the first round of combat, the target takes an extra 10 (3d6) damage from the attack."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "Common",
+    "subtype": "shapechanger"
   },
   "swarm_of_bats": {
     "id": "swarm_of_bats",
@@ -9870,7 +10383,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Swarm",
         "desc": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny bat. The swarm can't regain hit points or gain temporary hit points."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "dragon_turtle": {
     "id": "dragon_turtle",
@@ -9979,7 +10493,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon turtle can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Aquan, Draconic"
   },
   "swarm_of_insects": {
     "id": "swarm_of_insects",
@@ -10035,7 +10551,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Swarm",
         "desc": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny insect. The swarm can't regain hit points or gain temporary hit points."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "drider": {
     "id": "drider",
@@ -10181,7 +10698,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The drider ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Elvish, Undercommon"
   },
   "swarm_of_rot_grubs": {
     "id": "swarm_of_rot_grubs",
@@ -10721,7 +11240,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "Druidic plus any two languages",
+    "subtype": "any race",
+    "desc": "**Druids** dwell in forests and other secluded wilderness locations, where they protect the natural world from monsters and the encroachment of civilization. Some are **tribal shamans** who heal the sick, pray to animal spirits, and provide spiritual guidance."
   },
   "dryad": {
     "id": "dryad",
@@ -10841,7 +11364,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Tree Stride",
         "desc": "Once on her turn, the dryad can use 10 ft. of her movement to step magically into one living tree within her reach and emerge from a second living tree within 60 ft. of the first tree, appearing in an unoccupied space within 5 ft. of the second tree. Both trees must be large or bigger."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Elvish, Sylvan"
   },
   "duergar": {
     "id": "duergar",
@@ -10930,7 +11455,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Sensitivity",
         "desc": "While in sunlight, the duergar has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Dwarvish, Undercommon",
+    "subtype": "dwarf"
   },
   "eagle": {
     "id": "eagle",
@@ -10974,7 +11502,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The eagle has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "earth_elemental": {
     "id": "earth_elemental",
@@ -11049,7 +11578,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Siege Monster",
         "desc": "The elemental deals double damage to objects and structures."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Terran"
   },
   "efreeti": {
     "id": "efreeti",
@@ -11206,7 +11737,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Ignan"
   },
   "elephant": {
     "id": "elephant",
@@ -11260,7 +11793,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Trampling Charge",
         "desc": "If the elephant moves at least 20 ft. straight toward a creature and then hits it with a gore attack on the same turn, that target must succeed on a DC 12 Strength saving throw or be knocked prone. If the target is prone, the elephant can make one stomp attack against it as a bonus action."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "warhorse_skeleton": {
     "id": "warhorse_skeleton",
@@ -11304,7 +11838,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil"
   },
   "erinyes": {
     "id": "erinyes",
@@ -11411,6 +11946,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The erinyes has advantage on saving throws against spells and other magical effects."
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil",
     "reactions": [
       {
         "name": "Parry",
@@ -11527,7 +12065,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The ettercap ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "neutral evil"
   },
   "ettin": {
     "id": "ettin",
@@ -11608,7 +12147,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Wakeful",
         "desc": "When one of the ettin's heads is asleep, its other head is awake."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Giant, Orc"
   },
   "fire_elemental": {
     "id": "fire_elemental",
@@ -11693,7 +12234,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Susceptibility",
         "desc": "For every 5 ft. the elemental moves in water, or for every gallon of water splashed on it, it takes 1 cold damage."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Ignan"
   },
   "fire_giant": {
     "id": "fire_giant",
@@ -11769,7 +12312,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil",
+    "languages": "Giant"
   },
   "fire_snake": {
     "id": "fire_snake",
@@ -11884,7 +12429,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Undead Fortitude",
         "desc": "If damage reduces the zombie to 0 hit points, it must make a Constitution saving throw with a DC of 5+the damage taken, unless the damage is radiant or from a critical hit. On a success, the zombie drops to 1 hit point instead."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "understands all languages it spoke in life but can't speak"
   },
   "ice_mephit": {
     "id": "ice_mephit",
@@ -11995,7 +12542,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Aquan, Auran"
   },
   "flameskull": {
     "id": "flameskull",
@@ -12132,7 +12681,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Weapons",
         "desc": "The golem's weapon attacks are magical."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "understands the languages of its creator but can't speak"
   },
   "flind": {
     "id": "flind",
@@ -12346,7 +12897,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Aquan, Ignan"
   },
   "ape": {
     "id": "ape",
@@ -12417,7 +12970,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "axe_beak": {
     "id": "axe_beak",
@@ -12453,7 +13007,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned",
+    "desc": "An axe beak is a tall flightless bird with strong legs and a heavy, wedge-shaped beak. It has a nasty disposition and tends to attack any unfamiliar creature that wanders too close."
   },
   "frog": {
     "id": "frog",
@@ -12489,7 +13045,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Standing Leap",
         "desc": "The frog's long jump is up to 10 ft. and its high jump is up to 5 ft., with or without a running start."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A frog has no effective attacks. It feeds on small insects and typically dwells near water, in trees, or underground. The frog’s statistics can also be used to represent a toad."
   },
   "froghemoth": {
     "id": "froghemoth",
@@ -12646,7 +13204,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "neutral evil",
+    "languages": "Giant"
   },
   "galeb_duhr": {
     "id": "galeb_duhr",
@@ -12782,7 +13342,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the gargoyle remains motion less, it is indistinguishable from an inanimate statue."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Terran"
   },
   "black_bear": {
     "id": "black_bear",
@@ -12857,7 +13419,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The bear has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "gauth": {
     "id": "gauth",
@@ -12963,7 +13526,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Hold Breath",
         "desc": "The crocodile can hold its breath for 15 minutes."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "gelatinous_cube": {
     "id": "gelatinous_cube",
@@ -13032,7 +13596,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Transparent",
         "desc": "Even when the cube is in plain sight, it takes a successful DC 15 Wisdom (Perception) check to spot a cube that has neither moved nor attacked. A creature that tries to enter the cube's space while unaware of the cube is surprised by the cube."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "ghast": {
     "id": "ghast",
@@ -13108,7 +13673,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Turn Defiance",
         "desc": "The ghast and any ghouls within 30 ft. of it have advantage on saving throws against effects that turn undead."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Common"
   },
   "ghost": {
     "id": "ghost",
@@ -13206,7 +13773,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Incorporeal Movement",
         "desc": "The ghost can move through other creatures and objects as if they were difficult terrain. It takes 5 (1d10) force damage if it ends its turn inside an object."
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any languages it knew in life"
   },
   "ghoul": {
     "id": "ghoul",
@@ -13266,7 +13835,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Common"
   },
   "giant_ape": {
     "id": "giant_ape",
@@ -13337,7 +13908,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "draft_horse": {
     "id": "draft_horse",
@@ -13373,7 +13945,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "giant_boar": {
     "id": "giant_boar",
@@ -13425,7 +13998,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_goat": {
     "id": "giant_goat",
@@ -13470,7 +14044,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sure-Footed",
         "desc": "The goat has advantage on Strength and Dexterity saving throws made against effects that would knock it prone."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_constrictor_snake": {
     "id": "giant_constrictor_snake",
@@ -13523,7 +14098,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "giant_lizard": {
     "id": "giant_lizard",
@@ -13561,7 +14137,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned",
+    "desc": "A giant lizard can be ridden or used as a draft animal. Lizardfolk also keep them as pets, and subterranean giant lizards are used as mounts and pack animals by drow, duergar, and others."
   },
   "giant_crocodile": {
     "id": "giant_crocodile",
@@ -13642,7 +14220,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Hold Breath",
         "desc": "The crocodile can hold its breath for 30 minutes."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_eagle": {
     "id": "giant_eagle",
@@ -13719,7 +14298,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The eagle has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "neutral good",
+    "languages": "Giant Eagle, understands Common and Auran but can't speak",
+    "desc": "A giant eagle is a noble creature that speaks its own language and understands speech in the Common tongue. A mated pair of giant eagles typically has up to four eggs or young in their nest (treat the young as normal eagles)."
   },
   "giant_elk": {
     "id": "giant_elk",
@@ -13775,7 +14357,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charge",
         "desc": "If the elk moves at least 20 ft. straight toward a target and then hits it with a ram attack on the same turn, the target takes an extra 7 (2d6) damage. If the target is a creature, it must succeed on a DC 14 Strength saving throw or be knocked prone."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "Giant Elk, understands Common, Elvish, and Sylvan but can't speak",
+    "desc": "The majestic giant elk is rare to the point that its appearance is often taken as a foreshadowing of an important event, such as the birth of a king. Legends tell of gods that take the form of giant elk when visiting the Material Plane. Many cultures therefore believe that to hunt these creatures is to invite divine wrath."
   },
   "giant_fire_beetle": {
     "id": "giant_fire_beetle",
@@ -13817,7 +14402,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Illumination",
         "desc": "The beetle sheds bright light in a 10-foot radius and dim light for an additional 10 ft.."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A giant fire beetle is a nocturnal creature that takes its name from a pair of glowing glands that give off light. Miners and adventurers prize these creatures, for a giant fire beetle’s glands continue to shed light for 1d6 days after the beetle dies. Giant fire beetles are most commonly found underground and in dark forests."
   },
   "giant_owl": {
     "id": "giant_owl",
@@ -13867,7 +14454,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Sight",
         "desc": "The owl has advantage on Wisdom (Perception) checks that rely on hearing or sight."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Giant Owl, understands Common, Elvish, and Sylvan but can't speak"
   },
   "giant_two_headed_goat": {
     "id": "giant_two_headed_goat",
@@ -13955,7 +14544,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Rampage",
         "desc": "When the hyena reduces a creature to 0 hit points with a melee attack on its turn, the hyena can take a bonus action to move up to half its speed and make a bite attack."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "mummified_warrior": {
     "id": "mummified_warrior",
@@ -14060,7 +14650,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The octopus can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "warhorse": {
     "id": "warhorse",
@@ -14101,7 +14692,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Trampling Charge",
         "desc": "If the horse moves at least 20 ft. straight toward a creature and then hits it with a hooves attack on the same turn, that target must succeed on a DC 14 Strength saving throw or be knocked prone. If the target is prone, the horse can make another attack with its hooves against it as a bonus action."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_scorpion": {
     "id": "giant_scorpion",
@@ -14175,7 +14767,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "dretch": {
     "id": "dretch",
@@ -14267,7 +14860,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 60 ft. (works only with creatures that understand Abyssal)",
+    "subtype": "demon"
   },
   "giant_shark": {
     "id": "giant_shark",
@@ -14315,7 +14911,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The shark can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A giant shark is 30 feet long and normally found in deep oceans. Utterly fearless, it preys on anything that crosses its path, including whales and ships."
   },
   "giant_spider": {
     "id": "giant_spider",
@@ -14388,7 +14986,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The spider ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "To snare its prey, a giant spider spins elaborate webs or shoots sticky strands of webbing from its abdomen. Giant spiders are most commonly found underground, making their lairs on ceilings or in dark, web-filled crevices. Such lairs are often festooned with web cocoons holding past victims."
   },
   "giant_toad": {
     "id": "giant_toad",
@@ -14444,7 +15044,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Standing Leap",
         "desc": "The toad's long jump is up to 20 ft. and its high jump is up to 10 ft., with or without a running start."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_frog": {
     "id": "giant_frog",
@@ -14499,7 +15100,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Standing Leap",
         "desc": "The frog's long jump is up to 20 ft. and its high jump is up to 10 ft., with or without a running start."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_vulture": {
     "id": "giant_vulture",
@@ -14580,7 +15182,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The vulture has advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "understands Common but can't speak",
+    "desc": "A giant vulture has advanced intelligence and a malevolent bent. Unlike its smaller kin, it will attack a wounded creature to hasten its end. Giant vultures have been known to haunt a thirsty, starving creature for days to enjoy its suffering."
   },
   "jackalwere": {
     "id": "jackalwere",
@@ -14844,7 +15449,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "neutral"
   },
   "glabrezu": {
     "id": "glabrezu",
@@ -14977,7 +15583,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The glabrezu has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon"
   },
   "gladiator": {
     "id": "gladiator",
@@ -15069,6 +15678,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "A melee weapon deals one extra die of its damage when the gladiator hits with it (included in the attack)."
       }
     ],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Gladiators battle for the entertainment of raucous crowds. Some gladiators are brutal pit fighters who treat each match as a life-or-death struggle, while others are professional duelists who command huge fees but rarely fight to the death.",
     "reactions": [
       {
         "name": "Parry",
@@ -15135,7 +15748,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the violet fungus remains motionless, it is indistinguishable from an ordinary fungus."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "gnoll_pack_lord": {
     "id": "gnoll_pack_lord",
@@ -15319,7 +15933,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Auran, Terran"
   },
   "goat": {
     "id": "goat",
@@ -15364,7 +15980,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sure-Footed",
         "desc": "The goat has advantage on Strength and Dexterity saving throws made against effects that would knock it prone."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "flying_sword": {
     "id": "flying_sword",
@@ -15425,7 +16042,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the sword remains motionless and isn't flying, it is indistinguishable from a normal sword."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "gold_dragon_wyrmling": {
     "id": "gold_dragon_wyrmling",
@@ -15475,9 +16093,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 15-foot cone. Each creature in that area must make a DC 13 Dexterity saving throw, taking 22 (4d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "4d10",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 13,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Weakening Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 15-foot cone. Each creature in that area must make a DC 13 Dexterity saving throw, taking 22 (4d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 13,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -15490,7 +16134,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Draconic"
   },
   "gorgon": {
     "id": "gorgon",
@@ -15564,7 +16210,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Trampling Charge",
         "desc": "If the gorgon moves at least 20 feet straight toward a creature and then hits it with a gore attack on the same turn, that target must succeed on a DC 16 Strength saving throw or be knocked prone. If the target is prone, the gorgon can make one attack with its hooves against it as a bonus action."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "green_dragon_wyrmling": {
     "id": "green_dragon_wyrmling",
@@ -15646,7 +16293,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Draconic"
   },
   "green_hag": {
     "id": "green_hag",
@@ -15738,7 +16387,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Mimicry",
         "desc": "The hag can mimic animal sounds and humanoid voices. A creature that hears the sounds can tell they are imitations with a successful DC 14 Wisdom (Insight) check."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Common, Draconic, Sylvan"
   },
   "grell": {
     "id": "grell",
@@ -15885,7 +16536,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Stone Camouflage",
         "desc": "The grick has advantage on Dexterity (Stealth) checks made to hide in rocky terrain."
       }
-    ]
+    ],
+    "alignment": "neutral"
   },
   "griffon": {
     "id": "griffon",
@@ -15963,7 +16615,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The griffon has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "deep_gnome_svirfneblin": {
     "id": "deep_gnome_svirfneblin",
@@ -16075,7 +16728,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "neutral good",
+    "languages": "Gnomish, Terran, Undercommon",
+    "subtype": "gnome"
   },
   "giant_sea_horse": {
     "id": "giant_sea_horse",
@@ -16121,7 +16777,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The sea horse can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Like their smaller kin, giant sea horses are shy, colorful fish with elongated bodies and curled tails. Aquatic elves train them as mounts."
   },
   "guardian_naga": {
     "id": "guardian_naga",
@@ -16273,7 +16931,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Celestial, Common"
   },
   "gynosphinx": {
     "id": "gynosphinx",
@@ -16428,6 +17088,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful neutral",
+    "languages": "Common, Sphinx",
     "legendary": {
       "count": 3,
       "actions": [
@@ -16619,7 +17281,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "any alignment",
+    "languages": "Common, Draconic",
+    "subtype": "human"
   },
   "harpy": {
     "id": "harpy",
@@ -16694,7 +17359,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "kind": "narrative"
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Common"
   },
   "hawk": {
     "id": "hawk",
@@ -16738,7 +17405,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The hawk has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "hell_hound": {
     "id": "hell_hound",
@@ -16813,7 +17481,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The hound has advantage on an attack roll against a creature if at least one of the hound's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "understands Infernal but can't speak it"
   },
   "helmed_horror": {
     "id": "helmed_horror",
@@ -16958,7 +17628,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon"
   },
   "hill_giant": {
     "id": "hill_giant",
@@ -17027,7 +17700,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Giant"
   },
   "hippogriff": {
     "id": "hippogriff",
@@ -17104,7 +17779,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The hippogriff has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "reef_manta_ray": {
     "id": "reef_manta_ray",
@@ -17382,7 +18058,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Telepathic Bond",
         "desc": "While the homunculus is on the same plane of existence as its master, it can magically convey what it senses to its master, and the two can communicate telepathically."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "understands the languages of its creator but can't speak"
   },
   "hook_horror": {
     "id": "hook_horror",
@@ -17528,7 +18206,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The devil has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "hunter_shark": {
     "id": "hunter_shark",
@@ -17576,7 +18257,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The shark can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Smaller than a giant shark but larger and fiercer than a reef shark, a hunter shark haunts deep waters. It usually hunts alone, but multiple hunter sharks might feed in the same area. A fully grown hunter shark is 15 to 20 feet long."
   },
   "hydra": {
     "id": "hydra",
@@ -17648,7 +18331,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Wakeful",
         "desc": "While the hydra sleeps, at least one of its heads is awake."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "hyena": {
     "id": "hyena",
@@ -17691,7 +18375,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The hyena has advantage on an attack roll against a creature if at least one of the hyena's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "ice_devil": {
     "id": "ice_devil",
@@ -17818,7 +18503,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The devil has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "scout": {
     "id": "scout",
@@ -17889,7 +18577,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Sight",
         "desc": "The scout has advantage on Wisdom (Perception) checks that rely on hearing or sight."
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Scouts are skilled hunters and trackers who offer their services for a fee. Most hunt wild game, but a few work as bounty hunters, serve as guides, or provide military reconnaissance."
   },
   "imp": {
     "id": "imp",
@@ -17962,7 +18654,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The imp has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, Common",
+    "subtype": "devil"
   },
   "invisible_stalker": {
     "id": "invisible_stalker",
@@ -18041,7 +18736,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Faultless Tracker",
         "desc": "The stalker is given a quarry by its summoner. The stalker knows the direction and distance to its quarry as long as the two of them are on the same plane of existence. The stalker also knows the location of its summoner."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Auran, understands Common but doesn't speak it"
   },
   "iron_golem": {
     "id": "iron_golem",
@@ -18150,7 +18847,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Weapons",
         "desc": "The golem's weapon attacks are magical."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "understands the languages of its creator but can't speak"
   },
   "jackal": {
     "id": "jackal",
@@ -18197,7 +18896,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The jackal has advantage on an attack roll against a creature if at least one of the jackal's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "shadow": {
     "id": "shadow",
@@ -18270,7 +18970,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Weakness",
         "desc": "While in sunlight, the shadow has disadvantage on attack rolls, ability checks, and saving throws."
       }
-    ]
+    ],
+    "alignment": "chaotic evil"
   },
   "camel": {
     "id": "camel",
@@ -18306,7 +19007,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "killer_whale": {
     "id": "killer_whale",
@@ -18358,7 +19060,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing",
         "desc": "The whale has advantage on Wisdom (Perception) checks that rely on hearing."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "knight": {
     "id": "knight",
@@ -18446,6 +19149,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The knight has advantage on saving throws against being frightened."
       }
     ],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Knights are warriors who pledge service to rulers, religious orders, and noble causes. A knight’s alignment determines the extent to which a pledge is honored. Whether undertaking a quest or patrolling a realm, a knight often travels with an entourage that includes squires and hirelings who are commoners.",
     "reactions": [
       {
         "name": "Parry",
@@ -18530,7 +19237,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Aggressive",
         "desc": "As a bonus action, the orc can move up to its speed toward a hostile creature that it can see."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Orc",
+    "subtype": "orc"
   },
   "kraken": {
     "id": "kraken",
@@ -18641,6 +19351,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The kraken deals double damage to objects and structures."
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "understands Abyssal, Celestial, Infernal, and Primordial but can't speak, telepathy 120 ft.",
+    "subtype": "titan",
     "legendary": {
       "count": 3,
       "actions": [
@@ -19125,7 +19838,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, Common"
   },
   "lemure": {
     "id": "lemure",
@@ -19180,7 +19895,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Hellish Rejuvenation",
         "desc": "A lemure that dies in the Nine Hells comes back to life with all its hit points in 1d10 days unless it is killed by a good-aligned creature with a bless spell cast on that creature or its remains are sprinkled with holy water."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "understands infernal but can't speak",
+    "subtype": "devil"
   },
   "lich": {
     "id": "lich",
@@ -19389,6 +20107,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The lich has advantage on saving throws against any effect that turns undead."
       }
     ],
+    "alignment": "any evil alignment",
+    "languages": "Common plus up to five other languages",
     "legendary": {
       "count": 3,
       "actions": [
@@ -19503,7 +20223,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Running Leap",
         "desc": "With a 10-foot running start, the lion can long jump up to 25 ft.."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "lizard": {
     "id": "lizard",
@@ -19541,7 +20262,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "lizard_king_queen": {
     "id": "lizard_king_queen",
@@ -19686,7 +20408,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "lizardfolk_shaman": {
     "id": "lizardfolk_shaman",
@@ -19948,7 +20671,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any four languages",
+    "subtype": "any race",
+    "desc": "Mages spend their lives in the study and practice of magic. Good-aligned mages offer counsel to nobles and others in power, while evil mages dwell in isolated sites to perform unspeakable experiments without interference."
   },
   "drow": {
     "id": "drow",
@@ -20051,7 +20778,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Sensitivity",
         "desc": "While in sunlight, the drow has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Elvish, Undercommon",
+    "subtype": "elf"
   },
   "mammoth": {
     "id": "mammoth",
@@ -20105,7 +20835,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Trampling Charge",
         "desc": "If the mammoth moves at least 20 ft. straight toward a creature and then hits it with a gore attack on the same turn, that target must succeed on a DC 18 Strength saving throw or be knocked prone. If the target is prone, the mammoth can make one stomp attack against it as a bonus action."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A mammoth is an elephantine creature with thick fur and long tusks. Stockier and fiercer than normal elephants, mammoths inhabit a wide range of climes, from subarctic to subtropical."
   },
   "elk": {
     "id": "elk",
@@ -20159,7 +20891,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charge",
         "desc": "If the elk moves at least 20 ft. straight toward a target and then hits it with a ram attack on the same turn, the target takes an extra 7 (2d6) damage. If the target is a creature, it must succeed on a DC 13 Strength saving throw or be knocked prone."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "manticore": {
     "id": "manticore",
@@ -20240,7 +20973,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Tail Spike Regrowth",
         "desc": "The manticore has twenty-four tail spikes. Used spikes regrow when the manticore finishes a long rest."
       }
-    ]
+    ],
+    "alignment": "lawful evil"
   },
   "marilith": {
     "id": "marilith",
@@ -20343,6 +21077,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The marilith can take one reaction on every turn in combat."
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon",
     "reactions": [
       {
         "name": "Parry",
@@ -20446,7 +21183,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common"
   },
   "giant_badger": {
     "id": "giant_badger",
@@ -20522,7 +21261,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The badger has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "merrow": {
     "id": "merrow",
@@ -20604,7 +21344,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The merrow can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, Aquan"
   },
   "mezzoloth": {
     "id": "mezzoloth",
@@ -20794,7 +21536,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Grappler",
         "desc": "The mimic has advantage on attack rolls against any creature grappled by it."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "subtype": "shapechanger"
   },
   "mindwitness": {
     "id": "mindwitness",
@@ -20883,7 +21627,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Reckless",
         "desc": "At the start of its turn, the minotaur can gain advantage on all melee weapon attack rolls it makes during that turn, but attack rolls against it have advantage until the start of its next turn."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal"
   },
   "minotaur_skeleton": {
     "id": "minotaur_skeleton",
@@ -20945,7 +21691,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charge",
         "desc": "If the skeleton moves at least 10 feet straight toward a target and then hits it with a gore attack on the same turn, the target takes an extra 9 (2d8) piercing damage. If the target is a creature, it must succeed on a DC 14 Strength saving throw or be pushed up to 10 feet away and knocked prone."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "understands Abyssal but can't speak"
   },
   "moloch": {
     "id": "moloch",
@@ -21222,7 +21970,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The crab can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_wasp": {
     "id": "giant_wasp",
@@ -21264,7 +22013,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "kenku": {
     "id": "kenku",
@@ -21473,7 +22223,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil",
+    "languages": "the languages it knew in life"
   },
   "mummy_lord": {
     "id": "mummy_lord",
@@ -21659,6 +22411,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "the languages it knew in life",
     "legendary": {
       "count": 3,
       "actions": [
@@ -21813,7 +22567,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The nalfeshnee has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon"
   },
   "narzugon": {
     "id": "narzugon",
@@ -21955,7 +22712,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "pteranodon": {
     "id": "pteranodon",
@@ -22029,7 +22787,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "night_hag": {
     "id": "night_hag",
@@ -22155,7 +22914,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Night Hag Items",
         "desc": "A night hag carries two very rare magic items that she must craft for herself If either object is lost, the night hag will go to great lengths to retrieve it, as creating a new tool takes time and effort.\nHeartstone: This lustrous black gem allows a night hag to become ethereal while it is in her possession. The touch of a heartstone also cures any disease. Crafting a heartstone takes 30 days.\nSoul Bag: When an evil humanoid dies as a result of a night hag's Nightmare Haunting, the hag catches the soul in this black sack made of stitched flesh. A soul bag can hold only one evil soul at a time, and only the night hag who crafted the bag can catch a soul with it. Crafting a soul bag takes 7 days and a humanoid sacrifice (whose flesh is used to make the bag)."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Abyssal, Common, Infernal, Primordial"
   },
   "nightmare": {
     "id": "nightmare",
@@ -22212,7 +22973,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Illumination",
         "desc": "The nightmare sheds bright light in a 10-foot radius and dim light for an additional 10 feet."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "understands Abyssal, Common, and Infernal but can't speak"
   },
   "nilbog": {
     "id": "nilbog",
@@ -22393,7 +23156,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil",
+    "languages": "understands all languages it spoke in life but can't speak"
   },
   "nothic": {
     "id": "nothic",
@@ -22713,7 +23478,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "any non-lawful alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "**Bandits** rove in gangs and are sometimes led by thugs, veterans, or spellcasters. Not all bandits are evil. Oppression, drought, disease, or famine can often drive otherwise honest folk to a life of banditry.\n\n**Pirates** are bandits of the high seas. They might be freebooters interested only in treasure and murder, or they might be privateers sanctioned by the crown to attack and plunder an enemy nation’s vessels."
   },
   "ochre_jelly": {
     "id": "ochre_jelly",
@@ -22777,6 +23546,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The jelly can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
       }
     ],
+    "alignment": "unaligned",
     "reactions": [
       {
         "name": "Split",
@@ -22849,7 +23619,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The octopus can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "ogre": {
     "id": "ogre",
@@ -22903,7 +23674,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Common, Giant"
   },
   "ogre_zombie": {
     "id": "ogre_zombie",
@@ -22951,7 +23724,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Undead Fortitude",
         "desc": "If damage reduces the zombie to 0 hit points, it must make a Constitution saving throw with a DC of 5+the damage taken, unless the damage is radiant or from a critical hit. On a success, the zombie drops to 1 hit point instead."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "understands Common and Giant but can't speak"
   },
   "oni": {
     "id": "oni",
@@ -23090,7 +23865,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Regeneration",
         "desc": "The oni regains 10 hit points at the start of its turn if it has at least 1 hit point."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common, Giant"
   },
   "boar": {
     "id": "boar",
@@ -23148,7 +23925,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "orc_eye_of_gruumsh": {
     "id": "orc_eye_of_gruumsh",
@@ -23558,7 +24336,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Limited Telepathy",
         "desc": "The otyugh can magically transmit simple messages and images to any creature within 120 ft. of it that can understand a language. This form of telepathy doesn't allow the receiving creature to telepathically respond."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Otyugh"
   },
   "owl": {
     "id": "owl",
@@ -23608,7 +24388,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Sight",
         "desc": "The owl has advantage on Wisdom (Perception) checks that rely on hearing or sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "owlbear": {
     "id": "owlbear",
@@ -23685,7 +24466,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight and Smell",
         "desc": "The owlbear has advantage on Wisdom (Perception) checks that rely on sight or smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "bullywug": {
     "id": "bullywug",
@@ -23806,7 +24588,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic good",
+    "languages": "understands Celestial, Common, Elvish, and Sylvan but can't speak"
   },
   "peryton": {
     "id": "peryton",
@@ -23925,7 +24709,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The spider ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A phase spider possesses the magical ability to phase in and out of the Ethereal Plane. It seems to appear out of nowhere and quickly vanishes after attacking. Its movement on the Ethereal Plane before coming back to the Material Plane makes it seem like it can teleport."
   },
   "dolphin": {
     "id": "dolphin",
@@ -24144,7 +24930,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Infernal, telepathy 120 ft.",
+    "subtype": "devil"
   },
   "planetar": {
     "id": "planetar",
@@ -24317,7 +25106,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The planetar has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "all, telepathy 120 ft."
   },
   "plesiosaurus": {
     "id": "plesiosaurus",
@@ -24362,7 +25153,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Hold Breath",
         "desc": "The plesiosaurus can hold its breath for 1 hour."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_poisonous_snake": {
     "id": "giant_poisonous_snake",
@@ -24406,7 +25198,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "polar_bear": {
     "id": "polar_bear",
@@ -24483,7 +25276,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The bear has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_wolf_spider": {
     "id": "giant_wolf_spider",
@@ -24542,7 +25336,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The spider ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Smaller than a giant spider, a giant wolf spider hunts prey across open ground or hides in a burrow or crevice, or in a hidden cavity beneath debris."
   },
   "priest": {
     "id": "priest",
@@ -24645,7 +25441,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any two languages",
+    "subtype": "any race",
+    "desc": "Priests bring the teachings of their gods to the common folk. They are the spiritual leaders of temples and shrines and often hold positions of influence in their communities. Evil priests might work openly under a tyrant, or they might be the leaders of religious sects hidden in the shadows of good society, overseeing depraved rites.\n\nA priest typically has one or more acolytes to help with religious ceremonies and other sacred duties."
   },
   "grimlock": {
     "id": "grimlock",
@@ -24705,7 +25505,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Stone Camouflage",
         "desc": "The grimlock has advantage on Dexterity (Stealth) checks made to hide in rocky terrain."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Undercommon",
+    "subtype": "grimlock"
   },
   "purple_worm": {
     "id": "purple_worm",
@@ -24793,7 +25596,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Tunneler",
         "desc": "The worm can burrow through solid rock at half its burrow speed and leaves a 10-foot-diameter tunnel in its wake."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "quasit": {
     "id": "quasit",
@@ -24873,7 +25677,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The quasit has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, Common",
+    "subtype": "demon"
   },
   "quetzalcoatlus": {
     "id": "quetzalcoatlus",
@@ -24957,7 +25764,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The quipper can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A quipper is a carnivorous fish with sharp teeth. Quippers can adapt to any aquatic environment, including cold subterranean lakes. They frequently gather in swarms; the statistics for a swarm of quippers appear later in this appendix."
   },
   "rakshasa": {
     "id": "rakshasa",
@@ -25132,7 +25941,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common, Infernal"
   },
   "rat": {
     "id": "rat",
@@ -25174,7 +25985,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Smell",
         "desc": "The rat has advantage on Wisdom (Perception) checks that rely on smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "raven": {
     "id": "raven",
@@ -25218,7 +26030,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Mimicry",
         "desc": "The raven can mimic simple sounds it has heard, such as a person whispering, a baby crying, or an animal chittering. A creature that hears the sounds can tell they are imitations with a successful DC 10 Wisdom (Insight) check."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "red_dragon_wyrmling": {
     "id": "red_dragon_wyrmling",
@@ -25293,7 +26106,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Draconic"
   },
   "guard": {
     "id": "guard",
@@ -25344,7 +26159,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Guards include members of a city watch, sentries in a citadel or fortified town, and the bodyguards of merchants and nobles."
   },
   "remorhaz": {
     "id": "remorhaz",
@@ -25406,7 +26225,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           }
         ]
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "revenant": {
     "id": "revenant",
@@ -25520,7 +26340,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charge",
         "desc": "If the rhinoceros moves at least 20 ft. straight toward a target and then hits it with a gore attack on the same turn, the target takes an extra 9 (2d8) bludgeoning damage. If the target is a creature, it must succeed on a DC 15 Strength saving throw or be knocked prone."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "hobgoblin": {
     "id": "hobgoblin",
@@ -25587,7 +26408,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Martial Advantage",
         "desc": "Once per turn, the hobgoblin can deal an extra 7 (2d6) damage to a creature it hits with a weapon attack if that creature is within 5 ft. of an ally of the hobgoblin that isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common, Goblin",
+    "subtype": "goblinoid"
   },
   "roc": {
     "id": "roc",
@@ -25669,7 +26493,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Sight",
         "desc": "The roc has advantage on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "roper": {
     "id": "roper",
@@ -25760,7 +26585,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Spider Climb",
         "desc": "The roper can climb difficult surfaces, including upside down on ceilings, without needing to make an ability check."
       }
-    ]
+    ],
+    "alignment": "neutral evil"
   },
   "rug_of_smothering": {
     "id": "rug_of_smothering",
@@ -25815,7 +26641,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "False Appearance",
         "desc": "While the rug remains motionless, it is indistinguishable from a normal rug."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "merfolk": {
     "id": "merfolk",
@@ -25872,7 +26699,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The merfolk can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Aquan, Common",
+    "subtype": "merfolk"
   },
   "saber_toothed_tiger": {
     "id": "saber_toothed_tiger",
@@ -25938,7 +26768,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "mule": {
     "id": "mule",
@@ -25983,7 +26814,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sure-Footed",
         "desc": "The mule has advantage on Strength and Dexterity saving throws made against effects that would knock it prone."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "salamander": {
     "id": "salamander",
@@ -26095,7 +26927,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Heated Weapons",
         "desc": "Any metal melee weapon the salamander wields deals an extra 3 (1d6) fire damage on a hit (included in the attack)."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Ignan"
   },
   "scorpion": {
     "id": "scorpion",
@@ -26136,7 +26970,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "sea_hag": {
     "id": "sea_hag",
@@ -26198,7 +27033,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Horrific Appearance",
         "desc": "Any humanoid that starts its turn within 30 feet of the hag and can see the hag's true form must make a DC 11 Wisdom saving throw. On a failed save, the creature is frightened for 1 minute. A creature can repeat the saving throw at the end of each of its turns, with disadvantage if the hag is within line of sight, ending the effect on itself on a success. If a creature's saving throw is successful or the effect ends for it, the creature is immune to the hag's Horrific Appearance for the next 24 hours.\nUnless the target is surprised or the revelation of the hag's true form is sudden, the target can avert its eyes and avoid making the initial saving throw. Until the start of its next turn, a creature that averts its eyes has disadvantage on attack rolls against the hag."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Aquan, Common, Giant"
   },
   "sea_horse": {
     "id": "sea_horse",
@@ -26225,7 +27062,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The sea horse can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "shadow_demon": {
     "id": "shadow_demon",
@@ -26342,7 +27180,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Lightning Absorption",
         "desc": "Whenever the shambling mound is subjected to lightning damage, it takes no damage and regains a number of hit points equal to the lightning damage dealt."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "shield_guardian": {
     "id": "shield_guardian",
@@ -26417,6 +27256,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "A spellcaster who wears the shield guardian's amulet can cause the guardian to store one spell of 4th level or lower. To do so, the wearer must cast the spell on the guardian. The spell has no effect but is stored within the guardian. When commanded to do so by the wearer or when a situation arises that was predefined by the spellcaster, the guardian casts the stored spell with any parameters set by the original caster, requiring no components. When the spell is cast or a new spell is stored, any previously stored spell is lost."
       }
     ],
+    "alignment": "unaligned",
+    "languages": "understands commands given in any language but can't speak",
     "reactions": [
       {
         "name": "Shield",
@@ -26455,6 +27296,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "While the shrieker remains motionless, it is indistinguishable from an ordinary fungus."
       }
     ],
+    "alignment": "unaligned",
     "reactions": [
       {
         "name": "Shriek",
@@ -26677,9 +27519,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Cold Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 15-foot cone. Each creature in that area must make a DC 13 Constitution saving throw, taking 18 (4d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "4d8",
+            "type": "cold"
+          }
+        ],
+        "dc": {
+          "ability": "CON",
+          "value": 13,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Paralyzing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 15-foot cone. Each creature in that area must make a DC 13 Constitution saving throw, taking 18 (4d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 15-foot cone. Each creature in that area must succeed on a DC 13 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 13,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -26687,7 +27555,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful good",
+    "languages": "Draconic"
   },
   "pony": {
     "id": "pony",
@@ -26723,7 +27593,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "tribal_warrior": {
     "id": "tribal_warrior",
@@ -26777,7 +27648,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The warrior has advantage on an attack roll against a creature if at least one of the warrior's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any one language",
+    "subtype": "any race",
+    "desc": "Tribal warriors live beyond civilization, most often subsisting on fishing and hunting. Each tribe acts in accordance with the wishes of its chief, who is the greatest or oldest warrior of the tribe or a tribe member blessed by the gods."
   },
   "slithering_tracker": {
     "id": "slithering_tracker",
@@ -26854,7 +27729,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The wolf has advantage on an attack roll against a creature if at least one of the wolf's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "solar": {
     "id": "solar",
@@ -27045,6 +27921,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The solar has advantage on saving throws against spells and other magical effects."
       }
     ],
+    "alignment": "lawful good",
+    "languages": "all, telepathy 120 ft.",
     "legendary": {
       "count": 3,
       "actions": [
@@ -27213,7 +28091,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Sensitivity",
         "desc": "While in sunlight, the specter has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "understands all languages it knew in life but can't speak"
   },
   "spider": {
     "id": "spider",
@@ -27270,7 +28150,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Web Walker",
         "desc": "The spider ignores movement restrictions caused by webbing."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "spirit_naga": {
     "id": "spirit_naga",
@@ -27398,7 +28279,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, Common"
   },
   "spy": {
     "id": "spy",
@@ -27481,7 +28364,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sneak Attack (1/Turn)",
         "desc": "The spy deals an extra 7 (2d6) damage when it hits a target with a weapon attack and has advantage on the attack roll, or when the target is within 5 ft. of an ally of the spy that isn't incapacitated and the spy doesn't have disadvantage on the attack roll."
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any two languages",
+    "subtype": "any race",
+    "desc": "Rulers, nobles, merchants, guildmasters, and other wealthy individuals use spies to gain the upper hand in a world of cutthroat politics. A spy is trained to secretly gather information. Loyal spies would rather die than divulge information that could compromise them or their employers."
   },
   "acolyte": {
     "id": "acolyte",
@@ -27561,7 +28448,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Acolytes are junior members of a clergy, usually answerable to a priest. They perform a variety of functions in a temple and are granted minor spellcasting power by their deities."
   },
   "stone_giant": {
     "id": "stone_giant",
@@ -27646,6 +28537,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The giant has advantage on Dexterity (Stealth) checks made to hide in rocky terrain."
       }
     ],
+    "alignment": "neutral",
+    "languages": "Giant",
     "reactions": [
       {
         "name": "Rock Catching",
@@ -27765,7 +28658,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Weapons",
         "desc": "The golem's weapon attacks are magical."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "languages": "understands the languages of its creator but can't speak"
   },
   "storm_giant": {
     "id": "storm_giant",
@@ -27928,7 +28823,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           ]
         }
       }
-    ]
+    ],
+    "alignment": "chaotic good",
+    "languages": "Common, Giant"
   },
   "succubus": {
     "id": "succubus",
@@ -28013,7 +28910,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Shapechanger",
         "desc": "The fiend can use its action to polymorph into a Small or Medium humanoid, or back into its true form. Without wings, the fiend loses its flying speed. Other than its size and speed, its statistics are the same in each form. Any equipment it is wearing or carrying isn't transformed. It reverts to its true form if it dies."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Abyssal, Common, Infernal, telepathy 60 ft.",
+    "subtype": "shapechanger"
   },
   "cultist": {
     "id": "cultist",
@@ -28057,7 +28957,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Dark Devotion",
         "desc": "The cultist has advantage on saving throws against being charmed or frightened."
       }
-    ]
+    ],
+    "alignment": "any non-good alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Cultists swear allegiance to dark powers such as elemental princes, demon lords, or archdevils. Most conceal their loyalties to avoid being ostracized, imprisoned, or executed for their beliefs. Unlike evil acolytes, cultists often show signs of insanity in their beliefs and practices."
   },
   "swarm_of_poisonous_snakes": {
     "id": "swarm_of_poisonous_snakes",
@@ -28117,7 +29021,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Swarm",
         "desc": "The swarm can occupy another creature's space and vice versa, and the swarm can move through any opening large enough for a Tiny snake. The swarm can't regain hit points or gain temporary hit points."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "swarm_of_quippers": {
     "id": "swarm_of_quippers",
@@ -28181,7 +29086,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Water Breathing",
         "desc": "The swarm can breathe only underwater."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "giant_weasel": {
     "id": "giant_weasel",
@@ -28226,7 +29132,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Smell",
         "desc": "The weasel has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "magmin": {
     "id": "magmin",
@@ -28287,7 +29194,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Ignited Illumination",
         "desc": "As a bonus action, the magmin can set itself ablaze or extinguish its flames. While ablaze, the magmin sheds bright light in a 10-foot radius and dim light for an additional 10 ft."
       }
-    ]
+    ],
+    "alignment": "chaotic neutral",
+    "languages": "Ignan"
   },
   "noble": {
     "id": "noble",
@@ -28328,6 +29237,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
       }
     ],
     "traits": [],
+    "alignment": "any alignment",
+    "languages": "any two languages",
+    "subtype": "any race",
+    "desc": "**Nobles** wield great authority and influence as members of the upper class, possessing wealth and connections that can make them as powerful as monarchs and generals. A noble often travels in the company of guards, as well as servants who are commoners.\n\nThe noble’s statistics can also be used to represent **courtiers** who aren’t of noble birth.",
     "reactions": [
       {
         "name": "Parry",
@@ -28559,6 +29472,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The tarrasque deals double damage to objects and structures."
       }
     ],
+    "alignment": "unaligned",
+    "subtype": "titan",
     "legendary": {
       "count": 3,
       "actions": [
@@ -28645,7 +29560,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
           "successType": "none"
         }
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "blood_hawk": {
     "id": "blood_hawk",
@@ -28693,7 +29609,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The hawk has advantage on an attack roll against a creature if at least one of the hawk's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Taking its name from its crimson feathers and aggressive nature, the blood hawk fearlessly attacks almost any animal, stabbing it with its daggerlike beak. Blood hawks flock together in large numbers, attacking as a pack to take down prey."
   },
   "treant": {
     "id": "treant",
@@ -28783,7 +29701,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Siege Monster",
         "desc": "The treant deals double damage to objects and structures."
       }
-    ]
+    ],
+    "alignment": "chaotic good",
+    "languages": "Common, Druidic, Elvish, Sylvan"
   },
   "giant_rat": {
     "id": "giant_rat",
@@ -28829,7 +29749,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The rat has advantage on an attack roll against a creature if at least one of the rat's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "triceratops": {
     "id": "triceratops",
@@ -28883,7 +29804,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Trampling Charge",
         "desc": "If the triceratops moves at least 20 ft. straight toward a creature and then hits it with a gore attack on the same turn, that target must succeed on a DC 13 Strength saving throw or be knocked prone. If the target is prone, the triceratops can make one stomp attack against it as a bonus action."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "goblin": {
     "id": "goblin",
@@ -28943,7 +29865,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Nimble Escape",
         "desc": "The goblin can take the Disengage or Hide action as a bonus action on each of its turns."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Common, Goblin",
+    "subtype": "goblinoid"
   },
   "troll": {
     "id": "troll",
@@ -29024,7 +29949,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Regeneration",
         "desc": "The troll regains 10 hit points at the start of its turn. If the troll takes acid or fire damage, this trait doesn't function at the start of the troll's next turn. The troll dies only if it starts its turn with 0 hit points and doesn't regenerate."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Giant"
   },
   "pseudodragon": {
     "id": "pseudodragon",
@@ -29096,7 +30023,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Limited Telepathy",
         "desc": "The pseudodragon can magically communicate simple ideas, emotions, and images telepathically with any creature within 100 ft. of it that can understand a language."
       }
-    ]
+    ],
+    "alignment": "neutral good",
+    "languages": "understands Common and Draconic but can't speak"
   },
   "tyrannosaurus_rex": {
     "id": "tyrannosaurus_rex",
@@ -29167,7 +30096,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "umber_hulk": {
     "id": "umber_hulk",
@@ -29418,6 +30348,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The unicorn's weapon attacks are magical."
       }
     ],
+    "alignment": "lawful good",
+    "languages": "Celestial, Elvish, Sylvan, telepathy 60 ft.",
     "legendary": {
       "count": 3,
       "actions": [
@@ -29559,6 +30491,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The vampire has the following flaws:\nForbiddance. The vampire can't enter a residence without an invitation from one of the occupants.\nHarmed by Running Water. The vampire takes 20 acid damage if it ends its turn in running water.\nStake to the Heart. If a piercing weapon made of wood is driven into the vampire's heart while the vampire is incapacitated in its resting place, the vampire is paralyzed until the stake is removed.\nSunlight Hypersensitivity. The vampire takes 20 radiant damage when it starts its turn in sunlight. While in sunlight, it has disadvantage on attack rolls and ability checks."
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "the languages it knew in life",
+    "subtype": "shapechanger",
     "legendary": {
       "count": 3,
       "actions": [
@@ -29670,7 +30605,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Vampire Weaknesses",
         "desc": "The vampire has the following flaws:\nForbiddance. The vampire can't enter a residence without an invitation from one of the occupants.\nHarmed by Running Water. The vampire takes 20 acid damage when it ends its turn in running water.\nStake to the Heart. The vampire is destroyed if a piercing weapon made of wood is driven into its heart while it is incapacitated in its resting place.\nSunlight Hypersensitivity. The vampire takes 20 radiant damage when it starts its turn in sunlight. While in sunlight, it has disadvantage on attack rolls and ability checks."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "the languages it knew in life"
   },
   "winged_kobold": {
     "id": "winged_kobold",
@@ -29870,7 +30807,11 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "any alignment",
+    "languages": "any one language (usually Common)",
+    "subtype": "any race",
+    "desc": "Veterans are professional fighters that take up arms for pay or to protect something they believe in or value. Their ranks include soldiers retired from long service and warriors who never served anyone but themselves."
   },
   "flying_snake": {
     "id": "flying_snake",
@@ -29918,7 +30859,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Flyby",
         "desc": "The snake doesn't provoke opportunity attacks when it flies out of an enemy's reach."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "A flying snake is a brightly colored, winged serpent found in remote jungles. Tribespeople and cultists sometimes domesticate flying snakes to serve as messengers that deliver scrolls wrapped in their coils."
   },
   "kobold": {
     "id": "kobold",
@@ -29980,7 +30923,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The kobold has advantage on an attack roll against a creature if at least one of the kobold's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic",
+    "subtype": "kobold"
   },
   "vrock": {
     "id": "vrock",
@@ -30098,7 +31044,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Magic Resistance",
         "desc": "The vrock has advantage on saving throws against spells and other magical effects."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Abyssal, telepathy 120 ft.",
+    "subtype": "demon"
   },
   "vulture": {
     "id": "vulture",
@@ -30146,7 +31095,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Pack Tactics",
         "desc": "The vulture has advantage on an attack roll against a creature if at least one of the vulture's allies is within 5 ft. of the creature and the ally isn't incapacitated."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "mastiff": {
     "id": "mastiff",
@@ -30193,7 +31143,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Smell",
         "desc": "The mastiff has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
-    ]
+    ],
+    "alignment": "unaligned",
+    "desc": "Mastiffs are impressive hounds prized by humanoids for their loyalty and keen senses. Mastiffs can be trained as guard dogs, hunting dogs, and war dogs. Halflings and other Small humanoids ride them as mounts."
   },
   "water_elemental": {
     "id": "water_elemental",
@@ -30290,7 +31242,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Freeze",
         "desc": "If the elemental takes cold damage, it partially freezes; its speed is reduced by 20 ft. until the end of its next turn."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Aquan"
   },
   "water_weird": {
     "id": "water_weird",
@@ -30370,7 +31324,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Keen Hearing and Smell",
         "desc": "The weasel has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
-    ]
+    ],
+    "alignment": "unaligned"
   },
   "werebear": {
     "id": "werebear",
@@ -30460,6 +31415,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The werebear has advantage on Wisdom (Perception) checks that rely on smell."
       }
     ],
+    "alignment": "neutral good",
+    "languages": "Common",
+    "subtype": "human",
     "forms": [
       "Werebear, Bear Form",
       "Werebear, Human Form"
@@ -30550,6 +31508,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "neutral evil",
+    "languages": "Common",
+    "subtype": "human",
     "forms": [
       "Wereboar, Boar Form",
       "Wereboar, Human Form"
@@ -30646,6 +31607,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The wererat has advantage on Wisdom (Perception) checks that rely on smell."
       }
     ],
+    "alignment": "lawful evil",
+    "languages": "Common",
+    "subtype": "human",
     "forms": [
       "Wererat, Human Form",
       "Wererat, Rat Form"
@@ -30765,6 +31729,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
+    "alignment": "neutral",
+    "languages": "Common",
+    "subtype": "human",
     "forms": [
       "Weretiger, Human Form",
       "Weretiger, Tiger Form"
@@ -30855,6 +31822,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "desc": "The werewolf has advantage on Wisdom (Perception) checks that rely on hearing or smell."
       }
     ],
+    "alignment": "chaotic evil",
+    "languages": "Common",
+    "subtype": "human",
     "forms": [
       "Werewolf, Human Form",
       "Werewolf, Wolf Form"
@@ -30934,7 +31904,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Draconic"
   },
   "wight": {
     "id": "wight",
@@ -31038,7 +32010,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Sensitivity",
         "desc": "While in sunlight, the wight has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "the languages it knew in life"
   },
   "wild_dog": {
     "id": "wild_dog",
@@ -31196,7 +32170,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Variable Illumination",
         "desc": "The will-o'-wisp sheds bright light in a 5- to 20-foot radius and dim light for an additional number of ft. equal to the chosen radius. The will-o'-wisp can alter the radius as a bonus action."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "the languages it knew in life"
   },
   "giant_centipede": {
     "id": "giant_centipede",
@@ -31238,7 +32214,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "winter_wolf": {
     "id": "winter_wolf",
@@ -31317,7 +32294,10 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Snow Camouflage",
         "desc": "The wolf has advantage on Dexterity (Stealth) checks made to hide in snowy terrain."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "Common, Giant, Winter Wolf",
+    "desc": "The arctic-dwelling winter wolf is as large as a dire wolf but has snow-white fur and pale blue eyes. Frost giants use these evil creatures as guards and hunting companions, putting the wolves’ deadly breath weapon to use against their foes. Winter wolves communicate with one another using growls and barks, but they speak Common and Giant well enough to follow simple conversations."
   },
   "twig_blight": {
     "id": "twig_blight",
@@ -31396,7 +32376,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "wraith": {
     "id": "wraith",
@@ -31472,7 +32453,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Sunlight Sensitivity",
         "desc": "While in sunlight, the wraith has disadvantage on attack rolls, as well as on Wisdom (Perception) checks that rely on sight."
       }
-    ]
+    ],
+    "alignment": "neutral evil",
+    "languages": "the languages it knew in life"
   },
   "wyvern": {
     "id": "wyvern",
@@ -31551,7 +32534,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "xorn": {
     "id": "xorn",
@@ -31641,7 +32625,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Treasure Sense",
         "desc": "The xorn can pinpoint, by scent, the location of precious metals and stones, such as coins and gems, within 60 ft. of it."
       }
-    ]
+    ],
+    "alignment": "neutral",
+    "languages": "Terran"
   },
   "sprite": {
     "id": "sprite",
@@ -31716,7 +32702,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "kind": "narrative"
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "neutral good",
+    "languages": "Common, Elvish, Sylvan"
   },
   "stirge": {
     "id": "stirge",
@@ -31754,7 +32742,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "unaligned"
   },
   "yeti": {
     "id": "yeti",
@@ -31954,7 +32943,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic"
   },
   "young_blue_dragon": {
     "id": "young_blue_dragon",
@@ -32062,7 +33053,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic"
   },
   "young_brass_dragon": {
     "id": "young_brass_dragon",
@@ -32146,9 +33139,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 42 (12d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw or fall unconscious for 5 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "12d6",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 14,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Sleep Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 42 (12d6) fire damage on a failed save, or half as much damage on a successful one.\nSleep Breath. The dragon exhales sleep gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw or fall unconscious for 5 minutes. This effect ends for a creature if the creature takes damage or someone uses an action to wake it.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 14,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -32156,7 +33175,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic"
   },
   "young_bronze_dragon": {
     "id": "young_bronze_dragon",
@@ -32240,9 +33261,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Lightning Breath",
         "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 60-foot line that is 5 feet wide. Each creature in that line must make a DC 15 Dexterity saving throw, taking 55 (10d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 15 Strength saving throw. On a failed save, the creature is pushed 40 feet away from the dragon.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "10d10",
+            "type": "lightning"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 15,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Repulsion Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nLightning Breath. The dragon exhales lightning in a 60-foot line that is 5 feet wide. Each creature in that line must make a DC 15 Dexterity saving throw, taking 55 (10d10) lightning damage on a failed save, or half as much damage on a successful one.\nRepulsion Breath. The dragon exhales repulsion energy in a 30-foot cone. Each creature in that area must succeed on a DC 15 Strength saving throw. On a failed save, the creature is pushed 40 feet away from the dragon.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 15,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -32255,7 +33302,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic"
   },
   "young_copper_dragon": {
     "id": "young_copper_dragon",
@@ -32339,9 +33388,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Acid Breath",
         "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 40 (9d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "9d8",
+            "type": "acid"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 14,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Slowing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nAcid Breath. The dragon exhales acid in an 40-foot line that is 5 feet wide. Each creature in that line must make a DC 14 Dexterity saving throw, taking 40 (9d8) acid damage on a failed save, or half as much damage on a successful one.\nSlowing Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 14 Constitution saving throw. On a failed save, the creature can't use reactions, its speed is halved, and it can't make more than one attack on its turn. In addition, the creature can use either an action or a bonus action on its turn, but not both. These effects last for 1 minute. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself with a successful save.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 14,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -32349,7 +33424,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic good",
+    "languages": "Common, Draconic"
   },
   "young_gold_dragon": {
     "id": "young_gold_dragon",
@@ -32434,9 +33511,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Fire Breath",
         "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 30-foot cone. Each creature in that area must make a DC 17 Dexterity saving throw, taking 55 (10d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "10d10",
+            "type": "fire"
+          }
+        ],
+        "dc": {
+          "ability": "DEX",
+          "value": 17,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Weakening Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nFire Breath. The dragon exhales fire in a 30-foot cone. Each creature in that area must make a DC 17 Dexterity saving throw, taking 55 (10d10) fire damage on a failed save, or half as much damage on a successful one.\nWeakening Breath. The dragon exhales gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Strength saving throw or have disadvantage on Strength-based attack rolls, Strength checks, and Strength saving throws for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "STR",
+          "value": 17,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -32449,7 +33552,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic"
   },
   "young_green_dragon": {
     "id": "young_green_dragon",
@@ -32565,7 +33670,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Amphibious",
         "desc": "The dragon can breathe air and water."
       }
-    ]
+    ],
+    "alignment": "lawful evil",
+    "languages": "Common, Draconic"
   },
   "young_red_dragon": {
     "id": "young_red_dragon",
@@ -32673,7 +33780,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic"
   },
   "young_silver_dragon": {
     "id": "young_silver_dragon",
@@ -32757,9 +33866,35 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ]
       },
       {
-        "name": "Breath Weapons",
+        "name": "Cold Breath",
         "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 30-foot cone. Each creature in that area must make a DC 17 Constitution saving throw, taking 54 (12d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
-        "kind": "narrative",
+        "kind": "breath",
+        "damage": [
+          {
+            "dice": "12d8",
+            "type": "cold"
+          }
+        ],
+        "dc": {
+          "ability": "CON",
+          "value": 17,
+          "successType": "half"
+        },
+        "usage": {
+          "type": "recharge on roll",
+          "dice": "1d6",
+          "minValue": 5
+        }
+      },
+      {
+        "name": "Paralyzing Breath",
+        "desc": "The dragon uses one of the following breath weapons.\nCold Breath. The dragon exhales an icy blast in a 30-foot cone. Each creature in that area must make a DC 17 Constitution saving throw, taking 54 (12d8) cold damage on a failed save, or half as much damage on a successful one.\nParalyzing Breath. The dragon exhales paralyzing gas in a 30-foot cone. Each creature in that area must succeed on a DC 17 Constitution saving throw or be paralyzed for 1 minute. A creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
+        "kind": "breath",
+        "dc": {
+          "ability": "CON",
+          "value": 17,
+          "successType": "none"
+        },
         "usage": {
           "type": "recharge on roll",
           "dice": "1d6",
@@ -32767,7 +33902,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         }
       }
     ],
-    "traits": []
+    "traits": [],
+    "alignment": "lawful good",
+    "languages": "Common, Draconic"
   },
   "young_white_dragon": {
     "id": "young_white_dragon",
@@ -32881,7 +34018,9 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Ice Walk",
         "desc": "The dragon can move across and climb icy surfaces without needing to make an ability check. Additionally, difficult terrain composed of ice or snow doesn't cost it extra movement."
       }
-    ]
+    ],
+    "alignment": "chaotic evil",
+    "languages": "Common, Draconic"
   },
   "yuan_ti_abomination": {
     "id": "yuan_ti_abomination",

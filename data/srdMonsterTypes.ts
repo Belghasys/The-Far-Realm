@@ -146,6 +146,12 @@ export interface SrdMonster {
     name: string;
     cr: number;
     proficiencyBonus: number;
+    /** Narration (le CSV ne les porte pas) : ce que le MJ demande via lookup_monster. */
+    alignment?: string;
+    languages?: string;
+    subtype?: string;
+    /** Texte de présentation du SRD (45 créatures en ont un). */
+    desc?: string;
     speed: Partial<Record<'walk' | 'fly' | 'swim' | 'climb' | 'burrow', number>> & { hover?: boolean };
     saves: Partial<Record<SrdAbility, number>>;
     skills: Record<string, number>;
