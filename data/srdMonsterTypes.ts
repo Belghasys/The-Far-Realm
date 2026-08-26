@@ -70,6 +70,8 @@ export interface SrdAction {
     name: string;
     kind: SrdActionKind;
     desc: string;
+    /** Absent = 'srd'. */
+    source?: SrdSource;
     attackBonus?: number;
     reach?: number;                     // pieds, lu dans desc : "reach 10 ft."
     range?: [number, number];           // pieds, lu dans desc : "range 80/320 ft."
@@ -105,6 +107,7 @@ export interface SrdSpellcasting {
 export interface SrdTrait {
     name: string;
     desc: string;
+    source?: SrdSource;
     usage?: SrdUsage;
     dc?: SrdDc;
     damage?: SrdDamage[];
@@ -114,6 +117,7 @@ export interface SrdTrait {
 export interface SrdLegendaryAction {
     name: string;
     desc: string;
+    source?: SrdSource;
     /** "(Costs 2 Actions)" lu dans le nom ; 1 sinon. */
     cost: number;
     attackBonus?: number;
@@ -121,11 +125,24 @@ export interface SrdLegendaryAction {
     dc?: SrdDc;
 }
 
+/**
+ * D'où vient un bloc :
+ *  - 'srd'       : le JSON du SRD 5.1, sans interprétation ;
+ *  - 'csv-regex' : lu par regex dans le texte (tronqué à 400 caractères) du CSV ;
+ *  - 'memoire'   : complété de mémoire par Claude (tools/bestiary/nonSrd_completions.json),
+ *                  chiffres de jeu seulement, à relire — voir `confidence` sur la fiche.
+ */
+export type SrdSource = 'srd' | 'csv-regex' | 'memoire';
+
 export interface SrdMonster {
     /** id de la fiche CSV (data/monsterData.ts) à laquelle ce bloc se rattache */
     id: string;
-    /** index dans le SRD ("adult-red-dragon") */
+    /** index dans le SRD ("adult-red-dragon"), ou l'id CSV pour une fiche hors SRD */
     srdIndex: string;
+    source: 'srd' | 'csv';
+    /** Fiches hors SRD complétées de mémoire : haute (Monster Manual bien
+     *  connu), moyenne (Mordenkainen / Volo), basse (source obscure). */
+    confidence?: 'haute' | 'moyenne' | 'basse';
     name: string;
     cr: number;
     proficiencyBonus: number;

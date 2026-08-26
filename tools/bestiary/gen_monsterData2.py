@@ -183,6 +183,7 @@ def monstre(csv_id, m):
     out = {
         'id': csv_id,
         'srdIndex': m['index'],
+        'source': 'srd',
         'name': m['name'],
         'cr': m['challenge_rating'],
         'proficiencyBonus': m['proficiency_bonus'],
@@ -206,18 +207,154 @@ def monstre(csv_id, m):
     return out
 
 
+# ── Seconde passe : les fiches HORS SRD, lues dans le texte du CSV ───────────
+# Le texte `Action` du CSV est tronque a 400 caracteres. On y lit, par regex,
+# ce qui est lisible (source 'csv-regex'), puis on fusionne les complements de
+# memoire relus a la main (tools/bestiary/nonSrd_completions.json, source
+# 'memoire'). Le texte visible fait foi : un complement qui contredit un
+# chiffre lu est signale et ignore.
+COMPLETIONS = 'tools/bestiary/nonSrd_completions.json'
+RE_CAP = re.compile(r"(?:(?<=\.)|(?<=\))|^)\s*([A-Z][A-Za-z' -]{2,40}(?: \([^)]{1,40}\))?)\.\s+(?=[A-Z])")
+RE_ATT = re.compile(r'(Melee|Ranged)(?: or Ranged)? (Weapon|Spell) Attack:\s*\+(\d+) to hit', re.I)
+RE_HIT = re.compile(r'Hit:\s*\d+\s*\((\d+d\d+(?:\s*[+-]\s*\d+)?)\)\s*([a-z]+)\s+damage', re.I)
+RE_PLUS = re.compile(r'plus\s+\d+\s*\((\d+d\d+(?:\s*[+-]\s*\d+)?)\)\s*([a-z]+)\s+damage', re.I)
+RE_RECH = re.compile(r'Recharge (\d)(?:\s*[–-]\s*(\d))?', re.I)
+RE_PERDAY = re.compile(r'\((\d+)/Day\)', re.I)
+
+
+def capacites_csv(texte, tronque):
+    idx = [(m.start(1), m.end(0), m.group(1).strip()) for m in RE_CAP.finditer(texte)]
+    out = []
+    for i, (s, e, nom) in enumerate(idx):
+        corps = texte[e: idx[i + 1][0] if i + 1 < len(idx) else len(texte)].strip()
+        coupe = tronque and i + 1 == len(idx)
+        a = {'name': nom, 'desc': corps + (' […]' if coupe else ''), 'source': 'csv-regex'}
+        if nom.lower().startswith('multiattack'):
+            a['kind'] = 'multiattack'
+            a['multiattack'] = {'type': 'action_options', 'desc': corps}
+        elif RE_ATT.search(corps):
+            a['kind'] = 'attack'
+            a['attackBonus'] = int(RE_ATT.search(corps).group(3))
+            m = RE_REACH.search(corps)
+            if m:
+                a['reach'] = int(m.group(1))
+            m = RE_RANGE.search(corps)
+            if m:
+                a['range'] = [int(m.group(1)), int(m.group(2))]
+            m = RE_HIT.search(corps)
+            if m:
+                a['damage'] = [{'dice': m.group(1).replace(' ', ''), 'type': m.group(2).lower()}]
+                a['damage'] += [{'dice': p.group(1).replace(' ', ''), 'type': p.group(2).lower()} for p in RE_PLUS.finditer(corps)]
+            m = RE_SAVE.search(corps)
+            if m:
+                a['onHitSave'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1))}
+        elif nom.startswith('Frightful Presence'):
+            a['kind'] = 'presence'
+            m = RE_SAVE.search(corps)
+            if m:
+                a['dc'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1)), 'successType': 'none'}
+        elif RE_SAVE.search(corps):
+            m = RE_SAVE.search(corps)
+            a['kind'] = 'breath' if RE_RECH.search(nom) else 'save'
+            a['dc'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1)), 'successType': 'half' if 'half as much' in corps else 'none'}
+            d = re.search(r'(\d+)\s*\((\d+d\d+(?:\s*[+-]\s*\d+)?)\)\s*([a-z]+)\s+damage', corps, re.I)
+            if d:
+                a['damage'] = [{'dice': d.group(2).replace(' ', ''), 'type': d.group(3).lower()}]
+        else:
+            a['kind'] = 'narrative'
+        m = RE_RECH.search(nom)
+        if m:
+            a['usage'] = {'type': 'recharge on roll', 'dice': '1d6', 'minValue': int(m.group(1))}
+        m = RE_PERDAY.search(nom)
+        if m:
+            a['usage'] = {'type': 'per day', 'times': int(m.group(1))}
+        out.append(a)
+    return out
+
+
+def fusion(base, complement, csv_id, avertissements):
+    """Les actions lues dans le CSV font foi ; le complement ajoute ce qui manque."""
+    par_nom = {a['name']: a for a in base['actions']}
+    for c in complement.get('actions', []):
+        c = dict(c)
+        c['source'] = 'memoire'
+        if c['name'] in par_nom:
+            b = par_nom[c['name']]
+            for k, v in c.items():
+                if k in ('desc', 'source', 'kind'):
+                    continue
+                if k in b and b[k] != v:
+                    avertissements.append(f'{csv_id} / {c["name"]} : {k} lu={b[k]!r} memoire={v!r} -> le CSV fait foi')
+                elif k not in b:
+                    b[k] = v
+            if b['kind'] == 'narrative' and c['kind'] != 'narrative':
+                b['kind'] = c['kind']
+        else:
+            base['actions'].append(c)
+    for t in complement.get('traits', []):
+        base['traits'].append({**t, 'source': 'memoire'})
+    if complement.get('legendary'):
+        base['legendary'] = {'count': complement['legendary'].get('count', 3), 'actions': [{**l, 'source': 'memoire'} for l in complement['legendary']['actions']]}
+    if complement.get('reactions'):
+        base['reactions'] = complement['reactions']
+    if complement.get('confidence'):
+        base['confidence'] = complement['confidence']
+
+
+def vitesses_csv(s):
+    """"40 ft., fly 80 ft. (hover)" -> {walk: 40, fly: 80, hover: True}"""
+    out = {}
+    for mode, v in re.findall(r'(?:^|,\s*)(?:(fly|swim|climb|burrow)\s+)?(\d+)\s*ft', s):
+        out[mode or 'walk'] = int(v)
+    if 'hover' in s:
+        out['hover'] = True
+    return out
+
+
+def monstre_csv(csv_id, r):
+    texte = r['Action'].strip()
+    return {
+        'id': csv_id,
+        'srdIndex': csv_id,
+        'source': 'csv',
+        'name': r['name'].replace('-', ' ').title(),
+        'cr': float(r['cr'] or 0),
+        'proficiencyBonus': max(2, 2 + (int(float(r['cr'] or 0)) - 1) // 4),
+        'speed': vitesses_csv(r['Speed_Scraped']),
+        'saves': {},
+        'skills': {k.strip(): int(v) for k, v in re.findall(r'([A-Za-z ]+?)\s*\+(\d+)', r['Skill'])},
+        'senses': {},
+        'damageVulnerabilities': [],
+        'damageResistances': [],
+        'damageImmunities': [],
+        'conditionImmunities': [],
+        'actions': capacites_csv(texte, len(texte) >= 400) if texte else [],
+        'traits': [],
+    }
+
+
 M = json.load(open(SRD, encoding='utf-8'))
 par_nom = {norm(x['name']): x for x in M}
 rows = list(csv.DictReader(io.open(CSV, encoding='utf-8')))
-resultat, absents = {}, []
+completions = json.load(open(COMPLETIONS, encoding='utf-8'))
+resultat, absents, avertissements = {}, [], []
 for r in rows:
     csv_id = re.sub(r'[^a-z0-9]+', '_', r['name'].lower()).strip('_')
     nom = VARIANTES.get(r['name'], r['name'].replace('-', ' '))
     m = par_nom.get(norm(nom))
     if m is None:
         absents.append(r['name'])
+        fiche = monstre_csv(csv_id, r)
+        if r['name'] in completions:
+            fusion(fiche, completions[r['name']], csv_id, avertissements)
+        resultat[csv_id] = fiche
         continue
     resultat[csv_id] = monstre(csv_id, m)
+for a in avertissements:
+    print('AVERTISSEMENT', a)
+inutilises = [k for k in completions if not k.startswith('_') and k not in {r['name'] for r in rows if norm(VARIANTES.get(r['name'], r['name'].replace('-', ' '))) not in par_nom}]
+if inutilises:
+    print('complements sans fiche hors SRD :', inutilises)
 
 kinds = {}
 for v in resultat.values():
@@ -227,8 +364,9 @@ for v in resultat.values():
 en_tete = f"""// AUTO-GENERATED by tools/bestiary/gen_monsterData2.py — NE PAS EDITER A LA MAIN.
 // Source : 5e-database (src/2014/en/5e-SRD-Monsters.json), commit {COMMIT},
 // SRD 5.1 (c) Wizards of the Coast, CC-BY 4.0 — voir tools/bestiary/srd/SOURCE.md.
-// Complement de data/monsterData.ts (CSV, intouchable) : {len(resultat)} fiches rattachees,
-// {len(absents)} fiches du CSV hors SRD (elles gardent le lecteur d'attaques par regex).
+// Complement de data/monsterData.ts (CSV, intouchable) : {len(resultat)} fiches, dont
+// {len(resultat) - len(absents)} du SRD (source 'srd') et {len(absents)} hors SRD lues par regex dans le
+// texte du CSV (source 'csv-regex') et completees de memoire ('memoire', a relire).
 // Actions : {', '.join(f'{k} {v}' for k, v in sorted(kinds.items(), key=lambda kv: -kv[1]))}.
 import type {{ SrdMonster }} from './srdMonsterTypes';
 

@@ -1,0 +1,476 @@
+{
+  "_lisez_moi": "Complements DE MEMOIRE (Claude, 2026-08-26) pour les fiches hors SRD dont le texte CSV est tronque a 400 caracteres. Chiffres de jeu seulement (bonus, des, DC, recharge) ; les descriptions sont reecrites, jamais copiees. confidence : haute = Monster Manual bien connu ; moyenne = Mordenkainen / Volo ; basse = source obscure, champs laisses vides plutot qu'inventes. A RELIRE avant de s'y fier : le debut visible du CSV fait foi en cas de contradiction (le generateur le signale).",
+
+  "orcus": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Necrotic Bolt", "kind": "attack", "attackBonus": 15, "range": [120, 120], "damage": [{ "dice": "8d10", "type": "necrotic" }], "desc": "Trait de magie necrotique lance a distance." }
+    ],
+    "traits": [
+      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, Orcus reussit une sauvegarde ratee." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 23, "spells": [
+        { "name": "Chill Touch", "level": 0, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } },
+        { "name": "Animate Dead", "level": 3, "usage": { "type": "per day", "times": 3 } }, { "name": "Blight", "level": 4, "usage": { "type": "per day", "times": 3 } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "per day", "times": 3 } },
+        { "name": "Finger of Death", "level": 7, "usage": { "type": "per day", "times": 1 } }, { "name": "Power Word Stun", "level": 8, "usage": { "type": "per day", "times": 1 } }, { "name": "Speak with Dead", "level": 3, "usage": { "type": "per day", "times": 1 } }, { "name": "Time Stop", "level": 9, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee du Prince des morts-vivants." }
+    ],
+    "legendary": { "count": 3, "actions": [
+      { "name": "Tail", "cost": 1, "attackBonus": 16, "damage": [{ "dice": "3d8+8", "type": "force" }, { "dice": "2d8", "type": "poison" }], "desc": "Un coup de queue." },
+      { "name": "Creature of Death (Costs 2 Actions)", "cost": 2, "desc": "Orcus lance un sort ou fait lever un mort-vivant (detail incertain : a relire)." } ] }
+  },
+
+  "zariel": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Horrid Touch (Recharge 5-6)", "kind": "attack", "attackBonus": 16, "reach": 5, "damage": [{ "dice": "8d10", "type": "necrotic" }], "onHitSave": { "ability": "CON", "value": 26 }, "usage": { "type": "recharge on roll", "dice": "1d6", "minValue": 5 }, "desc": "Toucher horrible : sur un echec a la sauvegarde, la cible est empoisonnee une minute et aveuglee tant qu'elle l'est." },
+      { "name": "Teleport", "kind": "narrative", "desc": "Zariel se teleporte jusqu'a 120 pieds vers un espace libre qu'elle voit." }
+    ],
+    "traits": [
+      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, Zariel reussit une sauvegarde ratee." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 26, "spells": [
+        { "name": "Alter Self", "level": 2, "usage": { "type": "at will" } }, { "name": "Detect Evil and Good", "level": 1, "usage": { "type": "at will" } }, { "name": "Fireball", "level": 3, "usage": { "type": "at will" } },
+        { "name": "Blade Barrier", "level": 6, "usage": { "type": "per day", "times": 3 } }, { "name": "Dispel Evil and Good", "level": 5, "usage": { "type": "per day", "times": 3 } }, { "name": "Finger of Death", "level": 7, "usage": { "type": "per day", "times": 3 } }, { "name": "Wall of Fire", "level": 4, "usage": { "type": "per day", "times": 3 } } ] }, "desc": "Magie innee de l'archiduchesse d'Averne." }
+    ],
+    "legendary": { "count": 3, "actions": [
+      { "name": "Immolating Gaze (Costs 2 Actions)", "cost": 2, "dc": { "ability": "DEX", "value": 26, "successType": "half" }, "damage": [{ "dice": "12d6", "type": "fire" }], "desc": "Regard incendiaire sur une creature a 120 pieds (des de degats : a relire)." },
+      { "name": "Teleport", "cost": 1, "desc": "Zariel utilise Teleport." } ] }
+  },
+
+  "astral-dreadnought": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Claw", "kind": "attack", "attackBonus": 16, "reach": 20, "damage": [{ "dice": "3d10+9", "type": "slashing" }], "desc": "Griffe immense." }
+    ],
+    "traits": [
+      { "name": "Antimagic Cone", "desc": "L'oeil du dreadnought projette un cone d'antimagie de 150 pieds ; il choisit la direction a chaque tour." },
+      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, il reussit une sauvegarde ratee." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." }
+    ],
+    "legendary": { "count": 3, "actions": [
+      { "name": "Claw", "cost": 1, "attackBonus": 16, "damage": [{ "dice": "3d10+9", "type": "slashing" }], "desc": "Une attaque de griffe." },
+      { "name": "Donjon Visit (Costs 2 Actions)", "cost": 2, "dc": { "ability": "CHA", "value": 19, "successType": "none" }, "desc": "Une creature engloutie doit reussir la sauvegarde ou etre projetee dans le donjon du dreadnought." } ] }
+  },
+
+  "moloch": {
+    "confidence": "basse",
+    "actions": [
+      { "name": "Bite", "kind": "attack", "attackBonus": 14, "reach": 5, "damage": [{ "dice": "2d10+8", "type": "piercing" }], "desc": "Morsure (chiffres a relire)." },
+      { "name": "Claw", "kind": "attack", "attackBonus": 14, "reach": 5, "damage": [{ "dice": "2d6+8", "type": "slashing" }], "desc": "Griffe (chiffres a relire)." },
+      { "name": "Many-Tailed Whip", "kind": "attack", "attackBonus": 14, "reach": 30, "damage": [{ "dice": "2d6+8", "type": "bludgeoning" }], "desc": "Fouet a plusieurs queues (chiffres a relire)." },
+      { "name": "Breath of Despair (Recharge 5-6)", "kind": "breath", "dc": { "ability": "WIS", "value": 21, "successType": "none" }, "damage": [{ "dice": "10d8", "type": "psychic" }], "usage": { "type": "recharge on roll", "dice": "1d6", "minValue": 5 }, "desc": "Cone de 30 pieds : sur un echec, degats psychiques et effroi pour une minute." },
+      { "name": "Teleport", "kind": "narrative", "desc": "Moloch se teleporte jusqu'a 120 pieds." }
+    ],
+    "traits": [
+      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, il reussit une sauvegarde ratee." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 21, "spells": [
+        { "name": "Alter Self", "level": 2, "usage": { "type": "at will" } }, { "name": "Animate Dead", "level": 3, "usage": { "type": "at will" } }, { "name": "Burning Hands", "level": 1, "usage": { "type": "at will" } }, { "name": "Confusion", "level": 4, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } }, { "name": "Fly", "level": 3, "usage": { "type": "at will" } }, { "name": "Stinking Cloud", "level": 3, "usage": { "type": "at will" } }, { "name": "Suggestion", "level": 2, "usage": { "type": "at will" } }, { "name": "Wall of Fire", "level": 4, "usage": { "type": "at will" } },
+        { "name": "Dominate Person", "level": 5, "usage": { "type": "per day", "times": 3 } }, { "name": "Flame Strike", "level": 5, "usage": { "type": "per day", "times": 3 } },
+        { "name": "Dominate Monster", "level": 8, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee de l'archidiable dechu." }
+    ],
+    "legendary": { "count": 3, "actions": [
+      { "name": "Attack", "cost": 1, "desc": "Une attaque de morsure, de griffe ou de fouet." },
+      { "name": "Teleport", "cost": 1, "desc": "Moloch utilise Teleport." },
+      { "name": "Cast a Spell (Costs 2 Actions)", "cost": 2, "desc": "Moloch lance un sort a volonte." } ] }
+  },
+
+  "belaphoss": {
+    "confidence": "basse",
+    "actions": [
+      { "name": "Whip", "kind": "attack", "attackBonus": 14, "reach": 30, "damage": [{ "dice": "2d6+8", "type": "slashing" }], "desc": "Fouet de flammes : la cible peut etre tiree jusqu'a 25 pieds vers Belaphoss (detail a relire)." },
+      { "name": "Teleport", "kind": "narrative", "desc": "Belaphoss se teleporte jusqu'a 120 pieds." }
+    ],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." }
+    ]
+  },
+
+  "sibriex": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Squirt Bile", "kind": "save", "dc": { "ability": "DEX", "value": 20, "successType": "half" }, "damage": [{ "dice": "10d6", "type": "acid" }], "desc": "Jet de bile acide sur une creature a 60 pieds." },
+      { "name": "Warp Creature (3/Day)", "kind": "narrative", "usage": { "type": "per day", "times": 3 }, "dc": { "ability": "CON", "value": 20, "successType": "none" }, "desc": "Jusqu'a trois creatures a 60 pieds doivent reussir une sauvegarde de Constitution ou etre empoisonnees et deformees." }
+    ],
+    "traits": [
+      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, il reussit une sauvegarde ratee." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 21, "spells": [
+        { "name": "Command", "level": 1, "usage": { "type": "at will" } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "at will" } }, { "name": "Hold Monster", "level": 5, "usage": { "type": "at will" } },
+        { "name": "Feeblemind", "level": 8, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee." }
+    ],
+    "legendary": { "count": 3, "actions": [
+      { "name": "Cast a Spell", "cost": 1, "desc": "Le sibriex lance un sort." },
+      { "name": "Spray Bile", "cost": 1, "desc": "Le sibriex utilise Squirt Bile." },
+      { "name": "Warp Creature (Costs 2 Actions)", "cost": 2, "desc": "Le sibriex utilise Warp Creature sur une creature." } ] }
+  },
+
+  "laeral-silverhand": {
+    "confidence": "basse",
+    "actions": [
+      { "name": "Flame Tongue", "kind": "attack", "attackBonus": 11, "reach": 5, "damage": [{ "dice": "1d8+3", "type": "slashing" }, { "dice": "2d6", "type": "fire" }], "desc": "Epee langue-de-feu (des de degats a relire)." }
+    ],
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "INT", "dc": 19, "spells": [
+        { "name": "Fire Bolt", "level": 0, "usage": { "type": "at will" } }, { "name": "Mage Hand", "level": 0, "usage": { "type": "at will" } }, { "name": "Shield", "level": 1 }, { "name": "Mage Armor", "level": 1 }, { "name": "Misty Step", "level": 2 }, { "name": "Counterspell", "level": 3 }, { "name": "Fireball", "level": 3 }, { "name": "Dimension Door", "level": 4 } ] }, "desc": "Magicienne de haut niveau ; liste de sorts partielle, a relire." }
+    ]
+  },
+
+  "drow-inquisitor": {
+    "confidence": "basse",
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "WIS", "dc": 18, "spells": [
+        { "name": "Dancing Lights", "level": 0, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } }, { "name": "Faerie Fire", "level": 1, "usage": { "type": "at will" } }, { "name": "Levitate", "level": 2, "usage": { "type": "at will" } },
+        { "name": "Darkness", "level": 2, "usage": { "type": "per day", "times": 1 } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "per day", "times": 1 } }, { "name": "Suggestion", "level": 2, "usage": { "type": "per day", "times": 1 } },
+        { "name": "Hold Person", "level": 2 }, { "name": "Spirit Guardians", "level": 3 }, { "name": "Bane", "level": 1 }, { "name": "Command", "level": 1 } ] }, "desc": "Pretresse-inquisitrice de Lolth ; liste partielle, a relire." },
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." }
+    ]
+  },
+
+  "narzugon": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Terrifying Command", "kind": "presence", "dc": { "ability": "WIS", "value": 15, "successType": "none" }, "desc": "Chaque creature non-fielon a 60 pieds qui entend le narzugon doit reussir une sauvegarde de Sagesse ou etre effrayee une minute." },
+      { "name": "Infernal Command", "kind": "narrative", "desc": "Les allies du narzugon a 60 pieds ne peuvent etre ni charmes ni effrayes jusqu'a la fin de son prochain tour." }
+    ],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." }
+    ]
+  },
+
+  "froghemoth": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Tentacle", "kind": "attack", "attackBonus": 10, "reach": 20, "damage": [{ "dice": "3d8+6", "type": "bludgeoning" }], "desc": "Tentacule : la cible est agrippee (DD d'evasion 16) et entravee." },
+      { "name": "Tongue", "kind": "save", "dc": { "ability": "STR", "value": 18, "successType": "none" }, "desc": "Langue : une creature a 20 pieds est tiree au contact et agrippee sur un echec de sauvegarde de Force." }
+    ],
+    "traits": [
+      { "name": "Shock Susceptibility", "desc": "S'il subit des degats de foudre, le froghemoth est etourdi jusqu'a la fin de son prochain tour." }
+    ]
+  },
+
+  "drow-house-captain": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Hand Crossbow", "kind": "attack", "attackBonus": 8, "range": [30, 120], "damage": [{ "dice": "1d6+4", "type": "piercing" }], "onHitSave": { "ability": "CON", "value": 13 }, "desc": "Arbalete de poing au poison drow : sur un echec, la cible est empoisonnee une heure (inconsciente si l'echec est de 5 ou plus)." },
+      { "name": "Battle Command", "kind": "narrative", "desc": "Action bonus : un allie a 30 pieds fait une attaque ou se deplace de sa vitesse en reaction." }
+    ],
+    "reactions": [{ "name": "Parry", "desc": "Le capitaine ajoute 3 a sa CA contre une attaque de melee qui le toucherait." }]
+  },
+
+  "flind": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Flail of Pain", "kind": "attack", "attackBonus": 9, "reach": 10, "damage": [{ "dice": "1d10+5", "type": "bludgeoning" }, { "dice": "4d10", "type": "psychic" }], "desc": "Fleau de douleur." },
+      { "name": "Flail of Paralysis", "kind": "attack", "attackBonus": 9, "reach": 10, "damage": [{ "dice": "1d10+5", "type": "bludgeoning" }], "onHitSave": { "ability": "CON", "value": 16 }, "desc": "Fleau de paralysie : sur un echec, la cible est paralysee jusqu'a la fin de son prochain tour." },
+      { "name": "Longbow", "kind": "attack", "attackBonus": 4, "range": [150, 600], "damage": [{ "dice": "1d8", "type": "piercing" }], "desc": "Arc long." }
+    ],
+    "traits": [
+      { "name": "Aura of Blood Thirst", "desc": "Les gnolls a 10 pieds du flind peuvent faire une morsure en action bonus." }
+    ]
+  },
+
+  "nycaloth": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Greataxe", "kind": "attack", "attackBonus": 9, "reach": 10, "damage": [{ "dice": "3d8+5", "type": "slashing" }], "desc": "Hache a deux mains." },
+      { "name": "Teleport", "kind": "narrative", "desc": "Le nycaloth se teleporte jusqu'a 60 pieds." }
+    ],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 15, "spells": [
+        { "name": "Darkness", "level": 2, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "at will" } }, { "name": "Invisibility", "level": 2, "usage": { "type": "at will" } }, { "name": "Mirror Image", "level": 2, "usage": { "type": "at will" } } ] }, "desc": "Magie innee." }
+    ]
+  },
+
+  "devilroot": { "confidence": "basse", "note": "Source inconnue de moi : rien ajoute au-dela du texte visible." },
+
+  "drow-mage": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "INT", "dc": 14, "attackBonus": 6, "casterLevel": 10, "slots": { "1": 4, "2": 3, "3": 3, "4": 3, "5": 2 }, "spells": [
+        { "name": "Mage Hand", "level": 0 }, { "name": "Minor Illusion", "level": 0 }, { "name": "Poison Spray", "level": 0 }, { "name": "Ray of Frost", "level": 0 },
+        { "name": "Mage Armor", "level": 1 }, { "name": "Magic Missile", "level": 1 }, { "name": "Shield", "level": 1 }, { "name": "Witch Bolt", "level": 1 },
+        { "name": "Alter Self", "level": 2 }, { "name": "Misty Step", "level": 2 }, { "name": "Web", "level": 2 },
+        { "name": "Fly", "level": 3 }, { "name": "Lightning Bolt", "level": 3 },
+        { "name": "Evard's Black Tentacles", "level": 4 }, { "name": "Greater Invisibility", "level": 4 },
+        { "name": "Cloudkill", "level": 5 },
+        { "name": "Dancing Lights", "level": 0, "usage": { "type": "at will" } }, { "name": "Darkness", "level": 2, "usage": { "type": "per day", "times": 1 } }, { "name": "Faerie Fire", "level": 1, "usage": { "type": "per day", "times": 1 } }, { "name": "Levitate", "level": 2, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magicien de 10e niveau, plus la magie innee des drows." },
+      { "name": "Fey Ancestry", "desc": "Avantage contre le charme ; le sommeil magique ne l'affecte pas." }
+    ]
+  },
+
+  "yuan-ti-abomination": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Constrict", "kind": "attack", "attackBonus": 7, "reach": 10, "damage": [{ "dice": "2d6+4", "type": "bludgeoning" }], "desc": "Constriction : la cible est agrippee (DD d'evasion 14) et entravee." },
+      { "name": "Scimitar", "kind": "attack", "attackBonus": 7, "reach": 5, "damage": [{ "dice": "1d6+4", "type": "slashing" }], "desc": "Cimeterre." },
+      { "name": "Longbow", "kind": "attack", "attackBonus": 6, "range": [150, 600], "damage": [{ "dice": "1d8+3", "type": "piercing" }, { "dice": "3d6", "type": "poison" }], "desc": "Arc long empoisonne." }
+    ],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 15, "spells": [
+        { "name": "Animal Friendship", "level": 1, "usage": { "type": "at will" }, "notes": "serpents seulement" }, { "name": "Suggestion", "level": 2, "usage": { "type": "per day", "times": 3 } }, { "name": "Fear", "level": 3, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee." }
+    ]
+  },
+
+  "annis-hag": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Crushing Hug", "kind": "attack", "attackBonus": 8, "reach": 5, "damage": [{ "dice": "9d6+5", "type": "bludgeoning" }], "desc": "Etreinte broyeuse : la cible est agrippee (DD d'evasion 15) et subit a nouveau ces degats au debut de chacun des tours de la guenaude tant qu'elle est tenue." }
+    ],
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 13, "spells": [
+        { "name": "Disguise Self", "level": 1, "usage": { "type": "per day", "times": 3 } }, { "name": "Fog Cloud", "level": 1, "usage": { "type": "per day", "times": 3 } } ] }, "desc": "Magie innee." }
+    ]
+  },
+
+  "cyclops": { "confidence": "haute", "note": "Le texte visible est complet (la suite est de la description) : rien a ajouter. Trait : Poor Depth Perception (desavantage a distance au-dela de 30 pieds).", "traits": [{ "name": "Poor Depth Perception", "desc": "Desavantage aux attaques contre une cible a plus de 30 pieds." }] },
+
+  "galeb-duhr": { "confidence": "haute", "note": "Rien a ajouter au-dela d'Animate Boulders (visible).", "traits": [{ "name": "Rolling Charge", "desc": "S'il roule au moins 20 pieds avant un Slam, l'attaque inflige 7 (2d6) degats supplementaires et la cible doit reussir une sauvegarde de Force DD 16 ou etre a terre." }] },
+
+  "gauth": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Eye Rays", "kind": "narrative", "desc": "Trois rayons oculaires au hasard (d6) sur une a trois creatures a 120 pieds : 1 devorer la magie (DD 14 DEX, un objet magique perd ses proprietes 1 h), 2 enervation (DD 14 CON, 22 (4d10) necrotiques), 3 poussee (DD 14 FOR, repousse de 15 pieds), 4 feu (DD 14 DEX, 22 (4d10) feu), 5 paralysie (DD 14 CON, paralyse 1 min), 6 sommeil (DD 14 SAG, inconscient 1 min)." }
+    ],
+    "traits": [
+      { "name": "Stunning Gaze", "dc": { "ability": "WIS", "value": 14, "successType": "none" }, "desc": "Une creature qui commence son tour a 30 pieds et voit l'oeil central doit reussir une sauvegarde de Sagesse ou etre etourdie jusqu'au debut de son prochain tour." }
+    ]
+  },
+
+  "mezzoloth": {
+    "confidence": "haute",
+    "actions": [{ "name": "Teleport", "kind": "narrative", "desc": "Le mezzoloth se teleporte jusqu'a 60 pieds." }],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 11, "spells": [
+        { "name": "Darkness", "level": 2, "usage": { "type": "per day", "times": 2 } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "per day", "times": 2 } }, { "name": "Cloudkill", "level": 5, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee." }
+    ]
+  },
+
+  "revenant": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Vengeful Glare", "kind": "save", "dc": { "ability": "WIS", "value": 15, "successType": "none" }, "desc": "Regard vengeur sur une creature a 30 pieds contre laquelle le revenant a jure vengeance : sur un echec, elle est paralysee tant que le revenant ne l'a pas blessee ; elle peut retenter la sauvegarde a la fin de chacun de ses tours." }
+    ],
+    "traits": [
+      { "name": "Regeneration", "desc": "Le revenant regagne 10 PV au debut de son tour s'il lui en reste au moins 1 (sauf apres des degats de feu ou radiants)." },
+      { "name": "Rejuvenation", "desc": "Detruit, il renait dans un autre corps en 24 heures tant que sa vengeance n'est pas accomplie." },
+      { "name": "Turn Immunity", "desc": "Immunise au renvoi des morts-vivants." }
+    ]
+  },
+
+  "tanarukk": {
+    "confidence": "haute",
+    "traits": [{ "name": "Aggressive", "desc": "Action bonus : se deplace de sa vitesse vers un ennemi visible." }],
+    "reactions": [{ "name": "Unbridled Fury", "desc": "Quand une creature au contact le touche, le tanarukk fait une attaque de melee contre elle avec avantage." }]
+  },
+
+  "umber-hulk": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Multiattack", "kind": "multiattack", "multiattack": { "type": "actions", "steps": [{ "name": "Claw", "count": 2, "type": "melee" }, { "name": "Mandibles", "count": 1, "type": "melee" }] }, "desc": "Trois attaques : deux griffes et les mandibules." },
+      { "name": "Claw", "kind": "attack", "attackBonus": 8, "reach": 5, "damage": [{ "dice": "1d8+5", "type": "slashing" }], "desc": "Griffe." },
+      { "name": "Mandibles", "kind": "attack", "attackBonus": 8, "reach": 5, "damage": [{ "dice": "2d8+5", "type": "slashing" }], "desc": "Mandibules." }
+    ],
+    "traits": [
+      { "name": "Confusing Gaze", "dc": { "ability": "CHA", "value": 15, "successType": "none" }, "desc": "Une creature qui commence son tour a 30 pieds et voit les yeux de l'umber hulk doit reussir une sauvegarde de Charisme ou agir au hasard (d8) : rien, deplacement aleatoire, ou une attaque contre une creature au hasard." },
+      { "name": "Tunneler", "desc": "Creuse a travers la roche a la moitie de sa vitesse en laissant un tunnel." }
+    ]
+  },
+
+  "banshee": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Wail (1/Day)", "kind": "save", "dc": { "ability": "CON", "value": 13, "successType": "half" }, "damage": [{ "dice": "3d6", "type": "psychic" }], "usage": { "type": "per day", "times": 1 }, "desc": "Hurlement : chaque creature a 30 pieds qui l'entend fait une sauvegarde de Constitution ; sur un echec, elle tombe a 0 PV ; sur une reussite, 10 (3d6) degats psychiques." }
+    ],
+    "traits": [
+      { "name": "Detect Life", "desc": "Sent les creatures vivantes a 5 miles." },
+      { "name": "Incorporeal Movement", "desc": "Traverse les creatures et les objets comme un terrain difficile." }
+    ]
+  },
+
+  "barghest": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 13, "spells": [
+        { "name": "Levitate", "level": 2, "usage": { "type": "at will" } }, { "name": "Minor Illusion", "level": 0, "usage": { "type": "at will" } }, { "name": "Pass without Trace", "level": 2, "usage": { "type": "at will" } },
+        { "name": "Charm Person", "level": 1, "usage": { "type": "per day", "times": 1 } }, { "name": "Dimension Door", "level": 4, "usage": { "type": "per day", "times": 1 } }, { "name": "Suggestion", "level": 2, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee." },
+      { "name": "Shapechanger", "desc": "Prend la forme d'un gobelin ou reprend sa forme veritable." },
+      { "name": "Keen Smell", "desc": "Avantage aux tests de Perception fondes sur l'odorat." }
+    ]
+  },
+
+  "lizard-king-queen": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Trident", "kind": "attack", "attackBonus": 5, "reach": 5, "range": [20, 60], "damage": [{ "dice": "1d6+3", "type": "piercing" }], "desc": "Trident (7 (1d8+3) a deux mains en melee)." }
+    ],
+    "traits": [
+      { "name": "Skewer", "desc": "Une fois par tour, le roi-lezard inflige 10 (3d6) degats supplementaires a une cible surprise ou qu'il a l'avantage a toucher." },
+      { "name": "Hold Breath", "desc": "Retient son souffle 15 minutes." }
+    ]
+  },
+
+  "grell": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Beak", "kind": "attack", "attackBonus": 4, "reach": 5, "damage": [{ "dice": "2d4+2", "type": "piercing" }], "desc": "Bec." }
+    ]
+  },
+
+  "hobgoblin-captain": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Leadership (Recharges after a Short or Long Rest)", "kind": "narrative", "usage": { "type": "recharge after rest", "restTypes": ["short", "long"] }, "desc": "Pendant une minute, les allies a 30 pieds ajoutent 1d4 a leurs jets d'attaque et de sauvegarde." }
+    ],
+    "traits": [{ "name": "Martial Advantage", "desc": "Une fois par tour, 14 (4d6) degats supplementaires contre une cible a 5 pieds d'un allie du hobgoblin." }]
+  },
+
+  "spectator": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Eye Rays", "kind": "narrative", "desc": "Jusqu'a deux rayons (chacun une fois par tour) sur des creatures a 90 pieds : 1 confusion (DD 13 SAG, pas de reaction et deplacement aleatoire), 2 paralysie (DD 13 CON, paralyse 1 min), 3 peur (DD 13 SAG, effraye 1 min), 4 blessure (DD 13 CON, 16 (3d10) necrotiques, moitie si reussi)." }
+    ],
+    "reactions": [{ "name": "Spell Reflection", "desc": "Si le spectateur reussit sa sauvegarde contre un sort ou n'est pas touche par une attaque de sort, il peut renvoyer le sort sur une creature a 30 pieds." }]
+  },
+
+  "yeti": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Chilling Gaze", "kind": "save", "dc": { "ability": "CON", "value": 13, "successType": "none" }, "damage": [{ "dice": "3d6", "type": "cold" }], "desc": "Regard glacant sur une creature a 30 pieds : sur un echec, 10 (3d6) degats de froid et paralysie pour une minute (immunise 1 h ensuite si reussi)." }
+    ],
+    "traits": [
+      { "name": "Fear of Fire", "desc": "Le yeti a un desavantage aux attaques et aux tests s'il a subi des degats de feu depuis son dernier tour." },
+      { "name": "Keen Smell", "desc": "Avantage aux tests de Perception fondes sur l'odorat." },
+      { "name": "Snow Camouflage", "desc": "Avantage aux tests de Discretion dans la neige." }
+    ]
+  },
+
+  "yuan-ti-malison": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Longbow (Yuan-ti Form Only)", "kind": "attack", "attackBonus": 4, "range": [150, 600], "damage": [{ "dice": "1d8+2", "type": "piercing" }, { "dice": "2d6", "type": "poison" }], "desc": "Arc long empoisonne." }
+    ],
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 13, "spells": [
+        { "name": "Animal Friendship", "level": 1, "usage": { "type": "at will" }, "notes": "serpents seulement" }, { "name": "Suggestion", "level": 2, "usage": { "type": "per day", "times": 3 } } ] }, "desc": "Magie innee." }
+    ]
+  },
+
+  "gnoll-pack-lord": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Longbow", "kind": "attack", "attackBonus": 4, "range": [150, 600], "damage": [{ "dice": "1d8+2", "type": "piercing" }], "desc": "Arc long." },
+      { "name": "Incite Rampage (Recharge 5-6)", "kind": "narrative", "usage": { "type": "recharge on roll", "dice": "1d6", "minValue": 5 }, "desc": "Un allie visible a 30 pieds utilise sa reaction pour se deplacer de sa vitesse et faire une attaque." }
+    ],
+    "traits": [{ "name": "Rampage", "desc": "Quand il reduit une creature a 0 PV en melee, le gnoll peut se deplacer de la moitie de sa vitesse et mordre en action bonus." }]
+  },
+
+  "hobgoblin-iron-shadow": {
+    "confidence": "moyenne",
+    "actions": [
+      { "name": "Shadow Jaunt", "kind": "narrative", "desc": "Une fois par tour, se teleporte jusqu'a 30 pieds vers un espace en lumiere faible ou obscurite." }
+    ],
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "INT", "dc": 12, "casterLevel": 2, "slots": { "1": 3 }, "spells": [
+        { "name": "Minor Illusion", "level": 0 }, { "name": "Prestidigitation", "level": 0 }, { "name": "True Strike", "level": 0 },
+        { "name": "Charm Person", "level": 1 }, { "name": "Disguise Self", "level": 1 }, { "name": "Expeditious Retreat", "level": 1 }, { "name": "Silent Image", "level": 1 } ] }, "desc": "Magicien de 2e niveau." },
+      { "name": "Unarmored Defense", "desc": "Sans armure, la CA inclut le modificateur de Sagesse." }
+    ]
+  },
+
+  "lizardfolk-shaman": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Claws", "kind": "attack", "attackBonus": 4, "reach": 5, "damage": [{ "dice": "1d4+2", "type": "slashing" }], "desc": "Griffes." },
+      { "name": "Change Shape", "kind": "narrative", "desc": "Se transforme en crocodile et inversement." }
+    ],
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "WIS", "dc": 12, "attackBonus": 4, "casterLevel": 5, "slots": { "1": 4, "2": 3, "3": 2 }, "spells": [
+        { "name": "Druidcraft", "level": 0 }, { "name": "Produce Flame", "level": 0 }, { "name": "Thorn Whip", "level": 0 },
+        { "name": "Entangle", "level": 1 }, { "name": "Fog Cloud", "level": 1 },
+        { "name": "Heat Metal", "level": 2 }, { "name": "Spike Growth", "level": 2 },
+        { "name": "Conjure Animals", "level": 3 }, { "name": "Plant Growth", "level": 3 } ] }, "desc": "Druide de 5e niveau (forme lezard seulement)." },
+      { "name": "Hold Breath", "desc": "Retient son souffle 15 minutes." }
+    ]
+  },
+
+  "nothic": {
+    "confidence": "haute",
+    "actions": [{ "name": "Weird Insight", "kind": "narrative", "desc": "Le nothic sonde une creature a 30 pieds : test de Perspicacite (+3? a relire) contre Tromperie ; s'il gagne, il apprend un fait ou un secret." }],
+    "traits": [{ "name": "Keen Sight", "desc": "Avantage aux tests de Perception fondes sur la vue." }]
+  },
+
+  "venerable-shadow": { "confidence": "moyenne", "note": "Variante d'ombre : au-dela de Strength Drain (visible), traits de l'ombre : Amorphous, Shadow Stealth, Sunlight Weakness.", "traits": [{ "name": "Shadow Stealth", "desc": "En lumiere faible ou obscurite, se cache en action bonus." }, { "name": "Sunlight Weakness", "desc": "Desavantage aux attaques, tests et sauvegardes en plein soleil." }, { "name": "Amorphous", "desc": "Passe par un espace d'un pouce sans se faufiler." }] },
+
+  "ancient-shadow": { "confidence": "moyenne", "note": "Variante d'ombre : memes traits que venerable-shadow.", "traits": [{ "name": "Shadow Stealth", "desc": "En lumiere faible ou obscurite, se cache en action bonus." }, { "name": "Sunlight Weakness", "desc": "Desavantage aux attaques, tests et sauvegardes en plein soleil." }, { "name": "Amorphous", "desc": "Passe par un espace d'un pouce sans se faufiler." }] },
+
+  "mud-mephit": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Death Burst", "dc": { "ability": "DEX", "value": 11, "successType": "none" }, "desc": "A sa mort, chaque creature de taille M ou moins a 5 pieds doit reussir une sauvegarde de Dexterite ou etre entravee jusqu'a la fin de son prochain tour." },
+      { "name": "False Appearance", "desc": "Immobile, il est indiscernable d'un tas de boue." }
+    ]
+  },
+
+  "jackalwere": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Sleep Gaze", "kind": "save", "dc": { "ability": "WIS", "value": 10, "successType": "none" }, "desc": "Regard endormant sur une creature a 30 pieds : sur un echec, elle tombe inconsciente 10 minutes (ou jusqu'a des degats)." }
+    ],
+    "traits": [
+      { "name": "Pack Tactics", "desc": "Avantage aux attaques si un allie non incapable est a 5 pieds de la cible." },
+      { "name": "Shapechanger", "desc": "Forme de chacal, d'humain ou hybride." },
+      { "name": "Keen Hearing and Smell", "desc": "Avantage aux tests de Perception fondes sur l'ouie ou l'odorat." }
+    ]
+  },
+
+  "kuo-toa": {
+    "confidence": "haute",
+    "actions": [
+      { "name": "Net", "kind": "attack", "attackBonus": 3, "range": [5, 15], "desc": "Filet : la cible de taille G ou moins est entravee jusqu'a ce qu'elle se libere (DD 10 FOR) ou que le filet soit detruit (5 degats tranchants)." }
+    ],
+    "reactions": [{ "name": "Sticky Shield", "desc": "Quand une attaque de melee le manque, l'arme de l'attaquant peut rester collee au bouclier (DD 11 FOR)." }],
+    "traits": [
+      { "name": "Amphibious", "desc": "Respire l'air et l'eau." },
+      { "name": "Slippery", "desc": "Avantage aux tests et sauvegardes pour echapper a un agrippement." },
+      { "name": "Sunlight Sensitivity", "desc": "Desavantage aux attaques et a la Perception en plein soleil." }
+    ]
+  },
+
+  "kuo-toa-whip": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "WIS", "dc": 12, "attackBonus": 4, "casterLevel": 2, "slots": { "1": 3 }, "spells": [
+        { "name": "Sacred Flame", "level": 0 }, { "name": "Thaumaturgy", "level": 0 }, { "name": "Bane", "level": 1 }, { "name": "Shield of Faith", "level": 1 } ] }, "desc": "Pretre de 2e niveau." },
+      { "name": "Amphibious", "desc": "Respire l'air et l'eau." }
+    ]
+  },
+
+  "kobold-inventor": { "confidence": "moyenne", "note": "Les huit inventions (acide, glu, colle, rat vivant, poulet volant, gaz, dents, fleche a poudre) sont des jets ou des sauvegardes DD 11-12 a effets divers ; laisse en narratif : le texte visible suffit au MJ." },
+
+  "nilbog": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 12, "spells": [
+        { "name": "Mage Hand", "level": 0, "usage": { "type": "at will" } }, { "name": "Minor Illusion", "level": 0, "usage": { "type": "at will" } }, { "name": "Vicious Mockery", "level": 0, "usage": { "type": "at will" } },
+        { "name": "Charm Person", "level": 1, "usage": { "type": "per day", "times": 1 } }, { "name": "Tasha's Hideous Laughter", "level": 1, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee du nilbog." },
+      { "name": "Nilbogism", "desc": "Une creature qui tente de blesser le nilbog doit reussir une sauvegarde de Charisme DD 12 ou etre charmee (elle le loue au lieu de l'attaquer)." }
+    ],
+    "reactions": [{ "name": "Reversal of Fortune", "desc": "Quand une creature lui inflige des degats, le nilbog les reduit a 0 et regagne 3 (1d6) PV." }]
+  },
+
+  "bullywug": { "confidence": "haute", "note": "Texte visible complet ; traits : Amphibious, Speak with Frogs and Toads, Swamp Camouflage, Standing Leap.", "traits": [{ "name": "Swamp Camouflage", "desc": "Avantage aux tests de Discretion en marais." }, { "name": "Standing Leap", "desc": "Saute 20 pieds en longueur et 10 en hauteur sans elan." }] },
+
+  "yuan-ti-pureblood": {
+    "confidence": "haute",
+    "traits": [
+      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
+      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 12, "spells": [
+        { "name": "Animal Friendship", "level": 1, "usage": { "type": "at will" }, "notes": "serpents seulement" }, { "name": "Poison Spray", "level": 0, "usage": { "type": "per day", "times": 3 } }, { "name": "Suggestion", "level": 2, "usage": { "type": "per day", "times": 3 } } ] }, "desc": "Magie innee." }
+    ]
+  }
+}
