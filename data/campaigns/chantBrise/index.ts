@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 import { AdventureOption, requireAdventure } from '../../adventures';
 import { CB_VILLAIN, CB_INTRODUCTION, CB_CINEMATIC, CB_FIRST_SCENE, CB_WORLD_CLOCKS, CB_PROTECTED_SECRETS, CB_CANON_FACTS, CB_MONSTER_IDS, CB_REWARDS } from './foundations';
 import { CB_ACT_I } from './actI';

@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — ACTE I : « L'Entre-Seuil » (chapitres 1-3, niveaux 1-3)

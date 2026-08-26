@@ -1,4 +1,4 @@
-import { CharacterSheet } from '../types';
+import { CharacterSheet } from '../types/index';
 import { BACKGROUNDS } from './backgrounds';
 import { CLASS_DATA } from './classes';
 import { FIGHTING_STYLES, getWeaponFromInventory, getDefaultLoadout, startingGoldFor } from './equipment';

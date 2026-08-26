@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — Casting, volume 1 : le premier cercle et l'Entre-Seuil.

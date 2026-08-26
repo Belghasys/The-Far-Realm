@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../types';
+import { AdventureManifest } from '../../types/index';
 import { HIVER_SANS_AUBE } from './hiverSansAube';
 import { CHANT_BRISE } from './chantBrise';
 import { PORTES_EXIL } from './portesExil';

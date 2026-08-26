@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — ACTE V : « Le Revers » (chapitres 13-15, niv. 13-14)

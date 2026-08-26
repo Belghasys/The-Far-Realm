@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — ACTE VI : « Le Grand Métier » (ch. 16-18, niv. 15-16)

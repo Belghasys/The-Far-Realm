@@ -54,6 +54,17 @@ describe('Disposition du code', () => {
         expect(dossiers('components')).toEqual(['combat', 'hall', 'neon', 'panels', 'session', 'shared']);
     });
 
+    it('types/index.ts ne contient que des types : les règles du personnage sont dans engine/character', () => {
+        // types.ts (racine) est un relais ; types/index.ts porte les types purs.
+        // Une fonction qui y reviendrait remettrait du moteur dans le fichier
+        // que tout le dépôt importe.
+        const src = fs.readFileSync(path.join(RACINE, 'types/index.ts'), 'utf8');
+        expect(src.match(/^\s*(export\s+)?(async\s+)?function\s/gm) ?? []).toEqual([]);
+        const relais = fs.readFileSync(path.join(RACINE, 'types.ts'), 'utf8');
+        expect(relais).toContain("export * from './types/index'");
+        expect(relais).toContain("export * from './engine/character'");
+    });
+
     it("le moteur n'importe pas React ni un écran : ce sont des règles, pas de l'interface", () => {
         const fautes: string[] = [];
         for (const f of marcher('engine')) {

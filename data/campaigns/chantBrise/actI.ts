@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LE CHANT BRISÉ — ACTE I : « La Ruée » (chapitres 1-3, niveaux 1-3)

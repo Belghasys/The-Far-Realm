@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LE CHANT BRISÉ — Casting (20 PNJ, chacun avec ses répliques types).

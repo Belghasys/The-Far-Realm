@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LE CHANT BRISÉ — ACTE III : « Les Clefs » (chapitres 7-9, niveaux 7-9)

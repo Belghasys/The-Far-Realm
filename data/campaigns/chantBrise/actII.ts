@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LE CHANT BRISÉ — ACTE II : « Les Voix » (chapitres 4-6, niveaux 4-6)

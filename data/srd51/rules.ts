@@ -1,4 +1,4 @@
-import { ActionEntry, ConditionEntry, ItemEntry, RuleEntry } from '../../types';
+import { ActionEntry, ConditionEntry, ItemEntry, RuleEntry } from '../../types/index';
 
 const SRD_SOURCE = {
     sourceKind: 'srd5.1',

@@ -20,7 +20,7 @@
 // - Feats that normally offer a stat CHOICE (Resilient, Observant, Athlete…)
 //   are pinned to one deterministic stat here to stay auto-applicable.
 
-import { Ability } from '../types';
+import { Ability } from '../types/index';
 
 export interface FeatMechanical {
     /** Flat ability score increases applied when the feat is taken (cap 20). */

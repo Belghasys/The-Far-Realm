@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 import { AdventureOption, requireAdventure } from '../../adventures';
 import {
   PE_VILLAIN, PE_INTRODUCTION, PE_CINEMATIC, PE_FIRST_SCENE,

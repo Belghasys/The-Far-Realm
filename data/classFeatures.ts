@@ -1,7 +1,7 @@
 // Class Features by Level for D&D 5e (Simplified 7 Classes)
 // Features are automatically added when a character levels up
 
-import { Feature } from '../types';
+import { Feature } from '../types/index';
 
 export interface ClassFeatureData {
     hitDie: number;

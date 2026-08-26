@@ -24,7 +24,7 @@
 // Everything else is honored narratively by the DM (the system prompt lists the
 // player's subclass features).
 
-import { Feature } from '../types';
+import { Feature } from '../types/index';
 
 export interface SubclassOption {
     id: string;

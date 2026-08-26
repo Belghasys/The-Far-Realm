@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — ACTE IV : « La Marche de Cendre » (ch. 10-12, niv. 10-12)

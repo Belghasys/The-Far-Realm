@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LE CHANT BRISÉ — ACTE IV : « La Première » (chapitres 10-12, niveaux 10-12)

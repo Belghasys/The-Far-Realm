@@ -1,4 +1,4 @@
-import { AdventureManifest } from '../../../types';
+import { AdventureManifest } from '../../../types/index';
 
 /**
  * LES PORTES DE L'EXIL — ACTE II : « Le Val Clos » (chapitres 4-6, niveaux 4-6)

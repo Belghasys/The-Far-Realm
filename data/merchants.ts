@@ -2,7 +2,7 @@
 // Le MJ ouvre la boutique via l'outil open_shop(merchantType, …) ; le stock est
 // construit ici à partir des catalogues existants (armes SRD, armures, objets
 // magiques avec `value`/`minLevel`). Paliers : T1 = niv 1-4, T2 = 5-9, T3 = 10+.
-import { Item } from '../types';
+import { Item } from '../types/index';
 import { WEAPON_TABLE, WeaponTemplate } from './weapons';
 import { ARMOR_CATALOG, weaponTemplateToItem, armorTemplateToItem, parsePriceToGp } from './equipment';
 import { MAGIC_ITEMS, MagicItemDef, magicItemToInventoryItem } from './magicItems';

@@ -1,4 +1,4 @@
-import { SpellEntry } from '../../types';
+import { SpellEntry } from '../../types/index';
 
 const SRD_SOURCE = {
     sourceKind: 'srd5.1',
