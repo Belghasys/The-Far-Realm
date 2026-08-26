@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 import { getPlayerAttackModifier, getPlayerAttackCount, isRangedWeapon } from '../../types';
-import { combatantSide, buildDisplayNames } from './CombatTracker';
+import { combatantSide, buildDisplayNames } from '../../engine/combatants';
 import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield, Flame, Wind, HandHeart, Music2, Zap, Dices, EyeOff, Footprints, Cross, Crosshair, Wand2, PawPrint } from 'lucide-react';
 import { getFeatById } from '../../data/feats';
 import { monkMartialArtsDie, getActionCapability, hasFeatSpecial } from '../../engine/rulesEngine';

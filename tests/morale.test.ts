@@ -22,7 +22,7 @@ import {
 } from '../engine/rulesEngine';
 import { preloadCodexBestiary } from '../engine/codexService';
 import { describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
-import { buildDisplayNames, combatantMapKey } from '../components/combat/CombatTracker';
+import { buildDisplayNames, combatantMapKey } from '../engine/combatants';
 import { DEFAULT_CHAR } from '../data/character';
 
 const EMPTY: any = { isActive: false, combatants: [], currentTurn: '', round: 1, turnIndex: 0, actionEconomy: {}, logs: [] };

@@ -74,6 +74,24 @@ Electron (launcher) · Inno Setup + uv (installeur).
 
 🌍 **Interface entièrement bilingue (Français / English)**, basculable à tout moment.
 
+## 🗂️ Structure du code
+
+Chaque dossier dit ce qu'il contient ; `tests/layout.test.ts` le vérifie.
+
+| Dossier | Contenu |
+|---|---|
+| `engine/` | les règles, déterministes — dés, combat, sorts, XP, codex. Sans React ni écran. |
+| `services/dm/` | tout ce qui parle à Gemini ou écrit pour lui : session live, prompt, directeur de campagne, greffier |
+| `services/media/` | images, musique, bruitages, rythme des dés |
+| `services/persistence/` | Firebase, sauvegardes, mémoire du MJ, journal d'événements |
+| `services/infra/` · `services/i18n/` | logger, bus d'audit, trace de session · traductions |
+| `hooks/` | dont `useToolProcessor` : les outils que le MJ peut appeler |
+| `components/session/` · `combat/` · `panels/` | l'écran de partie et son HUD · le suivi de combat · les fenêtres en partie |
+| `components/hall/` · `neon/` · `shared/` · `views/` | la création · le kit visuel de la charte · le transverse · les écrans routés |
+| `data/` · `theme/` · `store/` | données du jeu (SRD, campagnes, bestiaire) · charte · état Zustand |
+
+Déplacer un module : `python tools/move_modules.py mapping.json` réécrit tous les imports relatifs.
+
 ## 📄 Licence & attribution
 
 [MIT](LICENSE) — © 2026 Salim Belghazi. Les **poids des modèles d'IA** ne sont pas

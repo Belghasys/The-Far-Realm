@@ -16,7 +16,7 @@ import { repairCharacterWeapons } from '../data/equipment';
 import { viteEnv } from '../services/infra/modelConfig';
 import { isSlimManifestPayload } from '../services/persistence/manifestTokens';
 import type { ChatMessage } from '../hooks/useTranscript';
-import type { Combatant } from '../components/combat/CombatTracker';
+import type { Combatant } from '../engine/combatants';
 import type { DepartedCombatant } from '../engine/rulesEngine';
 
 // Seed the UI language from a previous choice, else the browser, defaulting to English.
