@@ -28,6 +28,7 @@ import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/co
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../../store/gameStore';
 import { IN_GAME_MENUS_TEXTS as TRANS } from './texts';
+import { toWeaponOverride } from '../../engine/weaponOverride';
 
 // NF1 — certaines clés sont des fonctions (dropConfirm) : le type doit
 // préserver les signatures au lieu d'aplatir tout en `string`.
@@ -139,37 +140,6 @@ function itemTags(item: InventoryItem): string[] {
         ...(structured.range ? [`range ${structured.range}`] : []),
         ...(structured.stealthDisadvantage ? ['stealth disadvantage'] : []),
     ].filter(Boolean);
-}
-
-// Exporté : GameSession fabrique la MÊME forme d'arme pour le moteur au moment
-// d'attaquer — sinon l'arc équipé en slot distance était jugé sur
-// character.weapon (l'épée) et le système de distance le traitait en mêlée.
-export function toWeaponOverride(item: InventoryItem): Weapon {
-    const structured = structureInventoryItem(item);
-    const properties = structured.properties || item.properties || [];
-    const range = structured.range || item.range;
-    // Une seule règle « à distance » pour tout le jeu (isRangedWeapon) : nom
-    // EN/FR, propriété Munitions/Distance, ou portée listée. Un arc long acheté
-    // en boutique, trouvé en butin ou créé par le MJ est reconnu pareil.
-    const isRanged = isRangedWeapon({ name: item.name, properties, range });
-    const magicBonus = parseMagicModifier(item.name, item.effect);
-
-    return {
-        name: item.name,
-        damage: structured.damageDice || item.damageDice || '1d4',
-        damageType: String(structured.damageType || item.damageType || 'bludgeoning'),
-        abilityMod: isRanged ? 'DEX' : 'STR',
-        attackBonus: magicBonus,
-        magicBonus,
-        // `range` ET la propriété canonique « ranged » voyagent avec l'arme : le
-        // moteur (bandes de distance, Tireur d'élite, Attaque sournoise) et le
-        // contexte MJ lisaient character.weapon et croyaient à une arme de mêlée.
-        properties: isRanged && !properties.some(p => /ammunition|munition|ranged|distance/i.test(String(p)))
-            ? [...properties, 'ranged']
-            : properties,
-        range,
-        reach: isRanged ? 30 : 5,
-    };
 }
 
 function attackStats(character: CharacterSheet, item: InventoryItem) {

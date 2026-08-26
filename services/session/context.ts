@@ -59,7 +59,9 @@ export interface SessionContext {
     setActivePrompt: Store['setActivePrompt'];
     setCurrentRoll: Store['setCurrentRoll'];
     setTranscript: ReturnType<typeof useTranscript>['setTranscript'];
+    removeProposedAction: Store['removeProposedAction'];
     syncCharacterCritical: SaveSync['syncCharacterCritical'];
+    syncCharacterUpdate: SaveSync['syncCharacterUpdate'];
 
     // ── etat local de GameSession ──
     actionLockRef: { current: boolean };
