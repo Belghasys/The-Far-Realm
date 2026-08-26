@@ -14,6 +14,8 @@
  * la construit pas.
  */
 
+import type { CreatureStats } from './bestiary';
+
 export type SrdAbility = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
 
 export interface SrdDamage {
@@ -137,6 +139,10 @@ export type SrdSource = 'srd' | 'csv-regex' | 'memoire';
 export interface SrdMonster {
     /** id de la fiche CSV (data/monsterData.ts) à laquelle ce bloc se rattache */
     id: string;
+    /** La fiche CSV copiée telle quelle (image aidedd, url, emoji, PV, CA, stats,
+     *  XP, texte d'action…) : monsterData2 se suffit à lui-même, monsterData.ts
+     *  n'est plus qu'une référence intouchée. */
+    base: CreatureStats;
     /** index dans le SRD ("adult-red-dragon"), ou l'id CSV pour une fiche hors SRD */
     srdIndex: string;
     source: 'srd' | 'csv';

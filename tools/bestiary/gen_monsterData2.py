@@ -110,7 +110,9 @@ def action(a):
                 out['onHitSave'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1))}
     elif a['name'] == 'Frightful Presence':
         out['kind'] = 'presence'
-    elif 'dc' in a and a.get('usage', {}).get('type') == 'recharge on roll':
+    elif 'dc' in a and a.get('usage', {}).get('type') == 'recharge on roll' and a.get('damage'):
+        # un souffle SANS degats (sommeil, affaiblissement, ralentissement…) reste
+        # narratif : decision du 2026-08-26, trop complique a jouer pour ce qu'il apporte
         out['kind'] = 'breath'
     elif 'dc' in a:
         out['kind'] = 'save'
@@ -279,11 +281,11 @@ def capacites_csv(texte, tronque):
                 a['dc'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1)), 'successType': 'none'}
         elif RE_SAVE.search(corps):
             m = RE_SAVE.search(corps)
-            a['kind'] = 'breath' if RE_RECH.search(nom) else 'save'
             a['dc'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1)), 'successType': 'half' if 'half as much' in corps else 'none'}
-            d = re.search(r'(\d+)\s*\((\d+d\d+(?:\s*[+-]\s*\d+)?)\)\s*([a-z]+)\s+damage', corps, re.I)
+            d = re.search(r'(\d+)\s*\((\d+d\d+(?:\s*[+-]\s*\d+)?)\s*\)\s*([a-z]+)\s+damage', corps, re.I)
             if d:
                 a['damage'] = [{'dice': d.group(2).replace(' ', ''), 'type': d.group(3).lower()}]
+            a['kind'] = 'breath' if (RE_RECH.search(nom) and d) else 'save'
         else:
             a['kind'] = 'narrative'
         m = RE_RECH.search(nom)
@@ -374,6 +376,19 @@ for r in rows:
         resultat[csv_id] = fiche
         continue
     resultat[csv_id] = monstre(csv_id, m)
+# ── La fiche CSV embarquee telle quelle (`base`) : monsterData2 est autonome ──
+# data/monsterData.ts reste intouchable ; on en COPIE le contenu (image, url,
+# emoji, PV, CA, stats, XP, texte d'action…) — decision du 2026-08-26.
+ts = io.open('data/monsterData.ts', encoding='utf-8').read()
+CSV_MONSTERS = json.loads(ts[ts.index('=  {') + 2: ts.rindex('}') + 1])
+sans_base = []
+for csv_id, fiche in resultat.items():
+    if csv_id in CSV_MONSTERS:
+        fiche['base'] = CSV_MONSTERS[csv_id]
+    else:
+        sans_base.append(csv_id)
+assert not sans_base, f'fiches sans base CSV : {sans_base}'
+
 for a in avertissements:
     print('AVERTISSEMENT', a)
 inutilises = [k for k in completions if not k.startswith('_') and k not in {r['name'] for r in rows if norm(VARIANTES.get(r['name'], r['name'].replace('-', ' '))) not in par_nom}]
