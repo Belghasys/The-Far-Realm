@@ -1,5 +1,5 @@
 import { AdventureManifest, CharacterSheet } from '../../types';
-import { CreatureStats, formatCR } from '../../data/bestiary';
+import { formatCR } from '../../data/bestiary';
 import { log } from '../infra/logger';
 
 /**
@@ -11,22 +11,6 @@ export async function getLightweightBestiary(): Promise<string> {
     return Object.values(CSV_MONSTERS)
         .map(m => `${m.id}: ${m.name} (CR: ${formatCR(m.cr)})`)
         .join('\n');
-}
-
-/**
- * Hydrates a list of monster IDs with their full stats from monsterData.
- */
-export async function hydrateCampaignBestiary(ids: string[]): Promise<CreatureStats[]> {
-    const { CSV_MONSTERS } = await import('../../data/monsterData');
-    const selected: CreatureStats[] = [];
-
-    for (const id of ids) {
-        if (CSV_MONSTERS[id]) {
-            selected.push(CSV_MONSTERS[id]);
-        }
-    }
-
-    return selected;
 }
 
 // ─── Adventure Service ────────────────────────────────────────────────────────
@@ -66,20 +50,11 @@ export class AdventureService {
             );
         }
 
-        // 4. Hydrate the curated campaign bestiary from AI selection
-        try {
-            if (manifest.selectedMonsterIds && manifest.selectedMonsterIds.length > 0) {
-                const campaignBestiary = await hydrateCampaignBestiary(manifest.selectedMonsterIds);
-                manifest.campaignBestiary = campaignBestiary;
-                log.info(`🐉 Campaign Bestiary: ${campaignBestiary.length} monsters selected by AI`);
-            } else {
-                log.warn('No monsters selected by AI, using empty bestiary');
-                manifest.campaignBestiary = [];
-            }
-        } catch (e) {
-            log.warn('Could not hydrate campaign bestiary:', e);
-            manifest.campaignBestiary = [];
-        }
+        // Les `selectedMonsterIds` suffisent : c'est le vivier de la campagne,
+        // lu par le moteur au moment de faire apparaître un monstre
+        // (engine/monsterPick). Les fiches complètes hydratées dans le manifeste
+        // (`campaignBestiary`) n'étaient lues nulle part — retirées le 2026-08-26.
+        log.info(`🐉 Campaign bestiary: ${manifest.selectedMonsterIds?.length || 0} monster ids selected by AI`);
 
         return manifest;
     }

@@ -475,7 +475,6 @@ export interface AdventureManifest {
    *  libre acceptée (pas de liste fermée). */
   variationSlots?: Record<string, { options: string; fallback: string; freeForm?: boolean }>;
   /** Curated monster pool (≤40) for this campaign. Loaded once during generation. */
-  campaignBestiary?: import('../data/bestiary').CreatureStats[];
   /** Supporting cast: allies, merchants, betrayers */
   supportingCast?: {
     name: string;
