@@ -130,9 +130,15 @@ exports.liveToken = onCall(
                     uses: 1,
                     expireTime,
                     newSessionExpireTime,
-                    // Le jeton ne peut ouvrir QUE ce modèle : volé, il ne sert
-                    // ni à un autre modèle ni à l'API REST.
-                    liveConnectConstraints: { model },
+                    // PAS de liveConnectConstraints : vérifié le 2026-08-27 sur
+                    // gemini-3.1-flash-live-preview, un verrou « modèle seul »
+                    // fait fermer le WebSocket en 1011 (Internal error) juste
+                    // après l'ouverture ; sans contrainte, ou avec la config
+                    // ENTIÈRE verrouillée à l'identique, la session s'ouvre.
+                    // La config (prompt, voix, outils) étant construite côté
+                    // client, on ne peut pas la verrouiller ici. Les garde-fous
+                    // restent : usage unique, 2 min pour ouvrir, 30 min de vie,
+                    // et un jeton n'a jamais accès à l'API REST.
                     httpOptions: { apiVersion: "v1alpha" },
                 },
             });
