@@ -131,7 +131,6 @@ exports.liveToken = onCall(
                     // Le jeton ne peut ouvrir QUE ce modèle : volé, il ne sert
                     // ni à un autre modèle ni à l'API REST.
                     liveConnectConstraints: { model },
-                    lockAdditionalFields: ["model"],
                     httpOptions: { apiVersion: "v1alpha" },
                 },
             });
