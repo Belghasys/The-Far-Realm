@@ -5,7 +5,8 @@
  */
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { calculateSkillModifier, calculateSaveModifier, getSkillAbility, rollWithAdvantage } from '../engine/skillSystem';
-import { getCreature, getCreatureAttacks } from '../data/bestiary';
+import { getCreature } from '../data/bestiary';
+import { getCreatureAttacks } from '../engine/monsterAttacks';
 import {
     addEnemyToEncounter,
     addAllyToEncounter,
@@ -1425,7 +1426,8 @@ describe('getXPProgress (XP bar)', () => {
 
 
 // ─── Magic item catalog & loot tables ────────────────────────────────────────
-import { MAGIC_ITEMS, getMagicItemByName, magicItemToInventoryItem, rollLootTable, pickMagicItem } from '../data/magicItems';
+import { MAGIC_ITEMS, getMagicItemByName, magicItemToInventoryItem } from '../data/magicItems';
+import { rollLootTable, pickMagicItem } from '../engine/loot';
 import { FEATS, getFeatById } from '../data/feats';
 import { featNumericBonus, featGrantsAdvantageOn } from '../engine/rulesEngine';
 

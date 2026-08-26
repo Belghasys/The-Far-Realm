@@ -1,10 +1,12 @@
 /** Inventaire, or, boutique et butin.
  *  Extrait de hooks/useToolProcessor le 2026-08-25 (R3) : corps des outils inchange. */
-import { useGameStore, appendCampaignLog } from '../../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
+import { appendCampaignLog } from '../chronicle';
 import { Item } from '../../../types';
 import { foldText } from '../../../engine/skillSystem';
 import { campaignEventLog } from '../../../services/persistence/campaignEventLog';
-import { getMagicItemByName, magicItemToInventoryItem, pickMagicItem, rollLootTable, MagicItemRarity } from '../../../data/magicItems';
+import { getMagicItemByName, magicItemToInventoryItem, MagicItemRarity } from '../../../data/magicItems';
+import { pickMagicItem, rollLootTable } from '../../../engine/loot';
 import { buildMerchantStock, normalizeMerchantType } from '../../../data/merchants';
 import { enrichWeaponItem } from '../../../data/equipment';
 import { stringArg, stringListArg } from './shared';

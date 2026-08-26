@@ -15,7 +15,7 @@ import {
     addEnemyToEncounter,
     encounterAlreadyRunning,
 } from '../engine/rulesEngine';
-import { describeCombatFoes } from '../store/gameStore';
+import { describeCombatFoes } from '../services/dm/chronicle';
 import { questCreationBlockedBy } from '../hooks/useToolProcessor';
 import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 import { DEFAULT_CHAR } from '../data/character';

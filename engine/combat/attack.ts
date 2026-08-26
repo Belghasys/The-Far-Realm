@@ -1,6 +1,7 @@
 /** L'attaque : resolution complete d'une attaque d'arme ou de monstre, degats sur la rencontre, concentration des PNJ. */
 import { Combatant, combatantSide } from '../combatants';
-import { getCreature, getCreatureAttacks } from '../../data/bestiary';
+import { getCreature } from '../../data/bestiary';
+import { getCreatureAttacks } from '../monsterAttacks';
 import { gearAdvantageFor } from '../skillSystem';
 import { getSneakAttackDice } from '../../data/classFeatures';
 import { ActiveEffect, CharacterSheet, CodexDamageType, getEffectiveAC, getEffectiveStat, getPlayerAttackModifier, getPlayerDamageBonus, isRangedWeapon, Item } from '../../types';

@@ -1,6 +1,7 @@
 /** La campagne : position dans la trame, horloges, repos, temps, XP, embranchements.
  *  Extrait de hooks/useToolProcessor le 2026-08-25 (R3) : corps des outils inchange. */
-import { useGameStore, appendCampaignLog } from '../../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
+import { appendCampaignLog } from '../chronicle';
 import { freezeChapterDigest, reconcileMissingDigests } from '../../../services/dm/chapterChronicle';
 import { foldText } from '../../../engine/skillSystem';
 import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../../../services/dm/campaignDirector';

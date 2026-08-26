@@ -1,6 +1,7 @@
 /** Les outils du combat : jets demandes au joueur, rencontre, attaques, degats, etats, sorts a la voix, actions proposees.
  *  Extrait de hooks/useToolProcessor le 2026-08-25 (R3) : corps des outils inchange. */
-import { useGameStore, appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, formatCombatChronicleLine } from '../../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
+import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, formatCombatChronicleLine } from '../chronicle';
 import { buildSceneImagePrompt } from '../../../services/media/geminiImageService';
 import { getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../../../types';
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../../../engine/skillSystem';

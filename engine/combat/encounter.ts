@@ -1,6 +1,7 @@
 /** La rencontre : roster, initiative, tours, arrivees et departs, issue du combat, XP de victoire, compagnons. */
 import { Combatant, combatantSide, isHero, displayNameFor } from '../combatants';
-import { getCreature, getCreatureAttacks } from '../../data/bestiary';
+import { getCreature } from '../../data/bestiary';
+import { getCreatureAttacks } from '../monsterAttacks';
 import { gearAdvantageFor, foldText } from '../skillSystem';
 import { CharacterSheet, calculateLevelFromXP, getCombatAC, getEffectiveStat, getEffectiveMaxHP, getPlayerAttackCount } from '../../types';
 import { getEnemyXP, estimateXPFromHP } from '../xpSystem';

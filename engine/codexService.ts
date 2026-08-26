@@ -1,4 +1,5 @@
-import { BESTIARY, getCreatureAttacks, type CreatureStats } from '../data/bestiary';
+import { BESTIARY, type CreatureStats } from '../data/bestiary';
+import { getCreatureAttacks } from './monsterAttacks';
 import { SRD51_ACTIONS, SRD51_CONDITIONS, SRD51_ITEMS, SRD51_RULES, SRD51_SPELLS } from '../data/srd51';
 import {
     CodexDamageType,

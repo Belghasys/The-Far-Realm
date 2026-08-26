@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, ExternalLink, Heart, Shield, SkipForward, Skull, Swords, User, XCircle } from 'lucide-react';
-import { getCreature, getCreatureAttacks, formatCR } from '../../data/bestiary';
+import { getCreature, formatCR } from '../../data/bestiary';
+import { getCreatureAttacks } from '../../engine/monsterAttacks';
 import type { ActiveEffect } from '../../types';
 import type { DepartedCombatant } from '../../engine/rulesEngine';
 import { CombatActionsPanel } from './CombatActionsPanel';

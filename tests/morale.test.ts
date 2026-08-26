@@ -21,7 +21,7 @@ import {
     withdrawCombatant,
 } from '../engine/rulesEngine';
 import { preloadCodexBestiary } from '../engine/codexService';
-import { describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
+import { describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../services/dm/chronicle';
 import { buildDisplayNames, combatantMapKey } from '../engine/combatants';
 import { DEFAULT_CHAR } from '../data/character';
 

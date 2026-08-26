@@ -1,6 +1,7 @@
 /** Le journal : quetes, PNJ, lieux, moments.
  *  Extrait de hooks/useToolProcessor le 2026-08-25 (R3) : corps des outils inchange. */
-import { useGameStore, appendCampaignLog } from '../../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
+import { appendCampaignLog } from '../chronicle';
 import { foldText } from '../../../engine/skillSystem';
 import { campaignEventLog } from '../../../services/persistence/campaignEventLog';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../../../services/media/portraitService';

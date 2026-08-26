@@ -11,7 +11,8 @@
  * pas (destructuration en const) — ce que la fermeture permettait en silence.
  */
 import type { MutableRefObject, RefObject } from 'react';
-import { useGameStore, describeFightEnd } from '../../../store/gameStore';
+import { useGameStore } from '../../../store/gameStore';
+import { describeFightEnd } from '../chronicle';
 import { generateGeminiImage, buildCombatImagePrompt, type ScenePromptOptions } from '../../../services/media/geminiImageService';
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../../../services/media/imageReferences';
 import { campaignEventLog } from '../../../services/persistence/campaignEventLog';
