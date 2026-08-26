@@ -65,6 +65,26 @@ describe('Les outils du MJ', () => {
         expect(useGameStore.getState().combatState.combatants.some((c: any) => /Dragounet/.test(c.name))).toBe(false);
     });
 
+    it('un compagnon prend ses stats d\'un gabarit du bestiaire et porte son CR ; sans gabarit valable, refus', async () => {
+        useGameStore.setState({ character: { ...DEFAULT_CHAR, name: 'Hero', level: 3, companions: [] }, combatState: { isActive: false, combatants: [], currentTurn: '' }, journal: { quests: [], npcs: [], locations: [], chronicle: [] } } as any);
+        const refus: any = await runTool(refs(), { name: 'recruit_companion', args: { name: 'Maëlle la boulangère', hp: 60, ac: 18 } });
+        expect(refus.success).toBe(false);
+        expect(refus.error).toMatch(/UNKNOWN TEMPLATE/);
+        const ok: any = await runTool(refs(), { name: 'recruit_companion', args: { name: 'Maëlle la boulangère', template: 'veteran', description: 'Ancienne soldate.' } });
+        expect(ok.success).toBe(true);
+        expect(ok.companion.name).toBe('Maëlle la boulangère');
+        expect(ok.companion.templateId).toBe('veteran');
+        expect(ok.companion.cr).toBe(3);
+        expect(ok.companion.hp.max).toBe(58); // les PV du vétéran, pas les 60 envoyés
+        expect(ok.companion.ac).toBe(17);
+    });
+
+    it('un allié d\'un combat sans gabarit connu est refusé, avec des suggestions', async () => {
+        const r: any = await runTool(refs(), { name: 'add_ally_init', args: { name: 'Tomas', template: 'gardien du phare' } });
+        expect(r.success).toBe(false);
+        expect(r.error).toMatch(/UNKNOWN TEMPLATE/);
+    });
+
     it('un nom du bestiaire, même avec une épithète, est accepté (« Gobelin borgne » → Goblin)', async () => {
         const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'Gobelin borgne' } });
         expect(r.success).toBe(true);

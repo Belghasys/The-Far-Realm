@@ -11,6 +11,7 @@ import { campaignEventLog } from '../../../../services/persistence/campaignEvent
 import { addEnemyToEncounter, addAllyToEncounter, advanceTurn, combatantSide, encounterAlreadyRunning, resolveCombatantReference, sanitizeXPGrant, startEncounter, withdrawCombatant, concentrationBreakOnDeparture, DepartedReason } from '../../../../engine/rulesEngine';
 import { assessEncounterPressure, buildEncounter, lookupSpell } from '../../../../engine/codexService';
 import { getCreature, suggestCreatures } from '../../../../data/bestiary';
+import { effectivePartySize } from '../../../../engine/partyWeight';
 import { syncCompanionsFromState, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
@@ -153,7 +154,11 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     const livingEnemyXPs = baseState.combatants
         .filter((c: any) => !c.isPlayer && c.hp.current > 0 && (c.side ? c.side === 'enemy' : true))
         .map((c: any) => xpOfEnemy(c.name, c.hp?.max));
-    const partySize = 1 + baseState.combatants.filter((c: any) => !c.isPlayer && c.hp.current > 0 && c.side === 'ally').length;
+    // Les alliés pèsent selon leur CR (engine/partyWeight) : un civil secouru
+    // ne double plus le budget, un vétéran compte pour un aventurier.
+    const partySize = effectivePartySize(character?.level || 1, baseState.combatants
+        .filter((c: any) => !c.isPlayer && c.hp.current > 0 && c.side === 'ally')
+        .map((c: any) => c.cr ?? getCreature(c.name)?.cr));
     const newcomerXP = xpOfEnemy(String(args.name || ''), Number(args.hp) || undefined);
     const currentPressure = assessEncounterPressure(livingEnemyXPs, character?.level || 1, partySize);
     const projectedPressure = assessEncounterPressure([...livingEnemyXPs, newcomerXP], character?.level || 1, partySize);
@@ -199,6 +204,18 @@ export async function add_ally_init(args: any, ctx: ToolContext) {
     const { store, logInitiativeRoll, logNewPlayerInitiative } = ctx;
     const live = useGameStore.getState();
     const character = live.character;
+    // Un allié aussi vient du bestiaire : par gabarit (args.template) ou par
+    // son nom. Rien d'inventé — le MJ garde le nom, le gabarit donne les stats.
+    const templateName = String(args.template || args.name || '').trim();
+    if (!getCreature(templateName)) {
+        const suggestions = suggestCreatures(templateName);
+        return {
+            success: false,
+            error: `UNKNOWN TEMPLATE — "${templateName}" is not a bestiary creature. Allies take their stats from a bestiary template: re-call add_ally_init with template set to a fitting creature `
+                + `(commoner, guard, acolyte, veteran, knight, mage, wolf…)${suggestions.length ? ` — closest names: ${suggestions.join(', ')}` : ''}. Keep the NPC's own name in "name".`,
+            suggestions,
+        };
+    }
     const baseState = character ? startEncounter(character, live.combatState) : { ...live.combatState, isActive: true };
     const hadPlayerBefore = live.combatState.combatants.some((c: any) => c.isPlayer);
      const { state, combatant } = addAllyToEncounter(baseState, args, character?.level || 1);
@@ -398,9 +415,16 @@ export async function grant_player_action(args: any, ctx: ToolContext) {
 export async function build_encounter(args: any, ctx: ToolContext) {
     const { d, store, scheduleCombatImageOnce, optionalBoolean } = ctx;
     const character = store.character;
+    // La taille du groupe est CALCULÉE (héros + alliés pondérés par CR), pas
+    // déclarée par le MJ : compagnons persistants et alliés déjà en combat.
+    const liveAllies = useGameStore.getState().combatState.combatants
+        .filter((c: any) => !c.isPlayer && c.hp.current > 0 && c.side === 'ally');
+    const allyCRs = liveAllies.length
+        ? liveAllies.map((c: any) => c.cr ?? getCreature(c.name)?.cr)
+        : (character?.companions || []).filter(c => c.hp.current > 0).map(c => c.cr ?? getCreature(c.templateId || c.name)?.cr);
     const encounter = buildEncounter({
         partyLevel: Number(args.partyLevel || character?.level || 1),
-        partySize: Number(args.partySize || 1),
+        partySize: effectivePartySize(Number(character?.level || 1), allyCRs),
         difficulty: args.difficulty || 'medium',
         biome: args.biome,
         role: args.role,

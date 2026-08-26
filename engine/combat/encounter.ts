@@ -320,6 +320,7 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
             side: 'ally',
             activeEffects: [],
             dexMod: 1,
+            cr: comp.cr ?? getCreature(comp.templateId || comp.name)?.cr,
             attack: comp.attack
                 ? { name: comp.attack.name, attackBonus: comp.attack.attackBonus, damage: comp.attack.damage, damageType: comp.attack.damageType }
                 : allyAttackProfile(null, getCreature(comp.name), character.level || 1),
@@ -511,8 +512,11 @@ export function allyAttackProfile(args: any, creature: any, level = 1): { name: 
     };
 }
 export function addAllyToEncounter(current: EncounterState, args: any, characterLevel = 1): { state: EncounterState; combatant: Combatant } {
-    const creature = getCreature(String(args?.name || 'Ally'));
-    const name = creature?.name || String(args?.name || 'Ally');
+    // Depuis le 2026-08-26, les stats d'un allié viennent d'un GABARIT du
+    // bestiaire (args.template : guard, veteran, acolyte…) ; le nom donné par
+    // le MJ (« Maëlle ») est gardé pour la narration. Sans gabarit, on tente le nom.
+    const creature = getCreature(String(args?.template || args?.name || 'Ally'));
+    const name = String(args?.name || creature?.name || 'Ally');
     // Un allié sans PV explicites naissait avec **1 PV** et mourait au premier
     // coup. Défaut proportionné au niveau du héros quand le MJ n'a rien donné.
     const fallbackHp = Math.max(8, 6 * Math.max(1, characterLevel));
@@ -533,6 +537,7 @@ export function addAllyToEncounter(current: EncounterState, args: any, character
         portrait: creature?.imageUrl,
         activeEffects: [],
         dexMod,
+        cr: creature?.cr,
         // Le profil voyage AVEC le combattant : le moteur joue son tour même si
         // le MJ ne rappelle jamais resolve_attack.
         attack: allyAttackProfile(args, creature, characterLevel),

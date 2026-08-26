@@ -3,7 +3,8 @@
 import { useGameStore } from '../../../store/gameStore';
 import { foldText } from '../../../engine/skillSystem';
 import { campaignEventLog } from '../../../services/persistence/campaignEventLog';
-import { getCreature } from '../../../data/bestiary';
+import { getCreature, suggestCreatures } from '../../../data/bestiary';
+import { getCreatureAttacks } from '../../../engine/monsterAttacks';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../../../services/media/portraitService';
 import { ensureProgressionState } from '../../../engine/rulesEngine';
 import { getMountType, MOUNT_TYPES, getBeastCompanion, BEAST_COMPANIONS, getFamiliarType, FAMILIAR_TYPES, FAMILIAR_CLASSES } from '../../../data/companionOptions';
@@ -26,21 +27,37 @@ export async function recruit_companion(args: any, ctx: ToolContext) {
     if (existingComps.some(c => cnNorm(c.name) === cnNorm(compName))) {
         return { success: false, error: `${compName} is already in the party.` };
     }
-    const creature = getCreature(compName);
-    const creatureAttack = creature ? (creature.attacks || [])[0] : undefined;
-    const compHP = Math.max(1, Math.trunc(numericArg(args.hp, creature?.hp.base ?? 11)));
+    // Depuis le 2026-08-26, un compagnon n'a plus de stats inventées : elles
+    // viennent d'un GABARIT du bestiaire (args.template, sinon le nom). Le nom
+    // et la description du PNJ restent ceux du MJ ; le CR du gabarit fixe son
+    // poids dans le budget de rencontre (engine/partyWeight).
+    const templateName = stringArg(args.template, 80) || compName;
+    const creature = getCreature(templateName);
+    if (!creature) {
+        const suggestions = suggestCreatures(templateName);
+        return {
+            success: false,
+            error: `UNKNOWN TEMPLATE — "${templateName}" is not a bestiary creature. A companion takes their stats from a bestiary template: re-call recruit_companion with template set to a fitting creature `
+                + `(commoner, guard, acolyte, veteran, knight, mage, scout, wolf…)${suggestions.length ? ` — closest names: ${suggestions.join(', ')}` : ''}. Keep the NPC's own name in "name".`,
+            suggestions,
+        };
+    }
+    const creatureAttack = getCreatureAttacks(creature)[0] || (creature.attacks || [])[0];
+    const compHP = Math.max(1, creature.hp.base);
     const companion: CompanionSheet = {
         id: `comp_${cnNorm(compName).replace(/[^a-z0-9]+/g, '_').slice(0, 40) || Date.now()}`,
         name: compName,
         description: stringArg(args.description, 200) || undefined,
         hp: { current: compHP, max: compHP },
-        ac: Math.max(5, Math.min(22, Math.trunc(numericArg(args.ac, creature?.ac ?? 12)))),
+        ac: Math.max(5, Math.min(22, creature.ac)),
         attack: {
-            name: stringArg(args.attackName, 40) || creatureAttack?.name || (useGameStore.getState().language === 'fr' ? 'Attaque' : 'Attack'),
-            attackBonus: Math.max(0, Math.min(10, Math.trunc(numericArg(args.attackBonus, creatureAttack?.attackBonus ?? 3)))),
-            damage: stringArg(args.damageFormula, 20) || creatureAttack?.damage || '1d6+1',
-            damageType: stringArg(args.damageType, 20) || creatureAttack?.damageType || 'bludgeoning',
+            name: creatureAttack?.name || (useGameStore.getState().language === 'fr' ? 'Attaque' : 'Attack'),
+            attackBonus: Math.max(0, Math.min(10, creatureAttack?.attackBonus ?? 3)),
+            damage: creatureAttack?.damage || '1d6+1',
+            damageType: creatureAttack?.damageType || 'bludgeoning',
         },
+        templateId: creature.id,
+        cr: creature.cr,
         recruitedAt: Date.now(),
     };
     d.syncCharacterUpdate({ ...store.character, companions: [...existingComps, companion] });

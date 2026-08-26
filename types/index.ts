@@ -206,6 +206,11 @@ export interface CompanionSheet {
   ac: number;
   attack: { name: string; attackBonus: number; damage: string; damageType: string };
   recruitedAt: number;
+  /** Gabarit du bestiaire dont viennent ses stats (guard, veteran, acolyte…) —
+   *  depuis le 2026-08-26 un compagnon n'a plus de stats inventées. */
+  templateId?: string;
+  /** CR du gabarit : son poids dans le budget de rencontre (engine/partyWeight). */
+  cr?: number;
   /** Niveau du héros auquel le compagnon a été mis à jour pour la dernière
    *  fois — la montée de niveau du héros fait grandir ses compagnons
    *  (+4 PV max/niveau, +1 attaque aux niveaux 5/9/13/17). */

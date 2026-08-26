@@ -41,6 +41,8 @@ export interface Combatant {
     spellUses?: Record<string, number>;
     /** Explicit XP award (DM-provided via add_enemy_init). Falls back to bestiary → HP estimate. */
     xpValue?: number;
+    /** CR de la fiche (allié ou ennemi) : le poids dans le budget de rencontre. */
+    cr?: number;
     /** Distance band relative to the player: melee = au contact, near = quelques mètres, far = loin. */
     range?: 'melee' | 'near' | 'far';
     /** Profil d'attaque d'un ALLIÉ (compagnon, PNJ secouru, invocation) : le

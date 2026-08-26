@@ -241,14 +241,8 @@ export const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                name: { type: "STRING" as any },
-                hp: { type: "INTEGER" as any, description: "HP for homebrew allies (defaults to a level-appropriate value if omitted)." },
-                ac: { type: "INTEGER" as any, description: "AC for homebrew allies (defaults to 13)." },
-                dexMod: { type: "INTEGER" as any, description: "Fallback DEX modifier for the initiative roll." },
-                attackName: { type: "STRING" as any, description: "Name of the ally's attack, e.g. 'Épée courte', 'Arc court'." },
-                attackBonus: { type: "INTEGER" as any, description: "Attack roll bonus, e.g. 4." },
-                damageFormula: { type: "STRING" as any, description: "Damage dice, e.g. '1d8+2'." },
-                damageType: { type: "STRING" as any, description: "e.g. 'slashing', 'piercing', 'radiant'." }
+                name: { type: "STRING" as any, description: "The ally's own name (e.g. 'Garde Tomas', 'Maëlle')." },
+                template: { type: "STRING" as any, description: "Bestiary creature whose stats they use — REQUIRED unless the name itself is a bestiary creature: commoner, guard, acolyte, veteran, knight, mage, wolf… The engine refuses unknown templates and lists the closest names. Never invent HP/AC/attacks." }
             },
             required: ["name"]
         }
@@ -466,11 +460,9 @@ export const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                name: { type: "STRING" as any },
-                description: { type: "STRING" as any, description: "One line: who they are." },
-                hp: { type: "INTEGER" as any }, ac: { type: "INTEGER" as any },
-                attackName: { type: "STRING" as any }, attackBonus: { type: "INTEGER" as any },
-                damageFormula: { type: "STRING" as any, description: "e.g. '1d8+2'" }, damageType: { type: "STRING" as any }
+                name: { type: "STRING" as any, description: "The NPC's own name (e.g. 'Maëlle')." },
+                template: { type: "STRING" as any, description: "Bestiary creature whose stats they use — REQUIRED unless the name itself is a bestiary creature: commoner, guard, acolyte, veteran, knight, mage, scout, priest, wolf… The engine refuses unknown templates and lists the closest names. Never invent HP/AC/attacks." },
+                description: { type: "STRING" as any, description: "One line: who they are." }
             },
             required: ["name"]
         }

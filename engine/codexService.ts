@@ -421,8 +421,10 @@ export function spellsForClass(playableClass: string, maxLevel?: number): SpellE
 
 export function calculateEncounterBudget(level: number, partySize: number, difficulty: EncounterDifficulty): number {
     const safeLevel = Math.max(1, Math.min(20, Math.trunc(level || 1)));
-    const safePartySize = Math.max(1, Math.min(8, Math.trunc(partySize || 1)));
-    return XP_THRESHOLDS_BY_LEVEL[difficulty][safeLevel - 1] * safePartySize;
+    // partySize peut être fractionnaire depuis le 2026-08-26 : un allié pèse
+    // 1, ½ ou 0 selon son CR (engine/partyWeight) — on ne tronque plus.
+    const safePartySize = Math.max(1, Math.min(8, Number(partySize) || 1));
+    return Math.round(XP_THRESHOLDS_BY_LEVEL[difficulty][safeLevel - 1] * safePartySize);
 }
 
 /** Pression SRD de la rencontre EN COURS : somme des XP de base des ennemis
@@ -458,7 +460,7 @@ export function buildEncounter(request: EncounterBuildRequest): EncounterBuildRe
         ? request.difficulty
         : 'medium';
     const partyLevel = Math.max(1, Math.min(20, Math.trunc(request.partyLevel || 1)));
-    const partySize = Math.max(1, Math.min(8, Math.trunc(request.partySize || 1)));
+    const partySize = Math.max(1, Math.min(8, Number(request.partySize) || 1));
     const maxMonsters = Math.max(1, Math.min(10, Math.trunc(request.maxMonsters || 4)));
     const xpBudget = calculateEncounterBudget(partyLevel, partySize, difficulty);
     const maxCR = Math.max(0.125, partyLevel + (difficulty === 'deadly' ? 2 : difficulty === 'hard' ? 1 : 0));
