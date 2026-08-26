@@ -4,12 +4,12 @@
  * Monster portraits come directly from the bestiary imageUrl — never from this service.
  */
 
-import { log } from './infra/logger';
+import { log } from '../infra/logger';
 import { withImageSfxGpu } from './gpuLock';
-import { auditBus } from './infra/auditBus';
-import { viteEnv } from './infra/modelConfig';
+import { auditBus } from '../infra/auditBus';
+import { viteEnv } from '../infra/modelConfig';
 import { generateRunwareImage } from './runwareImageService';
-import { getAppSettings } from '../store/settingsStore';
+import { getAppSettings } from '../../store/settingsStore';
 
 export interface GeminiImageOptions {
     aspectRatio?: string;

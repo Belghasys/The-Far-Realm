@@ -2,8 +2,8 @@ import React, { useCallback, useRef, useEffect } from 'react';
 import { useGameStore, appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
 import { freezeChapterDigest, reconcileMissingDigests } from '../services/dm/chapterChronicle';
 // Résumeur : digest FIGÉ d'un chapitre clos (architecture secrétaire+résumeur).
-import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, buildMomentImagePrompt, type ScenePromptOptions } from '../services/geminiImageService';
-import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/imageReferences';
+import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, buildMomentImagePrompt, type ScenePromptOptions } from '../services/media/geminiImageService';
+import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/media/imageReferences';
 import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../types';
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../engine/skillSystem';
 import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/dm/campaignDirector';
@@ -11,9 +11,9 @@ import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/dm/branchWriterService';
 import { saveService } from '../services/saveService';
-import { waitDice } from '../services/diceTiming';
+import { waitDice } from '../services/media/diceTiming';
 // 2026-08-15 — localSfxService (génération) débranché : banque sfxLibrary seule.
-import { sfxLibrary } from '../services/sfxLibrary';
+import { sfxLibrary } from '../services/media/sfxLibrary';
 import { auditBus } from '../services/infra/auditBus';
 import {
     addEnemyToEncounter,
@@ -63,14 +63,14 @@ import {
     searchCodex,
     structureInventoryItem
 } from '../engine/codexService';
-import { cooldownRemainingMs, MEDIA_GENERATION_COOLDOWN_MS } from '../services/mediaThrottle';
+import { cooldownRemainingMs, MEDIA_GENERATION_COOLDOWN_MS } from '../services/media/mediaThrottle';
 import { getCreature } from '../data/bestiary';
 import { getMagicItemByName, magicItemToInventoryItem, pickMagicItem, rollLootTable, MagicItemRarity } from '../data/magicItems';
 import { buildMerchantStock, normalizeMerchantType } from '../data/merchants';
 import { enrichWeaponItem } from '../data/equipment';
 import { rollDice } from '../engine/utils';
-import { galleryService } from '../services/galleryService';
-import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
+import { galleryService } from '../services/media/galleryService';
+import { portraitService, npcPortraitKey, portraitPrompt } from '../services/media/portraitService';
 import { getAppSettings } from '../store/settingsStore';
 import { syncCompanionsFromState, worldHourOf, ensureProgressionState, classSavePassives, classCheckPassives, hasEvasion, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves, featGrantsAdvantageOn } from '../engine/rulesEngine';
 import { getMountType, MOUNT_TYPES, getBeastCompanion, BEAST_COMPANIONS, getFamiliarType, FAMILIAR_TYPES, FAMILIAR_CLASSES } from '../data/companionOptions';

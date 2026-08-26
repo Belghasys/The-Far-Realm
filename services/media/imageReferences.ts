@@ -28,12 +28,12 @@
  *   • rien n'est joint si les images ou les portraits sont coupés dans les Réglages.
  */
 
-import { useGameStore } from '../store/gameStore';
-import { getAppSettings } from '../store/settingsStore';
+import { useGameStore } from '../../store/gameStore';
+import { getAppSettings } from '../../store/settingsStore';
 import { portraitService, npcPortraitKey, heroPortraitKey } from './portraitService';
 import { DEFAULT_STYLE_TAGS, stripNegations } from './geminiImageService';
 import { MAX_REFERENCE_IMAGES } from './runwareImageService';
-import type { CharacterSheet, NPCEntry } from '../types';
+import type { CharacterSheet, NPCEntry } from '../../types';
 
 /** Emplacements réservés aux PNJ une fois le héros et le style servis. */
 const MAX_NPC_REFERENCES = 2;

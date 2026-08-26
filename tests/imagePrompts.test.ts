@@ -16,16 +16,16 @@ import {
     describesLight,
     stripNegations,
     DEFAULT_STYLE_TAGS,
-} from '../services/geminiImageService';
+} from '../services/media/geminiImageService';
 import {
     heroPortraitPrompt,
     heroPortraitKey,
     heroLegacyPortraitKey,
     npcPortraitKey,
     MAX_HERO_PORTRAIT_ATTEMPTS,
-} from '../services/portraitService';
-import { npcsMentionedIn, referenceKeys } from '../services/imageReferences';
-import { CLOUD_MODELS, MAX_REFERENCE_IMAGES } from '../services/runwareImageService';
+} from '../services/media/portraitService';
+import { npcsMentionedIn, referenceKeys } from '../services/media/imageReferences';
+import { CLOUD_MODELS, MAX_REFERENCE_IMAGES } from '../services/media/runwareImageService';
 import { DEFAULT_CHAR } from '../data/character';
 import type { NPCEntry } from '../types';
 

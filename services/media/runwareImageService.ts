@@ -21,10 +21,10 @@
  * console, une fois.
  */
 
-import { log } from './infra/logger';
-import { viteEnv } from './infra/modelConfig';
+import { log } from '../infra/logger';
+import { viteEnv } from '../infra/modelConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { firebaseApp } from './firebase';
+import { firebaseApp } from '../firebase';
 
 /** Transport par défaut : la Cloud Function `generateImage` (clé dans Secret
  *  Manager, quota 60 img/jour/joueur, kill-switch config/media). Région fixée

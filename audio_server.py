@@ -46,7 +46,7 @@ app.add_middleware(
 )
 
 # Banque de SFX pré-enregistrés (480 sons / 69 clés + sfx_registry.json) servie
-# statiquement sur /sfx — consommée par services/sfxLibrary.ts. Le chemin est
+# statiquement sur /sfx — consommée par services/media/sfxLibrary.ts. Le chemin est
 # relocalisable via DND_SFX_DIR.
 _SFX_DIR = os.environ.get("DND_SFX_DIR", r"D:\Sound Library\SFX")
 if os.path.isdir(_SFX_DIR):

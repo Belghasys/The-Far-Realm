@@ -6,10 +6,10 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { lyriaMusicService, MusicMood } from '../services/lyriaMusic';
+import { lyriaMusicService, MusicMood } from '../services/media/lyriaMusic';
 import { useGameStore } from '../store/gameStore';
 import { log } from '../services/infra/logger';
-import { isCombatLoopMood } from '../services/mediaThrottle';
+import { isCombatLoopMood } from '../services/media/mediaThrottle';
 import { auditBus } from '../services/infra/auditBus';
 
 interface MusicDirectorOptions {

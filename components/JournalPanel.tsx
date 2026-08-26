@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { BookOpen, Clock, MapPin, Scroll, Users, ScrollText, Target, Skull, Compass, Images, Download, CheckCircle2, Circle } from 'lucide-react';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
-import { usePortrait, npcPortraitKey, portraitPrompt } from '../services/portraitService';
-import { galleryService, buildChronicleHtml, GalleryImage } from '../services/galleryService';
+import { usePortrait, npcPortraitKey, portraitPrompt } from '../services/media/portraitService';
+import { galleryService, buildChronicleHtml, GalleryImage } from '../services/media/galleryService';
 
 const TRANS = {
     en: {

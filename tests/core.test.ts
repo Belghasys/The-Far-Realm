@@ -44,8 +44,8 @@ import { getPlayerAttackModifier, getEffectiveAC, getEffectiveSpeed, getEffectiv
 import { getSubclassConfig, getSubclassFeaturesForLevel, subclassNeedsChoice } from '../data/subclasses';
 import { asiLevelsBetween } from '../data/classFeatures';
 import { campaignEventLog } from '../services/campaignEventLog';
-import { buildMusicPromptForMood } from '../services/lyriaMusic';
-import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from '../services/mediaThrottle';
+import { buildMusicPromptForMood } from '../services/media/lyriaMusic';
+import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from '../services/media/mediaThrottle';
 import { useGameStore } from '../store/gameStore';
 import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 
@@ -53,7 +53,7 @@ import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 
 describe('GPU Lock (media coordination)', () => {
     it('runs music exclusively — never overlapping image or sfx — while letting image+sfx overlap', async () => {
-        const { withImageSfxGpu, withMusicGpu, gpuLockState } = await import('../services/gpuLock');
+        const { withImageSfxGpu, withMusicGpu, gpuLockState } = await import('../services/media/gpuLock');
 
         const events: string[] = [];
         let imageRunning = false;
@@ -105,7 +105,7 @@ describe('GPU Lock (media coordination)', () => {
     });
 
     it('blocks new image/sfx from starting while music holds the GPU (writer preference)', async () => {
-        const { withImageSfxGpu, withMusicGpu } = await import('../services/gpuLock');
+        const { withImageSfxGpu, withMusicGpu } = await import('../services/media/gpuLock');
         const order: string[] = [];
         const tick = () => new Promise<void>(r => setTimeout(r, 5));
 
@@ -1661,7 +1661,7 @@ describe('audit fixes (combat/XP/skills/damage)', () => {
 // ─── Feature batch: durations, class abilities, companions, 11-20 content ───
 import { tickRoundEffects, rageEffect, monkMartialArtsDie, syncCompanionsFromState } from '../engine/rulesEngine';
 import { maxSpellLevelForClass } from '../engine/codexService';
-import { buildChronicleHtml } from '../services/galleryService';
+import { buildChronicleHtml } from '../services/media/galleryService';
 
 describe('feature batch (durations, abilities, companions, high levels)', () => {
     it('tickRoundEffects decrements per-round durations and reports expiries', () => {

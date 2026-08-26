@@ -3,8 +3,8 @@ import { Settings, Volume2, Dices, Mic2, MonitorOff, RotateCcw, BookHeart, Spark
 import { GameWindow } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
 import { useSettingsStore, DM_VOICES, DiceSpeed } from '../store/settingsStore';
-import type { ImageQuality } from '../services/runwareImageService';
-import { lyriaMusicService } from '../services/lyriaMusic';
+import type { ImageQuality } from '../services/media/runwareImageService';
+import { lyriaMusicService } from '../services/media/lyriaMusic';
 
 const TRANS = {
     en: {

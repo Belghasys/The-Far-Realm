@@ -8,7 +8,7 @@
  * instantanée, variantes anti-répétition, silence si la banque est absente.
  */
 import { sfxLibrary } from './sfxLibrary';
-import { foldText } from '../engine/skillSystem';
+import { foldText } from '../../engine/skillSystem';
 
 function play(key: string): void {
     void sfxLibrary.playKey(key).catch(() => { /* jamais bloquant */ });

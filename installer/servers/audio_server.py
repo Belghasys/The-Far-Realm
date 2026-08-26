@@ -66,7 +66,7 @@ app.add_middleware(
 )
 
 # Banque de SFX pré-enregistrés (480 sons / 69 clés + sfx_registry.json) servie
-# sur /sfx — consommée par services/sfxLibrary.ts. Chez un joueur, le launcher
+# sur /sfx — consommée par services/media/sfxLibrary.ts. Chez un joueur, le launcher
 # fournit DND_SFX_DIR (payload de l'installeur) ; sans lui, /sfx est désactivé
 # et le jeu retombe sur la génération.
 _SFX_DIR = os.environ.get("DND_SFX_DIR", "")

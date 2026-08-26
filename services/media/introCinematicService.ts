@@ -1,8 +1,8 @@
 import { GoogleGenAI } from '@google/genai';
-import { AdventureManifest, CharacterSheet } from '../types';
+import { AdventureManifest, CharacterSheet } from '../../types';
 import { generateGeminiImage, stripNegations } from './geminiImageService';
-import { requireViteEnv, viteEnv } from './infra/modelConfig';
-import { log } from './infra/logger';
+import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { log } from '../infra/logger';
 
 const API_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 // GM2 — lus via viteEnv (runtime launcher > build Vite > défaut), comme tous

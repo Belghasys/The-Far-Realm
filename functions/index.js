@@ -42,7 +42,7 @@ const RUNWARE_API_KEY = defineSecret("RUNWARE_API_KEY");
 // Décision explicite du 2026-08-22 : cette build n'est pas distribuée, le 9B est
 // donc autorisé. AVANT toute distribution publique, remettre `high` sur
 // `runware:400@5` (Apache 2.0). Garder ce fichier synchrone avec
-// CLOUD_MODELS dans services/runwareImageService.ts.
+// CLOUD_MODELS dans services/media/runwareImageService.ts.
 const MODELS = {
     fast: { air: "runware:400@4", steps: 4 },
     high: { air: "runware:400@2", steps: 4 },
@@ -57,7 +57,7 @@ const MAX_REFERENCE_IMAGES = 4;
 const MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
 // Exclusions — elles vivent ICI et jamais dans le prompt positif : sur un modèle
 // en langage naturel, écrire « no watermark » peut en invoquer un.
-// Garder synchrone avec NEGATIVE_PROMPT dans services/runwareImageService.ts.
+// Garder synchrone avec NEGATIVE_PROMPT dans services/media/runwareImageService.ts.
 const NEGATIVE_PROMPT = "text, watermark, signature, logo, blurry, deformed hands, extra limbs, distorted anatomy";
 const REGION = "europe-west1";    // proche UE/Moyen-Orient ; adapter si besoin
 

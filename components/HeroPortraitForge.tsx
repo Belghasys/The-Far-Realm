@@ -28,7 +28,7 @@ import {
     heroLegacyPortraitKey,
     heroPortraitPrompt,
     MAX_HERO_PORTRAIT_ATTEMPTS,
-} from '../services/portraitService';
+} from '../services/media/portraitService';
 import { useSettingsStore } from '../store/settingsStore';
 
 const TRANS = {

@@ -3,11 +3,11 @@
  * (Decommissioned Gemini Lyria)
  */
 
-import { campaignEventLog } from './campaignEventLog';
-import { log } from './infra/logger';
+import { campaignEventLog } from '../campaignEventLog';
+import { log } from '../infra/logger';
 import { isCombatLoopMood } from './mediaThrottle';
-import { getAppSettings } from '../store/settingsStore';
-import { viteEnv } from './infra/modelConfig';
+import { getAppSettings } from '../../store/settingsStore';
+import { viteEnv } from '../infra/modelConfig';
 
 const DB_NAME = 'dungeonai_media_cache';
 const DB_VERSION = 1;

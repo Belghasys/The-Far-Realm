@@ -2,7 +2,7 @@ import React, { useState, forwardRef, useImperativeHandle, useRef, useEffect } f
 import { Swords, Dices } from 'lucide-react';
 // 2026-08-15 — localSfxService (génération Stable Audio) débranché : la banque
 // sfxLibrary est la seule source de SFX. Le service reste sur disque.
-import { sfxLibrary } from '../services/sfxLibrary';
+import { sfxLibrary } from '../services/media/sfxLibrary';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {

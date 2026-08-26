@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { setDiceAnimMs } from '../services/diceTiming';
-import type { ImageQuality } from '../services/runwareImageService';
+import { setDiceAnimMs } from '../services/media/diceTiming';
+import type { ImageQuality } from '../services/media/runwareImageService';
 
 /**
  * Player-facing app settings (Réglages panel). Persisted to localStorage and
@@ -34,7 +34,7 @@ export interface AppSettings {
      * Scene-image model tier (cloud backend only — the local FLUX server
      * ignores it). 'fast' = FLUX.2 klein 4B, 'high' = klein 9B: prettier and
      * better at following the prompt, ~30 % dearer and a touch slower.
-     * See CLOUD_MODELS in services/runwareImageService.ts for the licence note.
+     * See CLOUD_MODELS in services/media/runwareImageService.ts for the licence note.
      */
     imageQuality: ImageQuality;
     /**

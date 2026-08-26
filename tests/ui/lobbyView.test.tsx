@@ -36,7 +36,7 @@ vi.mock('react-router-dom', async () => ({
     ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),
     useNavigate: () => H.navigate,
 }));
-vi.mock('../../services/menuTheme', () => ({ menuTheme: H.menuTheme }));
+vi.mock('../../services/media/menuTheme', () => ({ menuTheme: H.menuTheme }));
 vi.mock('../../services/saveService', () => ({ saveService: H.saveService }));
 vi.mock('../../services/memoryManager', () => ({ memoryManager: H.memoryManager }));
 vi.mock('../../services/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));

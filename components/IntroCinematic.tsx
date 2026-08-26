@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Play, SkipForward, Volume2 } from 'lucide-react';
 import { AdventureManifest, CharacterSheet } from '../types';
-import { generateIntroCinematicAssets, IntroCinematicAssets } from '../services/introCinematicService';
-import { lyriaMusicService } from '../services/lyriaMusic';
-import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
+import { generateIntroCinematicAssets, IntroCinematicAssets } from '../services/media/introCinematicService';
+import { lyriaMusicService } from '../services/media/lyriaMusic';
+import { portraitService, npcPortraitKey, portraitPrompt } from '../services/media/portraitService';
 import { log } from '../services/infra/logger';
 
 const TRANS = {

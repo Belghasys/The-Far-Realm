@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { DICE_ANIM_MS, skipDice } from '../services/diceTiming';
+import { DICE_ANIM_MS, skipDice } from '../services/media/diceTiming';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {

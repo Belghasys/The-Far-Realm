@@ -37,11 +37,11 @@ vi.mock('react-router-dom', async () => ({
 }));
 vi.mock('../../services/firebase', () => ({ auth: H.auth, googleProvider: {}, db: {}, firebaseApp: {} }));
 vi.mock('firebase/auth', () => ({ signOut: H.signOut }));
-vi.mock('../../services/menuTheme', () => ({ menuTheme: H.menuTheme }));
+vi.mock('../../services/media/menuTheme', () => ({ menuTheme: H.menuTheme }));
 vi.mock('../../services/saveService', () => ({ saveService: H.saveService }));
 vi.mock('../../services/memoryManager', () => ({ memoryManager: H.memoryManager }));
 vi.mock('../../services/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
-vi.mock('../../services/youtubeMusic', () => ({ chargerApiYouTube: H.chargerApiYouTube }));
+vi.mock('../../services/media/youtubeMusic', () => ({ chargerApiYouTube: H.chargerApiYouTube }));
 
 // Le menu de chargement est réduit à sa surface utile : un bouton qui rend la
 // main avec un identifiant. Ce qui nous intéresse est ce que la VUE fait de

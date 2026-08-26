@@ -28,7 +28,7 @@ USAGE
   # inventaire : ce que le jeu réclame vs ce que tu as
   python tools/generate_music.py --check
 
-Le jeu attend 24 ambiances (cf. MusicMood dans services/lyriaMusic.ts) :
+Le jeu attend 24 ambiances (cf. MusicMood dans services/media/lyriaMusic.ts) :
   combats ....... combat, combat_boss, chase, tension
   issues ........ victory, defeat, level_up
   lieux ......... town, tavern, shop, dungeon, wilderness, sacred, festival
@@ -82,7 +82,7 @@ MOODS = [
     # Les 12 d'origine…
     "exploration", "quest", "combat", "combat_boss", "victory", "tension",
     "rest", "tavern", "dungeon", "town", "dramatic", "stealth",
-    # …+ les 12 ajoutées le 2026-08-22 (cf. MusicMood dans services/lyriaMusic.ts).
+    # …+ les 12 ajoutées le 2026-08-22 (cf. MusicMood dans services/media/lyriaMusic.ts).
     "defeat", "level_up", "shop", "travel", "wilderness", "horror",
     "mystery", "sacred", "chase", "ritual", "sorrow", "festival",
 ]

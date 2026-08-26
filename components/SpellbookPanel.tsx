@@ -3,7 +3,7 @@ import { Sparkles, BookOpen, Search, Check, Trash2, RotateCcw, Info } from 'luci
 import { CharacterSheet, getEffectiveStat, SpellEntry } from '../types';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { spellsForClass, lookupSpell } from '../engine/codexService';
-import { playSpellSfx } from '../services/combatSfx';
+import { playSpellSfx } from '../services/media/combatSfx';
 import { CLASS_CASTER_ABILITY } from '../engine/rulesEngine';
 import { useGameStore } from '../store/gameStore';
 

@@ -19,8 +19,8 @@
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { T, DISP, BODY, onTint } from '../../theme/tokens';
-import { chargerApiYouTube, type YTPlayer } from '../../services/youtubeMusic';
-import { menuTheme } from '../../services/menuTheme';
+import { chargerApiYouTube, type YTPlayer } from '../../services/media/youtubeMusic';
+import { menuTheme } from '../../services/media/menuTheme';
 
 type Etat = 'chargement' | 'pret' | 'indisponible';
 

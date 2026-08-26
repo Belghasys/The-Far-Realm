@@ -19,7 +19,7 @@
  * stuck server can never permanently freeze all media.
  */
 
-import { log } from './infra/logger';
+import { log } from '../infra/logger';
 
 const WATCHDOG_MS = 200_000; // safety net: force-release a hung holder
 

@@ -46,7 +46,7 @@ vi.mock('firebase/auth', () => ({
     signInWithPopup: H.signInPopup,
 }));
 
-vi.mock('../../services/menuTheme', () => ({ menuTheme: H.menuTheme }));
+vi.mock('../../services/media/menuTheme', () => ({ menuTheme: H.menuTheme }));
 
 vi.mock('../../store/gameStore', () => ({
     useGameStore: (selector?: (s: unknown) => unknown) => {

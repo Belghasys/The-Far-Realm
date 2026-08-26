@@ -49,9 +49,9 @@ import { ReactionPrompt, ReactionRequest } from './ReactionPrompt';
 import { SettingsPanel } from './SettingsPanel';
 import type { ClassAbilityId } from './CombatActionsPanel';
 import { AbilityHotbar } from './AbilityHotbar';
-import { usePortrait, heroPortraitKey, heroPortraitPrompt } from '../services/portraitService';
+import { usePortrait, heroPortraitKey, heroPortraitPrompt } from '../services/media/portraitService';
 import { useSettingsStore, RAIL_WIDTH } from '../store/settingsStore';
-import { lyriaMusicService } from '../services/lyriaMusic';
+import { lyriaMusicService } from '../services/media/lyriaMusic';
 import { getCreature, getCreatureAttacks, getMultiattackCount } from '../data/bestiary';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../data/companionOptions';
 import { lookupMonster, lookupSpell, lookupCondition } from '../engine/codexService';
@@ -60,10 +60,10 @@ import { foldText } from '../engine/skillSystem';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
 import { summarizeCurrentChapter } from '../services/dm/llmService';
 import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../services/dm/chapterChronicle';
-import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDiceRoll, playEndTurn } from '../services/combatSfx';
+import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDiceRoll, playEndTurn } from '../services/media/combatSfx';
 import { getCheckModifier } from '../engine/skillSystem';
 import { getCasterKit, type MonsterSpell, type CasterKit } from '../data/casterKits';
-import { waitDice } from '../services/diceTiming';
+import { waitDice } from '../services/media/diceTiming';
 
 // ========== STRUCTURED LOGGING ==========
 const LOG = {

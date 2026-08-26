@@ -5,7 +5,7 @@
  * and the HTML campaign export. Local-only by design: data URLs never go to
  * Firestore (1 MiB doc cap).
  */
-import { log } from './infra/logger';
+import { log } from '../infra/logger';
 
 const DB_NAME = 'dungeonai_gallery';
 const DB_VERSION = 1;

@@ -1110,7 +1110,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             </div>
 
             {/* Le portrait forgé ici devient la référence visuelle du héros dans
-                toutes les images de scène (voir services/imageReferences.ts). */}
+                toutes les images de scène (voir services/media/imageReferences.ts). */}
             <HeroPortraitForge
               character={char}
               language={language}

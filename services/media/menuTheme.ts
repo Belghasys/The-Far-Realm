@@ -19,9 +19,9 @@
  * clic (le joueur vient de cliquer : un son plein volume dans la foulée
  * surprend).
  */
-import { getAppSettings, useSettingsStore } from '../store/settingsStore';
-import { viteEnv } from './infra/modelConfig';
-import { log } from './infra/logger';
+import { getAppSettings, useSettingsStore } from '../../store/settingsStore';
+import { viteEnv } from '../infra/modelConfig';
+import { log } from '../infra/logger';
 
 /** Vide = pas de thème de menu du tout (le réglage reste sans effet). */
 const THEME_URL = viteEnv(
