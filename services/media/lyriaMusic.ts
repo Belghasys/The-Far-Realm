@@ -3,7 +3,7 @@
  * (Decommissioned Gemini Lyria)
  */
 
-import { campaignEventLog } from '../campaignEventLog';
+import { campaignEventLog } from '../persistence/campaignEventLog';
 import { log } from '../infra/logger';
 import { isCombatLoopMood } from './mediaThrottle';
 import { getAppSettings } from '../../store/settingsStore';

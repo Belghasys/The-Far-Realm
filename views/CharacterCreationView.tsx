@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CharacterSheetUI } from '../components/CharacterSheet';
 import { useGameStore } from '../store/gameStore';
-import { saveService } from '../services/saveService';
+import { saveService } from '../services/persistence/saveService';
 import { adventureService } from '../services/dm/adventureService';
-import { memoryManager } from '../services/memoryManager';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { memoryManager } from '../services/persistence/memoryManager';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
 import { ensureProgressionState } from '../engine/rulesEngine';
 import { getAdventureById } from '../data/adventures';
@@ -14,7 +14,7 @@ import { T, DISP, BODY } from '../theme/tokens';
 import { Panneau, Titre } from '../components/neon/SheetKit';
 import { NeonButton } from '../components/neon/NeonButton';
 import { getAuthoredCampaign } from '../data/campaigns';
-import { buildSlimManifestPayload } from '../services/manifestHydration';
+import { buildSlimManifestPayload } from '../services/persistence/manifestHydration';
 import { personalizeAuthoredManifest } from '../services/dm/llmService';
 
 /**

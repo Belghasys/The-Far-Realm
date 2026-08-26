@@ -5,7 +5,7 @@ import { hasFeatSpecial } from '../../engine/rulesEngine';
  * Kept as a pure function to keep gemini.ts clean and testable.
  */
 import { CharacterSheet, getEffectiveAC, getEffectiveStat, getDraconicDamageType, isRangedWeapon } from '../../types';
-import { memoryManager } from '../memoryManager';
+import { memoryManager } from '../persistence/memoryManager';
 import { passivePerception, SKILL_ABILITIES } from '../../engine/skillSystem';
 import { CLASS_DATA } from '../../data/classes';
 import { RACE_DATA } from '../../data/races';

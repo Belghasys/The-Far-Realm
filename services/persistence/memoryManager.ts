@@ -10,8 +10,8 @@
  */
 
 import { saveService } from './saveService';
-import { log } from './infra/logger';
-import { auditBus } from './infra/auditBus';
+import { log } from '../infra/logger';
+import { auditBus } from '../infra/auditBus';
 
 // Types
 export interface ChatMessage {

@@ -26,7 +26,7 @@ const INTERDITS = [
     'services/dm/campaignDirector.ts',
     'services/dm/llmService.ts',
     'engine/codexService.ts',
-    'services/manifestHydration.ts',
+    'services/persistence/manifestHydration.ts',
     'components/CombatTracker.tsx',
     'components/CombatActionsPanel.tsx',
     'components/GameSession.tsx',
@@ -36,7 +36,7 @@ const INTERDITS = [
 ];
 
 /** Modules qui DOIVENT y être : la preuve que le parcours fonctionne. */
-const ATTENDUS = ['App.tsx', 'store/gameStore.ts', 'services/saveService.ts', 'services/firebase.ts'];
+const ATTENDUS = ['App.tsx', 'store/gameStore.ts', 'services/persistence/saveService.ts', 'services/persistence/firebase.ts'];
 
 const RE_IMPORT = /^[ \t]*import\s+(?!type\s)[^'";]*?\sfrom\s+['"]([^'"]+)['"]/gm;
 const RE_EFFET = /^[ \t]*import\s+['"]([^'"]+)['"]/gm;

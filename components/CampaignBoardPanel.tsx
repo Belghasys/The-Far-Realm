@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Clock3, EyeOff, GitBranch, Map as MapIcon, Milestone, Route, ScrollText, ShieldAlert } from 'lucide-react';
 import { AdventureManifest, CampaignRuntimeState } from '../types';
-import { CampaignEvent } from '../services/campaignEventLog';
+import { CampaignEvent } from '../services/persistence/campaignEventLog';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../store/gameStore';
 

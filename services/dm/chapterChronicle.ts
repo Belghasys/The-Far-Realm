@@ -13,7 +13,7 @@
  */
 import { useGameStore } from '../../store/gameStore';
 import { summarizeChapterDigest, summarizeActDigest } from './llmService';
-import { saveService } from '../saveService';
+import { saveService } from '../persistence/saveService';
 import { log } from '../infra/logger';
 
 /**

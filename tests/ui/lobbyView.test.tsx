@@ -37,9 +37,9 @@ vi.mock('react-router-dom', async () => ({
     useNavigate: () => H.navigate,
 }));
 vi.mock('../../services/media/menuTheme', () => ({ menuTheme: H.menuTheme }));
-vi.mock('../../services/saveService', () => ({ saveService: H.saveService }));
-vi.mock('../../services/memoryManager', () => ({ memoryManager: H.memoryManager }));
-vi.mock('../../services/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
+vi.mock('../../services/persistence/saveService', () => ({ saveService: H.saveService }));
+vi.mock('../../services/persistence/memoryManager', () => ({ memoryManager: H.memoryManager }));
+vi.mock('../../services/persistence/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
 vi.mock('qrcode.react', () => ({ QRCodeSVG: () => <div data-testid="qr" /> }));
 
 vi.mock('../../store/gameStore', () => ({

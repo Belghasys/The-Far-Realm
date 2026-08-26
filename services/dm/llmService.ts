@@ -2,7 +2,7 @@ import { CharacterSheet, AdventureManifest } from "../../types";
 import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
-import { collectTokens, substituteTokens } from '../manifestTokens';
+import { collectTokens, substituteTokens } from '../persistence/manifestTokens';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);
@@ -494,7 +494,7 @@ export async function generateAdventureManifest(
 //  fixed field (spine, villain secret, beats, clocks) byte-for-byte intact.
 // ════════════════════════════════════════════════════════════════════════════
 
-// (collectTokens / substituteTokens vivent dans services/manifestTokens.ts —
+// (collectTokens / substituteTokens vivent dans services/persistence/manifestTokens.ts —
 // module pur, réutilisé par la réhydratation des sauvegardes minces.)
 
 /**

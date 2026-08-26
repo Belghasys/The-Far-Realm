@@ -3,7 +3,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import { useGameStore } from '../store/gameStore';
 import { menuTheme } from '../services/media/menuTheme';
-import { t, type Language } from '../services/translations';
+import { t, type Language } from '../services/i18n/translations';
 
 /**
  * Thème des écrans hors jeu + son interrupteur.

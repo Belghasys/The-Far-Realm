@@ -8,9 +8,9 @@ import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../engine/skillSystem';
 import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/dm/campaignDirector';
 import { CLASS_DATA } from '../data/classes';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/dm/branchWriterService';
-import { saveService } from '../services/saveService';
+import { saveService } from '../services/persistence/saveService';
 import { waitDice } from '../services/media/diceTiming';
 // 2026-08-15 — localSfxService (génération) débranché : banque sfxLibrary seule.
 import { sfxLibrary } from '../services/media/sfxLibrary';

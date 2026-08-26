@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { repairCharacterWeapons } from '../data/equipment';
 import { viteEnv } from '../services/infra/modelConfig';
-import { isSlimManifestPayload } from '../services/manifestTokens';
+import { isSlimManifestPayload } from '../services/persistence/manifestTokens';
 import type { ChatMessage } from '../hooks/useTranscript';
 import type { Combatant } from '../components/CombatTracker';
 import type { DepartedCombatant } from '../engine/rulesEngine';
@@ -598,7 +598,7 @@ export const useGameStore = create<GameState>((set) => ({
         // Sauvegarde MINCE (campagnes d'auteur) : le doc Firestore ne porte que
         // {authoredRef, tokenValues, chapterStatuses} (~2 Ko). La réhydratation
         // depuis le gabarit du code n'est PLUS faite ici : elle vit dans
-        // services/manifestHydration (hydrateSaveData), que l'appelant invoque
+        // services/persistence/manifestHydration (hydrateSaveData), que l'appelant invoque
         // avant — le store ne doit pas connaître les campagnes, sinon elles
         // arrivent sur l'écran de connexion avec lui (550 Ko de source).
         // Une forme mince qui arrive quand même est une erreur de programmation :

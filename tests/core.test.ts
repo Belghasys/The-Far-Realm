@@ -43,7 +43,7 @@ import { getStartingEquipment } from '../data/equipment';
 import { getPlayerAttackModifier, getEffectiveAC, getEffectiveSpeed, getEffectiveStat, getXPProgress } from '../types';
 import { getSubclassConfig, getSubclassFeaturesForLevel, subclassNeedsChoice } from '../data/subclasses';
 import { asiLevelsBetween } from '../data/classFeatures';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { buildMusicPromptForMood } from '../services/media/lyriaMusic';
 import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from '../services/media/mediaThrottle';
 import { useGameStore } from '../store/gameStore';

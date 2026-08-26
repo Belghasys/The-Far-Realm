@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet } from '../types';
-import { saveService } from '../services/saveService';
-import type { SlimManifestPayload } from '../services/manifestTokens';
-import { buildSlimManifestPayload } from '../services/manifestHydration';
+import { saveService } from '../services/persistence/saveService';
+import type { SlimManifestPayload } from '../services/persistence/manifestTokens';
+import { buildSlimManifestPayload } from '../services/persistence/manifestHydration';
 import { useGameStore } from '../store/gameStore';
-import { memoryManager } from '../services/memoryManager';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { memoryManager } from '../services/persistence/memoryManager';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { ChatMessage } from './useTranscript';
 import { foldText } from '../engine/skillSystem';
 

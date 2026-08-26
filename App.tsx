@@ -1,9 +1,9 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './services/firebase';
-import { memoryManager } from './services/memoryManager';
-import { saveService } from './services/saveService';
+import { auth } from './services/persistence/firebase';
+import { memoryManager } from './services/persistence/memoryManager';
+import { saveService } from './services/persistence/saveService';
 import { useGameStore } from './store/gameStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 

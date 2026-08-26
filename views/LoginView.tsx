@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth, googleProvider } from '../services/firebase';
+import { auth, googleProvider } from '../services/persistence/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { useGameStore } from '../store/gameStore';

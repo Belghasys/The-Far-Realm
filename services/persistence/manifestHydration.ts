@@ -12,8 +12,8 @@
  * l'importent dynamiquement, au clic. tests/entryGraph.test.ts vérifie qu'il
  * n'est pas atteignable depuis l'entrée de l'application.
  */
-import { AdventureManifest } from '../types';
-import { getAuthoredCampaign } from '../data/campaigns';
+import { AdventureManifest } from '../../types';
+import { getAuthoredCampaign } from '../../data/campaigns';
 import { isSlimManifestPayload, substituteTokens, type SlimManifestPayload } from './manifestTokens';
 
 /** Construit la forme mince à sauvegarder (ou null si non applicable). */

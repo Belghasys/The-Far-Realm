@@ -17,9 +17,9 @@ import { Share2, MessageCircle, Send, Mail, Layers, Clock, Gauge, Book } from 'l
 import { QRCodeSVG } from 'qrcode.react';
 import { useGameStore } from '../store/gameStore';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
-import { saveService } from '../services/saveService';
-import { memoryManager } from '../services/memoryManager';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { saveService } from '../services/persistence/saveService';
+import { memoryManager } from '../services/persistence/memoryManager';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { ADVENTURES as ADVENTURE_OPTIONS, localizeAdventure, type AdventureDifficulty, type LocalizedAdventure } from '../data/adventures';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
 import { coverArt, COVER_CUSTOM, COVER_IMPROVISED } from '../theme/art';
@@ -253,7 +253,7 @@ export function LobbyView() {
                 if (fullSave && fullSave.character) {
                     // Les gabarits de campagne (550 Ko de source) ne se chargent
                     // qu'ici, au clic — pas avec le hall. Voir manifestHydration.
-                    const { hydrateSaveData } = await import('../services/manifestHydration');
+                    const { hydrateSaveData } = await import('../services/persistence/manifestHydration');
                     loadSaveState(hydrateSaveData(fullSave));
                     memoryManager.setSaveId(mostRecentSave.id);
                     memoryManager.importFromSave({ transcript: fullSave.transcript || [], combat: fullSave.combat });

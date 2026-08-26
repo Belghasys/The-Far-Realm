@@ -36,7 +36,7 @@ vi.mock('react-router-dom', async () => ({
     useNavigate: () => H.navigate,
 }));
 
-vi.mock('../../services/firebase', () => ({
+vi.mock('../../services/persistence/firebase', () => ({
     auth: H.auth, googleProvider: H.googleProvider, db: {}, firebaseApp: {},
 }));
 

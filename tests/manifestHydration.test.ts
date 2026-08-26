@@ -1,15 +1,15 @@
 /**
  * La sauvegarde mince, de bout en bout : construite, réhydratée, chargée.
  *
- * Le store ne réhydrate plus lui-même (voir services/manifestHydration) ; ce
+ * Le store ne réhydrate plus lui-même (voir services/persistence/manifestHydration) ; ce
  * qui casserait en silence si quelqu'un remettait un loadSaveState(save) nu
  * dans une vue, c'est une campagne chargée sans manifeste — visible seulement
  * en partie, quand le MJ ne sait plus où il est. D'où le contrat bruyant.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { PORTES_EXIL } from '../data/campaigns/portesExil';
-import { collectTokens } from '../services/manifestTokens';
-import { buildSlimManifestPayload, hydrateManifestPayload, hydrateSaveData } from '../services/manifestHydration';
+import { collectTokens } from '../services/persistence/manifestTokens';
+import { buildSlimManifestPayload, hydrateManifestPayload, hydrateSaveData } from '../services/persistence/manifestHydration';
 import { useGameStore } from '../store/gameStore';
 import { DEFAULT_CHAR } from '../data';
 

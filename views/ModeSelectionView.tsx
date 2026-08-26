@@ -14,11 +14,11 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { useGameStore } from '../store/gameStore';
-import { saveService } from '../services/saveService';
-import { memoryManager } from '../services/memoryManager';
-import { campaignEventLog } from '../services/campaignEventLog';
+import { saveService } from '../services/persistence/saveService';
+import { memoryManager } from '../services/persistence/memoryManager';
+import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { LoadGameMenu } from '../components/LoadGameMenu';
-import { auth } from '../services/firebase';
+import { auth } from '../services/persistence/firebase';
 import { MenuMusicToggle } from '../components/MenuMusicToggle';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
 import { NeonCard } from '../components/neon/NeonButton';
@@ -450,7 +450,7 @@ export function ModeSelectionView() {
                             if (save && save.character) {
                                 // Même règle que LobbyView : les campagnes se
                                 // chargent au clic, pas avec le menu.
-                                const { hydrateSaveData } = await import('../services/manifestHydration');
+                                const { hydrateSaveData } = await import('../services/persistence/manifestHydration');
                                 loadSaveState(hydrateSaveData(save));
                                 memoryManager.setSaveId(saveId);
                                 memoryManager.importFromSave({ transcript: save.transcript || [], combat: save.combat });

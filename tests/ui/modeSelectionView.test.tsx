@@ -35,12 +35,12 @@ vi.mock('react-router-dom', async () => ({
     ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),
     useNavigate: () => H.navigate,
 }));
-vi.mock('../../services/firebase', () => ({ auth: H.auth, googleProvider: {}, db: {}, firebaseApp: {} }));
+vi.mock('../../services/persistence/firebase', () => ({ auth: H.auth, googleProvider: {}, db: {}, firebaseApp: {} }));
 vi.mock('firebase/auth', () => ({ signOut: H.signOut }));
 vi.mock('../../services/media/menuTheme', () => ({ menuTheme: H.menuTheme }));
-vi.mock('../../services/saveService', () => ({ saveService: H.saveService }));
-vi.mock('../../services/memoryManager', () => ({ memoryManager: H.memoryManager }));
-vi.mock('../../services/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
+vi.mock('../../services/persistence/saveService', () => ({ saveService: H.saveService }));
+vi.mock('../../services/persistence/memoryManager', () => ({ memoryManager: H.memoryManager }));
+vi.mock('../../services/persistence/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
 vi.mock('../../services/media/youtubeMusic', () => ({ chargerApiYouTube: H.chargerApiYouTube }));
 
 // Le menu de chargement est réduit à sa surface utile : un bouton qui rend la

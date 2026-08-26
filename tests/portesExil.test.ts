@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { PORTES_EXIL, PORTES_EXIL_OPTION } from '../data/campaigns/portesExil';
 import { CSV_MONSTERS } from '../data/monsterData';
-import { collectTokens } from '../services/manifestTokens';
+import { collectTokens } from '../services/persistence/manifestTokens';
 
 const VALID_MOODS = new Set([
   'exploration', 'quest', 'combat', 'combat_boss', 'victory', 'tension',
