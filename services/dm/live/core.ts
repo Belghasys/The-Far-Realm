@@ -11,7 +11,7 @@ import { getWeapon, weaponSummary } from '../../../data/weapons';
 import { log } from '../../infra/logger';
 import { buildSystemPrompt } from '../systemPrompt';
 import { campaignEventLog } from '../../persistence/campaignEventLog';
-import { requireViteEnv } from '../../infra/modelConfig';
+
 import { auditBus } from '../../infra/auditBus';
 import { getAppSettings } from '../../../store/settingsStore';
 // IJ7 — lecture de l'activeSaveId pour lier le handle de reprise à la sauvegarde.

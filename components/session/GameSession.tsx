@@ -10,6 +10,7 @@ import { useRailWidth } from '../../hooks/useRailWidth';
 import type { SessionContext } from '../../services/session/context';
 import { handlePlayerCastSpell as handlePlayerCastSpellAction } from '../../services/session/playerSpell';
 import { handleUseClassAbility as handleUseClassAbilityAction } from '../../services/session/classAbility';
+import { getPlayerEconomy, patchPlayerEconomy, spendPlayerBonus, hasPlayerBonusFree, spendResource, spendPlayerMainAction as spendPlayerMainActionRule, hasPlayerMainSlice as hasPlayerMainSliceRule } from '../../engine/turnEconomy';
 import { runNPCTurn as runNPCTurnAction } from '../../services/session/npcTurn';
 import { GAME_SESSION_TEXTS as TRANS } from './texts';
 import { mergeTranscriptText } from './transcriptText';
@@ -1231,45 +1232,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     setCombatState(advanceTurn(latest));
   };
 
-  // ── Action pips (player economy) ─────────────────────────────────────────
-  // Green pips = main-action attacks remaining (Extra Attack gives several),
-  // amber pips = bonus actions. The legacy actionUsed/bonusActionUsed booleans
-  // stay in sync (used >= max) so every existing check keeps working.
-  const getPlayerEconomy = (state: any) => (state.actionEconomy?.['player']) || {};
-  const patchPlayerEconomy = (state: any, patch: any) => {
-    const cur = getPlayerEconomy(state);
-    const next: any = { ...cur, ...patch };
-    next.actionUsed = (next.attacksUsed ?? 0) >= (next.attacksMax ?? 1);
-    next.bonusActionUsed = (next.bonusUsed ?? 0) >= (next.bonusMax ?? 1);
-    return { ...state, actionEconomy: { ...(state.actionEconomy || {}), player: next } };
-  };
-  // A spell / dodge / potion / improv card spends ONE main action — c.-à-d. une
-  // « tranche » de pips égale à l'Extra Attack de base. Avant, ça vidait TOUS
-  // les pips : un tour avec Sursaut d'action (pips doublés) perdait aussi
-  // l'action bonus du Sursaut en lançant un sort.
-  const spendPlayerMainAction = (state: any) => {
-    const econ = getPlayerEconomy(state);
-    const base = getPlayerAttackCount(character);
-    const max = econ.attacksMax ?? base;
-    return patchPlayerEconomy(state, { attacksUsed: Math.min(max, (econ.attacksUsed ?? 0) + base) });
-  };
-  const spendPlayerBonus = (state: any) => {
-    const econ = getPlayerEconomy(state);
-    return patchPlayerEconomy(state, { bonusUsed: (econ.bonusUsed ?? 0) + 1 });
-  };
-
-  // CB5 — vérifications AVANT de dépenser : sort, esquive et potion exigent une
-  // tranche d'action libre (spendPlayerMainAction clampait sans jamais échouer
-  // — sorts, potions et esquive étaient illimités dans un même tour).
-  const hasPlayerMainSlice = (state: any) => {
-    const econ = getPlayerEconomy(state);
-    const base = getPlayerAttackCount(character);
-    return ((econ.attacksMax ?? base) - (econ.attacksUsed ?? 0)) >= base;
-  };
-  const hasPlayerBonusFree = (state: any) => {
-    const econ = getPlayerEconomy(state);
-    return ((econ.bonusMax ?? 1) - (econ.bonusUsed ?? 0)) >= 1;
-  };
+  // Économie de tour : les règles sont dans engine/turnEconomy (contre-audit
+  // du 2026-08-26, lot B) ; ici seulement la liaison à la fiche du héros.
+  const spendPlayerMainAction = (state: any) => spendPlayerMainActionRule(state, character);
+  const hasPlayerMainSlice = (state: any) => hasPlayerMainSliceRule(state, character);
   const rejectActionSpent = (needsBonus: boolean) => {
     const msg = language === 'fr'
       ? (needsBonus ? 'Action bonus déjà utilisée ce tour.' : "Plus d'action disponible ce tour.")
@@ -1617,18 +1583,6 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   });
 
   const handlePlayerCastSpell = async (spellName: string, slotLevel: string | null, targetId: string) => handlePlayerCastSpellAction(sessionContext(), spellName, slotLevel, targetId);
-
-  // ── Capacités de classe (Rage, Second souffle, Sursaut, Imposition, Ki,
-  //    Inspiration bardique) — les ressources existaient sur la fiche mais
-  //    AUCUN bouton ne les consommait. Chaque branche : garde-fous, dépense de
-  //    la ressource + du pip, effet moteur réel, dés visibles, rapport au MJ.
-  const spendResource = (char: CharacterSheet, key: string, amount = 1): CharacterSheet => ({
-    ...char,
-    resources: {
-      ...(char.resources || {}),
-      [key]: { ...(char.resources as any)[key], current: Math.max(0, ((char.resources as any)[key]?.current ?? 0) - amount) },
-    },
-  });
 
   const handleUseClassAbility = async (abilityId: ClassAbilityId, targetId?: string) => handleUseClassAbilityAction(sessionContext(), abilityId, targetId);
 
