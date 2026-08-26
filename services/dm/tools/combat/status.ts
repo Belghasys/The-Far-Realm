@@ -9,8 +9,6 @@ import { applyConditionToCharacter, applyConditionToEncounter, applyCharacterHP,
 import { lookupCondition, lookupSpell } from '../../../../engine/codexService';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
-import { enemy_leaves_combat } from './roster';
-import { cast_spell } from './spells';
 
 export async function update_character_hp(args: any, ctx: ToolContext) {
     const { d, store } = ctx;

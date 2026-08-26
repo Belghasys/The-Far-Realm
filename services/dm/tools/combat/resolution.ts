@@ -14,8 +14,6 @@ import { lookupSpell, structureInventoryItem } from '../../../../engine/codexSer
 import { classSavePassives, classCheckPassives, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves } from '../../../../engine/rulesEngine';
 import { holdForRollResolution } from '../shared';
 import type { ToolContext } from '../context';
-import { propose_player_action } from './roster';
-import { cast_spell, environmental_damage } from './spells';
 
 export async function request_roll(args: any, ctx: ToolContext) {
     const { d, store } = ctx;

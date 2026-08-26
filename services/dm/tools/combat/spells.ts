@@ -15,7 +15,6 @@ import { rollDice } from '../../../../engine/utils';
 import { worldHourOf, classSavePassives, hasEvasion, applyDownedDamagePenalty, releaseNpcConcentrationEffect, getProficientSaves, featGrantsAdvantageOn } from '../../../../engine/rulesEngine';
 import { stringArg, holdForRollResolution } from '../shared';
 import type { ToolContext } from '../context';
-import { request_roll } from './resolution';
 
 export async function environmental_damage(args: any, ctx: ToolContext) {
     const { d, deps, store, processToolCall, sysLine, handleConcentrationAfterDamage, optionalBoolean } = ctx;

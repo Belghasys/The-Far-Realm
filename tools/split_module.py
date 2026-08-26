@@ -204,11 +204,16 @@ for mod, items in contenu.items():
             defini_par[nom] = mod
 promus = []
 textes = {mod: NL.join(t for _, _, _, t in items) for mod, items in contenu.items()}
+# Un nom cite dans un COMMENTAIRE ou une CHAINE n'est pas un usage : detecter
+# sur le texte masque, sinon un message d'erreur qui nomme un autre outil
+# fabrique un import (et un couplage) qui n'existe pas.
+codes = {mod: masquer(t) for mod, t in textes.items()}
 for mod, items in contenu.items():
-    corps = textes[mod]
+    corps = textes[mod]   # ce qui sera ECRIT
+    code = codes[mod]     # ce sur quoi on CHERCHE (jamais ecrit)
     lignes_import = []
     for imp in imports_ext:
-        utiles = [nm for nm in noms_importes(imp[3]) if re.search(r'\b' + re.escape(nm) + r'\b', corps)]
+        utiles = [nm for nm in noms_importes(imp[3]) if re.search(r'\b' + re.escape(nm) + r'\b', code)]
         if not utiles:
             continue
         t = imp[3]
@@ -225,7 +230,7 @@ for mod, items in contenu.items():
     for nom, ou in defini_par.items():
         if ou == mod:
             continue
-        if re.search(r'\b' + re.escape(nom) + r'\b', corps):
+        if re.search(r'\b' + re.escape(nom) + r'\b', code):
             par_module.setdefault(ou, []).append(nom)
     for ou, noms in sorted(par_module.items()):
         rel = os.path.relpath(ou, os.path.dirname(mod)).replace(os.sep, '/')
@@ -235,7 +240,7 @@ for mod, items in contenu.items():
     # promotion des symboles internes utilises ailleurs
     corps2 = corps
     for genre, nom, exporte, texte in items:
-        if nom and not exporte and any(re.search(r'\b' + re.escape(nom) + r'\b', textes[autre]) for autre in textes if autre != mod):
+        if nom and not exporte and any(re.search(r'\b' + re.escape(nom) + r'\b', codes[autre]) for autre in codes if autre != mod):
             corps2 = corps2.replace(texte, re.sub(r'^(\s*)(async\s+)?(function|const|let|interface|type|enum|class)\b', r'\1export \2\3', texte, count=1, flags=re.M), 1)
             promus.append(f'{nom} ({mod})')
     chemin = os.path.join(DOSSIER, mod + '.ts')

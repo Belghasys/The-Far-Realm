@@ -14,7 +14,6 @@ import { getCreature } from '../../../../data/bestiary';
 import { syncCompanionsFromState, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
-import { cast_spell } from './spells';
 
 export async function start_combat(_args: any, ctx: ToolContext) {
     const { d, store, logNewPlayerInitiative, scheduleCombatImageOnce } = ctx;
