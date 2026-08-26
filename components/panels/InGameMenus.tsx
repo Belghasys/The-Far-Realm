@@ -1,23 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import {
-    Ability,
-    ATTUNEMENT_LIMIT,
-    CharacterSheet,
-    InventoryItem,
-    Weapon,
-    ItemSlot,
-    getBaseACFromArmor,
-    getEffectiveAC,
-    getEffectiveSpeed,
-    getEffectiveStat,
-    getEffectiveMaxHP,
-    getPlayerAttackModifier,
-    getPlayerDamageBonus,
-    getXPProgress,
-    isRangedWeapon,
-    isStatModified,
-    parseMagicModifier,
-} from '../../types';
+import { Ability, ATTUNEMENT_LIMIT, CharacterSheet, InventoryItem, ItemSlot, getBaseACFromArmor, getEffectiveAC, getEffectiveSpeed, getEffectiveStat, getEffectiveMaxHP, getPlayerAttackModifier, getPlayerDamageBonus, getXPProgress, isRangedWeapon, isStatModified } from '../../types';
 import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Star, Sword, User, Zap } from 'lucide-react';
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../../data/subclasses';
 import { structureInventoryItem } from '../../engine/codexService';
