@@ -5,29 +5,7 @@ import { generateIntroCinematicAssets, IntroCinematicAssets } from '../../servic
 import { lyriaMusicService } from '../../services/media/lyriaMusic';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../../services/media/portraitService';
 import { log } from '../../services/infra/logger';
-
-const TRANS = {
-  en: {
-    hero: 'Hero',
-    adventureBegins: 'Adventure Begins',
-    firstSceneWaits: 'The first scene waits in the dark.',
-    openingVeil: 'Opening Veil',
-    playIntro: 'Play Intro',
-    narration: 'Narration',
-    beginScene: 'Begin Scene',
-    veilGathers: 'The veil gathers',
-  },
-  fr: {
-    hero: 'Héros',
-    adventureBegins: "L'aventure commence",
-    firstSceneWaits: 'La première scène attend dans le noir.',
-    openingVeil: 'Lever du voile',
-    playIntro: "Lancer l'intro",
-    narration: 'Narration',
-    beginScene: 'Commencer la scène',
-    veilGathers: 'Le voile se rassemble',
-  },
-} as const;
+import { INTRO_CINEMATIC_TEXTS as TRANS } from './texts';
 
 interface Props {
   character: CharacterSheet;

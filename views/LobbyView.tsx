@@ -23,63 +23,7 @@ import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { ADVENTURES as ADVENTURE_OPTIONS, localizeAdventure, type AdventureDifficulty, type LocalizedAdventure } from '../data/adventures';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
 import { coverArt, COVER_CUSTOM, COVER_IMPROVISED } from '../theme/art';
-
-const TRANS = {
-    en: {
-        back: "Back",
-        selectAdventure: "Select Your Adventure",
-        shareCode: "Share Session Code",
-        inviteFriends: "Invite your friends to join your adventure!",
-        selected: "Selected",
-        continueExisting: "Continue Existing Adventure",
-        createCharacter: "Create Character",
-        saveCorrupted: "Save data is corrupted. Please create a new character.",
-        noSaves: "No saved games found. Create a new hero!",
-        loadFailed: "Failed to load: ",
-        authored: "Hand-written campaign",
-        generated: "Improvised by the DM",
-        levels: "Levels",
-        chapters: "chapters",
-        acts: "acts",
-        sessions: "sessions",
-        difficulty: "Demand",
-        gentle: "Forgiving",
-        standard: "Standard",
-        harsh: "Punishing",
-        pickFirst: "Pick an adventure first",
-        sectionAuthored: "Original campaigns",
-        sectionAuthoredSub: "Written chapter by chapter for this game. The DM follows a real plot — named characters who remember you, planted secrets, an ending that was decided in advance. It does not make it up as it goes.",
-        sectionClassics: "The great classics",
-        sectionClassicsSub: "The archetypes of the genre: the haunted mine, the city of intrigue, the endless dungeon. Here the DM receives a premise and builds the story around your choices — no two runs are alike.",
-    },
-    fr: {
-        back: "Retour",
-        selectAdventure: "Choisissez Votre Aventure",
-        shareCode: "Partager le Code de Session",
-        inviteFriends: "Invitez vos amis à rejoindre votre aventure !",
-        selected: "Sélectionné",
-        continueExisting: "Continuer une Aventure Existante",
-        createCharacter: "Créer un Personnage",
-        saveCorrupted: "Les données de sauvegarde sont corrompues. Veuillez créer un nouveau personnage.",
-        noSaves: "Aucune partie sauvegardée trouvée. Créez un nouveau héros !",
-        loadFailed: "Échec du chargement : ",
-        authored: "Campagne d'auteur",
-        generated: "Improvisée par le MJ",
-        levels: "Niveaux",
-        chapters: "chapitres",
-        acts: "actes",
-        sessions: "séances",
-        difficulty: "Exigence",
-        gentle: "Indulgente",
-        standard: "Standard",
-        harsh: "Impitoyable",
-        pickFirst: "Choisissez d'abord une aventure",
-        sectionAuthored: "Campagnes d'auteur",
-        sectionAuthoredSub: "Écrites chapitre par chapitre pour ce jeu. Le MJ suit une vraie trame — des personnages nommés qui se souviennent de vous, des secrets posés à l'avance, une fin déjà décidée. Il n'invente pas au fil de la partie.",
-        sectionClassics: "Les grands classiques",
-        sectionClassicsSub: "Les archétypes du genre : la mine hantée, la cité en intrigue, le donjon sans fin. Ici le MJ reçoit une prémisse et bâtit l'histoire autour de vos choix — deux parties ne se ressemblent jamais.",
-    },
-} as const;
+import { LOBBY_VIEW_TEXTS as TRANS } from './texts';
 
 /** Un seul accent de couleur par niveau d'exigence — lisible en un coup d'œil. */
 const DIFFICULTY_TONE: Record<AdventureDifficulty, string> = {

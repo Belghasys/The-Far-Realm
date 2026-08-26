@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Shield, X } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: { reaction: 'REACTION', accept: 'Cast Shield (+5 AC)', decline: 'Take the hit' },
-    fr: { reaction: 'RÉACTION', accept: 'Lancer Bouclier (+5 CA)', decline: 'Encaisser le coup' },
-} as const;
+import { REACTION_PROMPT_TEXTS as TRANS } from './texts';
 
 export interface ReactionRequest {
     title: string;

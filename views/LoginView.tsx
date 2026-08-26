@@ -7,43 +7,7 @@ import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { NeonButton, NeonInput } from '../components/neon/NeonButton';
 import { BANNER } from '../theme/art';
-
-const TRANS = {
-    en: {
-        tagline: "The last place where we still play like we used to.",
-        kicker: "A DUNGEON MASTER THAT SPEAKS, AND LISTENS",
-        pitch: "The dungeon master is a live AI. It describes the room out loud, plays every character with its own voice, hears what you answer, and remembers all of it — your choices, your oaths, and the guard you knocked out in chapter 2.",
-        emailPlaceholder: "Email",
-        passwordPlaceholder: "Password",
-        login: "Login",
-        register: "Register",
-        orContinue: "Or continue with",
-        signInGoogle: "Sign in with Google",
-        loginFailed: "Login failed: ",
-        signupFailed: "Signup failed: ",
-        googleLoginFailed: "Google Login failed: ",
-        authFailed: "Authentication failed",
-        basement: "Doors close. Screens win. Down here, the table is still set.",
-        googleBlocked: (domain: string, url: string) => `Google login is blocked by Firebase because "${domain}" is not in Authentication > Settings > Authorized domains. Add "${domain}" there, or open the app from localhost instead: ${url}`,
-    },
-    fr: {
-        tagline: "Le dernier endroit où l'on joue encore comme avant.",
-        kicker: "UN MAÎTRE DU JEU QUI PARLE, ET QUI ÉCOUTE",
-        pitch: "Le maître du jeu est une IA en direct. Elle décrit la salle à voix haute, prête sa voix à chaque personnage, entend ce que vous répondez, et se souvient de tout : vos choix, vos serments, et le garde que vous avez assommé au chapitre 2.",
-        emailPlaceholder: "E-mail",
-        passwordPlaceholder: "Mot de passe",
-        login: "Connexion",
-        register: "S'inscrire",
-        orContinue: "Ou continuez avec",
-        signInGoogle: "Se connecter avec Google",
-        loginFailed: "Échec de la connexion : ",
-        signupFailed: "Échec de l'inscription : ",
-        googleLoginFailed: "Échec de la connexion Google : ",
-        authFailed: "Échec de l'authentification",
-        basement: "Les portes ferment. Les écrans gagnent. En bas, la table est encore mise.",
-        googleBlocked: (domain: string, url: string) => `La connexion Google est bloquée par Firebase car "${domain}" ne figure pas dans Authentication > Settings > Authorized domains. Ajoutez-y "${domain}", ou ouvrez l'application depuis localhost à la place : ${url}`,
-    },
-} as const;
+import { LOGIN_VIEW_TEXTS as TRANS } from './texts';
 
 /** Le « G » de Google, dessiné ici plutôt que chargé depuis un CDN tiers. */
 function GoogleMark() {

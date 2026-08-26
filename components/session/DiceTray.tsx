@@ -4,35 +4,7 @@ import { Swords, Dices } from 'lucide-react';
 // sfxLibrary est la seule source de SFX. Le service reste sur disque.
 import { sfxLibrary } from '../../services/media/sfxLibrary';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        success: '✓ Success',
-        failure: '✗ Failure',
-        combatTitle: 'Combat rolls',
-        skillTitle: 'Skill rolls',
-        combatEmpty: 'Attacks, damage and saving throws will appear here.',
-        skillEmpty: 'Skill checks will appear here.',
-        rollsTitle: 'Rolls',
-        tabAll: 'All',
-        tabCombat: 'Combat',
-        tabSkill: 'Skills',
-        allEmpty: 'Every roll (attacks, damage, saves, checks) will appear here.',
-    },
-    fr: {
-        success: '✓ Réussite',
-        failure: '✗ Échec',
-        combatTitle: 'Jets de combat',
-        skillTitle: 'Jets de compétence',
-        combatEmpty: "Attaques, dégâts et sauvegardes s'afficheront ici.",
-        skillEmpty: "Les jets de compétence s'afficheront ici.",
-        rollsTitle: 'Jets',
-        tabAll: 'Tous',
-        tabCombat: 'Combat',
-        tabSkill: 'Compétences',
-        allEmpty: "Tous les jets (attaques, dégâts, sauvegardes, tests) s'afficheront ici.",
-    },
-} as const;
+import { DICE_TRAY_TEXTS as TRANS } from './texts';
 
 type Tr = (typeof TRANS)[keyof typeof TRANS];
 

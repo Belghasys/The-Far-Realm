@@ -1,37 +1,7 @@
 import React from 'react';
 import { Dices, Target, Swords, Sparkles, Shield, ArrowUp, ArrowDown } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        damageRoll: 'DAMAGE ROLL',
-        savingThrow: 'SAVING THROW',
-        attackRoll: 'ATTACK ROLL',
-        skillCheck: 'SKILL CHECK',
-        advantageBadge: 'ADVANTAGE - Roll 2d20, keep highest',
-        disadvantageBadge: 'DISADVANTAGE - Roll 2d20, keep lowest',
-        inclDmBonus: (b: number) => `(incl. DM bonus ${b >= 0 ? '+' : ''}${b})`,
-        rulesContext: 'Rules context',
-        rollAdvantage: 'ROLL WITH ADVANTAGE!',
-        rollDisadvantage: 'ROLL WITH DISADVANTAGE',
-        clickToRoll: 'CLICK TO ROLL',
-        cancel: 'Cancel',
-    },
-    fr: {
-        damageRoll: 'JET DE DÉGÂTS',
-        savingThrow: 'JET DE SAUVEGARDE',
-        attackRoll: "JET D'ATTAQUE",
-        skillCheck: 'TEST DE COMPÉTENCE',
-        advantageBadge: 'AVANTAGE - Lancez 2d20, gardez le plus haut',
-        disadvantageBadge: 'DÉSAVANTAGE - Lancez 2d20, gardez le plus bas',
-        inclDmBonus: (b: number) => `(incl. bonus MJ ${b >= 0 ? '+' : ''}${b})`,
-        rulesContext: 'Contexte des règles',
-        rollAdvantage: 'LANCER AVEC AVANTAGE !',
-        rollDisadvantage: 'LANCER AVEC DÉSAVANTAGE',
-        clickToRoll: 'CLIQUEZ POUR LANCER',
-        cancel: 'Annuler',
-    },
-} as const;
+import { ACTION_PROMPT_TEXTS as TRANS } from './texts';
 
 interface Props {
     checkType: 'CHECK' | 'SAVE' | 'ATTACK' | 'DAMAGE' | 'DEATH_SAVE' | null;

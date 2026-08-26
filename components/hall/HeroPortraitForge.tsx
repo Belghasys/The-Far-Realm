@@ -30,37 +30,7 @@ import {
     MAX_HERO_PORTRAIT_ATTEMPTS,
 } from '../../services/media/portraitService';
 import { useSettingsStore } from '../../store/settingsStore';
-
-const TRANS = {
-    en: {
-        title: 'Hero portrait',
-        hint: 'Built from everything you wrote above — identity, appearance, weapon, temperament. The portrait you keep becomes your hero in every scene the game illustrates.',
-        generate: 'Forge a portrait',
-        again: 'Try another',
-        attemptsLeft: (n: number) => `${n} attempt${n > 1 ? 's' : ''} left`,
-        noAttempts: 'No attempts left — the kept portrait is final.',
-        needAppearance: 'Fill in Appearance first: without it the portrait will be generic.',
-        keep: 'Keep this one',
-        kept: 'Kept',
-        working: 'Painting…',
-        failed: 'Generation failed — nothing was deducted. Check that the image server or key is reachable, then try again.',
-        imagesOff: 'Image generation is disabled in the Settings — enable “Scene images” and “Generated portraits” to forge.',
-    },
-    fr: {
-        title: 'Portrait du héros',
-        hint: "Construit à partir de tout ce que tu as écrit ci-dessus — identité, apparence, arme, tempérament. Le portrait que tu gardes devient ton héros dans chaque scène illustrée par le jeu.",
-        generate: 'Forger un portrait',
-        again: 'En essayer un autre',
-        attemptsLeft: (n: number) => `${n} essai${n > 1 ? 's' : ''} restant${n > 1 ? 's' : ''}`,
-        noAttempts: 'Plus d’essai — le portrait gardé est définitif.',
-        needAppearance: "Renseigne d'abord l'Apparence : sans elle le portrait sera générique.",
-        keep: 'Garder celui-ci',
-        kept: 'Gardé',
-        working: 'Peinture en cours…',
-        failed: "Échec de la génération — aucun essai décompté. Vérifie que le serveur d'images ou la clé répond, puis réessaie.",
-        imagesOff: "La génération d'images est coupée dans les Réglages — active « Images de scène » et « Portraits générés » pour forger.",
-    },
-} as const;
+import { HERO_PORTRAIT_FORGE_TEXTS as TRANS } from './texts';
 
 interface Props {
     character: CharacterSheet;

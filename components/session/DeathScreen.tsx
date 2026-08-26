@@ -2,29 +2,7 @@ import React from 'react';
 import { Skull, Sparkles, LogOut } from 'lucide-react';
 import { CharacterSheet } from '../../types';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        fallen: 'YOU HAVE FALLEN',
-        line: (name: string) => `${name} has succumbed to their wounds. Three death saves failed — the darkness closes in.`,
-        resurrect: 'A miracle... at a price',
-        resurrectDesc: (gold: number) => `Fate is not done with you. You come back to life with 1 HP — but half your gold (${gold} gp) is claimed by the debt, and you carry a Scar of Destiny forever.`,
-        resurrectBtn: 'Accept the pact (revive at 1 HP)',
-        end: 'Let the story end',
-        endDesc: 'Accept death. Leave this campaign — your saga ends here.',
-        endBtn: 'Accept death (back to menu)',
-    },
-    fr: {
-        fallen: 'TU ES TOMBÉ',
-        line: (name: string) => `${name} a succombé à ses blessures. Trois jets de mort ratés — les ténèbres se referment.`,
-        resurrect: 'Un miracle… à un prix',
-        resurrectDesc: (gold: number) => `Le destin n'en a pas fini avec toi. Tu reviens à la vie avec 1 PV — mais la moitié de ton or (${gold} po) est réclamée par la dette, et tu porteras à jamais une Cicatrice du destin.`,
-        resurrectBtn: 'Accepter le pacte (revenir à 1 PV)',
-        end: "Laisser l'histoire se terminer",
-        endDesc: 'Accepter la mort. Quitter cette campagne — ta saga se termine ici.',
-        endBtn: 'Accepter la mort (retour au menu)',
-    },
-} as const;
+import { DEATH_SCREEN_TEXTS as TRANS } from './texts';
 
 interface Props {
     character: CharacterSheet;

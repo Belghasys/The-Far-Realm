@@ -2,50 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { saveService, SavePreview } from '../../services/persistence/saveService';
 import { Loader2, Trash2, Play, Calendar, Clock, User } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
+import { LOAD_GAME_MENU_TEXTS as TRANS } from './texts';
 
 interface LoadGameMenuProps {
     onLoad: (saveId: string) => void;
     onClose: () => void;
 }
-
-const TRANS = {
-    en: {
-        confirmDelete: "Delete this save?",
-        failedToLoad: "Failed to load saves",
-        title: "📜 Load a Game",
-        subtitle: "Resume where you left off",
-        loadingSaves: "Loading saves...",
-        retry: "Retry",
-        noSaves: "No saves found",
-        startNew: "Start a new adventure!",
-        level: "Lv.",
-        continue: "Continue",
-        close: "Close",
-        justNow: "Just now",
-        minAgo: (n: number) => `${n} min ago`,
-        hoursAgo: (n: number) => `${n}h ago`,
-        daysAgo: (n: number) => `${n} day${n > 1 ? 's' : ''} ago`,
-        locale: 'en-US',
-    },
-    fr: {
-        confirmDelete: "Supprimer cette sauvegarde ?",
-        failedToLoad: "Échec du chargement des sauvegardes",
-        title: "📜 Charger une Partie",
-        subtitle: "Reprendre là où vous vous êtes arrêté",
-        loadingSaves: "Chargement des sauvegardes...",
-        retry: "Réessayer",
-        noSaves: "Aucune sauvegarde trouvée",
-        startNew: "Commencez une nouvelle aventure !",
-        level: "Nv.",
-        continue: "Continuer",
-        close: "Fermer",
-        justNow: "À l'instant",
-        minAgo: (n: number) => `Il y a ${n} min`,
-        hoursAgo: (n: number) => `Il y a ${n}h`,
-        daysAgo: (n: number) => `Il y a ${n} jour${n > 1 ? 's' : ''}`,
-        locale: 'fr-FR',
-    },
-} as const;
 
 export function LoadGameMenu({ onLoad, onClose }: LoadGameMenuProps) {
     const [saves, setSaves] = useState<SavePreview[]>([]);

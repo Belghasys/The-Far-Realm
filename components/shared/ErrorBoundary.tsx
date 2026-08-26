@@ -1,22 +1,6 @@
 import React, { ErrorInfo, ReactNode } from 'react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        defaultTitle: 'Something went wrong',
-        body: 'An unexpected error occurred. Your game data has been auto-saved.',
-        errorDetails: 'Error details',
-        retry: '⚡ Retry',
-        reload: '🔄 Reload Page',
-    },
-    fr: {
-        defaultTitle: 'Une erreur est survenue',
-        body: "Une erreur inattendue s'est produite. Vos données de jeu ont été sauvegardées automatiquement.",
-        errorDetails: "Détails de l'erreur",
-        retry: '⚡ Réessayer',
-        reload: '🔄 Recharger la page',
-    },
-} as const;
+import { ERROR_BOUNDARY_TEXTS as TRANS } from './texts';
 
 interface Props {
     children: ReactNode;

@@ -1,0 +1,332 @@
+/**
+ * Les textes (fr / en) des ecrans de ce dossier, une table par composant.
+ *
+ * Rassembles ici le 2026-08-25 (R8 du rangement) : chaque table vivait en
+ * tete de son composant sous le nom TRANS ; le composant l'importe
+ * desormais sous ce meme alias, ses usages n'ont pas change. Contenu
+ * inchange.
+ */
+
+// ── ActionPips ──
+export const ACTION_PIPS_TEXTS = {
+    en: {
+        action: 'Action',
+        actions: 'Actions',
+        bonus: 'Bonus',
+        endTurn: 'End the turn ▸',
+    },
+    fr: {
+        action: 'Action',
+        actions: 'Actions',
+        bonus: 'Bonus',
+        endTurn: 'Terminer le tour ▸',
+    },
+} as const;
+
+// ── ActionPrompt ──
+export const ACTION_PROMPT_TEXTS = {
+    en: {
+        damageRoll: 'DAMAGE ROLL',
+        savingThrow: 'SAVING THROW',
+        attackRoll: 'ATTACK ROLL',
+        skillCheck: 'SKILL CHECK',
+        advantageBadge: 'ADVANTAGE - Roll 2d20, keep highest',
+        disadvantageBadge: 'DISADVANTAGE - Roll 2d20, keep lowest',
+        inclDmBonus: (b: number) => `(incl. DM bonus ${b >= 0 ? '+' : ''}${b})`,
+        rulesContext: 'Rules context',
+        rollAdvantage: 'ROLL WITH ADVANTAGE!',
+        rollDisadvantage: 'ROLL WITH DISADVANTAGE',
+        clickToRoll: 'CLICK TO ROLL',
+        cancel: 'Cancel',
+    },
+    fr: {
+        damageRoll: 'JET DE DÉGÂTS',
+        savingThrow: 'JET DE SAUVEGARDE',
+        attackRoll: "JET D'ATTAQUE",
+        skillCheck: 'TEST DE COMPÉTENCE',
+        advantageBadge: 'AVANTAGE - Lancez 2d20, gardez le plus haut',
+        disadvantageBadge: 'DÉSAVANTAGE - Lancez 2d20, gardez le plus bas',
+        inclDmBonus: (b: number) => `(incl. bonus MJ ${b >= 0 ? '+' : ''}${b})`,
+        rulesContext: 'Contexte des règles',
+        rollAdvantage: 'LANCER AVEC AVANTAGE !',
+        rollDisadvantage: 'LANCER AVEC DÉSAVANTAGE',
+        clickToRoll: 'CLIQUEZ POUR LANCER',
+        cancel: 'Annuler',
+    },
+} as const;
+
+// ── AuditConsole ──
+export const AUDIT_CONSOLE_TEXTS = {
+  en: {
+    title: '🔍 AUDIT CONSOLE',
+    filterPlaceholder: 'filter text…',
+    resume: '▶ resume',
+    pause: '⏸ pause',
+    clear: 'clear',
+    exportLog: '💾 export',
+    exportTitle: 'Save the displayed entries to a .txt file (respects the filters).',
+    devMode: '🛠 Dev Mode',
+    on: 'ON',
+    off: 'OFF',
+    noEntries: 'No entries. Play, talk to the DM, trigger an image/sound… everything shows up here live.',
+    copy: 'copy',
+    selectEntry: 'Select an entry to see the full detail (prompt, args, response…).',
+    noDetail: '(no detail)',
+    popupBlocked: "The audit window was blocked by the browser. Allow pop-ups for this site, then try again.",
+    windowTitle: "DungeonAI — Audit Console",
+  },
+  fr: {
+    title: '🔍 CONSOLE D\'AUDIT',
+    filterPlaceholder: 'filtrer le texte…',
+    resume: '▶ reprendre',
+    pause: '⏸ pause',
+    clear: 'vider',
+    exportLog: '💾 exporter',
+    exportTitle: 'Enregistre les entrées affichées dans un fichier .txt (filtres pris en compte).',
+    devMode: '🛠 Mode Dév',
+    on: 'ON',
+    off: 'OFF',
+    noEntries: 'Aucune entrée. Joue, parle au MJ, déclenche une image/son… tout apparaît ici en direct.',
+    copy: 'copier',
+    selectEntry: 'Sélectionne une entrée pour voir le détail complet (prompt, args, réponse…).',
+    noDetail: '(pas de détail)',
+    popupBlocked: "La fenêtre d'audit a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.",
+    windowTitle: "DungeonAI — Console d'audit",
+  },
+} as const;
+
+// ── DeathScreen ──
+export const DEATH_SCREEN_TEXTS = {
+    en: {
+        fallen: 'YOU HAVE FALLEN',
+        line: (name: string) => `${name} has succumbed to their wounds. Three death saves failed — the darkness closes in.`,
+        resurrect: 'A miracle... at a price',
+        resurrectDesc: (gold: number) => `Fate is not done with you. You come back to life with 1 HP — but half your gold (${gold} gp) is claimed by the debt, and you carry a Scar of Destiny forever.`,
+        resurrectBtn: 'Accept the pact (revive at 1 HP)',
+        end: 'Let the story end',
+        endDesc: 'Accept death. Leave this campaign — your saga ends here.',
+        endBtn: 'Accept death (back to menu)',
+    },
+    fr: {
+        fallen: 'TU ES TOMBÉ',
+        line: (name: string) => `${name} a succombé à ses blessures. Trois jets de mort ratés — les ténèbres se referment.`,
+        resurrect: 'Un miracle… à un prix',
+        resurrectDesc: (gold: number) => `Le destin n'en a pas fini avec toi. Tu reviens à la vie avec 1 PV — mais la moitié de ton or (${gold} po) est réclamée par la dette, et tu porteras à jamais une Cicatrice du destin.`,
+        resurrectBtn: 'Accepter le pacte (revenir à 1 PV)',
+        end: "Laisser l'histoire se terminer",
+        endDesc: 'Accepter la mort. Quitter cette campagne — ta saga se termine ici.',
+        endBtn: 'Accepter la mort (retour au menu)',
+    },
+} as const;
+
+// ── DiceTray ──
+export const DICE_TRAY_TEXTS = {
+    en: {
+        success: '✓ Success',
+        failure: '✗ Failure',
+        combatTitle: 'Combat rolls',
+        skillTitle: 'Skill rolls',
+        combatEmpty: 'Attacks, damage and saving throws will appear here.',
+        skillEmpty: 'Skill checks will appear here.',
+        rollsTitle: 'Rolls',
+        tabAll: 'All',
+        tabCombat: 'Combat',
+        tabSkill: 'Skills',
+        allEmpty: 'Every roll (attacks, damage, saves, checks) will appear here.',
+    },
+    fr: {
+        success: '✓ Réussite',
+        failure: '✗ Échec',
+        combatTitle: 'Jets de combat',
+        skillTitle: 'Jets de compétence',
+        combatEmpty: "Attaques, dégâts et sauvegardes s'afficheront ici.",
+        skillEmpty: "Les jets de compétence s'afficheront ici.",
+        rollsTitle: 'Jets',
+        tabAll: 'Tous',
+        tabCombat: 'Combat',
+        tabSkill: 'Compétences',
+        allEmpty: "Tous les jets (attaques, dégâts, sauvegardes, tests) s'afficheront ici.",
+    },
+} as const;
+
+// ── IntroCinematic ──
+export const INTRO_CINEMATIC_TEXTS = {
+  en: {
+    hero: 'Hero',
+    adventureBegins: 'Adventure Begins',
+    firstSceneWaits: 'The first scene waits in the dark.',
+    openingVeil: 'Opening Veil',
+    playIntro: 'Play Intro',
+    narration: 'Narration',
+    beginScene: 'Begin Scene',
+    veilGathers: 'The veil gathers',
+  },
+  fr: {
+    hero: 'Héros',
+    adventureBegins: "L'aventure commence",
+    firstSceneWaits: 'La première scène attend dans le noir.',
+    openingVeil: 'Lever du voile',
+    playIntro: "Lancer l'intro",
+    narration: 'Narration',
+    beginScene: 'Commencer la scène',
+    veilGathers: 'Le voile se rassemble',
+  },
+} as const;
+
+// ── ProposedActionPrompt ──
+export const PROPOSED_ACTION_PROMPT_TEXTS = {
+    en: {
+        actionPrincipale: 'Main action',
+        actionBonus: 'Bonus action',
+        gratuit: 'Free',
+        reaction: 'Reaction',
+        improvisedAction: 'Improvised action',
+        resolving: 'Resolving…',
+        confirm: 'Confirm',
+        cancel: 'Cancel',
+        advantage: 'advantage',
+        disadvantage: 'disadvantage',
+        attackRoll: 'Attack roll',
+        save: 'Save',
+        ifFail: 'if failed',
+        check: 'Check',
+        autoSuccess: 'Automatic success',
+        effect: 'Effect',
+        effectApplied: 'Effect applied',
+        attackScope: 'attack',
+    },
+    fr: {
+        actionPrincipale: 'Action principale',
+        actionBonus: 'Action bonus',
+        gratuit: 'Gratuit',
+        reaction: 'Réaction',
+        improvisedAction: 'Action improvisée',
+        resolving: 'Résolution…',
+        confirm: 'Confirmer',
+        cancel: 'Annuler',
+        advantage: 'avantage',
+        disadvantage: 'désavantage',
+        attackRoll: "Jet d'attaque",
+        save: 'Sauvegarde',
+        ifFail: 'si échec',
+        check: 'Test',
+        autoSuccess: 'Succès automatique',
+        effect: 'Effet',
+        effectApplied: 'Effet appliqué',
+        attackScope: 'attaque',
+    },
+} as const;
+
+// ── ReactionPrompt ──
+export const REACTION_PROMPT_TEXTS = {
+    en: { reaction: 'REACTION', accept: 'Cast Shield (+5 AC)', decline: 'Take the hit' },
+    fr: { reaction: 'RÉACTION', accept: 'Lancer Bouclier (+5 CA)', decline: 'Encaisser le coup' },
+} as const;
+
+// ── RollingDice ──
+export const ROLLING_DICE_TEXTS = {
+    en: {
+        defaultReason: 'Check',
+        rolling: 'Rolling...',
+        dmRolled: 'DM Rolled',
+        youRolled: 'You Rolled',
+        success: '✓ SUCCESS',
+        failure: '✗ FAILURE',
+        dismiss: 'Click anywhere to dismiss',
+    },
+    fr: {
+        defaultReason: 'Test',
+        rolling: 'Lancer...',
+        dmRolled: 'Le MJ a lancé',
+        youRolled: 'Vous avez lancé',
+        success: '✓ RÉUSSITE',
+        failure: '✗ ÉCHEC',
+        dismiss: 'Cliquez n\'importe où pour fermer',
+    },
+} as const;
+
+// ── SettingsPanel ──
+export const SETTINGS_PANEL_TEXTS = {
+    en: {
+        title: 'Settings',
+        subtitle: 'Audio, dice, DM voice and local media',
+        audio: 'Audio',
+        musicVolume: 'Music volume',
+        menuMusic: 'Theme on the menu screens',
+        menuMusicHint: 'The looping track on login, mode selection, campaign choice and character creation. In-session music is governed separately, below.',
+        sfxVolume: 'Sound effects volume',
+        dice: 'Dice',
+        diceSpeed: 'Dice animation speed',
+        speedNormal: 'Normal (3s)',
+        speedFast: 'Fast (1.5s)',
+        speedInstant: 'Instant',
+        diceHint: 'A click on the dice always skips the animation.',
+        voice: 'DM voice',
+        voiceHint: 'Applied at the next connection (leave and re-enter the session, or wait for a reconnect).',
+        media: 'Local media (GPU)',
+        localImages: 'Scene images (FLUX)',
+        localSfx: 'Sound effects',
+        localMusic: 'Music',
+        portraits: 'Generated portraits (hero & NPCs)',
+        mediaHint: 'Turn these off on a machine without a GPU — the game runs fine without them.',
+        imageQuality: 'Scene image quality',
+        qualityFast: 'Fast — FLUX.2 klein 4B',
+        qualityHigh: 'Quality — FLUX.2 klein 9B',
+        imageQualityHint: 'Quality follows the prompt more closely and renders finer detail, for a slightly longer wait. Applies from the next scene onward.',
+        gameplay: 'Story mode',
+        storyMode: 'Maximized healing (potions & spells)',
+        storyModeHint: 'Story-mode comfort: every potion and healing spell restores its maximum. Attacks and saves stay unchanged.',
+        reset: 'Reset to defaults',
+    },
+    fr: {
+        title: 'Réglages',
+        subtitle: 'Audio, dés, voix du MJ et médias locaux',
+        audio: 'Audio',
+        musicVolume: 'Volume de la musique',
+        menuMusic: 'Thème des écrans de menu',
+        menuMusicHint: "La piste en boucle sur la connexion, le choix du mode, la sélection de campagne et la création. La musique en partie se règle séparément, plus bas.",
+        sfxVolume: 'Volume des effets sonores',
+        dice: 'Dés',
+        diceSpeed: 'Vitesse des animations de dés',
+        speedNormal: 'Normale (3 s)',
+        speedFast: 'Rapide (1,5 s)',
+        speedInstant: 'Instantanée',
+        diceHint: "Un clic sur le dé saute toujours l'animation.",
+        voice: 'Voix du MJ',
+        voiceHint: "Appliquée à la prochaine connexion (quitte et reviens en session, ou attends une reconnexion).",
+        media: 'Médias locaux (GPU)',
+        localImages: 'Images de scène (FLUX)',
+        localSfx: 'Effets sonores',
+        localMusic: 'Musique',
+        portraits: 'Portraits générés (héros & PNJ)',
+        mediaHint: "À désactiver sur une machine sans GPU — le jeu fonctionne très bien sans.",
+        imageQuality: 'Qualité des images de scène',
+        qualityFast: 'Rapide — FLUX.2 klein 4B',
+        qualityHigh: 'Qualité — FLUX.2 klein 9B',
+        imageQualityHint: "Le mode Qualité suit mieux le prompt et rend plus de détail, pour une attente un peu plus longue. Prend effet dès la scène suivante.",
+        gameplay: 'Mode histoire',
+        storyMode: 'Soins maximisés (potions & sorts)',
+        storyModeHint: 'Confort du mode histoire : chaque potion et sort de soin rend son maximum. Attaques et sauvegardes inchangées.',
+        reset: 'Réinitialiser',
+    },
+} as const;
+
+// ── StatusBar ──
+export const STATUS_BAR_TEXTS = {
+    en: {
+        halfCover: 'Half cover',
+        threeQuarterCover: '3/4 cover',
+        coverTooltipSuffix: 'AC against ranged attacks',
+        turnsShort: 'turn(s)',
+        turnAbbrev: 't',
+        noActiveEffect: 'No active effect',
+    },
+    fr: {
+        halfCover: 'Demi-couvert',
+        threeQuarterCover: '3/4 couvert',
+        coverTooltipSuffix: 'CA contre les attaques à distance',
+        turnsShort: 'tour(s)',
+        turnAbbrev: 't',
+        noActiveEffect: 'Aucun effet actif',
+    },
+} as const;

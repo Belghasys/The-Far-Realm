@@ -4,63 +4,7 @@ import { GameWindow, WindowTabs } from './GameWindow';
 import { useGameStore } from '../../store/gameStore';
 import { usePortrait, npcPortraitKey, portraitPrompt } from '../../services/media/portraitService';
 import { galleryService, buildChronicleHtml, GalleryImage } from '../../services/media/galleryService';
-
-const TRANS = {
-    en: {
-        windowTitle: 'Adventure Journal',
-        subtitle: (active: number, chronicle: number) => `${active} active quests / ${chronicle} chronicle entries`,
-        tabPrologue: 'Prologue',
-        tabQuests: 'Quests',
-        tabPeople: 'NPCs',
-        tabPlaces: 'Places',
-        tabChronicle: 'Chronicle',
-        noPrologue: 'No prologue recorded for this campaign.',
-        objective: 'Objective',
-        startingPoint: 'Starting point',
-        theThreat: 'The threat',
-        prologue: 'Prologue',
-        adventureBeginning: 'Your adventure is only beginning.',
-        statusActive: 'Active',
-        statusCompleted: 'Completed',
-        statusFailed: 'Failed',
-        noNotableCharacter: 'No notable character recorded yet.',
-        unknown: 'Unknown',
-        noLocation: 'No discovered location yet.',
-        chronicleEmpty: 'The chronicle will fill as the campaign unfolds.',
-        new: 'New',
-        tabGallery: 'Gallery',
-        galleryEmpty: 'Generated scene images will collect here.',
-        exportChronicle: 'Export the illustrated chronicle (HTML)',
-        dayWord: 'Day',
-    },
-    fr: {
-        windowTitle: 'Journal d’aventure',
-        subtitle: (active: number, chronicle: number) => `${active} quêtes actives / ${chronicle} entrées de chronique`,
-        tabPrologue: 'Prologue',
-        tabQuests: 'Quêtes',
-        tabPeople: 'PNJ',
-        tabPlaces: 'Lieux',
-        tabChronicle: 'Chronique',
-        noPrologue: 'Aucun prologue enregistré pour cette campagne.',
-        objective: 'Objectif',
-        startingPoint: 'Point de départ',
-        theThreat: 'La menace',
-        prologue: 'Prologue',
-        adventureBeginning: 'Ton aventure ne fait que commencer.',
-        statusActive: 'Active',
-        statusCompleted: 'Terminée',
-        statusFailed: 'Échouée',
-        noNotableCharacter: 'Aucun personnage notable enregistré pour l’instant.',
-        unknown: 'Inconnu',
-        noLocation: 'Aucun lieu découvert pour l’instant.',
-        chronicleEmpty: 'La chronique se remplira au fil de la campagne.',
-        new: 'Nouveau',
-        tabGallery: 'Galerie',
-        galleryEmpty: 'Les images de scène générées se rassembleront ici.',
-        exportChronicle: 'Exporter la chronique illustrée (HTML)',
-        dayWord: 'Jour',
-    },
-} as const;
+import { JOURNAL_PANEL_TEXTS as TRANS } from './texts';
 
 type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
 

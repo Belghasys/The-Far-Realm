@@ -1,27 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { DICE_ANIM_MS, skipDice } from '../../services/media/diceTiming';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        defaultReason: 'Check',
-        rolling: 'Rolling...',
-        dmRolled: 'DM Rolled',
-        youRolled: 'You Rolled',
-        success: '✓ SUCCESS',
-        failure: '✗ FAILURE',
-        dismiss: 'Click anywhere to dismiss',
-    },
-    fr: {
-        defaultReason: 'Test',
-        rolling: 'Lancer...',
-        dmRolled: 'Le MJ a lancé',
-        youRolled: 'Vous avez lancé',
-        success: '✓ RÉUSSITE',
-        failure: '✗ ÉCHEC',
-        dismiss: 'Cliquez n\'importe où pour fermer',
-    },
-} as const;
+import { ROLLING_DICE_TEXTS as TRANS } from './texts';
 
 interface Props {
     onComplete?: () => void;

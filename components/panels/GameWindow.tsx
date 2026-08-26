@@ -1,11 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: { close: 'Close' },
-    fr: { close: 'Fermer' },
-} as const;
+import { GAME_WINDOW_TEXTS as TRANS } from './texts';
 
 type WindowSize = 'sm' | 'md' | 'lg' | 'xl';
 type WindowTone = 'dark' | 'paper';

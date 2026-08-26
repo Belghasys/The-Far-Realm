@@ -2,45 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { auditBus, AuditEntry, AuditChannel, AUDIT_CHANNELS, AUDIT_CHANNEL_LABEL } from '../../services/infra/auditBus';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-  en: {
-    title: '🔍 AUDIT CONSOLE',
-    filterPlaceholder: 'filter text…',
-    resume: '▶ resume',
-    pause: '⏸ pause',
-    clear: 'clear',
-    exportLog: '💾 export',
-    exportTitle: 'Save the displayed entries to a .txt file (respects the filters).',
-    devMode: '🛠 Dev Mode',
-    on: 'ON',
-    off: 'OFF',
-    noEntries: 'No entries. Play, talk to the DM, trigger an image/sound… everything shows up here live.',
-    copy: 'copy',
-    selectEntry: 'Select an entry to see the full detail (prompt, args, response…).',
-    noDetail: '(no detail)',
-    popupBlocked: "The audit window was blocked by the browser. Allow pop-ups for this site, then try again.",
-    windowTitle: "DungeonAI — Audit Console",
-  },
-  fr: {
-    title: '🔍 CONSOLE D\'AUDIT',
-    filterPlaceholder: 'filtrer le texte…',
-    resume: '▶ reprendre',
-    pause: '⏸ pause',
-    clear: 'vider',
-    exportLog: '💾 exporter',
-    exportTitle: 'Enregistre les entrées affichées dans un fichier .txt (filtres pris en compte).',
-    devMode: '🛠 Mode Dév',
-    on: 'ON',
-    off: 'OFF',
-    noEntries: 'Aucune entrée. Joue, parle au MJ, déclenche une image/son… tout apparaît ici en direct.',
-    copy: 'copier',
-    selectEntry: 'Sélectionne une entrée pour voir le détail complet (prompt, args, réponse…).',
-    noDetail: '(pas de détail)',
-    popupBlocked: "La fenêtre d'audit a été bloquée par le navigateur. Autorise les pop-ups pour ce site, puis réessaie.",
-    windowTitle: "DungeonAI — Console d'audit",
-  },
-} as const;
+import { AUDIT_CONSOLE_TEXTS as TRANS } from './texts';
 
 const CHANNEL_COLOR: Record<AuditChannel, string> = {
   'gemini-system': '#a78bfa',

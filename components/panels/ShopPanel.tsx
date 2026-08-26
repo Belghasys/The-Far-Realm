@@ -8,37 +8,7 @@ import { CharacterSheet, Item } from '../../types';
 import { sellPriceFor, MERCHANT_TYPE_LABELS, MerchantType } from '../../data/merchants';
 import { GameWindow, WindowTabs } from './GameWindow';
 import { Coins, ShoppingCart, HandCoins } from 'lucide-react';
-
-const TRANS = {
-    en: {
-        buyTab: 'Buy',
-        sellTab: 'Sell',
-        buyBtn: 'Buy',
-        sellBtn: 'Sell',
-        gold: 'gp',
-        purse: 'Purse',
-        emptyStock: 'Nothing left on the stall.',
-        emptyBag: 'Nothing to sell (equipped items must be unequipped first).',
-        notEnoughGold: 'Not enough gold.',
-        priceLabel: 'Price',
-        sellFor: 'Sells for',
-        leave: 'Leave the shop',
-    },
-    fr: {
-        buyTab: 'Acheter',
-        sellTab: 'Vendre',
-        buyBtn: 'Acheter',
-        sellBtn: 'Vendre',
-        gold: 'po',
-        purse: 'Bourse',
-        emptyStock: "Plus rien sur l'étal.",
-        emptyBag: "Rien à vendre (déséquipez d'abord les objets portés).",
-        notEnoughGold: "Pas assez d'or.",
-        priceLabel: 'Prix',
-        sellFor: 'Rachat',
-        leave: 'Quitter la boutique',
-    },
-} as const;
+import { SHOP_PANEL_TEXTS as TRANS } from './texts';
 
 interface ShopPanelProps {
     character: CharacterSheet;

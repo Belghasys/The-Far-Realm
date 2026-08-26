@@ -16,55 +16,7 @@ import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus, Award, BookOpen } fro
 import { ensureProgressionState } from '../../engine/rulesEngine';
 import { maxSpellLevelForClass, spellsForClass } from '../../engine/codexService';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        levelUp: '🎊 LEVEL UP! 🎊',
-        reachesLevel: (name: string, lvl: number) => <>{name} reaches <span className="font-bold text-amber-200">Level {lvl}</span>!</>,
-        multiLevel: (n: number) => `(${n} levels gained at once — every improvement is counted)`,
-        newAbilities: 'New Abilities',
-        chooseYourPath: 'choose your path',
-        choiceIsFinal: 'This choice is permanent and unlocks real mechanical abilities.',
-        asiTitle: 'Ability Score Improvement',
-        distribute: (n: number) => <>Distribute <span className="font-bold text-amber-200">{n} point{n > 1 ? 's' : ''}</span> (max 20 per ability).</>,
-        remaining: 'Remaining:',
-        later: 'Later',
-        laterTitle: 'Your abilities are applied; the ability points stay available on the character sheet.',
-        confirm: '✓ Confirm',
-        featTitle: 'Or take a Feat',
-        featHint: 'A feat costs 2 ability points and grants a unique permanent capability. Passive numbers apply automatically; the DM honors the rest.',
-        featCost: '(2 points)',
-        featSelected: 'Feat selected — remaining points can go to abilities.',
-        spellsTitle: 'New spells',
-        spellsHint: (n: number) => `Pick up to ${n} new spell${n > 1 ? 's' : ''} (cantrips included). You can always learn more later from the Spellbook.`,
-        spellsPicked: (n: number, max: number) => `${n}/${max} picked`,
-        cantripsGroup: 'Cantrips',
-        levelGroup: (n: number) => `Level ${n}`,
-    },
-    fr: {
-        levelUp: '🎊 NIVEAU SUPÉRIEUR ! 🎊',
-        reachesLevel: (name: string, lvl: number) => <>{name} atteint le <span className="font-bold text-amber-200">Niveau {lvl}</span>!</>,
-        multiLevel: (n: number) => `(${n} niveaux gagnés d'un coup — toutes les améliorations sont comptées)`,
-        newAbilities: 'Nouvelles Capacités',
-        chooseYourPath: 'choisis ta voie',
-        choiceIsFinal: 'Ce choix est définitif et débloque de vraies capacités mécaniques.',
-        asiTitle: 'Amélioration de Caractéristiques',
-        distribute: (n: number) => <>Répartis <span className="font-bold text-amber-200">{n} point{n > 1 ? 's' : ''}</span> (max 20 par caractéristique).</>,
-        remaining: 'Restant :',
-        later: 'Plus tard',
-        laterTitle: 'Tes capacités sont appliquées ; les points de caractéristique restent disponibles dans la fiche personnage.',
-        confirm: '✓ Confirmer',
-        featTitle: 'Ou prends un Don',
-        featHint: 'Un don coûte 2 points de caractéristique et accorde une capacité permanente unique. Les bonus passifs s\'appliquent automatiquement ; le MJ honore le reste.',
-        featCost: '(2 points)',
-        featSelected: 'Don sélectionné — les points restants vont aux caractéristiques.',
-        spellsTitle: 'Nouveaux sorts',
-        spellsHint: (n: number) => `Choisis jusqu'à ${n} nouveau${n > 1 ? 'x' : ''} sort${n > 1 ? 's' : ''} (tours de magie inclus). Tu pourras toujours en apprendre plus tard via le Grimoire.`,
-        spellsPicked: (n: number, max: number) => `${n}/${max} choisi${n > 1 ? 's' : ''}`,
-        cantripsGroup: 'Tours de magie',
-        levelGroup: (n: number) => `Niveau ${n}`,
-    },
-} as const;
+import { LEVEL_UP_MODAL_TEXTS as TRANS } from './texts';
 
 interface Props {
     character: CharacterSheet;

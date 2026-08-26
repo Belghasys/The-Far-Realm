@@ -1,20 +1,6 @@
 import React from 'react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        action: 'Action',
-        actions: 'Actions',
-        bonus: 'Bonus',
-        endTurn: 'End the turn ▸',
-    },
-    fr: {
-        action: 'Action',
-        actions: 'Actions',
-        bonus: 'Bonus',
-        endTurn: 'Terminer le tour ▸',
-    },
-} as const;
+import { ACTION_PIPS_TEXTS as TRANS } from './texts';
 
 interface Props {
     attacksMax: number;

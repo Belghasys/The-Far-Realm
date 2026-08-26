@@ -2,49 +2,7 @@ import React from 'react';
 import { Sparkles, Swords, X } from 'lucide-react';
 import type { ProposedPlayerAction } from '../../store/gameStore';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        actionPrincipale: 'Main action',
-        actionBonus: 'Bonus action',
-        gratuit: 'Free',
-        reaction: 'Reaction',
-        improvisedAction: 'Improvised action',
-        resolving: 'Resolving…',
-        confirm: 'Confirm',
-        cancel: 'Cancel',
-        advantage: 'advantage',
-        disadvantage: 'disadvantage',
-        attackRoll: 'Attack roll',
-        save: 'Save',
-        ifFail: 'if failed',
-        check: 'Check',
-        autoSuccess: 'Automatic success',
-        effect: 'Effect',
-        effectApplied: 'Effect applied',
-        attackScope: 'attack',
-    },
-    fr: {
-        actionPrincipale: 'Action principale',
-        actionBonus: 'Action bonus',
-        gratuit: 'Gratuit',
-        reaction: 'Réaction',
-        improvisedAction: 'Action improvisée',
-        resolving: 'Résolution…',
-        confirm: 'Confirmer',
-        cancel: 'Annuler',
-        advantage: 'avantage',
-        disadvantage: 'désavantage',
-        attackRoll: "Jet d'attaque",
-        save: 'Sauvegarde',
-        ifFail: 'si échec',
-        check: 'Test',
-        autoSuccess: 'Succès automatique',
-        effect: 'Effet',
-        effectApplied: 'Effet appliqué',
-        attackScope: 'attaque',
-    },
-} as const;
+import { PROPOSED_ACTION_PROMPT_TEXTS as TRANS } from './texts';
 
 type Tr = (typeof TRANS)[keyof typeof TRANS];
 

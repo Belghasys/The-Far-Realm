@@ -1,25 +1,7 @@
 import React from 'react';
 import { Shield, Sparkles, Flame, Eye, Zap, Heart, Swords } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
-
-const TRANS = {
-    en: {
-        halfCover: 'Half cover',
-        threeQuarterCover: '3/4 cover',
-        coverTooltipSuffix: 'AC against ranged attacks',
-        turnsShort: 'turn(s)',
-        turnAbbrev: 't',
-        noActiveEffect: 'No active effect',
-    },
-    fr: {
-        halfCover: 'Demi-couvert',
-        threeQuarterCover: '3/4 couvert',
-        coverTooltipSuffix: 'CA contre les attaques à distance',
-        turnsShort: 'tour(s)',
-        turnAbbrev: 't',
-        noActiveEffect: 'Aucun effet actif',
-    },
-} as const;
+import { STATUS_BAR_TEXTS as TRANS } from './texts';
 
 export interface StatusEffect {
     id: string;

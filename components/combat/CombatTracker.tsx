@@ -8,76 +8,10 @@ import { CombatActionsPanel } from './CombatActionsPanel';
 import { useGameStore } from '../../store/gameStore';
 import type { Combatant } from '../../engine/combatants';
 import { combatantSide, combatantMapKey, buildDisplayNames, normalizeTurn } from '../../engine/combatants';
+import { COMBAT_TRACKER_TEXTS as TRANS } from './texts';
 // Compatibilité : ces symboles vivaient ici ; ils sont désormais dans le moteur.
 export type { Combatant } from '../../engine/combatants';
 export { combatantSide, isHero, combatantMapKey, buildDisplayNames, displayNameFor } from '../../engine/combatants';
-
-const TRANS = {
-    en: {
-        mainActionTitle: 'Main Action (Green = Available, Gray = Used)',
-        bonusActionTitle: 'Bonus Action (Yellow = Available, Gray = Used)',
-        reactionTitle: 'Reaction (Purple = Available, Gray = Used)',
-        extraAttackTitle: 'Extra Attack (Blue = Available, Gray = Used)',
-        rangeNear: '↔ near',
-        rangeFar: '🏹 far',
-        rangeNearTitle: 'A few strides away — a melee attack closes in for free.',
-        rangeFarTitle: 'Far away — closing in takes your attack, or use a ranged/thrown weapon.',
-        target: '🎯 TARGET',
-        init: 'Init',
-        usesRemaining: (n: number) => `${n} uses remaining`,
-        currentTurn: 'Current turn',
-        reference: 'Reference',
-        combat: 'Combat',
-        initiative: 'Initiative',
-        round: 'Round',
-        enemies: 'Enemies',
-        endMyTurn: 'End my turn',
-        waiting: 'Waiting',
-        endTurnTitle: 'End your turn — the enemies play next',
-        otherCombatantsTurn: "Other combatants' turn",
-        endCombat: 'End the combat',
-        end: 'End',
-        combatRolls: 'Combat rolls',
-        playerLegend: '● player',
-        enemyLegend: '● enemy/DM',
-        rollsEmpty: 'Attack and damage rolls will appear here.',
-        outOfFight: 'Out of the fight (alive)',
-        fled: 'fled',
-        surrendered: 'surrendered',
-    },
-    fr: {
-        mainActionTitle: 'Action Principale (Vert = Disponible, Gris = Utilisé)',
-        bonusActionTitle: 'Action Bonus (Jaune = Disponible, Gris = Utilisé)',
-        reactionTitle: 'Réaction (Violet = Disponible, Gris = Utilisé)',
-        extraAttackTitle: 'Attaque Supplémentaire (Bleu = Disponible, Gris = Utilisé)',
-        rangeNear: '↔ proche',
-        rangeFar: '🏹 loin',
-        rangeNearTitle: 'À quelques pas — une attaque de mêlée engage gratuitement.',
-        rangeFarTitle: 'Loin — se rapprocher coûte ton attaque, ou utilise une arme à distance/de jet.',
-        target: '🎯 CIBLE',
-        init: 'Init',
-        usesRemaining: (n: number) => `${n} utilisations restantes`,
-        currentTurn: 'Tour actuel',
-        reference: 'Référence',
-        combat: 'Combat',
-        initiative: 'Initiative',
-        round: 'Round',
-        enemies: 'Ennemis',
-        endMyTurn: 'Terminer mon tour',
-        waiting: 'En attente',
-        endTurnTitle: 'Terminer ton tour — les ennemis jouent ensuite',
-        otherCombatantsTurn: 'Tour des autres combattants',
-        endCombat: 'Terminer le combat',
-        end: 'Fin',
-        combatRolls: 'Jets de combat',
-        playerLegend: '● joueur',
-        enemyLegend: '● ennemi/MJ',
-        rollsEmpty: "Les jets d'attaque et de dégâts s'afficheront ici.",
-        outOfFight: 'Hors combat (vivants)',
-        fled: 'en fuite',
-        surrendered: 'reddition',
-    },
-} as const;
 
 type Tr = (typeof TRANS)[keyof typeof TRANS];
 

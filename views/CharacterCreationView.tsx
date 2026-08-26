@@ -17,6 +17,7 @@ import { getAuthoredCampaign } from '../data/campaigns';
 import { buildSlimManifestPayload } from '../services/persistence/manifestHydration';
 import { personalizeAuthoredManifest } from '../services/dm/llmService';
 import { buildInitialRuntime, ensureLockedFirstScene, buildInitialJournal } from '../services/dm/adventureStart';
+import { CHARACTER_CREATION_VIEW_TEXTS as TRANS } from './texts';
 
 /**
  * Les trois animations de l'ecran de forge.
@@ -45,51 +46,6 @@ export const PLACEHOLDER_FALLBACKS: Record<string, string> = {
     HERO_WOUND: 'sa vieille blessure', HERO_BOND: 'ce qui lui est cher', HERO_HOOK: 'le destin',
     PERSONAL_LOSS: 'un être cher perdu à jamais', HERO_CONTACT: 'une vieille connaissance',
 };
-
-const TRANS = {
-    en: {
-        multiplayerDisabled: "Multiplayer is disabled until real-time state sync is implemented.",
-        personalizationError: "Error while personalizing the campaign.",
-        unknownGenError: "Unknown error while generating the adventure.",
-        manifestError: "Unable to generate the adventure manifest.",
-        enteringArena: "Entering the Arena...",
-        stepScars: "Reading your hero's scars...",
-        stepHooks: "Binding personal hooks to the world...",
-        stepVillain: "Mirroring the villain to your desire...",
-        stepAllies: "Choosing allies, secrets, and threats...",
-        stepCinematic: "Preparing the opening cinematic...",
-        stepInscribing: "Inscribing the saga...",
-        genErrorTitle: "⚠️ Generation Error",
-        back: "← Back",
-        adventureManifest: "Adventure Manifest",
-        initSeeds: "Initializing world seeds...",
-        checkingAlignment: "Checking alignment with",
-        preparingSave: "Preparing save state...",
-        readyingDice: "Readying the Dice of Fate...",
-        backLobby: "Back",
-    },
-    fr: {
-        multiplayerDisabled: "Le multijoueur est désactivé jusqu'à l'implémentation de la synchronisation d'état en temps réel.",
-        personalizationError: "Erreur lors de la personnalisation de la campagne.",
-        unknownGenError: "Erreur inconnue lors de la génération de l'aventure.",
-        manifestError: "Impossible de générer le manifeste d'aventure.",
-        enteringArena: "Entrée dans l'Arène...",
-        stepScars: "Lecture des cicatrices de votre héros...",
-        stepHooks: "Liaison de vos enjeux personnels au monde...",
-        stepVillain: "Reflet du vilain dans votre désir...",
-        stepAllies: "Choix des alliés, des secrets et des menaces...",
-        stepCinematic: "Préparation de la cinématique d'ouverture...",
-        stepInscribing: "Inscription de la saga...",
-        genErrorTitle: "⚠️ Erreur de Génération",
-        back: "← Retour",
-        adventureManifest: "Manifeste d'Aventure",
-        initSeeds: "Initialisation des graines du monde...",
-        checkingAlignment: "Vérification de l'alignement avec",
-        preparingSave: "Préparation de la sauvegarde...",
-        readyingDice: "Préparation des Dés du Destin...",
-        backLobby: "Retour",
-    },
-} as const;
 
 export function CharacterCreationView() {
     const navigate = useNavigate();
