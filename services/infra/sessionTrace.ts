@@ -20,7 +20,7 @@
  * (serveur absent = zéro bruit, zéro fuite mémoire).
  */
 import { auditBus } from './auditBus';
-import { campaignEventLog } from './campaignEventLog';
+import { campaignEventLog } from '../campaignEventLog';
 import { log } from './logger';
 import { viteEnv } from './modelConfig';
 

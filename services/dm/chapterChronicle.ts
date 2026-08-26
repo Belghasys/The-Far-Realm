@@ -11,10 +11,10 @@
  *    marqués `completed` qui ont encore des lignes de log mais pas de digest
  *    (échec réseau passé, crash, ancien chemin d'outil) et les gèle.
  */
-import { useGameStore } from '../store/gameStore';
+import { useGameStore } from '../../store/gameStore';
 import { summarizeChapterDigest, summarizeActDigest } from './llmService';
-import { saveService } from './saveService';
-import { log } from './logger';
+import { saveService } from '../saveService';
+import { log } from '../infra/logger';
 
 /**
  * Seuil de VOLUME : au-delà de tant de lignes de log dans le chapitre courant,

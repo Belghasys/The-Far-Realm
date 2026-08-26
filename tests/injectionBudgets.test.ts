@@ -14,7 +14,7 @@ import {
     buildCampaignDirectorContext,
     INJECTION_BUDGETS,
     splitChapterPressure,
-} from '../services/campaignDirector';
+} from '../services/dm/campaignDirector';
 import { DEFAULT_CHAR } from '../data/character';
 import { PORTES_EXIL } from '../data/campaigns/portesExil';
 import { CHANT_BRISE } from '../data/campaigns/chantBrise';

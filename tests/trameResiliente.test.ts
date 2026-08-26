@@ -13,8 +13,8 @@ import {
     isAtOpening,
     stripOpeningCanonFact,
     OPENING_FACT_PREFIX,
-} from '../services/campaignDirector';
-import { chapterVolumeDue, VOLUME_LINE_THRESHOLD } from '../services/chapterChronicle';
+} from '../services/dm/campaignDirector';
+import { chapterVolumeDue, VOLUME_LINE_THRESHOLD } from '../services/dm/chapterChronicle';
 import { DEFAULT_CHAR } from '../data/character';
 import { PORTES_EXIL } from '../data/campaigns/portesExil';
 

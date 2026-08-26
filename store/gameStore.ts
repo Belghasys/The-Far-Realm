@@ -13,7 +13,7 @@ import {
     JournalState
 } from '../types';
 import { repairCharacterWeapons } from '../data/equipment';
-import { viteEnv } from '../services/modelConfig';
+import { viteEnv } from '../services/infra/modelConfig';
 import { isSlimManifestPayload } from '../services/manifestTokens';
 import type { ChatMessage } from '../hooks/useTranscript';
 import type { Combatant } from '../components/CombatTracker';

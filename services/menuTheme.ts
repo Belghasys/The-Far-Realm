@@ -20,8 +20,8 @@
  * surprend).
  */
 import { getAppSettings, useSettingsStore } from '../store/settingsStore';
-import { viteEnv } from './modelConfig';
-import { log } from './logger';
+import { viteEnv } from './infra/modelConfig';
+import { log } from './infra/logger';
 
 /** Vide = pas de thème de menu du tout (le réglage reste sans effet). */
 const THEME_URL = viteEnv(

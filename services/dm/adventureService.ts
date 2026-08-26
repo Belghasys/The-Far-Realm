@@ -1,13 +1,13 @@
-import { AdventureManifest, CharacterSheet } from '../types';
-import { CreatureStats, formatCR } from '../data/bestiary';
-import { log } from './logger';
+import { AdventureManifest, CharacterSheet } from '../../types';
+import { CreatureStats, formatCR } from '../../data/bestiary';
+import { log } from '../infra/logger';
 
 /**
  * Formats the full bestiary as a compact string for the AI prompt.
  * Only includes ID, Name, and CR for tokens efficiency.
  */
 export async function getLightweightBestiary(): Promise<string> {
-    const { CSV_MONSTERS } = await import('../data/monsterData');
+    const { CSV_MONSTERS } = await import('../../data/monsterData');
     return Object.values(CSV_MONSTERS)
         .map(m => `${m.id}: ${m.name} (CR: ${formatCR(m.cr)})`)
         .join('\n');
@@ -17,7 +17,7 @@ export async function getLightweightBestiary(): Promise<string> {
  * Hydrates a list of monster IDs with their full stats from monsterData.
  */
 export async function hydrateCampaignBestiary(ids: string[]): Promise<CreatureStats[]> {
-    const { CSV_MONSTERS } = await import('../data/monsterData');
+    const { CSV_MONSTERS } = await import('../../data/monsterData');
     const selected: CreatureStats[] = [];
 
     for (const id of ids) {

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CharacterSheetUI } from '../components/CharacterSheet';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/saveService';
-import { adventureService } from '../services/adventureService';
+import { adventureService } from '../services/dm/adventureService';
 import { memoryManager } from '../services/memoryManager';
 import { campaignEventLog } from '../services/campaignEventLog';
 import { AdventureManifest, CampaignRuntimeState, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME, JournalState } from '../types';
@@ -15,7 +15,7 @@ import { Panneau, Titre } from '../components/neon/SheetKit';
 import { NeonButton } from '../components/neon/NeonButton';
 import { getAuthoredCampaign } from '../data/campaigns';
 import { buildSlimManifestPayload } from '../services/manifestHydration';
-import { personalizeAuthoredManifest } from '../services/llmService';
+import { personalizeAuthoredManifest } from '../services/dm/llmService';
 
 /**
  * Les trois animations de l'ecran de forge.

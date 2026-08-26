@@ -20,11 +20,11 @@ const RACINE = path.resolve(__dirname, '..');
 
 /** Modules qui ne doivent JAMAIS être chargés avec l'écran de connexion. */
 const INTERDITS = [
-    'services/geminiRealtime.ts',
+    'services/dm/geminiRealtime.ts',
     'engine/rulesEngine.ts',
-    'services/systemPrompt.ts',
-    'services/campaignDirector.ts',
-    'services/llmService.ts',
+    'services/dm/systemPrompt.ts',
+    'services/dm/campaignDirector.ts',
+    'services/dm/llmService.ts',
     'engine/codexService.ts',
     'services/manifestHydration.ts',
     'components/CombatTracker.tsx',

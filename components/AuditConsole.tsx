@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { auditBus, AuditEntry, AuditChannel, AUDIT_CHANNELS, AUDIT_CHANNEL_LABEL } from '../services/auditBus';
+import { auditBus, AuditEntry, AuditChannel, AUDIT_CHANNELS, AUDIT_CHANNEL_LABEL } from '../services/infra/auditBus';
 import { useGameStore } from '../store/gameStore';
 
 const TRANS = {

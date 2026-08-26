@@ -12,8 +12,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { generateGeminiImage } from './geminiImageService';
 import { getAppSettings } from '../store/settingsStore';
-import { auditBus } from './auditBus';
-import { log } from './logger';
+import { auditBus } from './infra/auditBus';
+import { log } from './infra/logger';
 import type { CharacterSheet } from '../types';
 
 const DB_NAME = 'dungeonai_portraits';

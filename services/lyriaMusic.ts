@@ -4,10 +4,10 @@
  */
 
 import { campaignEventLog } from './campaignEventLog';
-import { log } from './logger';
+import { log } from './infra/logger';
 import { isCombatLoopMood } from './mediaThrottle';
 import { getAppSettings } from '../store/settingsStore';
-import { viteEnv } from './modelConfig';
+import { viteEnv } from './infra/modelConfig';
 
 const DB_NAME = 'dungeonai_media_cache';
 const DB_VERSION = 1;

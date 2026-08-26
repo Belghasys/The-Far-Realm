@@ -56,7 +56,7 @@ else:
     print(f"[sfx] Bank directory not found ({_SFX_DIR}) — /sfx disabled.", flush=True)
 
 # ── Journal de session (POST /session-log) ───────────────────────────────────
-# Le client (services/sessionTrace.ts) envoie par lots tout ce qui traverse
+# Le client (services/infra/sessionTrace.ts) envoie par lots tout ce qui traverse
 # auditBus + campaignEventLog ; on APPEND en JSONL dans logs/sessions/ pour
 # qu'une session entière soit analysable après coup depuis Claude Code.
 import json as _trace_json

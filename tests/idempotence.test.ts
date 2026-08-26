@@ -17,7 +17,7 @@ import {
 } from '../engine/rulesEngine';
 import { describeCombatFoes } from '../store/gameStore';
 import { questCreationBlockedBy } from '../hooks/useToolProcessor';
-import { buildCampaignDirectorContext } from '../services/campaignDirector';
+import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 import { DEFAULT_CHAR } from '../data/character';
 
 const EMPTY = { isActive: false, combatants: [], currentTurn: '' };

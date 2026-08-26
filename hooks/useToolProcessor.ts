@@ -1,20 +1,20 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { useGameStore, appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
-import { freezeChapterDigest, reconcileMissingDigests } from '../services/chapterChronicle';
+import { freezeChapterDigest, reconcileMissingDigests } from '../services/dm/chapterChronicle';
 // Résumeur : digest FIGÉ d'un chapitre clos (architecture secrétaire+résumeur).
 import { generateGeminiImage, buildCombatImagePrompt, buildSceneImagePrompt, buildMomentImagePrompt, type ScenePromptOptions } from '../services/geminiImageService';
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../services/imageReferences';
 import { Item, getEffectiveStat, getRollBonus, getGearSkillBonus, getEffectiveAC, getPlayerAttackCount } from '../types';
 import { getCheckModifier, canonicalSkillName, SKILL_TRANSLATIONS, gearAdvantageFor, armorStealthPenalty, foldText } from '../engine/skillSystem';
-import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/campaignDirector';
+import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../services/dm/campaignDirector';
 import { CLASS_DATA } from '../data/classes';
 import { campaignEventLog } from '../services/campaignEventLog';
-import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/branchWriterService';
+import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../services/dm/branchWriterService';
 import { saveService } from '../services/saveService';
 import { waitDice } from '../services/diceTiming';
 // 2026-08-15 — localSfxService (génération) débranché : banque sfxLibrary seule.
 import { sfxLibrary } from '../services/sfxLibrary';
-import { auditBus } from '../services/auditBus';
+import { auditBus } from '../services/infra/auditBus';
 import {
     addEnemyToEncounter,
     addAllyToEncounter,

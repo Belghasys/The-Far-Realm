@@ -1,6 +1,6 @@
-import { log } from './logger';
+import { log } from './infra/logger';
 import { withImageSfxGpu } from './gpuLock';
-import { auditBus } from './auditBus';
+import { auditBus } from './infra/auditBus';
 import { getAppSettings } from '../store/settingsStore';
 
 const DB_NAME = 'dungeonai_sfx_cache';

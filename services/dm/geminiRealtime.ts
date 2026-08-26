@@ -1,20 +1,20 @@
-import { CharacterSheet } from "../types";
+import { CharacterSheet } from "../../types";
 import { GoogleGenAI, Modality, Session, LiveServerMessage } from '@google/genai';
 // @ts-ignore
 import pcmProcessorUrl from './pcm-processor.js?url';
-import { memoryManager } from './memoryManager';
-import { getCreature, getCreatureAttacks } from '../data/bestiary';
-import { preloadCodexBestiary } from '../engine/codexService';
-import { getWeapon, weaponSummary } from '../data/weapons';
-import { log } from './logger';
+import { memoryManager } from '../memoryManager';
+import { getCreature, getCreatureAttacks } from '../../data/bestiary';
+import { preloadCodexBestiary } from '../../engine/codexService';
+import { getWeapon, weaponSummary } from '../../data/weapons';
+import { log } from '../infra/logger';
 import { buildSystemPrompt } from './systemPrompt';
-import { campaignEventLog } from './campaignEventLog';
-import { requireViteEnv } from './modelConfig';
-import { auditBus } from './auditBus';
-import { getAppSettings } from '../store/settingsStore';
+import { campaignEventLog } from '../campaignEventLog';
+import { requireViteEnv } from '../infra/modelConfig';
+import { auditBus } from '../infra/auditBus';
+import { getAppSettings } from '../../store/settingsStore';
 // IJ7 — lecture de l'activeSaveId pour lier le handle de reprise à la sauvegarde.
-import { useGameStore } from '../store/gameStore';
-import { sessionTrace } from './sessionTrace';
+import { useGameStore } from '../../store/gameStore';
+import { sessionTrace } from '../infra/sessionTrace';
 
 // --- Audio Utilities ---
 

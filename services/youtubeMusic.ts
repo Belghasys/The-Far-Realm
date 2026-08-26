@@ -16,7 +16,7 @@
  * appelant qui ne saurait jamais que ça a échoué laisserait le joueur devant
  * un cadre vide et silencieux.
  */
-import { log } from './logger';
+import { log } from './infra/logger';
 
 /** Au-delà, on considère que l'API ne viendra pas. */
 const DELAI_MS = 4000;

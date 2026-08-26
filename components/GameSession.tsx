@@ -15,11 +15,11 @@ import { NavButton, HeaderActionButton, HudMeter } from './gameSession/HudContro
  *  sur trois tentatives, plus l'ouverture de chaque session). */
 const RECONNECT_WINDOW_S = 20;
 import { useGameStore } from '../store/gameStore';
-import { LiveConnectionManager } from '../services/geminiRealtime';
-import { auditBus } from '../services/auditBus';
-import { auditNarration } from '../services/narrationAuditor';
-import { runJournalKeeper } from '../services/journalKeeper';
-import { sessionTrace } from '../services/sessionTrace';
+import { LiveConnectionManager } from '../services/dm/geminiRealtime';
+import { auditBus } from '../services/infra/auditBus';
+import { auditNarration } from '../services/dm/narrationAuditor';
+import { runJournalKeeper } from '../services/dm/journalKeeper';
+import { sessionTrace } from '../services/infra/sessionTrace';
 
 import { Ability, AdventureManifest, CampaignRuntimeState, CharacterSheet, TimeOfDay, calculateLevelFromXP, getCombatAC, getEffectiveAC, getEffectiveStat, getPlayerAttackModifier, getPlayerDamageBonus, getXPProgress, parseItemStatModifier, getPlayerAttackCount, racialHPBonusPerLevel, isRangedWeapon } from '../types';
 import { Mic, MicOff, Volume2, User, Backpack, Scroll, Swords, MessageSquare, LogOut, Book, Save, Music, Sparkles, Map as MapIcon, BookOpen, Settings as SettingsIcon, CalendarDays, Dices } from 'lucide-react';
@@ -40,7 +40,7 @@ import { StatusBar, StatusEffect } from './StatusBar';
 import { ActionPips } from './ActionPips';
 import { LevelUpModal } from './LevelUpModal';
 import { campaignEventLog } from '../services/campaignEventLog';
-import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../services/campaignDirector';
+import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../services/dm/campaignDirector';
 import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, applyStoryModifiersToPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, normalizeStoryModifier, tickRoundEffects, rageEffect, monkMartialArtsDie, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, stampEffectExpiry, resolveSpellAgainstTargets, releaseNpcConcentrationEffect, formatDamageParts, levelUpCompanions, applyAutoDamageSpell, spendSpellSlot, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, victoryXP, concentrationBreakOnDeparture, MORALE_DC } from '../engine/rulesEngine';
 import type { ProposedPlayerAction } from '../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
@@ -58,8 +58,8 @@ import { lookupMonster, lookupSpell, lookupCondition } from '../engine/codexServ
 import { rollDice, maxRollOfFormula, isSystemLine } from '../engine/utils';
 import { foldText } from '../engine/skillSystem';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../store/gameStore';
-import { summarizeCurrentChapter } from '../services/llmService';
-import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../services/chapterChronicle';
+import { summarizeCurrentChapter } from '../services/dm/llmService';
+import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../services/dm/chapterChronicle';
 import { playWeaponSwing, playDamageImpact, playSpellSfx, playPlayerHurt, playDiceRoll, playEndTurn } from '../services/combatSfx';
 import { getCheckModifier } from '../engine/skillSystem';
 import { getCasterKit, type MonsterSpell, type CasterKit } from '../data/casterKits';

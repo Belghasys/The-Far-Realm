@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LiveDungeonMaster, LiveConnectionManager, liveConnectionConfigSummary } from '../services/geminiRealtime';
+import { LiveDungeonMaster, LiveConnectionManager, liveConnectionConfigSummary } from '../services/dm/geminiRealtime';
 import { CharacterSheet } from '../types';
 
 interface UseDMConnectionProps {

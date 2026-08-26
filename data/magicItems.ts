@@ -8,7 +8,7 @@
 // Limited-use dice (once/day breath weapons, wand charges...) are kept in the
 // description ONLY, so equipped items never auto-apply them to every hit.
 
-import { CodexDamageType, Item, ItemSlot } from './../types';
+import { CodexDamageType, Item, ItemSlot } from '../types';
 
 export type MagicItemRarity = 'common' | 'uncommon' | 'rare' | 'very rare' | 'legendary';
 

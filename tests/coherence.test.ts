@@ -5,7 +5,7 @@
  * qui ne matche plus, un bloc qui regrossit, un journal effacé par erreur.
  */
 import { describe, it, expect } from 'vitest';
-import { buildCampaignDirectorContext } from '../services/campaignDirector';
+import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 import { DEFAULT_CHAR } from '../data/character';
 
 const EMPTY_COMBAT: any = { isActive: false, combatants: [], currentTurn: '', round: 1 };

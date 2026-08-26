@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildCampaignDirectorContext, resolveSceneIndex } from '../services/campaignDirector';
+import { buildCampaignDirectorContext, resolveSceneIndex } from '../services/dm/campaignDirector';
 import { DEFAULT_CHAR } from '../data';
 
 /**

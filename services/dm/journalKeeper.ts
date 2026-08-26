@@ -12,8 +12,8 @@
  * qu'un journal pollué.
  */
 import { GoogleGenAI } from '@google/genai';
-import { log } from './logger';
-import { requireViteEnv, viteEnv } from './modelConfig';
+import { log } from '../infra/logger';
+import { requireViteEnv, viteEnv } from '../infra/modelConfig';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 // Même famille que l'auditeur : extraction mécanique fréquente → modèle léger

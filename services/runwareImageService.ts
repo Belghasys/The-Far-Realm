@@ -21,8 +21,8 @@
  * console, une fois.
  */
 
-import { log } from './logger';
-import { viteEnv } from './modelConfig';
+import { log } from './infra/logger';
+import { viteEnv } from './infra/modelConfig';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from './firebase';
 

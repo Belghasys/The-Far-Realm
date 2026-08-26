@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
-import type { CampaignSubBranchPlan, CampaignSubBranchScene, CharacterSheet, JournalState } from '../types';
-import type { CampaignEvent } from './campaignEventLog';
-import { requireViteEnv } from './modelConfig';
+import type { CampaignSubBranchPlan, CampaignSubBranchScene, CharacterSheet, JournalState } from '../../types';
+import type { CampaignEvent } from '../campaignEventLog';
+import { requireViteEnv } from '../infra/modelConfig';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const BRANCH_MODEL = requireViteEnv('VITE_BRANCH_MODEL', import.meta.env.VITE_BRANCH_MODEL);

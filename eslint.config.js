@@ -34,7 +34,7 @@ export default tseslint.config(
     },
     // Worklet audio : globals du scope AudioWorklet.
     {
-        files: ['services/pcm-processor.js'],
+        files: ['services/dm/pcm-processor.js'],
         languageOptions: {
             globals: { AudioWorkletProcessor: 'readonly', registerProcessor: 'readonly', sampleRate: 'readonly', currentTime: 'readonly' },
         },

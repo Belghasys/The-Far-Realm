@@ -19,7 +19,7 @@ import {
     secretLockLabel,
     buildLockedSecretFacts,
     buildCampaignDirectorContext,
-} from '../services/campaignDirector';
+} from '../services/dm/campaignDirector';
 import { PE_PROTECTED_SECRETS } from '../data/campaigns/portesExil/foundations';
 import { CB_PROTECTED_SECRETS } from '../data/campaigns/chantBrise/foundations';
 import { HIVER_SANS_AUBE } from '../data/campaigns/hiverSansAube';

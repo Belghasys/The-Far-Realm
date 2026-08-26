@@ -16,9 +16,9 @@
  * URL surchargable via VITE_SFX_LIBRARY_URL (runtime.env > build > défaut).
  */
 
-import { log } from './logger';
-import { auditBus } from './auditBus';
-import { viteEnv } from './modelConfig';
+import { log } from './infra/logger';
+import { auditBus } from './infra/auditBus';
+import { viteEnv } from './infra/modelConfig';
 import { getAppSettings } from '../store/settingsStore';
 
 type SfxRegistry = Record<string, string[]>;

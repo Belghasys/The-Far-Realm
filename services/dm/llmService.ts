@@ -1,8 +1,8 @@
-import { CharacterSheet, AdventureManifest } from "../types";
+import { CharacterSheet, AdventureManifest } from "../../types";
 import { GoogleGenAI, type GenerateContentResponse } from '@google/genai';
-import { log } from './logger';
-import { requireViteEnv, viteEnv } from './modelConfig';
-import { collectTokens, substituteTokens } from './manifestTokens';
+import { log } from '../infra/logger';
+import { requireViteEnv, viteEnv } from '../infra/modelConfig';
+import { collectTokens, substituteTokens } from '../manifestTokens';
 
 const GEMINI_KEY = requireViteEnv('VITE_GEMINI_API_KEY', import.meta.env.VITE_GEMINI_API_KEY);
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);

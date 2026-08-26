@@ -253,7 +253,7 @@ export function useSaveSync({
                 if (memoryManager.shouldSummarize()) {
                     console.log('⚠️ Token threshold reached! Triggering AI summarization...');
                     try {
-                        const { summarizeHistory, extractCampaignFacts } = await import('../services/llmService');
+                        const { summarizeHistory, extractCampaignFacts } = await import('../services/dm/llmService');
                         const parseArchivedMessages = (text: string) => text.split('\n')
                             .filter(l => l.trim())
                             .map(line => {

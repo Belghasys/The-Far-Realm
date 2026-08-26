@@ -8,9 +8,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { lyriaMusicService, MusicMood } from '../services/lyriaMusic';
 import { useGameStore } from '../store/gameStore';
-import { log } from '../services/logger';
+import { log } from '../services/infra/logger';
 import { isCombatLoopMood } from '../services/mediaThrottle';
-import { auditBus } from '../services/auditBus';
+import { auditBus } from '../services/infra/auditBus';
 
 interface MusicDirectorOptions {
     enabled: boolean;

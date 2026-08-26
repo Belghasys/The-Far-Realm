@@ -47,7 +47,7 @@ import { campaignEventLog } from '../services/campaignEventLog';
 import { buildMusicPromptForMood } from '../services/lyriaMusic';
 import { cooldownRemainingMs, isCombatLoopMood, MEDIA_GENERATION_COOLDOWN_MS } from '../services/mediaThrottle';
 import { useGameStore } from '../store/gameStore';
-import { buildCampaignDirectorContext } from '../services/campaignDirector';
+import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 
 // ─── GPU Lock (media coordination) ──────────────────────────────────────────
 

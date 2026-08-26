@@ -4,7 +4,7 @@ import { AdventureManifest, CharacterSheet } from '../types';
 import { generateIntroCinematicAssets, IntroCinematicAssets } from '../services/introCinematicService';
 import { lyriaMusicService } from '../services/lyriaMusic';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../services/portraitService';
-import { log } from '../services/logger';
+import { log } from '../services/infra/logger';
 
 const TRANS = {
   en: {

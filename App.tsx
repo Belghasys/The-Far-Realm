@@ -44,7 +44,7 @@ export default function App() {
             // d'écarter. L'import dynamique renvoie la même instance de
             // module, donc le même singleton que celui de la partie.
             if (previous) {
-               void import('./services/geminiRealtime')
+               void import('./services/dm/geminiRealtime')
                   .then(m => m.LiveConnectionManager.getInstance().disconnect())
                   .catch(() => { /* hors ligne : rien à couper */ });
             }

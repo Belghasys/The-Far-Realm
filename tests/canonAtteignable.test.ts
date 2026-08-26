@@ -7,7 +7,7 @@
  * évincés par un plafond qui coupe du mauvais côté.
  */
 import { describe, it, expect } from 'vitest';
-import { buildCampaignDirectorContext } from '../services/campaignDirector';
+import { buildCampaignDirectorContext } from '../services/dm/campaignDirector';
 import { advanceClocksForNight } from '../engine/rulesEngine';
 import { uniqueAppend } from '../hooks/useToolProcessor';
 import { DEFAULT_CHAR } from '../data/character';
