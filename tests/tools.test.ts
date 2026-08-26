@@ -85,6 +85,24 @@ describe('Les outils du MJ', () => {
         expect(r.error).toMatch(/UNKNOWN TEMPLATE/);
     });
 
+    it('le moteur choisit le spécimen : « un dragon rouge » pour un niveau 5 seul en combat mortel = le dragonnet, avec avertissement', async () => {
+        useGameStore.setState({ character: { ...DEFAULT_CHAR, name: 'Hero', level: 5, companions: [] }, combatState: { isActive: false, combatants: [], currentTurn: '' } } as any);
+        const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'un dragon rouge', difficulty: 'deadly' } });
+        expect(r.success).toBe(true);
+        expect(r.reason).toBe('family');
+        expect(r.chosen).toBe('Red Dragon Wyrmling');
+        expect(r.combatant.name).toBe('Red Dragon Wyrmling');
+        expect(r.warning).toMatch(/DEADLY/);
+    });
+
+    it('… et devant un niveau 2 seul, même le plus faible dragon rouge dépasse le plafond : refus explicite', async () => {
+        useGameStore.setState({ character: { ...DEFAULT_CHAR, name: 'Hero', level: 2, companions: [] }, combatState: { isActive: false, combatants: [], currentTurn: '' } } as any);
+        const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'un dragon rouge' } });
+        expect(r.success).toBe(false);
+        expect(r.error).toMatch(/OVER BUDGET/);
+        expect(r.error).toMatch(/Red Dragon Wyrmling/);
+    });
+
     it('un nom du bestiaire, même avec une épithète, est accepté (« Gobelin borgne » → Goblin)', async () => {
         const r: any = await runTool(refs(), { name: 'add_enemy_init', args: { name: 'Gobelin borgne' } });
         expect(r.success).toBe(true);

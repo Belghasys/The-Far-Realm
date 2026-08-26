@@ -228,7 +228,8 @@ export const GAME_TOOL_DECLARATIONS = [
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                name: { type: "STRING" as any, description: "Bestiary creature name (English or French), optionally with a flavour epithet." },
+                name: { type: "STRING" as any, description: "A bestiary creature (English or French, epithet allowed), OR a family/kind the engine will size to the party: 'un dragon rouge', 'un mort-vivant', 'un thug', 'une guenaude'. The answer tells you which creature was chosen (chosen, reason, threat)." },
+                difficulty: { type: "STRING" as any, description: "easy | medium | hard | deadly — how dangerous this foe should be for the party when the engine picks a specimen for a family/kind. Default: hard." },
                 range: { type: "STRING" as any, description: "Starting distance from the player: 'melee' (adjacent), 'near' (a few strides), 'far' (needs a full move or ranged attack). Default: near." },
                 force: { type: "BOOLEAN" as any, description: "Set true ONLY after the engine rejected the spawn as over-budget AND the campaign manifest explicitly scripts this fight as a deadly set-piece. Never use it to pad ordinary encounters." }
             },

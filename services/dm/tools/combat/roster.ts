@@ -10,8 +10,9 @@ import { foldText } from '../../../../engine/skillSystem';
 import { campaignEventLog } from '../../../../services/persistence/campaignEventLog';
 import { addEnemyToEncounter, addAllyToEncounter, advanceTurn, combatantSide, encounterAlreadyRunning, resolveCombatantReference, sanitizeXPGrant, startEncounter, withdrawCombatant, concentrationBreakOnDeparture, DepartedReason } from '../../../../engine/rulesEngine';
 import { assessEncounterPressure, buildEncounter, lookupSpell } from '../../../../engine/codexService';
-import { getCreature, suggestCreatures } from '../../../../data/bestiary';
+import { BESTIARY, getCreature, suggestCreatures } from '../../../../data/bestiary';
 import { effectivePartySize } from '../../../../engine/partyWeight';
+import { pickSpecimen } from '../../../../engine/monsterPick';
 import { syncCompanionsFromState, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
@@ -126,7 +127,25 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     // fiches les plus proches pour qu'il se corrige — jamais de PV, CA ou XP
     // sortis de l'imagination du modèle.
     const requestedName = String(args.name || '').trim();
-    if (!getCreature(requestedName)) {
+    const baseState = character ? startEncounter(character, live.combatState) : { ...live.combatState, isActive: true };
+    const hadPlayerBefore = live.combatState.combatants.some((c: any) => c.isPlayer);
+    // LE MOTEUR CHOISIT LE SPÉCIMEN (2026-08-26, engine/monsterPick) : « un
+    // dragon rouge » devant un niveau 2 devient un dragonnet, « un thug » au
+    // niveau 8 un vétéran ; un nom exact n'est jamais substitué, seulement jaugé.
+    const heroLevel = character?.level || 1;
+    const weightedParty = effectivePartySize(heroLevel, baseState.combatants
+        .filter((c: any) => !c.isPlayer && c.hp.current > 0 && c.side === 'ally')
+        .map((c: any) => c.cr ?? getCreature(c.name)?.cr));
+    const manifest = live.adventureManifestData;
+    const chapitre = manifest?.chapters?.find((ch: any) => ch.id === live.campaignRuntime?.currentChapterId);
+    const pick = pickSpecimen(requestedName, {
+        heroLevel,
+        partySize: weightedParty,
+        difficulty: (['easy', 'medium', 'hard', 'deadly'] as const).find(d => d === String(args.difficulty || '').toLowerCase()) || 'hard',
+        plannedIds: (chapitre?.encounters || []).flatMap((e: any) => e.monsters || []),
+        campaignIds: manifest?.selectedMonsterIds || [],
+    }, BESTIARY);
+    if (!pick.creature) {
         const suggestions = suggestCreatures(requestedName);
         return {
             success: false,
@@ -136,8 +155,16 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
             suggestions,
         };
     }
-    const baseState = character ? startEncounter(character, live.combatState) : { ...live.combatState, isActive: true };
-    const hadPlayerBefore = live.combatState.combatants.some((c: any) => c.isPlayer);
+    // Le nom du combattant : la fiche choisie quand le moteur a tranché
+    // (famille, type), le nom du MJ (épithète comprise) quand c'est un nom exact.
+    if (pick.reason === 'family' || pick.reason === 'type' || pick.reason === 'planned') args = { ...args, name: pick.creature.name };
+    const choix = {
+        chosen: pick.creature.name, reason: pick.reason, threat: pick.threat,
+        ...(pick.candidates.length ? { candidates: pick.candidates } : {}),
+        ...(pick.threat === 'beyond' || pick.threat === 'deadly'
+            ? { warning: `${pick.creature.name} is ${pick.threat.toUpperCase()} for this party (level ${heroLevel}, weighted size ${weightedParty}). Narrate accordingly: retreat, negotiation, stealth, or a set-piece the campaign scripted.` }
+            : {}),
+    };
      // GARDE-FOU DE DIFFICULTÉ (audit 2026-08-21) : budget XP SRD
     // cumulé sur les ennemis VIVANTS + le nouveau venu. Sans lui,
     // rien ne bornait les spawns — un mage niv 1 recevait 4 loups
@@ -156,9 +183,7 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
         .map((c: any) => xpOfEnemy(c.name, c.hp?.max));
     // Les alliés pèsent selon leur CR (engine/partyWeight) : un civil secouru
     // ne double plus le budget, un vétéran compte pour un aventurier.
-    const partySize = effectivePartySize(character?.level || 1, baseState.combatants
-        .filter((c: any) => !c.isPlayer && c.hp.current > 0 && c.side === 'ally')
-        .map((c: any) => c.cr ?? getCreature(c.name)?.cr));
+    const partySize = weightedParty;
     const newcomerXP = xpOfEnemy(String(args.name || ''), Number(args.hp) || undefined);
     const currentPressure = assessEncounterPressure(livingEnemyXPs, character?.level || 1, partySize);
     const projectedPressure = assessEncounterPressure([...livingEnemyXPs, newcomerXP], character?.level || 1, partySize);
@@ -192,11 +217,13 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     const pressureWarning = projectedPressure.adjustedXP > projectedPressure.deadlyBudget
         ? `CAUTION: the encounter is now DEADLY-tier (${projectedPressure.adjustedXP}/${projectedPressure.deadlyBudget} adjusted XP for this party). No more reinforcements; keep escape and clever play viable.`
         : undefined;
+    const warnings = [choix.warning, pressureWarning].filter(Boolean).join(' ');
     return {
         success: true,
         initiative: combatant.initiative,
         combatant,
-        ...(pressureWarning ? { warning: pressureWarning } : {}),
+        ...choix,
+        ...(warnings ? { warning: warnings } : {}),
         ...(returning ? { note: `${combatant.name} had ${returning.reason} earlier in this fight and is now BACK in the initiative.` } : {}),
     };
 }
