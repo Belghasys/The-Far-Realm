@@ -170,3 +170,41 @@ describe('runNPCTurn — le tour d\'un PNJ joué par le moteur', () => {
         expect(journal.logs.filter(l => l.type === 'save')).toHaveLength(2);
     });
 });
+
+const heroHasEffect = (re: RegExp) => (useGameStore.getState().character!.activeEffects || []).some((e: any) => re.test(e.name));
+
+describe('les capacités SRD (data/monsterData2) jouées par le moteur', () => {
+    it('dragon rouge adulte : présence terrifiante puis souffle (18d6 feu, DEX 21), recharge sur 5-6, puis morsure et griffes', async () => {
+        const { journal, npc, turn } = setup('Adult Red Dragon');
+
+        await turn(); // tour 1 : présence (WIS 19 : 14 → raté → effrayé) puis souffle chargé
+        expect(journal.logs.some(l => l.type === 'save' && /Frightful Presence/.test(l.name))).toBe(true);
+        expect(heroHasEffect(/frightened|effray/i)).toBe(true);
+        expect(journal.logs.some(l => l.type === 'save' && /vs Fire Breath/.test(l.name))).toBe(true);
+        expect(journal.logs.some(l => /Fire Breath → Hero/.test(l.name) && l.total === 90)).toBe(true); // 18 × 5, sauvegarde ratée
+        expect(heroHp()).toBe(910);
+        expect(npc().abilityUses).toMatchObject({ 'Frightful Presence': 1, 'Fire Breath': 1 });
+        expect(journal.rolls.filter(r => /Adult Red Dragon : (Bite|Claw)/.test(r.name))).toHaveLength(0); // le souffle remplace les attaques
+
+        await turn(); // tour 2 : recharge 1d6 = 5 ≥ 5 → le souffle repart
+        expect(journal.logs.filter(l => /Fire Breath → Hero/.test(l.name))).toHaveLength(2);
+        expect(heroHp()).toBe(820);
+
+        vi.spyOn(Math, 'random').mockReturnValue(0.1); // d6 = 1 : pas de recharge
+        await turn(); // tour 3 : la présence ne se rejoue pas, le dragon mord et griffe (multiattaque SRD : 1 + 2)
+        expect(journal.logs.filter(l => /Frightful Presence/.test(l.name))).toHaveLength(1);
+        expect(journal.logs.filter(l => /Fire Breath → Hero/.test(l.name))).toHaveLength(2);
+        const melee = journal.rolls.filter(r => r.isDM && /^Adult Red Dragon : (Bite|Claw)$/.test(r.name));
+        expect(melee).toHaveLength(3);
+        expect(melee.filter(r => /Claw/.test(r.name))).toHaveLength(2);
+        expect(heroHp()).toBeLessThan(820);
+    });
+
+    it('tarrasque : la queue qui touche renverse le héros (STR 20 raté → à terre)', async () => {
+        const { journal, turn } = setup('Tarrasque');
+        await turn();
+        expect(journal.rolls.some(r => /Tarrasque : Tail/.test(r.name))).toBe(true);
+        expect(journal.logs.some(l => l.type === 'save' && /vs Tail/.test(l.name))).toBe(true);
+        expect(heroHasEffect(/prone|terre/i)).toBe(true);
+    });
+});

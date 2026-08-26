@@ -131,9 +131,11 @@ describe('les cycles', () => {
         return res.sort((a, b) => a[0].localeCompare(b[0]));
     }
 
-    it('aucun cycle en dehors des deux qui préexistaient au rangement', () => {
+    it('aucun cycle en dehors de celui qui préexistait au rangement (engine/combat)', () => {
+        // 2026-08-26 : le cycle data/bestiary <-> data/monsterData a disparu quand le
+        // bestiaire est passé à monsterData2 (import de type seulement). Il ne
+        // reste que les six modules de engine/combat, qui se lisent entre eux.
         expect(cycles()).toEqual([
-            ['data/bestiary.ts', 'data/monsterData.ts'],
             ['engine/combat/attack.ts', 'engine/combat/effects.ts', 'engine/combat/encounter.ts', 'engine/combat/rolls.ts', 'engine/combat/spells.ts', 'engine/combat/types.ts'],
         ]);
     });

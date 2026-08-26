@@ -84,6 +84,24 @@ RE_REACH = re.compile(r'reach (\d+) ft', re.I)
 RE_RANGE = re.compile(r'range (\d+)/(\d+) ft', re.I)
 RE_SAVE = re.compile(r'DC (\d+) (Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma) saving throw', re.I)
 RE_COST = re.compile(r'\(Costs (\d+) Actions?\)', re.I)
+# la CONDITION qu'un effet sur touche impose sur un echec (mot du SRD -> id
+# de condition du jeu) ; sans condition reconnue, l'effet reste narratif
+CONDITIONS = [('grappled', 'grappled'), ('restrained', 'restrained'), ('knocked prone', 'prone'), ('prone', 'prone'),
+              ('poisoned', 'poisoned'), ('paralyzed', 'paralyzed'), ('frightened', 'frightened'), ('stunned', 'stunned'),
+              ('blinded', 'blinded'), ('deafened', 'deafened'), ('charmed', 'charmed'), ('unconscious', 'unconscious'),
+              ('petrified', 'petrified'), ('incapacitated', 'incapacitated')]
+
+
+def condition_dans(desc, apres_save=True):
+    """La premiere condition citee APRES 'saving throw' (l'effet de l'echec)."""
+    texte = desc
+    if apres_save:
+        k = desc.lower().find('saving throw')
+        if k >= 0:
+            texte = desc[k:]
+    bas = texte.lower()
+    trouvees = [(bas.find(mot), cond) for mot, cond in CONDITIONS if mot in bas]
+    return min(trouvees)[1] if trouvees else None
 
 
 def action(a):
@@ -108,6 +126,9 @@ def action(a):
             m = RE_SAVE.search(a['desc'])
             if m:
                 out['onHitSave'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1))}
+                cond = condition_dans(a['desc'])
+                if cond:
+                    out['onHitSave']['condition'] = cond
     elif a['name'] == 'Frightful Presence':
         out['kind'] = 'presence'
     elif 'dc' in a and a.get('usage', {}).get('type') == 'recharge on roll':
@@ -116,6 +137,9 @@ def action(a):
         out['kind'] = 'breath' if a.get('damage') else 'narrative'
     elif 'dc' in a:
         out['kind'] = 'save'
+        cond = condition_dans(a['desc'])
+        if cond:
+            out['condition'] = cond
     elif 'damage' in a:
         out['kind'] = 'damage'
     else:
@@ -274,6 +298,9 @@ def capacites_csv(texte, tronque):
             m = RE_SAVE.search(corps)
             if m:
                 a['onHitSave'] = {'ability': ABIL_MOT[m.group(2).lower()], 'value': int(m.group(1))}
+                cond = condition_dans(corps)
+                if cond:
+                    a['onHitSave']['condition'] = cond
         elif nom.startswith('Frightful Presence'):
             a['kind'] = 'presence'
             m = RE_SAVE.search(corps)

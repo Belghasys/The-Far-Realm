@@ -91,6 +91,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Enslave",
         "desc": "The aboleth targets one creature it can see within 30 ft. of it. The target must succeed on a DC 14 Wisdom saving throw or be magically charmed by the aboleth until the aboleth dies or until it is on a different plane of existence from the target. The charmed target is under the aboleth's control and can't take reactions, and the aboleth and the target can communicate telepathically with each other over any distance.\nWhenever the charmed target takes damage, the target can repeat the saving throw. On a success, the effect ends. No more than once every 24 hours, the target can also repeat the saving throw when it is at least 1 mile away from the aboleth.",
         "kind": "save",
+        "condition": "charmed",
         "dc": {
           "ability": "WIS",
           "value": 14,
@@ -6246,7 +6247,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "petrified"
         },
         "damage": [
           {
@@ -8698,7 +8700,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 12
+          "value": 12,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -9184,7 +9187,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 13
+          "value": 13,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -10030,7 +10034,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 10,
         "onHitSave": {
           "ability": "CON",
-          "value": 14
+          "value": 14,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -11368,6 +11373,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Tentacles",
         "desc": "One creature grappled by the chuul must succeed on a DC 13 Constitution saving throw or be poisoned for 1 minute. Until this poison ends, the target is paralyzed. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
         "kind": "save",
+        "condition": "poisoned",
         "dc": {
           "ability": "CON",
           "value": 13,
@@ -11667,6 +11673,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Moan",
         "desc": "Each creature within 60 feet of the cloaker that can hear its moan and that isn't an aberration must succeed on a DC 13 Wisdom saving throw or become frightened until the end of the cloaker's next turn. If a creature's saving throw is successful, the creature is immune to the cloaker's moan for the next 24 hours.",
         "kind": "save",
+        "condition": "frightened",
         "dc": {
           "ability": "WIS",
           "value": 13,
@@ -12413,7 +12420,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 13
+          "value": 13,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -13599,7 +13607,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 12
+          "value": 12,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -14124,7 +14133,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 16
+          "value": 16,
+          "condition": "poisoned"
         }
       }
     ],
@@ -14343,7 +14353,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 13
+          "value": 13,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -14476,6 +14487,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Create Whirlwind",
         "desc": "A 5-foot-radius, 30-foot-tall cylinder of swirling air magically forms on a point the djinni can see within 120 feet of it. The whirlwind lasts as long as the djinni maintains concentration (as if concentrating on a spell). Any creature but the djinni that enters the whirlwind must succeed on a DC 18 Strength saving throw or be restrained by it. The djinni can move the whirlwind up to 60 feet as an action, and creatures restrained by the whirlwind move with it. The whirlwind ends if the djinni loses sight of it.\nA creature can use its action to free a creature restrained by the whirlwind, including itself, by succeeding on a DC 18 Strength check. If the check succeeds, the creature is no longer restrained and moves to the nearest space outside the whirlwind.",
         "kind": "save",
+        "condition": "restrained",
         "dc": {
           "ability": "STR",
           "value": 18,
@@ -15051,7 +15063,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 15,
         "onHitSave": {
           "ability": "STR",
-          "value": 20
+          "value": 20,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -16209,6 +16222,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Fey Charm",
         "desc": "The dryad targets one humanoid or beast that she can see within 30 feet of her. If the target can see the dryad, it must succeed on a DC 14 Wisdom saving throw or be magically charmed. The charmed creature regards the dryad as a trusted friend to be heeded and protected. Although the target isn't under the dryad's control, it takes the dryad's requests or actions in the most favorable way it can.\nEach time the dryad or its allies do anything harmful to the target, it can repeat the saving throw, ending the effect on itself on a success. Otherwise, the effect lasts 24 hours or until the dryad dies, is on a different plane of existence from the target, or ends the effect as a bonus action. If a target's saving throw is successful, the target is immune to the dryad's Fey Charm for the next 24 hours.\nThe dryad can have no more than one humanoid and up to three beasts charmed at a time.",
         "kind": "save",
+        "condition": "charmed",
         "dc": {
           "ability": "WIS",
           "value": 14,
@@ -17165,7 +17179,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 14
+          "value": 14,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -17312,7 +17327,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -19772,6 +19788,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Engulf",
         "desc": "The cube moves up to its speed. While doing so, it can enter Large or smaller creatures' spaces. Whenever the cube enters a creature's space, the creature must make a DC 12 Dexterity saving throw.\nOn a successful save, the creature can choose to be pushed 5 feet back or to the side of the cube. A creature that chooses not to be pushed suffers the consequences of a failed saving throw.\nOn a failed save, the cube enters the creature's space, and the creature takes 10 (3d6) acid damage and is engulfed. The engulfed creature can't breathe, is restrained, and takes 21 (6d6) acid damage at the start of each of the cube's turns. When the cube moves, the engulfed creature moves with it.\nAn engulfed creature can try to escape by taking an action to make a DC 12 Strength check. On a success, the creature escapes and enters a space of its choice within 5 feet of the cube.",
         "kind": "save",
+        "condition": "restrained",
         "damage": [
           {
             "dice": "3d6",
@@ -19895,7 +19912,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 10
+          "value": 10,
+          "condition": "paralyzed"
         },
         "damage": [
           {
@@ -20039,6 +20057,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Horrifying Visage",
         "desc": "Each non-undead creature within 60 ft. of the ghost that can see it must succeed on a DC 13 Wisdom saving throw or be frightened for 1 minute. If the save fails by 5 or more, the target also ages 1d4 × 10 years. A frightened target can repeat the saving throw at the end of each of its turns, ending the frightened condition on itself on a success. If a target's saving throw is successful or the effect ends for it, the target is immune to this ghost's Horrifying Visage for the next 24 hours. The aging effect can be reversed with a greater restoration spell, but only within 24 hours of it occurring.",
         "kind": "save",
+        "condition": "frightened",
         "dc": {
           "ability": "WIS",
           "value": 13,
@@ -20187,7 +20206,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 10
+          "value": 10,
+          "condition": "paralyzed"
         },
         "damage": [
           {
@@ -20843,7 +20863,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 10,
         "onHitSave": {
           "ability": "STR",
-          "value": 16
+          "value": 16,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -21906,6 +21927,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Fetid Cloud",
         "desc": "A 10-foot radius of disgusting green gas extends out from the dretch. The gas spreads around corners, and its area is lightly obscured. It lasts for 1 minute or until a strong wind disperses it. Any creature that starts its turn in that area must succeed on a DC 11 Constitution saving throw or be poisoned until the start of its next turn. While poisoned in this way, the target can take either an action or a bonus action on its turn, not both, and can't take reactions.",
         "kind": "save",
+        "condition": "poisoned",
         "dc": {
           "ability": "CON",
           "value": 11,
@@ -22096,7 +22118,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -22790,7 +22813,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 10
+          "value": 10,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -23141,7 +23165,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 15
+          "value": 15,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -24374,7 +24399,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         }
       },
       {
@@ -24724,7 +24750,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 12
+          "value": 12,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -26763,7 +26790,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 10
+          "value": 10,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -28837,7 +28865,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 25
+          "value": 25,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -29344,7 +29373,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 19
+          "value": 19,
+          "condition": "paralyzed"
         }
       },
       {
@@ -29795,7 +29825,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 18
+          "value": 18,
+          "condition": "paralyzed"
         },
         "damage": [
           {
@@ -30865,7 +30896,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 13
+          "value": 13,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -32764,7 +32796,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -33088,6 +33121,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Dreadful Glare",
         "desc": "The mummy targets one creature it can see within 60 ft. of it. If the target can see the mummy, it must succeed on a DC 11 Wisdom saving throw against this magic or become frightened until the end of the mummy's next turn. If the target fails the saving throw by 5 or more, it is also paralyzed for the same duration. A target that succeeds on the saving throw is immune to the Dreadful Glare of all mummies (but not mummy lords) for the next 24 hours.",
         "kind": "save",
+        "condition": "frightened",
         "dc": {
           "ability": "WIS",
           "value": 11,
@@ -33247,6 +33281,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Dreadful Glare",
         "desc": "The mummy lord targets one creature it can see within 60 feet of it. If the target can see the mummy lord, it must succeed on a DC 16 Wisdom saving throw against this magic or become frightened until the end of the mummy's next turn. If the target fails the saving throw by 5 or more, it is also paralyzed for the same duration. A target that succeeds on the saving throw is immune to the Dreadful Glare of all mummies and mummy lords for the next 24 hours.",
         "kind": "save",
+        "condition": "frightened",
         "dc": {
           "ability": "WIS",
           "value": 16,
@@ -36205,7 +36240,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 15
+          "value": 15,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -36235,6 +36271,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Tentacle Slam",
         "desc": "The otyugh slams creatures grappled by it into each other or a solid surface. Each creature must succeed on a DC 14 Constitution saving throw or take 10 (2d6 + 3) bludgeoning damage and be stunned until the end of the otyugh's next turn. On a successful save, the target takes half the bludgeoning damage and isn't stunned.",
         "kind": "save",
+        "condition": "stunned",
         "dc": {
           "ability": "CON",
           "value": 14,
@@ -36836,7 +36873,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -37050,7 +37088,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 21
+          "value": 21,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -37768,7 +37807,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -38140,7 +38180,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 10,
         "onHitSave": {
           "ability": "DEX",
-          "value": 19
+          "value": 19,
+          "condition": "blinded"
         },
         "damage": [
           {
@@ -38260,7 +38301,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 10
+          "value": 10,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -38273,6 +38315,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Scare",
         "desc": "One creature of the quasit's choice within 20 ft. of it must succeed on a DC 10 Wisdom saving throw or be frightened for 1 minute. The target can repeat the saving throw at the end of each of its turns, with disadvantage if the quasit is within line of sight, ending the effect on itself on a success.",
         "kind": "save",
+        "condition": "frightened",
         "dc": {
           "ability": "WIS",
           "value": 10,
@@ -41631,7 +41674,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 11
+          "value": 11,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -42810,7 +42854,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "STR",
-          "value": 17
+          "value": 17,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -43356,6 +43401,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charm",
         "desc": "One humanoid the fiend can see within 30 feet of it must succeed on a DC 15 Wisdom saving throw or be magically charmed for 1 day. The charmed target obeys the fiend's verbal or telepathic commands. If the target suffers any harm or receives a suicidal command, it can repeat the saving throw, ending the effect on a success. If the target successfully saves against the effect, or if the effect on it ends, the target is immune to this fiend's Charm for the next 24 hours.\nThe fiend can have only one target charmed at a time. If it charms another, the effect on the previous target ends.",
         "kind": "save",
+        "condition": "charmed",
         "dc": {
           "ability": "WIS",
           "value": 15,
@@ -44261,7 +44307,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 20,
         "onHitSave": {
           "ability": "STR",
-          "value": 20
+          "value": 20,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -45175,7 +45222,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -45784,6 +45832,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Charm",
         "desc": "The vampire targets one humanoid it can see within 30 ft. of it. If the target can see the vampire, the target must succeed on a DC 17 Wisdom saving throw against this magic or be charmed by the vampire. The charmed target regards the vampire as a trusted friend to be heeded and protected. Although the target isn't under the vampire's control, it takes the vampire's requests or actions in the most favorable way it can, and it is a willing target for the vampire's bit attack.\nEach time the vampire or the vampire's companions do anything harmful to the target, it can repeat the saving throw, ending the effect on itself on a success. Otherwise, the effect lasts 24 hours or until the vampire is destroyed, is on a different plane of existence than the target, or takes a bonus action to end the effect.",
         "kind": "save",
+        "condition": "charmed",
         "dc": {
           "ability": "WIS",
           "value": 17,
@@ -46660,6 +46709,7 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "name": "Stunning Screech",
         "desc": "The vrock emits a horrific screech. Each creature within 20 feet of it that can hear it and that isn't a demon must succeed on a DC 14 Constitution saving throw or be stunned until the end of the vrock's next turn .",
         "kind": "save",
+        "condition": "stunned",
         "dc": {
           "ability": "CON",
           "value": 14,
@@ -46856,7 +46906,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 11
+          "value": 11,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -48555,7 +48606,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "CON",
-          "value": 11
+          "value": 11,
+          "condition": "poisoned"
         },
         "damage": [
           {
@@ -48641,7 +48693,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         "reach": 5,
         "onHitSave": {
           "ability": "STR",
-          "value": 14
+          "value": 14,
+          "condition": "prone"
         },
         "damage": [
           {
@@ -49334,7 +49387,8 @@ export const SRD_MONSTERS: Record<string, SrdMonster> = {
         ],
         "onHitSave": {
           "ability": "CON",
-          "value": 10
+          "value": 10,
+          "condition": "poisoned"
         },
         "damage": [
           {

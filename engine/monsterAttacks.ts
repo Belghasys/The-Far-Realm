@@ -8,7 +8,7 @@
  * 2026-08-25 (R7 du rangement), corps inchange. Le jour ou les fiches
  * porteront des blocs structures (SRD), ce module lira ces blocs d'abord.
  */
-import { AttackDamagePart, Attack, CreatureStats, normalizeDamageType, _WORD_NUM } from '../data/bestiary';
+import { AttackDamagePart, Attack, CreatureStats, normalizeDamageType, _WORD_NUM, getMonsterAbilities } from '../data/bestiary';
 
 export function normalizeDiceFormula(value: string): string {
     return value.replace(/\s+/g, '').replace(/([+-])/g, '$1');
@@ -71,7 +71,61 @@ export function parseCreatureActionAttacks(action?: string): Attack[] {
     return attacks;
 }
 
-export function getMultiattackCount(creature?: { action?: string } | null): number {
+/** Les attaques du bloc SRD (data/monsterData2), dans la forme que joue le moteur. */
+export function srdAttacks(creature?: { id?: string } | null): Attack[] {
+    const bloc = getMonsterAbilities(creature);
+    if (!bloc) return [];
+    const attacks: Attack[] = [];
+    for (const a of bloc.actions) {
+        if (a.kind !== 'attack' || a.attackBonus === undefined) continue;
+        const damageParts: AttackDamagePart[] = [];
+        for (const d of a.damage || []) {
+            if (!('dice' in d)) continue;              // « au choix » : non joué
+            const damageType = normalizeDamageType(d.type);
+            if (!damageType) continue;
+            damageParts.push({ damage: normalizeDiceFormula(d.dice), damageType });
+        }
+        if (!damageParts.length) continue;
+        attacks.push({
+            name: a.name,
+            attackBonus: a.attackBonus,
+            damage: damageParts[0].damage,
+            damageType: damageParts[0].damageType,
+            reach: a.reach ?? (a.range ? 30 : 5),
+            ranged: a.range ? { short: a.range[0], long: a.range[1] } : undefined,
+            damageParts,
+            onHitSave: a.onHitSave,
+        });
+    }
+    return attacks;
+}
+
+/** La SÉQUENCE de la multiattaque quand le bloc SRD la structure (« une
+ *  morsure, deux griffes ») : les noms d'attaque dans l'ordre, les capacités
+ *  (présence terrifiante) exclues. Vide si la fiche n'en a pas. */
+export function getMultiattackSequence(creature?: { id?: string } | null): string[] {
+    const bloc = getMonsterAbilities(creature);
+    const multi = bloc?.actions.find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
+    if (!multi || multi.multiattack?.type !== 'actions') return [];
+    const seq: string[] = [];
+    for (const s of multi.multiattack.steps) {
+        if (s.type === 'ability') continue;
+        const n = typeof s.count === 'number' ? s.count : 1;
+        for (let i = 0; i < n && seq.length < 6; i++) seq.push(s.name);
+    }
+    return seq;
+}
+
+export function getMultiattackCount(creature?: { id?: string; action?: string } | null): number {
+    // Le bloc SRD d'abord : la séquence de la multiattaque, quand elle est structurée.
+    const bloc = getMonsterAbilities(creature);
+    const multi = bloc?.actions.find(a => a.kind === 'multiattack' && a.multiattack?.type === 'actions');
+    if (multi && multi.multiattack?.type === 'actions') {
+        const n = multi.multiattack.steps
+            .filter(s => s.type !== 'ability')
+            .reduce((sum, s) => sum + (typeof s.count === 'number' ? s.count : 1), 0);
+        if (n >= 1) return Math.min(6, n);
+    }
     if (!creature?.action) return 1;
     const text = creature.action;
     if (!/multiattack/i.test(text)) return 1;
@@ -91,6 +145,9 @@ export function getCreatureAttacks(creature?: CreatureStats | null): Attack[] {
     const hasOnlyFallback = existing.length === 0 || existing.every(isGenericBasicAttack);
     if (!hasOnlyFallback) return existing;
 
+    // Priorité : le bloc SRD structuré (2026-08-26), puis la regex sur le texte.
+    const structured = srdAttacks(creature);
+    if (structured.length) return structured;
     const parsed = parseCreatureActionAttacks(creature.action);
     return parsed.length ? parsed : existing;
 }

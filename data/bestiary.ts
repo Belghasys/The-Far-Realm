@@ -3,6 +3,8 @@
 
 // ========== TYPES ==========
 
+import type { SrdMonster } from './srdMonsterTypes';
+
 export type CreatureType =
     | 'beast' | 'humanoid' | 'undead' | 'fiend' | 'dragon'
     | 'monstrosity' | 'construct' | 'elemental' | 'celestial' | 'plant'
@@ -28,6 +30,8 @@ export interface Attack {
     reach: number;            // In feet: 5, 10, etc.
     ranged?: { short: number; long: number };  // For ranged attacks
     damageParts?: AttackDamagePart[];
+    /** Effet sur touche (bloc SRD) : sauvegarde imposée à la cible, condition sur un échec. */
+    onHitSave?: { ability: 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA'; value: number; condition?: string };
 }
 
 export interface CreatureStats {
@@ -114,12 +118,27 @@ export const _WORD_NUM: Record<string, number> = { one: 1, two: 2, three: 3, fou
 
 let _lazyBestiary: Record<string, CreatureStats> | null = null;
 
+/** Les capacités structurées (SRD 5.1) par id de fiche, chargées avec le bestiaire. */
+export const SRD_ABILITIES: Record<string, SrdMonster> = {};
+
 async function getBestiary(): Promise<Record<string, CreatureStats>> {
     if (!_lazyBestiary) {
-        const { CSV_MONSTERS } = await import('./monsterData');
-        _lazyBestiary = { ...CSV_MONSTERS };
+        // Depuis le 2026-08-26, la source est data/monsterData2.ts : chaque fiche
+        // y embarque sa fiche CSV (`base`, identique à data/monsterData.ts, qui
+        // reste intouché) ET ses capacités SRD (souffles, présences, sorts…).
+        const { SRD_MONSTERS } = await import('./monsterData2');
+        _lazyBestiary = {};
+        for (const [id, m] of Object.entries(SRD_MONSTERS)) {
+            _lazyBestiary[id] = m.base;
+            SRD_ABILITIES[id] = m;
+        }
     }
     return _lazyBestiary;
+}
+
+/** Le bloc SRD d'une créature (ou null si la fiche est hors SRD sans complément). */
+export function getMonsterAbilities(creature?: { id?: string } | null): SrdMonster | null {
+    return creature?.id ? (SRD_ABILITIES[creature.id] || null) : null;
 }
 
 // Synchronous bestiary for initial render (empty until loaded).

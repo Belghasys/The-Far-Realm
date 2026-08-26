@@ -43,6 +43,10 @@ export interface Combatant {
     xpValue?: number;
     /** CR de la fiche (allié ou ennemi) : le poids dans le budget de rencontre. */
     cr?: number;
+    /** Capacités SRD (souffle, présence) déjà utilisées ce combat : nom → nombre. */
+    abilityUses?: Record<string, number>;
+    /** Souffles rechargés (jet de recharge réussi au début d'un tour) : nom → prêt. */
+    abilityReady?: Record<string, boolean>;
     /** Distance band relative to the player: melee = au contact, near = quelques mètres, far = loin. */
     range?: 'melee' | 'near' | 'far';
     /** Profil d'attaque d'un ALLIÉ (compagnon, PNJ secouru, invocation) : le

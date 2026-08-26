@@ -15,8 +15,8 @@ import { Ability, getEffectiveAC, getEffectiveStat } from '../../types';
 import { combatantSide, isHero } from '../../engine/combatants';
 import { campaignEventLog } from '../persistence/campaignEventLog';
 import { advanceTurn, resolveConcentrationAfterDamage, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, releaseNpcConcentrationEffect, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, concentrationBreakOnDeparture, MORALE_DC } from '../../engine/rulesEngine';
-import { getCreature } from '../../data/bestiary';
-import { getCreatureAttacks, getMultiattackCount } from '../../engine/monsterAttacks';
+import { getCreature, getMonsterAbilities } from '../../data/bestiary';
+import { getCreatureAttacks, getMultiattackCount, getMultiattackSequence } from '../../engine/monsterAttacks';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/companionOptions';
 import { lookupMonster, lookupCondition } from '../../engine/codexService';
 import { rollDice } from '../../engine/utils';
@@ -403,6 +403,64 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
     // bestiaire choisit un VRAI sort (kit SRD) avant de se rabattre sur l'arme.
     // Zone si ≥2 cibles côté héros, sinon le sort limité le plus fort, sinon le
     // tour de magie à volonté. Les usages limités sont décomptés par combat.
+    // ── CAPACITÉS SRD (2026-08-26, data/monsterData2) : la PRÉSENCE TERRIFIANTE
+    // une fois par combat, puis le SOUFFLE quand il est chargé (recharge sur
+    // 1d6 ≥ 5 au début du tour). Même mécanique que les kits de lanceurs :
+    // runEnemySaveSpell joue la sauvegarde, les dégâts, la condition. Les
+    // usages et la recharge vivent sur le combattant — rien n'est confié à la
+    // mémoire du MJ. Un souffle qui sort remplace les attaques du tour.
+    const srdBlock = getMonsterAbilities(bestiaryCreature);
+    if (srdBlock && combatantSide(npc) === 'enemy') {
+      const liveRow = useGameStore.getState().combatState.combatants.find((c: any) => c.id === npc.id);
+      const used: Record<string, number> = { ...(liveRow?.abilityUses || {}) };
+      const ready: Record<string, boolean> = { ...(liveRow?.abilityReady || {}) };
+      const heroesUp = useGameStore.getState().combatState.combatants.filter((c: any) => isHero(c) && c.hp.current > 0);
+      const breaths = srdBlock.actions.filter(a => a.kind === 'breath' && a.dc && (a.damage || []).some(d => 'dice' in d));
+      for (const b of breaths) {
+        if (used[b.name] && !ready[b.name]) {
+          const roll = rollDice('1d6').total;
+          const seuil = b.usage?.minValue ?? 5;
+          if (roll >= seuil) ready[b.name] = true;
+          logCombatRoll({ type: 'check', name: `${npc.name} : ${b.name} (recharge)`, total: roll, formula: `1d6 ≥ ${seuil}`, isDM: true, success: roll >= seuil });
+        }
+      }
+      const marquer = (nom: string, pret?: boolean) => {
+        used[nom] = (used[nom] || 0) + 1;
+        if (pret !== undefined) ready[nom] = pret;
+        setCombatState((prev: any) => ({
+          ...prev,
+          combatants: prev.combatants.map((c: any) => c.id === npc.id ? { ...c, abilityUses: { ...used }, abilityReady: { ...ready } } : c),
+        }));
+      };
+      const kit0 = { dc: 10, attackBonus: 0, spells: [] as MonsterSpell[] };
+      const presence = srdBlock.actions.find(a => a.kind === 'presence' && a.dc);
+      if (presence && presence.dc && !used[presence.name] && heroesUp.length) {
+        marquer(presence.name);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 😱 ${npc.name} — ${presence.name}]*` }]);
+        auditBus.publish('combat', `😱 ${npc.name} : ${presence.name} (DD ${presence.dc.value} ${presence.dc.ability})`, presence);
+        await runEnemySaveSpell(npc, target, { name: presence.name, kind: 'aoe_save', saveAbility: presence.dc.ability, dc: presence.dc.value, condition: 'frightened', conditionOnly: true }, kit0, heroesUp);
+      }
+      const breath = breaths.find(b => !used[b.name] || ready[b.name]);
+      if (breath && breath.dc) {
+        const part = (breath.damage || []).find(d => 'dice' in d) as { dice: string; type: string };
+        marquer(breath.name, false);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🔥 ${npc.name} — ${breath.name} !]*` }]);
+        auditBus.publish('combat', `🔥 ${npc.name} : ${breath.name} (DD ${breath.dc.value} ${breath.dc.ability}, ${part.dice} ${part.type})`, breath);
+        await runEnemySaveSpell(npc, target, {
+          name: breath.name, kind: 'aoe_save', saveAbility: breath.dc.ability, dc: breath.dc.value,
+          formula: part.dice, damageType: part.type as any, halfOnSave: breath.dc.successType === 'half',
+        }, kit0, heroesUp);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Turn completed for ${npc.name}]*` }]);
+        const freshEnd = useGameStore.getState().combatState;
+        if (maybeEndCombat(freshEnd)) return;
+        setCombatState(advanceTurn(freshEnd));
+        if (dm && isConnected) {
+          dm.sendSystemMessage(`[SYSTEM] ${npc.name} used ${breath.name} over the party (DC ${breath.dc.value} ${breath.dc.ability}, ${part.dice} ${part.type}) — saves and damage are already resolved by the engine; narrate the blast. It recharges on a 5-6 at the start of its turns.`);
+        }
+        return;
+      }
+    }
+
     let spellWeaponOverride: any = null;
     const casterKit = getCasterKit(npc.name);
     if (casterKit && combatantSide(npc) === 'enemy') {
@@ -456,9 +514,16 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       // Un sort d'attaque = UN cast ce tour (pas de multiattaque au bâton derrière).
       attacksToRun.push(spellWeaponOverride);
     } else if (availableAttacks.length > 0) {
-      // Distribute the N attacks across the creature's named attacks (cycle through them).
-      for (let i = 0; i < attackCount; i++) {
-        attacksToRun.push(availableAttacks[i % availableAttacks.length]);
+      // La séquence SRD quand elle existe (« une morsure, deux griffes »), sinon
+      // les N attaques réparties en cycle sur les attaques nommées.
+      const sequence = creature ? getMultiattackSequence(creature) : [];
+      const parNom = (nom: string) => availableAttacks.find((a: any) => String(a.name).toLowerCase() === nom.toLowerCase());
+      if (sequence.length && sequence.every(parNom)) {
+        for (const nom of sequence) attacksToRun.push(parNom(nom));
+      } else {
+        for (let i = 0; i < attackCount; i++) {
+          attacksToRun.push(availableAttacks[i % availableAttacks.length]);
+        }
       }
     } else {
       const fallback = { name: 'Attack', attackBonus: 4, damage: '1d6+2', damageType: 'bludgeoning' };
@@ -632,14 +697,18 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       // the one struck (an ally being hit must not overwrite the player's HP).
       if (target.isPlayer) {
         const updatedPlayer = currentState.combatants.find(c => c.isPlayer);
-        if (updatedPlayer && character) {
+        // La fiche FRAÎCHE du store, pas la closure de rendu : une condition
+        // posée pendant ce tour (présence terrifiante, effet sur touche) était
+        // effacée par la synchronisation des PV de l'attaque suivante.
+        const freshChar = useGameStore.getState().character || character;
+        if (updatedPlayer && freshChar) {
           // syncCharacterCritical (not bare onCharacterUpdate) so the HP loss is
           // PERSISTED to the save and the tempHP/death-save path runs — otherwise
           // enemy damage vanished on reload and HP-0 didn't trigger death saves.
           const struck = {
-            ...character,
-            tempHP: updatedPlayer.tempHP ?? character.tempHP ?? 0,
-            hp: { ...character.hp, current: updatedPlayer.hp.current },
+            ...freshChar,
+            tempHP: updatedPlayer.tempHP ?? freshChar.tempHP ?? 0,
+            hp: { ...freshChar.hp, current: updatedPlayer.hp.current },
           };
           syncCharacterCritical(struck, 'hp');
           // Concentration was only checked on the DM-tool damage paths — the
@@ -663,6 +732,15 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
             }
           }
         }
+      }
+
+      // EFFET SUR TOUCHE (bloc SRD, 2026-08-26) : la queue de la tarrasque
+      // renverse (STR 20 → à terre), le toucher de la liche paralyse (CON 18)…
+      // Joué APRÈS la synchronisation des PV, sur la fiche fraîche. Sans
+      // condition nommée dans le bloc, l'effet reste narratif.
+      const onHit = (attack as any).onHitSave as { ability: any; value: number; condition?: string } | undefined;
+      if (res.hit && onHit?.condition && target.isPlayer) {
+        await runEnemySaveSpell(npc, target, { name: attack.name, kind: 'save', saveAbility: onHit.ability, dc: onHit.value, condition: onHit.condition, conditionOnly: true }, { dc: onHit.value, attackBonus: 0, spells: [] }, []);
       }
     }
 

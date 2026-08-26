@@ -83,7 +83,9 @@ export interface SrdAction {
     /** Effet sur touche exigeant une sauvegarde, lu dans desc quand le JSON
      *  n'a pas de champ dc : "DC 14 Constitution saving throw". Le texte
      *  complet reste dans desc ; le moteur ne joue que le jet. */
-    onHitSave?: { ability: SrdAbility; value: number };
+    onHitSave?: { ability: SrdAbility; value: number; /** condition imposée sur un échec, quand le texte la nomme */ condition?: string };
+    /** Pour une sauvegarde (kind 'save') : la condition imposée sur un échec, quand le texte la nomme. */
+    condition?: string;
     /** Multiattaque : la séquence (type 'actions'), ou des options en texte. */
     multiattack?: { type: 'actions'; steps: SrdMultiattackStep[] } | { type: 'action_options'; desc: string };
 }
