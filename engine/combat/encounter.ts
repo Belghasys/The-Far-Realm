@@ -7,7 +7,7 @@ import { CharacterSheet, calculateLevelFromXP, getCombatAC, getEffectiveStat, ge
 import { getEnemyXP, estimateXPFromHP } from '../xpSystem';
 import { lookupMonster } from '../codexService';
 import { clampAC, clampHP, clampXP } from '../gameValidator';
-import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/companionOptions';
+import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType, CELESTIAL_STEED_KIND } from '../../data/companionOptions';
 import { tickRoundEffects } from './effects';
 import { abilityMod, featNumericBonus, playerResistances } from './rolls';
 import { CombatLogEntry, CombatantLookupResult, DepartedCombatant, DepartedReason, EncounterState, TurnEconomy, WithdrawResult } from './types';
@@ -53,6 +53,32 @@ function livingCombatants(state: EncounterState): Combatant[] {
 export function combatantKey(combatant: Combatant): string {
     return combatant.id || combatant.name;
 }
+const REGEX_SPECIALS = /[.*+?^${}()|[\]\\]/g;
+
+/**
+ * `needle` apparaît-il dans `haystack` comme une suite de MOTS entiers ?
+ *
+ * Une simple sous-chaîne mordait à faux : un combattant nommé « Rat » se
+ * reconnaissait dans « the pirate captain ». Les deux textes sont déjà pliés
+ * (minuscules, accents retirés), donc une frontière d'espace suffit.
+ */
+/**
+ * Pliage propre aux RÉFÉRENCES de combattants : accents et casse (foldText),
+ * plus l'ÉLISION — « l'ombre » doit désigner « Ombre ». L'apostrophe devient
+ * un espace pour que la frontière de mot la franchisse. Local à ce fichier :
+ * foldText est partagé par 37 appelants qui comparent parfois à des
+ * littéraux anglais, on ne change pas sa sémantique pour tout le monde.
+ */
+function foldRef(value: string): string {
+    return foldText(value).replace(/['\u2019]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function containsWords(haystack: string, needle: string): boolean {
+    if (!needle) return false;
+    const escaped = needle.replace(REGEX_SPECIALS, '\\$&');
+    return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(haystack);
+}
+
 export function resolveCombatantReference(
     state: EncounterState,
     reference: string,
@@ -70,12 +96,32 @@ export function resolveCombatantReference(
         return { combatant, index: idIndex, ambiguous: false, matches: [combatant] };
     }
 
-    const lower = ref.toLowerCase();
-    const matches = all
+    // Comparaison PLIÉE (accents et casse retirés) puis, à défaut, par
+    // SOUS-CHAÎNE. L'ancienne égalité stricte échouait dès que le MJ écrivait
+    // « Tempete » pour « Tempête » ou « le squelette » pour « Épéiste
+    // squelette » — un modèle laisse tomber les accents une fois sur deux, et
+    // l'attaque ne résolvait alors pas du tout.
+    const wanted = foldRef(ref);
+    const eligible = all
         .map((combatant, index) => ({ combatant, index }))
-        .filter(({ combatant }) => combatant.name.toLowerCase() === lower)
         .filter(({ combatant }) => !options.enemyOnly || !combatant.isPlayer)
         .filter(({ combatant }) => !options.livingOnly || combatant.hp.current > 0);
+    // Le nom EXACT prime toujours : « Épéiste » ne doit pas devenir ambigu du
+    // seul fait qu'« Épéiste squelette » le contient.
+    const exact = eligible.filter(({ combatant }) => foldRef(combatant.name) === wanted);
+    let matches = exact;
+    if (!matches.length && wanted.length >= 3) {
+        // La référence CONTIENT un nom (« the goblin archer » → Goblin archer,
+        // et non Goblin) : la plus longue inclusion l'emporte. Sinon, le nom
+        // contient la référence (« squelette ») — là, l'ambiguïté reste réelle.
+        const contained = eligible.filter(({ combatant }) => containsWords(wanted, foldRef(combatant.name)));
+        if (contained.length) {
+            const longest = Math.max(...contained.map(({ combatant }) => foldRef(combatant.name).length));
+            matches = contained.filter(({ combatant }) => foldRef(combatant.name).length === longest);
+        } else {
+            matches = eligible.filter(({ combatant }) => containsWords(foldRef(combatant.name), wanted));
+        }
+    }
 
     if (matches.length === 1) {
         return {
@@ -162,11 +208,76 @@ export function syncCompanionsFromState(character: CharacterSheet, combatants: C
         next = { ...next, companions };
     }
     // La monture aussi encaisse : ses PV suivent entre les combats.
+    //
+    // Le MAXIMUM stocké est celui de la BÊTE, jamais celui de la ligne de
+    // combat : le bonus « Monture liée » du Cavalier (+niveau) est recalculé à
+    // chaque rencontre par startEncounter. Réécrire le total gonflé le faisait
+    // cumuler sans fin — 24 → 29 → 34 → 39 sur quatre combats.
     const mountRow = combatants.find(c => c.id === 'mount');
     if (mountRow && next.mount) {
-        next = { ...next, mount: { ...next.mount, hp: { current: Math.max(0, mountRow.hp.current), max: mountRow.hp.max } } };
+        // Quand le type est connu, le CATALOGUE fait foi : une sauvegarde
+        // écrite avant ce correctif porte un max déjà gonflé (39 pour un
+        // destrier à 19), et la resynchroniser telle quelle l'aurait figée là.
+        // …sauf quand le MJ a posé les PV lui-même (customHp) : une décision
+        // explicite bat toujours le catalogue.
+        const typed = getMountType(next.mount.kind || next.mount.name);
+        const baseMax = (typed && !next.mount.customHp ? typed.hp : undefined)
+            ?? next.mount.hp?.max ?? mountRow.hp.max;
+        next = {
+            ...next,
+            mount: { ...next.mount, hp: { current: clampHP(Math.max(0, mountRow.hp.current), baseMax), max: baseMax } },
+        };
     }
     return next;
+}
+
+/**
+ * Le sort de la monture APRÈS un combat — une seule règle, deux appelants.
+ *
+ * Elle vivait dans GameSession (composant React) : l'autre porte de sortie,
+ * l'outil `end_combat` que le MJ appelle pour une fin narrée (fuite,
+ * reddition, négociation), ne l'appliquait donc jamais. Une monture tombée y
+ * restait sur la fiche à 0 PV, sans un mot, et repartait guérie au premier
+ * repos long.
+ *
+ * Une monture ordinaire tombée est MORTE : on la retire. Le Destrier céleste
+ * est un esprit — il regagne les plans et revient à l'appel du paladin au
+ * prochain repos long, donc on le garde à 0 PV. Dans les deux cas le héros est
+ * DÉSARÇONNÉ : sans ça la fiche affichait « en selle » sur un cadavre et la
+ * charge montée repartait au combat suivant.
+ */
+/**
+ * Le maximum de PV EFFECTIF de la monture : celui de la bête, plus le bonus
+ * d'archétype (Cavalier — Monture liée : +niveau). C'est la seule fonction à
+ * connaître ce bonus : la rencontre ET la fiche la lisent, sinon le joueur
+ * voyait 19/19 sur sa fiche et 24/24 en combat sans pouvoir comprendre l'écart.
+ */
+export function effectiveMountMaxHP(character: CharacterSheet): number {
+    const mount = character.mount;
+    if (!mount) return 0;
+    const typed = getMountType(mount.kind || mount.name);
+    const base = mount.hp?.max ?? typed?.hp ?? 15;
+    const cavalierBonus = character.subclass === 'Cavalier' ? (character.level || 1) : 0;
+    return base + cavalierBonus;
+}
+
+export function resolveMountAfterCombat(character: CharacterSheet): {
+    character: CharacterSheet;
+    fallen?: { name: string; celestial: boolean };
+} {
+    const mount = character.mount;
+    if (!mount?.hp || mount.hp.current > 0) return { character };
+    const celestial = mount.kind === CELESTIAL_STEED_KIND;
+    if (celestial) {
+        return {
+            character: { ...character, mount: { ...mount, mounted: false } },
+            fallen: { name: mount.name, celestial: true },
+        };
+    }
+    return {
+        character: { ...character, mount: undefined },
+        fallen: { name: mount.name, celestial: false },
+    };
 }
 /**
  * Montée de niveau du HÉROS → ses compagnons grandissent avec lui :
@@ -274,6 +385,9 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
                 side: 'ally',
                 activeEffects: [],
                 dexMod: beast.dexMod,
+                // FP du catalogue : sans lui, effectivePartySize pesait 0 et un
+                // ours de guerre n'entrait pas dans le budget de rencontre.
+                cr: beast.cr,
                 attack: { ...beast.attack },
             } as Combatant);
         }
@@ -284,9 +398,7 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
     // se présente plus (morte, ou céleste en attente de repos long).
     if (character.mount && !combatants.some(c => c.id === 'mount')) {
         const mountType = getMountType(character.mount.kind || character.mount.name);
-        // Cavalier (Paladin) — Monture liée : +niveau du héros en PV max.
-        const cavalierBonus = character.subclass === 'Cavalier' ? (character.level || 1) : 0;
-        const mountMax = (character.mount.hp?.max ?? mountType?.hp ?? 15) + cavalierBonus;
+        const mountMax = effectiveMountMaxHP(character);
         const mountCurrent = character.mount.hp ? clampHP(character.mount.hp.current, mountMax) : mountMax;
         if (mountCurrent > 0) {
             combatants.push({
@@ -299,6 +411,10 @@ export function startEncounter(character: CharacterSheet, current: EncounterStat
                 side: 'ally',
                 activeEffects: [],
                 dexMod: mountType?.dexMod ?? 1,
+                // Le nom d'une monture est donné par le joueur (« Tempête ») :
+                // il ne résout jamais au bestiaire. Sans ce FP explicite, un
+                // griffon de guerre pesait 0 dans le budget de rencontre.
+                cr: mountType?.cr,
                 attack: mountType?.attack ? { ...mountType.attack } : allyAttackProfile(null, null, character.level || 1),
             } as Combatant);
         }

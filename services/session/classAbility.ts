@@ -41,7 +41,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🔥 RAGE — +2 dégâts, résistance aux dégâts physiques (10 rounds)]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abRage}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player enters a RAGE (bonus action): +2 damage, resistance to physical damage. Narrate the fury briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'secondWind' && (res.secondWind?.current ?? 0) > 0) {
         const heal = rollDice(`1d10+${char.level || 1}`).total;
@@ -63,7 +63,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           const econ = prev.actionEconomy?.['player'] || {};
           return patchPlayerEconomy(prev, { attacksMax: (econ.attacksMax ?? extra) + extra });
         });
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ Sursaut d'action — +${extra} attaque(s) ce tour]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abActionSurge(extra)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used ACTION SURGE: ${extra} extra attack(s) this turn. Narrate the burst of speed. Do NOT advance the turn.`);
       } else if (abilityId === 'layOnHands' && (res.layOnHands?.current ?? 0) > 0) {
         const missing = char.hp.max - char.hp.current;
@@ -96,7 +96,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'bardicInspiration');
         syncCharacterCritical(updated, 'hp');
         patchCombat((s: any) => spendPlayerBonus(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎵 ${tr.abilityBardicLabel} (${die}) — +${bonus} sur un prochain jet]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎵 ${tr.abilityBardicLabel} ${tr.abBardic(die, bonus)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player banked a Bardic Inspiration (${die}) on themselves (bonus action). Narrate the flourish. Do NOT advance the turn.`);
       } else if (abilityId === 'kiFlurry' && (res.ki?.current ?? 0) > 0) {
         let state = useGameStore.getState().combatState;
@@ -163,7 +163,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🛡️ ${tr.abilityPatientLabel} (1 ki) — Esquive jusqu'à ton prochain tour]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🛡️ ${tr.abilityPatientLabel} (1 ki) — ${tr.abPatient}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent 1 ki on Patient Defense (bonus action): Dodge until their next turn. Narrate briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'familiarHelp' && char.familiar && (res.familiarHelp?.current ?? 0) > 0) {
         const fam = char.familiar;
@@ -179,7 +179,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'familiarHelp');
         syncCharacterCritical(updated, 'hp');
         patchCombat((s: any) => spendPlayerBonus(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🦉 ${fam.name} (${fam.kind}) harcèle l'ennemi — avantage sur ta prochaine attaque]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abFamiliar(fam.name, fam.kind)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player's familiar ${fam.name} (${fam.kind}) used the HELP action (bonus action): advantage on their next attack. Narrate the little creature darting at the foe. Do NOT advance the turn.`);
       } else if (abilityId === 'lucky' && (res.luckyPoints?.current ?? 0) > 0) {
         const modifier = normalizeStoryModifier({
@@ -193,7 +193,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         });
         const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'luckyPoints');
         syncCharacterCritical(updated, 'hp');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🍀 Chanceux — avantage sur ton prochain jet (${updated.resources?.luckyPoints?.current ?? 0} restant(s))]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abLucky(updated.resources?.luckyPoints?.current ?? 0)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent a Lucky point: advantage on their next roll. Narrate the twist of fate briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'cunningHide') {
         const modifier = normalizeStoryModifier({
@@ -208,7 +208,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         const updated = { ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) };
         syncCharacterCritical(updated as any, 'hp');
         patchCombat((s: any) => spendPlayerBonus(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🫥 Ruse — caché : avantage sur ta prochaine attaque]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abCunningHide}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Cunning Action to HIDE (bonus action): advantage on their next attack. Narrate them melting into cover. Do NOT advance the turn.`);
       } else if (abilityId === 'cunningDash') {
         const moveEffect = {
@@ -226,7 +226,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🏃 Ruse — Repli/Sprint : tu te repositionnes sans provoquer d'attaques]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abCunningDash}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Cunning Action to Dash/Disengage (bonus action): they reposition safely. Narrate the movement. Do NOT advance the turn.`);
       } else if (abilityId === 'channelPreserveLife' && (res.channelDivinity?.current ?? 0) > 0) {
         const lvl = char.level || 1;
@@ -256,7 +256,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         });
         const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'channelDivinity');
         syncCharacterCritical(updated, 'hp');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ Frappe guidée — +10 sur ton prochain jet d'attaque]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abGuidedStrike}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — Guided Strike: +10 on their next attack roll. Narrate the divine guidance briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'sorceryCreateSlot' && (res.sorceryPoints?.current ?? 0) >= 2) {
         const slots = { ...(char.spellSlots || {}) };
@@ -265,7 +265,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         const updated = spendResource({ ...char, spellSlots: slots }, 'sorceryPoints', 2);
         syncCharacterCritical(updated, 'hp');
         patchCombat((s: any) => spendPlayerBonus(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✨ Source de magie — emplacement de niveau 1 créé (2 pts de sorcellerie)]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abFontOfMagic}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player converted 2 sorcery points into a level-1 spell slot (bonus action). Narrate the raw magic gathering. Do NOT advance the turn.`);
       } else if (abilityId === 'superiorityStrike' && (res.superiorityDice?.current ?? 0) > 0) {
         const die = (char.level || 1) >= 10 ? '1d10' : '1d8';
@@ -288,7 +288,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎲 Manœuvre — +${die} de dégâts sur tes attaques d'arme ce round]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abManeuver(die)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player primed a Battle Master maneuver: +${die} damage on their weapon hits this round. Narrate the tactical setup briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'wildShape' && (res.wildShape?.current ?? 0) > 0) {
         const lvl = char.level || 1;
@@ -312,7 +312,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐻 Forme sauvage — ${tempHP} PV temporaires (10 rounds)]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abWildShape(tempHP)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Wild Shape (action): beast form, ${tempHP} temporary HP. Ask what beast they become and narrate the transformation. Do NOT advance the turn.`);
       } else if (abilityId === 'divineSmite') {
         // ── CHÂTIMENT DIVIN : brûle l'emplacement de sort le PLUS BAS et pose un
@@ -351,7 +351,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚜️ ${tr.abilitySmiteLabel} — emplacement niv.${lowest.level} brûlé : +${dice}d8 radiants sur ta prochaine attaque réussie]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚜️ ${tr.abilitySmiteLabel} — ${tr.abSmiteBurn(lowest.level, dice)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player charged a DIVINE SMITE by burning a level-${lowest.level} spell slot: their next weapon hit deals an extra ${dice}d8 radiant damage. Narrate the blade drinking holy light. Do NOT advance the turn.`);
       } else if (abilityId === 'recklessAttack') {
         // ── ATTAQUE TÉMÉRAIRE : avantage sur TOUTES ses attaques ce tour (pas
@@ -379,7 +379,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🪓 ${tr.abilityRecklessLabel} — avantage sur tes attaques ce tour, mais tu t'exposes]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🪓 ${tr.abilityRecklessLabel} — ${tr.abReckless}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used RECKLESS ATTACK: advantage on their melee attacks this turn, and attacks against them have advantage until their next turn. Narrate the abandon. Do NOT advance the turn.`);
       } else if (abilityId === 'stunningStrike' && (res.ki?.current ?? 0) > 0) {
         // ── FRAPPE ÉTOURDISSANTE : la prochaine attaque réussie impose une
@@ -405,7 +405,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 💥 ${tr.abilityStunningLabel} (1 ki) — prochaine attaque réussie : sauvegarde de CON DD ${dc} ou étourdi]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 💥 ${tr.abilityStunningLabel} (1 ki) — ${tr.abStunning(dc)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent 1 ki on STUNNING STRIKE: their NEXT successful weapon hit forces the target to make a CON save vs DC ${dc}. When you see the next player hit report, call request_roll for that CON save and, on a failure, apply_condition("stunned", <target>). Narrate the pressure-point strike. Do NOT advance the turn.`);
       } else if (abilityId === 'stepOfTheWind' && (res.ki?.current ?? 0) > 0) {
         const moveEffect = {
@@ -428,7 +428,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🍃 ${tr.abilityStepWindLabel} (1 ki) — Sprint + Désengagement]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🍃 ${tr.abilityStepWindLabel} (1 ki) — ${tr.abStepWind}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player spent 1 ki on STEP OF THE WIND (bonus action): Dash and Disengage, jump distance doubled. Narrate the impossible agility. Do NOT advance the turn.`);
       } else if (abilityId === 'turnUndead' && (res.channelDivinity?.current ?? 0) > 0) {
         // ── RENVOI DES MORTS-VIVANTS : sauvegarde de SAG par mort-vivant présent ;
@@ -454,7 +454,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
             formula: '1d20+0',
             dc,
           } as any));
-          logCombatRoll({ type: 'save', name: `${target.name} — ${tr.abilityTurnUndeadLabel}`, total: save.total, formula: `vs DD ${dc}`, isDM: true, success: save.success });
+          logCombatRoll({ type: 'save', name: `${target.name} — ${tr.abilityTurnUndeadLabel}`, total: save.total, formula: `vs ${tr.dcLabel} ${dc}`, isDM: true, success: save.success });
           if (!save.success) {
             const creatureInfo = getCreature(target.name);
             if (creatureInfo && destroyCR >= 0 && creatureInfo.cr <= destroyCR) {
@@ -467,10 +467,10 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         }
         patchCombat(spendPlayerMainAction(state));
         const outcomeText = [
-          destroyed.length ? `${destroyed.join(', ')} DÉTRUIT(S)` : '',
-          turned.length ? `${turned.join(', ')} fuient` : '',
-        ].filter(Boolean).join(' ; ') || (undead.length ? 'aucun mort-vivant renvoyé' : 'aucun mort-vivant présent');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✝️ ${tr.abilityTurnUndeadLabel} (DD ${dc}) — ${outcomeText}]*` }]);
+          destroyed.length ? tr.abTurnDestroyed(destroyed.join(', ')) : '',
+          turned.length ? tr.abTurnFled(turned.join(', ')) : '',
+        ].filter(Boolean).join(' ; ') || (undead.length ? tr.abTurnNone : tr.abTurnNoUndead);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✝️ ${tr.abilityTurnUndeadLabel} (${tr.dcLabel} ${dc}) — ${outcomeText}]*` }]);
         maybeEndCombat(useGameStore.getState().combatState);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — TURN UNDEAD (action, DC ${dc}). ${destroyed.length ? `DESTROYED outright (CR ≤ ${destroyCR}): ${destroyed.join(', ')}. ` : ''}${turned.length ? `Frightened and fleeing: ${turned.join(', ')}. ` : ''}${!destroyed.length && !turned.length ? (undead.length ? 'Every undead resisted.' : 'No undead present — the holy symbol blazes for nothing.') : ''} Already resolved — narrate it, do NOT re-roll. Do NOT advance the turn.`);
       } else if (abilityId === 'eldritchMind' && (res.pactFocus?.current ?? 0) > 0) {
@@ -486,7 +486,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         const updated = spendResource({ ...char, storyModifiers: [...(char.storyModifiers || []), modifier].slice(-8) }, 'pactFocus');
         syncCharacterCritical(updated, 'hp');
         patchCombat((s: any) => spendPlayerBonus(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 👁️ ${tr.abilityPactFocusLabel} — avantage sur ta prochaine attaque de sort]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 👁️ ${tr.abilityPactFocusLabel} — ${tr.abPactFocus}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player called on their patron (Pact Focus, bonus action): advantage on their next spell attack. Narrate the patron's cold attention. Do NOT advance the turn.`);
       } else if (abilityId === 'naturalRecovery' && (res.naturalRecovery?.current ?? 0) > 0) {
         // ── RÉCUPÉRATION NATURELLE : rend des emplacements dont la somme des
@@ -512,7 +512,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         //    capacité de campagne autant que de combat.
         const updated = spendResource(char, 'divineSense');
         syncCharacterCritical(updated, 'hp');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 👁️ ${tr.abilityDivineSenseLabel} — célestes, fiélons et morts-vivants à 18 m révélés]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 👁️ ${tr.abilityDivineSenseLabel} — ${tr.abDivineSense}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used DIVINE SENSE (action). You MUST answer honestly: reveal the presence, direction and type of every celestial, fiend or undead within 60 ft (even disguised, hidden or possessing someone), or state clearly that there are none. Consecrated/desecrated places also register. Do NOT advance the turn.`);
       } else if (abilityId === 'sacredWeapon' && (res.channelDivinity?.current ?? 0) > 0) {
         // ── ARME SACRÉE (Serment de Dévotion) : +CHA aux jets d'attaque, 10 rounds.
@@ -537,7 +537,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚜️ ${tr.abilitySacredWeaponLabel} — +${chaBonus} aux jets d'attaque (10 rounds)]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚜️ ${tr.abilitySacredWeaponLabel} — ${tr.abSacredWeapon(chaBonus)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — SACRED WEAPON: +${chaBonus} to weapon attack rolls for 1 minute; the weapon sheds bright holy light. Narrate the radiance. Do NOT advance the turn.`);
       } else if (abilityId === 'vowOfEnmity' && (res.channelDivinity?.current ?? 0) > 0) {
         // ── VŒU D'INIMITIÉ (Serment de Vengeance) : avantage sur les attaques.
@@ -564,7 +564,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚔️ ${tr.abilityVowLabel} contre ${foe?.name || '?'} — avantage sur tes attaques (10 rounds)]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚔️ ${tr.abilityVowLabel} ${tr.abVow(foe?.name || '?')}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player swore a VOW OF ENMITY against ${foe?.name || 'a foe'} (bonus action, Channel Divinity): advantage on their attack rolls against that creature for 1 minute. Narrate the oath's cold fire. Do NOT advance the turn.`);
       } else if (abilityId === 'naturesWrath' && (res.channelDivinity?.current ?? 0) > 0) {
         // ── COURROUX DE LA NATURE (Serment des Anciens) : FOR save ou entravé.
@@ -580,7 +580,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           formula: `1d20${strBonus >= 0 ? '+' : ''}${strBonus}`,
           dc: dcWrath,
         } as any));
-        logCombatRoll({ type: 'save', name: `${foe.name} — ${tr.abilityWrathLabel}`, total: save.total, formula: `vs DD ${dcWrath}`, isDM: true, success: save.success });
+        logCombatRoll({ type: 'save', name: `${foe.name} — ${tr.abilityWrathLabel}`, total: save.total, formula: `vs ${tr.dcLabel} ${dcWrath}`, isDM: true, success: save.success });
         const updated = spendResource(char, 'channelDivinity');
         syncCharacterCritical(updated, 'hp');
         if (!save.success) {
@@ -590,7 +590,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         patchCombat(spendPlayerMainAction(state));
         setPlayerRoll({ result: save.total, reason: `${tr.abilityWrathLabel} ${tr.vs} ${foe.name} (${save.success ? tr.miss : tr.hit})`, success: !save.success });
         await waitDice();
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌿 ${tr.abilityWrathLabel} — ${foe.name} ${save.success ? 'se libère des lianes' : 'est ENTRAVÉ par les lianes spectrales'}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌿 ${tr.abilityWrathLabel} — ${save.success ? tr.abWrathFree(foe.name) : tr.abWrathHeld(foe.name)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used Channel Divinity — NATURE'S WRATH on ${foe.name} (STR save ${save.total} vs DC ${dcWrath}): ${save.success ? 'the foe broke free' : 'the foe is RESTRAINED by spectral vines (attacks against it have advantage, its attacks have disadvantage)'}. Already resolved — narrate it, do NOT re-roll. Do NOT advance the turn.`);
       } else if (abilityId === 'cavalierChallenge' && (res.channelDivinity?.current ?? 0) > 0) {
         // ── DÉFI DU CAVALIER : l'ennemi défié concentre ses assauts sur TOI
@@ -605,7 +605,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           ...s,
           enemyIntents: { ...(s.enemyIntents || {}), [foe.id]: playerId },
         }));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🛡️ ${tr.abilityChallengeLabel} — ${foe.name} ne voit plus que toi]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🛡️ ${tr.abilityChallengeLabel} — ${tr.abChallenge(foe.name)}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player (Cavalier paladin) CHALLENGED ${foe.name} (bonus action, Channel Divinity): that enemy now focuses its attacks on the paladin — the engine has locked its target. Narrate the ringing challenge. Do NOT advance the turn.`);
       } else if (abilityId === 'divineIntervention' && (res.divineIntervention?.current ?? 0) > 0) {
         // ── INTERVENTION DIVINE (Clerc 10+) : d100 ≤ niveau → miracle.
@@ -627,7 +627,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         setPlayerRoll({ result: roll, reason: `${tr.abilityInterventionLabel} — d100 ${tr.vs} ${lvl} (${success ? tr.hit : tr.miss})`, success });
         await waitDice();
         logCombatRoll({ type: 'check', name: tr.abilityInterventionLabel, total: roll, formula: `d100 ≤ ${lvl}`, isDM: false, success });
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${success ? '🌟 INTERVENTION DIVINE — ta divinité RÉPOND !' : `⚪ ${tr.abilityInterventionLabel} — le ciel reste silencieux (${roll} > ${lvl})`}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${success ? tr.abInterventionYes : `⚪ ${tr.abilityInterventionLabel} — ${tr.abInterventionNo(roll, lvl)}`}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(success
           ? `[SYSTEM] DIVINE INTERVENTION SUCCEEDED (d100: ${roll} ≤ level ${lvl}). The player's deity personally intervenes — manifest a MIRACLE fitting the situation (the engine already restored ${5 * lvl} HP): turn the tide, banish a threat, reveal a truth. Make it AWE-INSPIRING and narrate it now.`
           : `[SYSTEM] Player attempted Divine Intervention and FAILED (d100: ${roll} > level ${lvl}). The heavens stay silent — narrate the unanswered prayer in one somber beat. Do NOT advance the turn.`);
@@ -641,7 +641,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
         }
         syncCharacterCritical(spent.character, 'hp');
         patchCombat((s: any) => spendPlayerMainAction(s));
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 ${tr.abilityPrimevalLabel} — présence des créatures surnaturelles à 1,5 km révélée]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 ${tr.abilityPrimevalLabel} — ${tr.abPrimeval}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player used PRIMEVAL AWARENESS (action, one level-1 slot). You MUST answer honestly: for each of these types — aberrations, celestials, dragons, elementals, fey, fiends, undead — state whether at least one is present within 1 mile (without revealing number or exact location). Do NOT advance the turn.`);
       } else if (abilityId === 'metaQuickened' && (res.sorceryPoints?.current ?? 0) >= 2) {
         // ── MÉTAMAGIE : SORT ACCÉLÉRÉ — marqueur consommé par le prochain cast.
@@ -659,7 +659,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           activeEffects: [...(char.activeEffects || []).filter(e => e.name !== marker.name), marker],
         }, 'sorceryPoints', 2);
         syncCharacterCritical(updated, 'hp');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ ${tr.abilityQuickenedLabel} (2 pts) — ton prochain sort coûte l'action bonus]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ ${tr.abilityQuickenedLabel} (2 pts) — ${tr.abQuickened}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player primed QUICKENED SPELL (2 sorcery points): their next spell this turn costs a bonus action instead of an action. Narrate the gathering speed briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'metaHeightened' && (res.sorceryPoints?.current ?? 0) >= 3) {
         // ── MÉTAMAGIE : SORT INTENSIFIÉ — la cible sauvegarde avec désavantage.
@@ -677,7 +677,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           activeEffects: [...(char.activeEffects || []).filter(e => e.name !== marker.name), marker],
         }, 'sorceryPoints', 3);
         syncCharacterCritical(updated, 'hp');
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌀 ${tr.abilityHeightenedLabel} (3 pts) — la prochaine sauvegarde ennemie se fera avec DÉSAVANTAGE]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌀 ${tr.abilityHeightenedLabel} (3 pts) — ${tr.abHeightened}]*` }]);
         if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] Player primed HEIGHTENED SPELL (3 sorcery points): the target of their next save-spell rolls its save with DISADVANTAGE. Narrate the tightening magic briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'wholenessOfBody' && (res.wholenessOfBody?.current ?? 0) > 0) {
         // ── PLÉNITUDE DU CORPS (Voie de la Paume) : soigne 3 × niveau.

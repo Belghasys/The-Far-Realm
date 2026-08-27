@@ -22,7 +22,7 @@ import { memoryManager } from '../services/persistence/memoryManager';
 import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { ADVENTURES as ADVENTURE_OPTIONS, localizeAdventure, type AdventureDifficulty, type LocalizedAdventure } from '../data/adventures';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
-import { coverArt, COVER_CUSTOM, COVER_IMPROVISED } from '../theme/art';
+import { coverArt, COVER_CUSTOM, COVER_IMPROVISED, artUrl, artSrcSet } from '../theme/art';
 import { LOBBY_VIEW_TEXTS as TRANS } from './texts';
 
 /** Un seul accent de couleur par niveau d'exigence — lisible en un coup d'œil. */
@@ -65,8 +65,8 @@ function AdventureSection({ cover, title, subtitle, accent, children }: {
                 gap: 26, alignItems: 'center', paddingBottom: 30,
             }}>
                 <img
-                    src={`/art/${cover}.webp`}
-                    srcSet={`/art/${cover}.webp 1x, /art/${cover}@2x.webp 2x`}
+                    src={artUrl(cover)}
+                    srcSet={artSrcSet(cover)}
                     alt=""
                     style={{
                         display: 'block', width: '100%', maxWidth: 420,
@@ -112,8 +112,8 @@ function AdventureCard({ adv, tr, picked, onPick }: {
         >
             <div style={{ position: 'relative' }}>
                 <img
-                    src={`/art/${coverArt(adv.id)}.webp`}
-                    srcSet={`/art/${coverArt(adv.id)}.webp 1x, /art/${coverArt(adv.id)}@2x.webp 2x`}
+                    src={artUrl(coverArt(adv.id))}
+                    srcSet={artSrcSet(coverArt(adv.id))}
                     alt=""
                     loading="lazy"
                     style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', background: T.void }}

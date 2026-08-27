@@ -96,6 +96,38 @@ export async function set_mount(args: any, ctx: ToolContext) {
     if (kindArg && !mountType) {
         return { success: false, error: `Unknown mount kind "${kindArg}". Valid kinds: ${MOUNT_TYPES.map(m => m.id).join(', ')}.` };
     }
+    // Une monture en remplace une autre SANS un mot : le paladin qui achetait
+    // un poney perdait son Destrier céleste. Le MJ doit le vouloir (replace)
+    // ou congédier la précédente d'abord.
+    const existing = store.character.mount;
+    // MÊME monture ? Le NOM fait foi : deux destriers sont deux montures, et
+    // une égalité par type répondait « success » en gardant l'ancienne — le
+    // nouveau cheval n'existait jamais, et bloquait replace:true par-dessus.
+    // Le type n'est un repli que si le MJ n'a donné aucun nom (rappel du
+    // destrier céleste).
+    const askedName = stringArg(args.name, 80);
+    const sameMount = !!existing && (askedName
+        ? foldText(existing.name) === foldText(askedName)
+        : !!mountType && existing.kind === mountType.id);
+    if (existing && sameMount) {
+        // Le MJ « rappelle » la monture qu'il a déjà (destrier céleste après un
+        // repos long, cavalier qui remonte en selle) : on remonte, sans
+        // toucher aux PV ni au nom.
+        const alive = (existing.hp?.current ?? 1) > 0;
+        d.syncCharacterUpdate({ ...store.character, mount: { ...existing, mounted: alive } });
+        return {
+            success: true, mount: existing, mounted: alive,
+            instruction: alive
+                ? `${existing.name} is already the hero's mount — they are back in the saddle. Nothing else changed.`
+                : `${existing.name} is still DOWN (0 HP): it cannot be ridden until it recovers (a long rest for a celestial steed). Narrate the wait, do not summon a new one.`,
+        };
+    }
+    if (existing && args.replace !== true && String(args.replace).toLowerCase() !== 'true') {
+        return {
+            success: false,
+            error: `The hero already rides ${existing.name}${existing.kind ? ` [${existing.kind}]` : ''}. Call dismiss_mount first (sold, stabled, left behind), or pass replace:true if the fiction really swaps one mount for the other.`,
+        };
+    }
     if (mountType?.classOnly) {
         const cls = store.character.class;
         const lvl = store.character.level || 1;
@@ -106,7 +138,11 @@ export async function set_mount(args: any, ctx: ToolContext) {
             };
         }
     }
-    const mountName = stringArg(args.name, 80) || mountType?.name;
+    // Le catalogue est ecrit en francais : en session anglaise on stocke le
+    // miroir anglais, sinon la fiche affichait « Destrier celeste » et une
+    // description francaise au milieu d'une partie anglaise.
+    const mountName = stringArg(args.name, 80)
+        || (mountType ? sysLine(mountType.name, mountType.nameEn) : undefined);
     if (!mountName) return { success: false, error: 'set_mount requires name or kind' };
     const mountCreature = getCreature(mountName);
     const speed = Math.max(20, Math.trunc(numericArg(args.speed, mountType?.speed ?? (mountCreature as any)?.speed ?? 60)));
@@ -118,7 +154,9 @@ export async function set_mount(args: any, ctx: ToolContext) {
         flying: mountType?.flying || undefined,
         // La monture COMBAT (ligne alliée auto) : PV persistants.
         hp: { current: mountMaxHP, max: mountMaxHP },
-        description: stringArg(args.description, 200) || mountType?.description || undefined,
+        customHp: args.hp !== undefined && args.hp !== null && Number.isFinite(Number(args.hp)) ? true : undefined,
+        description: stringArg(args.description, 200)
+            || (mountType ? sysLine(mountType.description, mountType.descriptionEn || mountType.description) : undefined),
         // Acquérir = grimper en selle. set_mounted(false) pour descendre —
         // la charge montée exige d'être en selle, pas juste propriétaire.
         mounted: true,
@@ -166,10 +204,13 @@ export async function set_beast_companion(args: any, ctx: ToolContext) {
     if (!beast) {
         return { success: false, error: `Unknown beast. Valid kinds: ${BEAST_COMPANIONS.map(b => `${b.id} (${b.name})`).join(', ')}.` };
     }
+    const beastName = sysLine(beast.name, beast.nameEn);
+    const beastAttack = sysLine(beast.attack.name, beast.attackNameEn || beast.attack.name);
+    const beastDesc = sysLine(beast.description, beast.descriptionEn || beast.description);
     d.syncCharacterUpdate({ ...store.character, beastKind: beast.id });
     portraitService.request(npcPortraitKey(`Compagnon ${beast.name}`), portraitPrompt(beast.name, beast.description));
     campaignEventLog.append('JOURNAL_UPDATED', `Beast companion bonded: ${beast.name}`, beast);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 ${sysLine(`Le lien du Maître des bêtes est scellé : ${beast.name} (CA ${beast.ac}`, `The Beast Master's bond is sealed: ${beast.name} (AC ${beast.ac}`)}, ${beast.attack.name} +${beast.attack.attackBonus}, ${beast.attack.damage})]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐾 ${sysLine(`Le lien du Maître des bêtes est scellé : ${beastName} (CA ${beast.ac}`, `The Beast Master's bond is sealed: ${beastName} (AC ${beast.ac}`)}, ${beastAttack} +${beast.attack.attackBonus}, ${beast.attack.damage})]*` }]);
     return {
         success: true,
         beast,
@@ -189,11 +230,12 @@ export async function set_familiar(args: any, ctx: ToolContext) {
     if (!familiarType) {
         return { success: false, error: `Unknown familiar kind. Valid kinds: ${FAMILIAR_TYPES.map(f => `${f.id} (${f.name})`).join(', ')}.` };
     }
-    const famName = stringArg(args.name, 60) || familiarType.name;
+    const famName = stringArg(args.name, 60) || sysLine(familiarType.name, familiarType.nameEn);
     const familiar = {
         name: famName,
-        kind: familiarType.name,
-        description: stringArg(args.description, 200) || familiarType.knack,
+        kind: sysLine(familiarType.name, familiarType.nameEn),
+        description: stringArg(args.description, 200)
+            || sysLine(familiarType.knack, familiarType.knackEn || familiarType.knack),
         acquiredAt: Date.now(),
     };
     // ensureProgressionState matérialise tout de suite la
@@ -221,18 +263,18 @@ export async function dismiss_familiar(_args: any, ctx: ToolContext) {
 }
 
 export async function dismiss_mount(_args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store, sysLine } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const currentMount = store.character.mount;
     if (!currentMount) return { success: false, error: 'The hero has no mount.' };
     d.syncCharacterUpdate({ ...store.character, mount: undefined });
     campaignEventLog.append('JOURNAL_UPDATED', `Mount dismissed: ${currentMount.name}`, currentMount);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${currentMount.name} n'accompagne plus le héros]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${currentMount.name} ${sysLine("n'accompagne plus le héros", 'no longer travels with the hero')}]*` }]);
     return { success: true, dismissed: currentMount.name };
 }
 
 export async function dismiss_companion(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store, sysLine } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const compName = stringArg(args.name, 80);
     const dnNorm = foldText;
@@ -248,6 +290,6 @@ export async function dismiss_companion(args: any, ctx: ToolContext) {
         }));
     }
     campaignEventLog.append('JOURNAL_UPDATED', `Companion dismissed: ${target.name}`, { name: target.name });
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${target.name} quitte le groupe]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${target.name} ${sysLine('quitte le groupe', 'leaves the party')}]*` }]);
     return { success: true, dismissed: target.name };
 }

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Sparkles, BookOpen, Search, Check, Trash2, RotateCcw, Info } from 'lucide-react';
 import { CharacterSheet, getEffectiveStat, SpellEntry } from '../../types';
 import { GameWindow, WindowTabs } from './GameWindow';
-import { spellsForClass, lookupSpell } from '../../engine/codexService';
+import { spellsForClass, lookupSpell, spellLabel } from '../../engine/codexService';
 import { playSpellSfx } from '../../services/media/combatSfx';
 import { CLASS_CASTER_ABILITY } from '../../engine/rulesEngine';
 import { useGameStore } from '../../store/gameStore';
@@ -241,14 +241,14 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
                         <div className="space-y-4">
                             <SpellGroup title={tr.cantripsTitle}>
                                 {cantrips.length ? cantrips.map(name => (
-                                    <SpellRow key={name} name={name} tr={tr} onCast={() => handleCast(name, 0)} onDetails={() => setSelected(lookupSpell(name))} />
+                                    <SpellRow key={name} name={name} tr={tr} lang={language} onCast={() => handleCast(name, 0)} onDetails={() => setSelected(lookupSpell(name))} />
                                 )) : <Empty>{tr.noCantrips}</Empty>}
                             </SpellGroup>
                             <SpellGroup title={casterMode === 'known' ? tr.knownSpellsTitle : tr.preparedSpellsTitle}>
                                 {(casterMode === 'known' ? known : prepared).length
                                     ? (casterMode === 'known' ? known : prepared).map(name => {
                                         const lvl = lookupSpell(name)?.level ?? 1;
-                                        return <SpellRow key={name} name={name} tr={tr} onCast={() => handleCast(name, lvl)} onDetails={() => setSelected(lookupSpell(name))} />;
+                                        return <SpellRow key={name} name={name} tr={tr} lang={language} onCast={() => handleCast(name, lvl)} onDetails={() => setSelected(lookupSpell(name))} />;
                                     })
                                     : <Empty>{casterMode === 'known' ? tr.noKnownSpells : tr.noPreparedSpells}</Empty>}
                             </SpellGroup>
@@ -278,7 +278,7 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
                                                                 {isPrep && <Check className="h-3.5 w-3.5" />}
                                                             </button>
                                                         ) : <div className="grid h-5 w-5 place-items-center rounded border border-purple-400/40 bg-purple-950 text-[10px] font-mono text-purple-300">{language === 'fr' ? 'T' : 'C'}</div>}
-                                                        <SpellName name={name} tr={tr} />
+                                                        <SpellName name={name} tr={tr} lang={language} />
                                                     </div>
                                                     <div className="flex shrink-0 items-center gap-2">
                                                         <IconBtn onClick={() => setSelected(lookupSpell(name))} title={tr.details}><Info className="h-3.5 w-3.5" /></IconBtn>
@@ -323,7 +323,7 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
                                     return (
                                         <div key={sp.id} className="flex items-center justify-between gap-3 rounded border border-purple-500/10 bg-purple-950/20 p-3 hover:border-purple-500/30">
                                             <button type="button" onClick={() => setSelected(sp)} className="min-w-0 text-left">
-                                                <SpellName name={sp.name} entry={sp} tr={tr} />
+                                                <SpellName name={sp.name} entry={sp} tr={tr} lang={language} />
                                                 <p className="mt-1 line-clamp-1 text-xs text-purple-300/60">{sp.effectSummary}</p>
                                             </button>
                                             <div className="flex shrink-0 items-center gap-1.5">
@@ -342,7 +342,7 @@ export default function SpellbookPanel({ character, onClose, onUpdateCharacter, 
 
                 {/* Detail panel */}
                 <aside className="border-t border-purple-500/10 bg-gray-950 p-4 lg:border-l lg:border-t-0 overflow-y-auto custom-scrollbar">
-                    {selected ? <SpellDetails sp={selected} dc={dc} attackBonus={attackBonus} ability={ABILITY} school={SCHOOL} tr={tr} />
+                    {selected ? <SpellDetails sp={selected} dc={dc} attackBonus={attackBonus} ability={ABILITY} school={SCHOOL} tr={tr} lang={language} />
                         : (
                             <div className="flex flex-col items-center justify-center py-20 text-center text-purple-300/30">
                                 <Sparkles className="mb-2 h-8 w-8" />
@@ -375,11 +375,11 @@ const IconBtn: React.FC<{ onClick: () => void; title: string; danger?: boolean; 
 );
 
 // Spell name + metadata badges (level, school, V/S/M, C, R)
-function SpellName({ name, entry, tr }: { name: string; entry?: SpellEntry; tr: Tr }) {
+function SpellName({ name, entry, tr, lang }: { name: string; entry?: SpellEntry; tr: Tr; lang: Language }) {
     const sp = entry || lookupSpell(name) || undefined;
     return (
         <span className="inline-flex flex-wrap items-center gap-1.5">
-            <span className="font-bold text-purple-100 font-serif">{name}</span>
+            <span className="font-bold text-purple-100 font-serif">{spellLabel(sp || name, lang)}</span>
             <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[9px] font-mono text-purple-300">{sp ? (sp.level === 0 ? tr.cantripShort : tr.levelShort(sp.level)) : '?'}</span>
             {sp?.concentration && <Badge title={tr.concentration} cls="border-amber-500/40 text-amber-300">C</Badge>}
             {sp?.ritual && <Badge title={tr.ritual} cls="border-sky-500/40 text-sky-300">R</Badge>}
@@ -392,9 +392,9 @@ const Badge: React.FC<{ title: string; cls: string; children: React.ReactNode }>
     <span title={title} className={`rounded border bg-black/30 px-1 py-0.5 text-[9px] font-mono ${cls}`}>{children}</span>
 );
 
-const SpellRow: React.FC<{ name: string; tr: Tr; onCast: () => void; onDetails: () => void }> = ({ name, tr, onCast, onDetails }) => (
+const SpellRow: React.FC<{ name: string; tr: Tr; lang: Language; onCast: () => void; onDetails: () => void }> = ({ name, tr, lang, onCast, onDetails }) => (
     <div className="flex items-center justify-between gap-3 rounded border border-purple-500/15 bg-purple-950/10 p-3 hover:border-purple-500/35 hover:bg-purple-950/20">
-        <button type="button" onClick={onDetails} className="min-w-0 text-left"><SpellName name={name} tr={tr} /></button>
+        <button type="button" onClick={onDetails} className="min-w-0 text-left"><SpellName name={name} tr={tr} lang={lang} /></button>
         <div className="flex shrink-0 items-center gap-2">
             <IconBtn onClick={onDetails} title={tr.details}><Info className="h-3.5 w-3.5" /></IconBtn>
             <button type="button" onClick={onCast} className="flex items-center gap-1 rounded bg-purple-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-purple-500">
@@ -404,15 +404,15 @@ const SpellRow: React.FC<{ name: string; tr: Tr; onCast: () => void; onDetails: 
     </div>
 );
 
-function SpellDetails({ sp, dc, attackBonus, ability, school, tr }: {
-    sp: SpellEntry; dc: number; attackBonus: number; ability: Record<string, string>; school: Record<string, string>; tr: Tr;
+function SpellDetails({ sp, dc, attackBonus, ability, school, tr, lang }: {
+    sp: SpellEntry; dc: number; attackBonus: number; ability: Record<string, string>; school: Record<string, string>; tr: Tr; lang: Language;
 }) {
     const dcLabel = tr.dcLabel;
     const compFull = sp.components.map(c => ({ V: tr.compV, S: tr.compS, M: tr.compM }[c] || c)).join(', ');
     return (
         <div className="space-y-4 text-sm text-purple-100">
             <div>
-                <h4 className="font-serif text-lg font-bold text-white">{sp.name}</h4>
+                <h4 className="font-serif text-lg font-bold text-white">{spellLabel(sp, lang)}</h4>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs font-mono text-purple-400">
                     <span>{sp.level === 0 ? tr.cantripWord : tr.levelN(sp.level)} · {school[sp.school] || sp.school}</span>
                     {sp.concentration && <Badge title={tr.concentration} cls="border-amber-500/40 text-amber-300">{tr.concentration}</Badge>}

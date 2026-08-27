@@ -5,7 +5,7 @@ import { combatantSide, buildDisplayNames } from '../../engine/combatants';
 import { Sword, Sparkles, ShieldAlert, HeartPulse, Shield, Flame, Wind, HandHeart, Music2, Zap, Dices, EyeOff, Footprints, Cross, Crosshair, Wand2, PawPrint } from 'lucide-react';
 import { getFeatById } from '../../data/feats';
 import { monkMartialArtsDie, getActionCapability, hasFeatSpecial } from '../../engine/rulesEngine';
-import { lookupSpell, isAreaSpell } from '../../engine/codexService';
+import { lookupSpell, isAreaSpell, spellLabel } from '../../engine/codexService';
 import { COMBAT_ACTIONS_PANEL_TEXTS as TRANS } from './texts';
 
 export type ClassAbilityId = 'rage' | 'secondWind' | 'actionSurge' | 'layOnHands' | 'bardicInspiration' | 'kiFlurry' | 'kiPatientDefense'
@@ -812,7 +812,8 @@ export function CombatActionsPanel({
                         const targetBand = (selectedEnemyRow?.range || 'melee');
                         const mountSheet: any = (character as any)?.mount;
                         const mountRow = combatState.combatants.find(c => c.id === 'mount');
-                        const riddenMount = !!mountSheet && mountSheet.mounted !== false && !(mountRow && mountRow.hp.current <= 0);
+                        // Miroir du garde MOTEUR : la fiche d'abord (une monture a 0 PV n'est pas au roster).
+                        const riddenMount = !!mountSheet && (mountSheet.hp?.current ?? 1) > 0 && mountSheet.mounted !== false && !(mountRow && mountRow.hp.current <= 0);
                         const raging = character?.class === 'Barbarian' && (character?.activeEffects || []).some((e: any) => e.name === 'Rage');
                         const willCharge = weaponMeleeOnly && targetBand !== 'melee' && (riddenMount || (targetBand === 'near' && raging));
                         const willAdvance = weaponMeleeOnly && targetBand !== 'melee' && !willCharge;
@@ -876,14 +877,14 @@ export function CombatActionsPanel({
                                     {playerSpells.cantrips.length > 0 && (
                                         <optgroup label={tr.cantripsGroup}>
                                             {playerSpells.cantrips.map(s => (
-                                                <option key={s} value={s}>{s}</option>
+                                                <option key={s} value={s}>{spellLabel(s, language)}</option>
                                             ))}
                                         </optgroup>
                                     )}
                                     {playerSpells.spells.length > 0 && (
                                         <optgroup label={tr.leveledSpellsGroup}>
                                             {playerSpells.spells.map(s => (
-                                                <option key={s} value={s}>{s}</option>
+                                                <option key={s} value={s}>{spellLabel(s, language)}</option>
                                             ))}
                                         </optgroup>
                                     )}

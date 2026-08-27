@@ -222,6 +222,22 @@ export function parseItemAdditionalDamage(item: Item): { damage: string; damageT
 
     return parts;
 }
+/**
+ * L'assaillant est-il lui aussi en l'air ? Une créature volante (ou dotée
+ * d'allonge) atteint une monture volante sans pénalité. Le bestiaire ne
+ * structure pas le vol : on lit la fiche du codex quand elle existe, et à
+ * défaut le nom de l'attaque (« Serres », « Talons »).
+ */
+function attackerIsAirborne(attacker: Combatant): boolean {
+    const creature: any = getCreature(attacker.name) || lookupMonster(attacker.name);
+    // `speed` est un NOMBRE (la marche) ; le vol n'est lisible que dans le
+    // texte complet `speedStr` (« 40 ft., fly 80 ft. »).
+    const speedText = String(creature?.speedStr ?? creature?.speedText ?? '');
+    if (/\bfly\b|\bvol\b/i.test(speedText)) return true;
+    if (creature?.flying === true || Number(creature?.flySpeed) > 0) return true;
+    return /talon|serre|wing|aile|beak|bec/i.test(attacker.attack?.name || '');
+}
+
 export function resolveAttackAction(
     current: EncounterState,
     args: {
@@ -347,10 +363,16 @@ export function resolveAttackAction(
     // saves) et la monture présente au combat doit tenir debout. Sans ça,
     // chaque attaque de mêlée sur une cible lointaine devenait une charge
     // complète, à pied, tant qu'un cheval attendait à l'écurie.
+    //
+    // Le garde regarde la FICHE d'abord : une monture à 0 PV ne rejoint pas la
+    // rencontre, donc `mountCombatant` était `undefined` et l'ancien test
+    // (« la ligne existe et elle est à terre ») ne se déclenchait jamais — le
+    // héros chargeait à dos de cadavre.
     const mountCombatant = character?.mount ? state.combatants.find(c => c.id === 'mount') : undefined;
-    const riddenMount = !!character?.mount
-        && (character.mount as any).mounted !== false
+    const mountAlive = !!character?.mount
+        && (character.mount.hp?.current ?? 1) > 0
         && !(mountCombatant && mountCombatant.hp.current <= 0);
+    const riddenMount = mountAlive && (character!.mount as any).mounted !== false;
     if (isMeleeAttack && bandGateApplies) {
         if (band === 'far') {
             // CHARGE MONTÉE : à dos de monture, le joueur fond sur une cible
@@ -486,6 +508,19 @@ export function resolveAttackAction(
             context.prompt.contextReasons = [...(context.prompt.contextReasons || []), `${gearDefense.source}: attackers have disadvantage`];
         }
     }
+    // MONTURE VOLANTE : en selle sur un griffon ou un pégase, le héros et sa
+    // monture sont EN L'AIR. Un assaillant au sol frappe vers le haut, sur une
+    // cible qui bouge : désavantage. `flying` n'avait jusque-là aucun effet
+    // mécanique — une monture volante coûtait cher en fiction pour rien.
+    // Un ennemi qui vole lui-même, ou qui tire, garde son jet normal.
+    if (isMeleeAttack && !attacker.isPlayer && combatantSide(attacker) === 'enemy'
+        && (target.isPlayer || target.id === 'mount')
+        && character?.mount?.flying && (character.mount as any).mounted !== false
+        && (character.mount.hp?.current ?? 1) > 0
+        && !attackerIsAirborne(attacker)) {
+        context.prompt.advantage = mergeAdvantage(context.prompt.advantage, 'disadvantage');
+        context.prompt.contextReasons = [...(context.prompt.contextReasons || []), 'airborne mount: ground attackers strike upward'];
+    }
     const attackRoll = resolveRollPrompt(context.prompt);
     const effectiveAC = attackRoll.prompt.dc;
     // Champion (Fighter archetype): Improved Critical — crits on 19-20, and
@@ -605,9 +640,13 @@ export function resolveAttackAction(
                 damageParts.push({ damage: `1d6+${Math.floor(playerLevel / 2)}`, damageType: 'radiant' });
             }
             // Paladin Cavalier — Charge fervente : +1d8 quand la frappe conclut
-            // une charge montée (loin → contact dans la même action).
+            // une charge montée (loin → contact dans la même action), qui passe
+            // à +2d8 au niveau 15 (Charge inarrêtable). Le dé était figé à 1d8
+            // sans jamais lire le niveau, alors que la fiche promet 2d8 — et
+            // que la capacité de niveau 3 annonce « appliqué par le moteur ».
             if (character.subclass === 'Cavalier' && mountedCharge) {
-                damageParts.push({ damage: '1d8', damageType: resolvedDamageType as CodexDamageType });
+                const chargeDice = playerLevel >= 15 ? '2d8' : '1d8';
+                damageParts.push({ damage: chargeDice, damageType: resolvedDamageType as CodexDamageType });
             }
         } else if (!attacker.isPlayer && monsterAttack?.damageParts?.length) {
             // Monster data types damageType as a plain string; the values are valid

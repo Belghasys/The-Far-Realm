@@ -164,10 +164,17 @@ describe('runNPCTurn — le tour d\'un PNJ joué par le moteur', () => {
         expect(journal.logs.some(l => l.type === 'save' && /vs Finger of Death/.test(l.name))).toBe(true);
         expect(npc().spellUses).toEqual({ Disintegrate: 1, 'Finger of Death': 1 });
 
+        // UPDATE 2026-08-27 : la liche tient aussi Fireball (zone, ≥ 2 cibles —
+        // pas ici) et Blight (×3), qui passe AVANT le rayon à volonté.
+        await turn();
+        expect(journal.logs.some(l => l.type === 'save' && /vs Blight/.test(l.name))).toBe(true);
+        expect(npc().spellUses).toEqual({ Disintegrate: 1, 'Finger of Death': 1, Blight: 1 });
+
+        await turn(); // Blight ×2 (le kit en porte deux)
         await turn();
         expect(journal.rolls.some(r => /Lich : Ray of Frost/.test(r.name))).toBe(true);
-        expect(npc().spellUses).toEqual({ Disintegrate: 1, 'Finger of Death': 1 }); // à volonté : pas décompté
-        expect(journal.logs.filter(l => l.type === 'save')).toHaveLength(2);
+        expect(npc().spellUses).toEqual({ Disintegrate: 1, 'Finger of Death': 1, Blight: 2 }); // à volonté : pas décompté
+        expect(journal.logs.filter(l => l.type === 'save')).toHaveLength(4);
     });
 });
 
@@ -206,5 +213,82 @@ describe('les capacités SRD (data/monsterData2) jouées par le moteur', () => {
         expect(journal.rolls.some(r => /Tarrasque : Tail/.test(r.name))).toBe(true);
         expect(journal.logs.some(l => l.type === 'save' && /vs Tail/.test(l.name))).toBe(true);
         expect(heroHasEffect(/prone|terre/i)).toBe(true);
+    });
+});
+
+describe('les soins des lanceurs (kind heal)', () => {
+    /** Prêtre + un ogre allié blessé sous la moitié : c'est le tour du prêtre. */
+    function setupPriestWithWoundedAlly(ogreHp: number) {
+        const character = hero();
+        let state: any = startEncounter(character, EMPTY);
+        // Les ids d'ennemi sont `enemy-<Date.now()>-<Math.random()>` : avec le
+        // dé figé du test et deux ajouts dans la même milliseconde, ils
+        // entrent en collision. On renomme les deux rangs explicitement.
+        const priest = addEnemyToEncounter(state, { name: 'Priest' });
+        const ogre = addEnemyToEncounter(priest.state, { name: 'Ogre' });
+        const combatants = ogre.state.combatants.map((c: any) =>
+            c.name === 'Priest' ? { ...c, id: 'priest-row', range: 'melee' }
+            : c.name === 'Ogre' ? { ...c, id: 'ogre-row', range: 'melee', hp: { ...c.hp, current: ogreHp } }
+            : c);
+        state = { ...ogre.state, combatants, currentTurn: 'priest-row', turnIndex: combatants.findIndex((c: any) => c.id === 'priest-row') };
+        const ids = { priest: 'priest-row', ogre: 'ogre-row' };
+        useGameStore.setState({ character, combatState: state } as any);
+        const journal: Journal = { rolls: [], logs: [], transcript: [] };
+        const row = (id: string) => useGameStore.getState().combatState.combatants.find((c: any) => c.id === id)!;
+        const ctx = (): SessionContext => ({
+            character: useGameStore.getState().character!, language: 'fr', onCharacterUpdate: () => {},
+            combatState: useGameStore.getState().combatState,
+            setCombatState: (u: any) => useGameStore.setState(s => ({ combatState: typeof u === 'function' ? u(s.combatState) : u })),
+            setIsNPCTurn: () => {}, dm: null, isConnected: false,
+            pushCombatRoll: (r: any) => { journal.rolls.push(r); }, setActivePrompt: () => {}, setCurrentRoll: () => {},
+            setTranscript: (u: any) => { const next = typeof u === 'function' ? u([]) : u; journal.transcript.push(...next.map((m: any) => m.text)); },
+            syncCharacterCritical: (c: CharacterSheet) => { useGameStore.setState({ character: c } as any); },
+            actionLockRef: { current: false }, diceTrayRef: { current: null }, setIsResolvingAction: () => {}, setPlayerRoll: () => {},
+            setReactionRequest: () => {}, dayCount: 1, timeOfDay: 'day', tr: GAME_SESSION_TEXTS.fr,
+            guardPlayerAction: () => false, hasPlayerMainSlice: () => true, hasPlayerBonusFree: () => true,
+            spendPlayerMainAction: (s: any) => s, spendPlayerBonus: (s: any) => s, patchPlayerEconomy: (s: any) => s,
+            rejectActionSpent: () => {}, maybeEndCombat: () => false, logCombatRoll: (e: any) => { journal.logs.push(e); },
+            showActionToast: () => {}, spendResource: (c: CharacterSheet) => c,
+        } as unknown as SessionContext);
+        return { journal, priest: () => row(ids.priest), ogre: () => row(ids.ogre), turn: () => runNPCTurn(ctx(), row(ids.priest)) };
+    }
+
+    it('un allié sous la moitié : le prêtre le SOIGNE au lieu d\'attaquer, et l\'usage est décompté', async () => {
+        const { journal, priest, ogre, turn } = setupPriestWithWoundedAlly(10);
+        const before = ogre().hp.current;
+        await turn();
+        expect(ogre().hp.current).toBeGreaterThan(before);
+        expect(ogre().hp.current).toBeLessThanOrEqual(ogre().hp.max);
+        expect(priest().spellUses?.['Cure Wounds']).toBe(1);
+        expect(journal.logs.some(l => /Cure Wounds/.test(l.name) && l.type === 'heal')).toBe(true);
+        // le héros n'a rien pris : le tour est allé au soin
+        expect(heroHp()).toBe(1000);
+    });
+
+    it('personne de blessé : le prêtre attaque normalement (le soin ne remplace pas le combat)', async () => {
+        const { journal, ogre, turn } = setupPriestWithWoundedAlly(59);
+        await turn();
+        expect(ogre().hp.current).toBe(59);
+        expect(journal.logs.some(l => l.type === 'heal')).toBe(false);
+        expect(journal.logs.some(l => /Spirit Guardians|Guiding Bolt|Sacred Flame/.test(l.name)) || journal.rolls.some(r => /Priest/.test(r.name))).toBe(true);
+    });
+});
+
+describe('les kits par monstre jouent vraiment (data/casterKits)', () => {
+    it("méphite de magma : son souffle SRD, son Métal brûlant, puis les griffes — il n'a pas de sort à volonté", async () => {
+        const { journal, turn } = setup('Magma Mephit');
+        await turn();  // souffle de feu (action SRD structurée, recharge 6)
+        expect(journal.logs.some(l => l.type === 'save' && /vs Fire Breath/.test(l.name))).toBe(true);
+        await turn();  // souffle non rechargé -> son unique sort
+        expect(journal.logs.some(l => l.type === 'save' && /vs Heat Metal/.test(l.name))).toBe(true);
+        await turn();  // sort épuisé -> il griffe, il ne lance pas dans le vide
+        expect(journal.rolls.some(r => /Claws/.test(r.name))).toBe(true);
+    });
+
+    it("la guenaude verte n'a AUCUN kit : sa mêlée vaut cinq fois sa Moquerie, elle frappe", async () => {
+        const { journal, turn } = setup('Green Hag');
+        await turn();
+        expect(journal.logs.some(l => l.type === 'save')).toBe(false);
+        expect(journal.rolls.length).toBeGreaterThan(0);
     });
 });

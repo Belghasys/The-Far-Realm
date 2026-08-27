@@ -25,6 +25,7 @@ import { getAppSettings } from '../../../store/settingsStore';
 import { releaseNpcConcentrationEffect } from '../../../engine/rulesEngine';
 import { queueEnginePrompt } from './shared';
 import { TOOLS } from './index';
+import { SYSTEM_LINES } from '../../i18n/systemLines';
 
 export interface ToolDeps {
     diceTrayRef: RefObject<any>;
@@ -100,6 +101,11 @@ export function makeToolContext(refs: ToolRefs, call: { name: string; args: any 
      // Ligne système bilingue — les lignes moteur étaient en français dur
     // même en session anglaise (audit 2026-08-12).
     const sysLine = (fr: string, en: string) => (useGameStore.getState().language !== 'en' ? fr : en);
+    // Table de textes de session, lue A CHAQUE APPEL (la langue peut changer
+    // en cours de partie). Meme role que `sysLine`, mais pour les lignes qui
+    // ont une entree nommee — celles-la etaient figees en ANGLAIS et un joueur
+    // francais lisait « Long rest completed » dans son journal.
+    const sysText = () => SYSTEM_LINES[useGameStore.getState().language === 'en' ? 'en' : 'fr'];
      // Test de moral partagé (resolve_attack + apply_damage — 2 anciens blocs
     // copiés-collés). Lit l'état FRAIS, committe AVANT toute animation (aucune
     // écriture d'état après un await → plus de fenêtre d'écrasement), puis
@@ -190,14 +196,14 @@ export function makeToolContext(refs: ToolRefs, call: { name: string; args: any 
             d.syncCharacterCritical(concentration.character, 'hp');
             store.setTranscript(prev => [...prev, {
                 speaker: 'dm',
-                text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map((effect: any) => effect.name).join(', ')}]*`
+                text: `*[SYSTEM: ${sysText().sysConcentrationBroken(concentration.removedEffects.map((effect: any) => effect.name).join(', '))}]*`
             }]);
         } else if (char.hp.current > 0 && concentration.prompt) {
             queueEnginePrompt(concentration.prompt, label); // OU5 — jamais d'écrasement d'un jet en attente
             campaignEventLog.append('ROLL_REQUESTED', 'Concentration save requested after damage', concentration.prompt);
             store.setTranscript(prev => [...prev, {
                 speaker: 'dm',
-                text: `*[SYSTEM: Concentration save required, DC ${concentration.dc} after ${damage} damage]*`
+                text: `*[SYSTEM: ${sysText().sysConcentrationSave(concentration.dc, damage)}]*`
             }]);
         }
     };
@@ -372,7 +378,7 @@ export function makeToolContext(refs: ToolRefs, call: { name: string; args: any 
         return undefined;
     };
 
-    return { d, deps, store, name, args, call, processToolCall, syncJournal, logInitiativeRoll, logNewPlayerInitiative, sysLine, runMoraleCheck, moraleReport, outcomeReport, departedHint, handleConcentrationAfterDamage, armImageTimer, startSceneImageGeneration, flushPendingImage, timeOfDayHint, scenePromptOptions, scheduleSceneImage, scheduleCombatImageOnce, optionalBoolean, depsRef, lastImageStartedAtRef, imageInFlightRef, lastScenePromptRef, pendingImageRef, imageTimerRef };
+    return { d, deps, store, name, args, call, processToolCall, syncJournal, logInitiativeRoll, logNewPlayerInitiative, sysLine, sysText, runMoraleCheck, moraleReport, outcomeReport, departedHint, handleConcentrationAfterDamage, armImageTimer, startSceneImageGeneration, flushPendingImage, timeOfDayHint, scenePromptOptions, scheduleSceneImage, scheduleCombatImageOnce, optionalBoolean, depsRef, lastImageStartedAtRef, imageInFlightRef, lastScenePromptRef, pendingImageRef, imageTimerRef };
 }
 
 export type ToolContext = ReturnType<typeof makeToolContext>;

@@ -474,12 +474,13 @@ export const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "set_mount",
-        description: "The hero acquires a mount (one at a time; acquiring mounts up). It fights as an ally; in the saddle a melee attack on a far foe becomes a charge.",
+        description: "The hero acquires a mount, and is mounted up. It fights as an ally; in the saddle a melee attack on a far foe becomes a charge, and a flying one blunts ground melee.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any, description: "Given name, e.g. 'Tempête'." },
-                kind: { type: "STRING" as any, description: "poney | cheval_selle | destrier | chameau | elan | loup_geant | sanglier_geant | griffon (flying) | pegase (flying) | destrier_celeste (paladin 5+ only; returns after a long rest if slain). Sets speed and flight." },
+                kind: { type: "STRING" as any, description: "poney | cheval_selle | destrier | chameau | elan | loup_geant | sanglier_geant | griffon | pegase (both flying) | destrier_celeste (paladin 5+; returns after a long rest if slain). Sets speed and flight." },
+                replace: { type: "BOOLEAN" as any, description: "Required to swap an EXISTING mount; without it the call is refused." },
                 speed: { type: "INTEGER" as any, description: "Override in feet (usually omit)." },
                 hp: { type: "INTEGER" as any, description: "Override for a custom mount (usually omit)." },
                 description: { type: "STRING" as any, description: "Short flavor." }

@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 import { Ability, ATTUNEMENT_LIMIT, CharacterSheet, InventoryItem, ItemSlot, getBaseACFromArmor, getEffectiveAC, getEffectiveSpeed, getEffectiveStat, getEffectiveMaxHP, getPlayerAttackModifier, getPlayerDamageBonus, getXPProgress, isRangedWeapon, isStatModified } from '../../types';
 import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Star, Sword, User, Zap } from 'lucide-react';
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../../data/subclasses';
+import { featureName, featureDesc, subclassName, dispClass, dispRace, dispBackground, dispSubclass, pick } from '../../data/labels';
+import { effectiveMountMaxHP } from '../../engine/rulesEngine';
 import { structureInventoryItem } from '../../engine/codexService';
 import { ensureProgressionState, featNumericBonus } from '../../engine/rulesEngine';
 import { getGearAdvantages, SKILL_TRANSLATIONS } from '../../engine/skillSystem';
@@ -728,7 +730,7 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
     return (
         <GameWindow
             title={character.name}
-            subtitle={`${character.race} ${character.class}${character.subclass ? ` (${character.subclass})` : ''} / ${tr.level} ${character.level} / ${character.background}`}
+            subtitle={`${dispRace(character.race, language)} ${dispClass(character.class, language)}${character.subclass ? ` (${dispSubclass(character.subclass, language)})` : ''} / ${tr.level} ${character.level} / ${dispBackground(character.background, language)}`}
             icon={<User className="h-5 w-5" />}
             onClose={onClose}
             actions={<LanguageToggle tone="paper" />}
@@ -880,10 +882,10 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="rounded-md border-2 border-purple-500 bg-purple-500/10 p-4">
                             <h3 className="mb-1 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-purple-300">
                                 <Gem className="h-4 w-4" />
-                                {subclassConfig.label} — {tr.choiceRequired}
+                                {pick(subclassConfig.label, subclassConfig.labelEn, language)} — {tr.choiceRequired}
                             </h3>
                             <p className="mb-3 text-xs text-purple-200/80">
-                                {tr.mustChoose1} {character.class} {tr.mustChoose2} {character.level} {tr.mustChoose3}
+                                {tr.mustChoose1} {dispClass(character.class, language)} {tr.mustChoose2} {character.level} {tr.mustChoose3}
                             </p>
                             <div className="grid gap-2 sm:grid-cols-2">
                                 {subclassConfig.options.map(option => (
@@ -894,8 +896,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                         disabled={!onUpdateCharacter}
                                         className="rounded-md border-2 border-purple-300 bg-stone-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-500/25 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <div className="font-bold text-purple-200">{option.name}</div>
-                                        <p className="mt-1 text-xs leading-snug text-stone-600">{option.description}</p>
+                                        <div className="font-bold text-purple-200">{subclassName(option, language)}</div>
+                                        <p className="mt-1 text-xs leading-snug text-stone-600">{pick(option.description, option.descriptionEn, language)}</p>
                                     </button>
                                 ))}
                             </div>
@@ -1047,7 +1049,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                 })()}
                                 {character.mount && (() => {
                                     const mt = getMountType(character.mount.kind || character.mount.name);
-                                    const mMax = character.mount.hp?.max ?? mt?.hp ?? 15;
+                                    // Même maximum qu'en combat (bonus de Monture liée compris).
+                                    const mMax = effectiveMountMaxHP(character);
                                     const mCur = character.mount.hp?.current ?? mMax;
                                     return (
                                         <div className="rounded border border-stone-300 bg-stone-50 p-2.5">
@@ -1065,20 +1068,26 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                             </div>
                                             {(() => {
                                                 // En selle / à pied — la charge montée n'existe qu'en selle.
-                                                const isMounted = character.mount!.mounted !== false;
+                                                // Une monture À TERRE ne se monte pas : le bouton restait
+                                                // actif au-dessus d'une barre à 0 PV, et le héros repartait
+                                                // « en selle » sur un cadavre au combat suivant.
+                                                const isDown = mCur <= 0;
+                                                const isMounted = !isDown && character.mount!.mounted !== false;
                                                 return (
-                                                    <div className="mt-2 flex items-center justify-between gap-2" title={isMounted ? tr.mountedHint : tr.dismountedHint}>
+                                                    <div className="mt-2 flex items-center justify-between gap-2" title={isDown ? tr.mountDownHint : isMounted ? tr.mountedHint : tr.dismountedHint}>
                                                         <span className={`text-[11px] font-bold ${isMounted ? 'text-amber-300' : 'text-stone-500'}`}>
-                                                            {isMounted ? tr.mountedOn : tr.mountedOff}
+                                                            {isDown ? tr.mountedDown : isMounted ? tr.mountedOn : tr.mountedOff}
                                                         </span>
                                                         <button
                                                             type="button"
+                                                            disabled={isDown}
+                                                            title={isDown ? tr.mountDownHint : undefined}
                                                             onClick={() => {
                                                                 const live = useGameStore.getState().character;
-                                                                if (!live?.mount) return;
+                                                                if (!live?.mount || (live.mount.hp?.current ?? 1) <= 0) return;
                                                                 useGameStore.getState().setCharacter({ ...live, mount: { ...live.mount, mounted: !isMounted } });
                                                             }}
-                                                            className="rounded border border-stone-400 bg-stone-50 px-2 py-0.5 text-[11px] font-bold text-stone-700 hover:bg-stone-200"
+                                                            className="rounded border border-stone-400 bg-stone-50 px-2 py-0.5 text-[11px] font-bold text-stone-700 hover:bg-stone-200 disabled:cursor-not-allowed disabled:opacity-40"
                                                         >
                                                             {isMounted ? tr.dismount : tr.mountUp}
                                                         </button>
@@ -1167,8 +1176,8 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                         <div className="max-h-72 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
                             {character.features?.map((feature, index) => (
                                 <div key={`${feature.name}-${index}`} className="border-b border-stone-200 pb-2 last:border-0">
-                                    <div className="font-bold">{feature.name}</div>
-                                    <p className="text-sm leading-snug text-stone-600">{feature.description}</p>
+                                    <div className="font-bold">{featureName(feature, language)}</div>
+                                    <p className="text-sm leading-snug text-stone-600">{featureDesc(feature, language)}</p>
                                 </div>
                             ))}
                             {!character.features?.length && <p className="text-sm text-stone-500">{tr.noAbility}</p>}

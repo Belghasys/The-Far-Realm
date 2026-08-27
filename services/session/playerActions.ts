@@ -43,7 +43,7 @@ export async function handlePlayerAttack(ctx: SessionContext, weaponItem: any, t
     const attacksMax = econ0.attacksMax ?? getPlayerAttackCount(character);
     const attacksUsed = econ0.attacksUsed ?? 0;
     if (attacksUsed >= attacksMax) {
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Plus d'attaque ce tour — terminez votre tour ou utilisez une action bonus.]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paNoAttackLeft}]*` }]);
       return;
     }
     const isFirstAttack = attacksUsed === 0;
@@ -107,10 +107,10 @@ export async function handlePlayerAttack(ctx: SessionContext, weaponItem: any, t
         // NF4 — l'attaque est devenue un RAPPROCHEMENT d'une bande (loin → à
         // distance, ou à distance → contact) et a consommé l'action.
         const adv = (result as any).advanced as { from: string; to: string };
-        const bandFr = (b: string) => b === 'far' ? 'loin' : b === 'near' ? 'à distance' : 'au contact';
+        const bandFr = (b: string) => b === 'far' ? tr.bandFar : b === 'near' ? tr.bandNear : tr.bandMelee;
         let state = patchPlayerEconomy(result.state, { attacksUsed: attacksUsed + 1 });
         setCombatState(state);
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${character.name} se rapproche de ${target.name} (${bandFr(adv.from)} → ${bandFr(adv.to)})${adv.to === 'melee' ? ' — au contact, frappe possible' : ''}.]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paAdvance(character.name, target.name, bandFr(adv.from), bandFr(adv.to), adv.to === 'melee')}]*` }]);
         showActionToast(`🏃 ${language === 'fr' ? `Rapprochement : ${bandFr(adv.from)} → ${bandFr(adv.to)}` : `Advance: ${adv.from} → ${adv.to}`}`);
         if (dm && isConnected) {
           await dm.sendUserMessage(`[SYSTEM] The player CLOSED THE DISTANCE toward ${target.name} (${adv.from} → ${adv.to}) instead of striking — that consumed the action. Narrate the advance and ALWAYS state the new distance. Do NOT advance the turn.`);
@@ -170,7 +170,7 @@ export async function handlePlayerAttack(ctx: SessionContext, weaponItem: any, t
         const gain = Math.max(1, Math.floor((getEffectiveStat(live, 'CHA') - 10) / 2)) + (live.level || 1);
         if (gain > (live.tempHP || 0)) {
           syncCharacterUpdate({ ...live, tempHP: gain } as any);
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🔥 Bénédiction du Ténébreux — ${gain} PV temporaires]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paDarkBlessing(gain)}]*` }]);
         }
       }
 
@@ -212,7 +212,7 @@ export async function handlePlayerBonusAttack(ctx: SessionContext, weaponItem: a
     const bonusMax = econ0.bonusMax ?? 1;
     const bonusUsed = econ0.bonusUsed ?? 0;
     if (bonusUsed >= bonusMax) {
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Action bonus déjà utilisée ce tour.]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paBonusUsed}]*` }]);
       return;
     }
     // SRD: l'attaque off-hand et War Priest exigent d'avoir PRIS l'action
@@ -220,7 +220,7 @@ export async function handlePlayerBonusAttack(ctx: SessionContext, weaponItem: a
     // du Berserker n'a pas ce prérequis (elle exige la Rage, vérifiée côté UI).
     const attacksUsed = econ0.attacksUsed ?? 0;
     if (mode !== 'frenzy' && attacksUsed === 0) {
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Attaque d'abord avec ton arme principale — l'attaque bonus vient APRÈS l'action Attaque.]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paMainFirst}]*` }]);
       return;
     }
 
@@ -457,7 +457,7 @@ export async function handlePlayerUsePotion(ctx: SessionContext, potionItem: any
       onCharacterUpdate(updatedChar);
       syncCharacterCritical(updatedChar, 'hp');
       logCombatRoll({ type: 'check', name: `Potion: ${name}`, total: 0, formula: label, isDM: false });
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${name} — ${label} pendant 1h]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paPotionBuff(name, label)}]*` }]);
       if (dm && isConnected) {
         await dm.sendUserMessage(`[SYSTEM] Player drank ${name}, gaining ${label} for 1 hour. Narrate the surge of power.`);
       }
@@ -537,7 +537,7 @@ export async function handlePlayerProposedAction(ctx: SessionContext, p: Propose
       if (p.cost === 'action') {
         if ((e0.attacksUsed ?? 0) >= (e0.attacksMax ?? 1)) {
           showActionToast(`⏳ ${language === 'fr' ? 'Plus d\'action ce tour' : 'No action left this turn'} — « ${p.label} »`);
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Action principale déjà utilisée ce tour — « ${p.label} » impossible.]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paMainUsedFor(p.label)}]*` }]);
           removeProposedAction(p.id);
           return;
         }
@@ -548,7 +548,7 @@ export async function handlePlayerProposedAction(ctx: SessionContext, p: Propose
         setCombatState(state);
       } else if (p.cost === 'bonus_action') {
         if ((e0.bonusUsed ?? 0) >= (e0.bonusMax ?? 1)) {
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Action bonus déjà utilisée ce tour — « ${p.label} » impossible.]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paBonusUsedFor(p.label)}]*` }]);
           removeProposedAction(p.id);
           return;
         }
@@ -557,7 +557,7 @@ export async function handlePlayerProposedAction(ctx: SessionContext, p: Propose
       } else if (p.cost === 'reaction') {
         const consumed = consumeCombatAction(state, 'player', 'reaction');
         if (!consumed.success) {
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Réaction déjà utilisée ce tour — « ${p.label} » impossible.]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.paReactionUsedFor(p.label)}]*` }]);
           removeProposedAction(p.id);
           return;
         }

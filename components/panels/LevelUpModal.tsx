@@ -14,9 +14,10 @@ import { getSubclassConfig, getSubclassFeaturesForLevel, getNewSubclassFeaturesA
 import { FEATS, getFeatById, meetsFeatPrerequisites } from '../../data/feats';
 import { Star, ArrowUp, Sparkles, Check, Gem, Minus, Plus, Award, BookOpen } from 'lucide-react';
 import { ensureProgressionState } from '../../engine/rulesEngine';
-import { maxSpellLevelForClass, spellsForClass } from '../../engine/codexService';
+import { maxSpellLevelForClass, spellsForClass, spellLabel } from '../../engine/codexService';
 import { useGameStore } from '../../store/gameStore';
 import { LEVEL_UP_MODAL_TEXTS as TRANS } from './texts';
+import { featureName, featureDesc, subclassName, pick } from '../../data/labels';
 
 interface Props {
     character: CharacterSheet;
@@ -166,7 +167,12 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
             }
             // Surface the feat on the sheet as a feature (survives mergeFeatures:
             // it is neither a class nor a subclass feature name).
-            features.push({ name: `${featDef.name} (Feat)`, description: featDef.description });
+            features.push({
+                name: `${featDef.name} (Feat)`,
+                nameFr: `${featDef.nameFr} (Don)`,
+                description: featDef.descriptionFr,
+                descriptionEn: featDef.description,
+            });
         }
 
         // RAW (2026-08-13) : si le modificateur de CON augmente (ASI ou don),
@@ -266,14 +272,14 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                         <ul className="space-y-2">
                             {newFeatures.map((feature, i) => (
                                 <li key={i} className="text-gray-200">
-                                    <span className="font-bold text-amber-200">{feature.name}:</span>{' '}
-                                    <span className="text-gray-400 text-sm">{feature.description}</span>
+                                    <span className="font-bold text-amber-200">{featureName(feature, language)}:</span>{' '}
+                                    <span className="text-gray-400 text-sm">{featureDesc(feature, language)}</span>
                                 </li>
                             ))}
                             {newSubclassFeatures.map((feature, i) => (
                                 <li key={`sub-${i}`} className="text-gray-200">
-                                    <span className="font-bold text-purple-300">{feature.name}:</span>{' '}
-                                    <span className="text-gray-400 text-sm">{feature.description}</span>
+                                    <span className="font-bold text-purple-300">{featureName(feature, language)}:</span>{' '}
+                                    <span className="text-gray-400 text-sm">{featureDesc(feature, language)}</span>
                                 </li>
                             ))}
                         </ul>
@@ -286,7 +292,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                 {showSubclassChoice && subclassConfig && (
                     <div className="bg-black/40 rounded-lg p-4 mb-4 border border-purple-500/60">
                         <h3 className="text-purple-300 font-bold mb-1 flex items-center gap-2">
-                            <Gem className="w-4 h-4" /> {subclassConfig.label} — {tr.chooseYourPath}
+                            <Gem className="w-4 h-4" /> {pick(subclassConfig.label, subclassConfig.labelEn, language)} — {tr.chooseYourPath}
                         </h3>
                         <p className="text-gray-400 text-xs mb-3">
                             {tr.choiceIsFinal}
@@ -304,15 +310,15 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                                             }`}
                                     >
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className={`font-bold ${isSelected ? 'text-purple-200' : 'text-gray-200'}`}>{option.name}</span>
+                                            <span className={`font-bold ${isSelected ? 'text-purple-200' : 'text-gray-200'}`}>{subclassName(option, language)}</span>
                                             {isSelected && <Check className="w-4 h-4 text-purple-300 shrink-0" />}
                                         </div>
-                                        <p className="text-gray-400 text-xs mt-1 leading-snug">{option.description}</p>
+                                        <p className="text-gray-400 text-xs mt-1 leading-snug">{pick(option.description, option.descriptionEn, language)}</p>
                                         {isSelected && (
                                             <ul className="mt-2 space-y-1 border-t border-purple-500/30 pt-2">
                                                 {(option.featuresByLevel[subclassConfig.level] || []).map((f, i) => (
                                                     <li key={i} className="text-xs text-purple-100/80">
-                                                        <span className="font-bold text-purple-200">{f.name}</span> — {f.description}
+                                                        <span className="font-bold text-purple-200">{featureName(f, language)}</span> — {featureDesc(f, language)}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -459,7 +465,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
                                                                 : 'border-gray-600 bg-gray-800/50 text-gray-200 hover:border-sky-500/60'
                                                             }`}
                                                     >
-                                                        <span className="truncate">{sp.name}</span>
+                                                        <span className="truncate">{spellLabel(sp, language)}</span>
                                                         {isPicked && <Check className="w-3.5 h-3.5 shrink-0 text-sky-300" />}
                                                     </button>
                                                 );

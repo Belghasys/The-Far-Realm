@@ -29,6 +29,7 @@ export const CHARACTER_CREATION_VIEW_TEXTS = {
         preparingSave: "Preparing save state...",
         readyingDice: "Readying the Dice of Fate...",
         backLobby: "Back",
+        skipVideo: "Skip",
     },
     fr: {
         multiplayerDisabled: "Le multijoueur est désactivé jusqu'à l'implémentation de la synchronisation d'état en temps réel.",
@@ -50,6 +51,7 @@ export const CHARACTER_CREATION_VIEW_TEXTS = {
         preparingSave: "Préparation de la sauvegarde...",
         readyingDice: "Préparation des Dés du Destin...",
         backLobby: "Retour",
+        skipVideo: "Passer",
     },
 } as const;
 

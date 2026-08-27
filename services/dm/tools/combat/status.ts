@@ -177,7 +177,7 @@ export async function remove_condition(args: any, ctx: ToolContext) {
     return { success: true, target: 'player', removed: canonical };
 }
 export async function add_effect(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     // GARDE ANTI-CONTOURNEMENT (audit 2026-08-21) : un sort À NIVEAU
     // du grimoire posé en « effet » sur le joueur (Bénédiction,
@@ -244,7 +244,7 @@ export async function add_effect(args: any, ctx: ToolContext) {
             }));
         }
         campaignEventLog.append('EFFECT_ADDED', `Effect added on ${lookup.combatant.name}: ${args.name}`, args);
-        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effect Added on ${lookup.combatant!.name}: ${args.name} (${args.stat})]*` }]);
+        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysEffectAddedOn(lookup.combatant!.name, args.name, args.stat)}]*` }]);
         return { success: true, target: lookup.combatant.name };
     }
     // OU2 — hors combat, un effet visant une cible non-joueur ne
@@ -259,6 +259,6 @@ export async function add_effect(args: any, ctx: ToolContext) {
     const char = applyEffectArgs(store.character, args);
     d.syncCharacterUpdate(char);
     campaignEventLog.append('EFFECT_ADDED', `Effect added: ${args.name}`, args);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effect Added: ${args.name} (${args.stat})]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysEffectAdded(args.name, args.stat)}]*` }]);
     return { success: true };
 }

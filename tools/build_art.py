@@ -34,6 +34,13 @@ SRC_COVERS = os.path.join(SRC, "Campgain cover")
 SRC_JEU = os.path.join(SRC, "Game Cover")
 SRC_BG = os.path.join(SRC, "Background")
 SRC_STYLE = os.path.join(SRC, "Fighting Style")
+SRC_DEITIES = os.path.join(SRC, "Deities")
+# Cartes de classe (2026-08-27) : refaites en PORTRAIT 9:16, recto dans
+# « Classes Card », verso (alter ego) dans son sous-dossier « Counter Cards ».
+# Les anciennes versions paysage trainent encore a la racine de « Website
+# Material » sous les MEMES prefixes : ne surtout pas chercher la-bas.
+SRC_CLASSES = os.path.join(SRC, "Classes Card")
+SRC_ALTER = os.path.join(SRC_CLASSES, "Counter Cards")
 OUT = os.path.join(RACINE, "public", "art")
 
 # ── Portraits de classe : la version heroique, celle des cadres ───────────────
@@ -68,13 +75,26 @@ ALTER = {
     "sorcerer": "Dark_elf_embracing_black_dragon",
 }
 
-RACES = {
-    "human": "Human_adventurer_pencil_sketch", "elf": "Pencil_sketch_of_elf",
-    "half-elf": "Half-Elf_pencil_sketch", "half-orc": "Half-Orc_sketch_with_tusks",
-    "dwarf": "Dwarf_with_braided_beard", "gnome": "Pencil_sketch_of_gnome",
-    "halfling": "Halfling_pencil_sketch", "tiefling": "Tiefling_sketch_with_horns",
-    "dragonborn": "Dragonborn_pencil_sketch",
+# Races (2026-08-27) : une planche PAR SEXE, en 9:16 comme les classes, dans
+# « Races/Race 916/Male » et « …/Female ». Les anciennes planches 3:4 sans sexe
+# ne sont plus fabriquees ni servies.
+SRC_RACES_M = os.path.join(SRC_RACES, "Race 916", "Male")
+SRC_RACES_F = os.path.join(SRC_RACES, "Race 916", "Female")
+RACES_HOMMES = {
+    "human-male": "Adventurer_with_sword_and_gear", "elf-male": "Elf_in_leather_armor_sketch",
+    "half-elf-male": "Half-Elf_pencil_sketch", "half-orc-male": "Half-Orc_warrior_in_armor",
+    "dwarf-male": "Armored_dwarf_pencil_sketch", "gnome-male": "Gnome_wearing_tinker_goggles",
+    "halfling-male": "Halfling_standing_in_traveler_cl", "tiefling-male": "Tiefling_wearing_hooded_mantle",
+    "dragonborn-male": "Dragonborn_wearing_heavy_plate_a",
 }
+RACES_FEMMES = {
+    "human-female": "Woman_poses_with_rapier", "elf-female": "Elf_standing_on_tiptoe",
+    "half-elf-female": "Half-Elf_holding_staff_sketch", "half-orc-female": "Half-Orc_warrior_holding_spear",
+    "dwarf-female": "Female_dwarf_holding_smith_hammer", "gnome-female": "Gnome_looking_through_mechanical",
+    "halfling-female": "Halfling_jumping_in_yellow_backg", "tiefling-female": "Tiefling_wearing_hooded_mantle",
+    "dragonborn-female": "Dragonborn_wearing_ceremonial_pl",
+}
+RACES_BASE = ("human", "elf", "half-elf", "half-orc", "dwarf", "gnome", "halfling", "tiefling", "dragonborn")
 
 
 # -- Historiques : les dix cles de data/backgrounds.ts -----------------------
@@ -104,6 +124,21 @@ STYLES = {
     "great-weapon-fighting": "Two_hands_holding_greatsword",
     "protection": "Shield_in_defensive_blocking_pos",
     "two-weapon-fighting": "Hands_gripping_swords_in_stance",
+}
+
+# -- Divinites : les cles sont les slugs de theme/art.ts (DEITY_ART) -----------
+# Les planches sont composees en paysage comme les historiques : un dieu est
+# une scene (son domaine, son ciel), pas un portrait de classe. Meme format
+# bandeau 16:9, memes deux definitions. Tymora n'a pas encore de planche.
+DIVINITES = {
+    "selune": "Selune", "bahamut": "Bahamut", "tempus": "Tempus", "tyr": "Tyr",
+    "helm": "Helm", "ilmater": "Ilmater", "mystra": "Mystra", "oghma": "Oghma",
+    "kelemvor": "Kelemvor", "moradin": "Moradin", "corellon": "Correlon",
+    "garl-glittergold": "Garl Glittergold", "yondalla": "Yondala", "lolth": "Loth",
+    "gruumsh": "Gruumsh", "tiamat": "Tiamat", "eilistraee": "Eilistraee",
+    "lathander": "Lathander", "talos": "Talos", "mielikki": "Mielikki",
+    "bane": "Bane", "bhaal": "Bhaal", "laduguer": "Laduguer", "myrkul": "Myrkul",
+    "shar": "Shar", "vlaakith": "Vlaakith",
 }
 
 # ── Couvertures de campagne, indexees par l'id de data/adventures.ts ──────────
@@ -188,6 +223,34 @@ def portrait(src, dest, largeurs=(320, 640)):
     return total
 
 
+def portrait916(src, dest, largeurs=(320, 640)):
+    """
+    Carte 9:16 — les portraits de classe et leur alter ego.
+
+    Les planches de classe sont desormais COMPOSEES en portrait (768x1376) :
+    on ne recadre que ce qui deborde du 9:16 exact, centre, et on encode deux
+    definitions. Les races restent en 3:4 (`portrait`) : leurs sources n'ont
+    pas change de format.
+    """
+    im = Image.open(src).convert("RGB")
+    L, H = im.size
+    if L * 16 > H * 9:            # trop large : on rogne les cotes
+        largeur_crop = int(H * 9 / 16)
+        x = max(0, (L - largeur_crop) // 2)
+        im = im.crop((x, 0, x + largeur_crop, H))
+    else:                          # trop haut : on rogne haut et bas
+        hauteur_crop = int(L * 16 / 9)
+        y = max(0, (H - hauteur_crop) // 2)
+        im = im.crop((0, y, L, y + hauteur_crop))
+    total = 0
+    for i, l in enumerate(largeurs):
+        o = im.resize((l, int(l * 16 / 9)), Image.LANCZOS)
+        chemin = dest + ("" if i == 0 else "@2x") + ".webp"
+        o.save(chemin, "WEBP", quality=74, method=6)
+        total += os.path.getsize(chemin)
+    return total
+
+
 def paysage(src, dest, largeurs=(820, 1600), qualite=64):
     im = Image.open(src).convert("RGB")
     L, H = im.size
@@ -261,15 +324,23 @@ def main():
     if not os.path.isdir(SRC):
         sys.exit(f"Sources introuvables : {SRC}")
 
-    for sous in ("classes", "alter", "races", "covers", "wall", "backgrounds", "styles"):
+    for sous in ("classes", "alter", "races", "covers", "wall", "backgrounds", "styles", "deities"):
         os.makedirs(os.path.join(OUT, sous), exist_ok=True)
 
     manquants, total = [], 0
 
-    for groupe, table, dossier_src, sous in (
-        ("classes", CLASSES, SRC, "classes"),
-        ("alter ego", ALTER, SRC, "alter"),
-        ("races", RACES, SRC_RACES, "races"),
+    # Les anciennes planches de race sans sexe : plus aucun ecran ne les lit.
+    for base in RACES_BASE:
+        for suffixe in ("", "@2x"):
+            vieux = os.path.join(OUT, "races", base + suffixe + ".webp")
+            if os.path.exists(vieux):
+                os.remove(vieux)
+
+    for groupe, table, dossier_src, sous, encoder in (
+        ("classes", CLASSES, SRC_CLASSES, "classes", portrait916),
+        ("alter ego", ALTER, SRC_ALTER, "alter", portrait916),
+        ("races (hommes)", RACES_HOMMES, SRC_RACES_M, "races", portrait916),
+        ("races (femmes)", RACES_FEMMES, SRC_RACES_F, "races", portrait916),
     ):
         octets = 0
         for cle, prefixe in table.items():
@@ -277,13 +348,14 @@ def main():
             if not f:
                 manquants.append(f"{groupe}/{cle} ({prefixe})")
                 continue
-            octets += portrait(f, os.path.join(OUT, sous, cle))
+            octets += encoder(f, os.path.join(OUT, sous, cle))
         print(f"{groupe:<12} {len(table):>3} sujets  {octets // 1024:>5} Ko")
         total += octets
 
     for groupe, table, dossier_src, sous in (
         ("historiques", HISTORIQUES, SRC_BG, "backgrounds"),
         ("styles", STYLES, SRC_STYLE, "styles"),
+        ("divinites", DIVINITES, SRC_DEITIES, "deities"),
     ):
         octets = 0
         for cle, prefixe in table.items():
@@ -335,6 +407,29 @@ def main():
     total += octets
 
     print(f"\nTOTAL public/art : {total // 1024} Ko")
+
+    # La VERSION des planches (theme/art.ts, ART_VERSION) est une empreinte du
+    # contenu de public/art : /art est servi en cache long (firebase.json), et
+    # une planche refaite sous la meme URL restait invisible pendant un an si
+    # personne ne pensait a incrementer la version a la main.
+    import hashlib, re
+    h = hashlib.sha1()
+    for racine_dir, _dirs, fichiers in os.walk(OUT):
+        for f in sorted(fichiers):
+            if f.endswith(".webp"):
+                with open(os.path.join(racine_dir, f), "rb") as fh:
+                    h.update(fh.read())
+    empreinte = h.hexdigest()[:10]
+    chemin_art = os.path.join(RACINE, "theme", "art.ts")
+    with open(chemin_art, encoding="utf-8") as fh:
+        src = fh.read()
+    nouveau = re.sub(r"export const ART_VERSION = '[^']*';", f"export const ART_VERSION = '{empreinte}';", src)
+    if nouveau != src:
+        with open(chemin_art, "w", encoding="utf-8") as fh:
+            fh.write(nouveau)
+        print(f"ART_VERSION -> {empreinte} (theme/art.ts mis a jour)")
+    else:
+        print(f"ART_VERSION inchangee ({empreinte})")
     print(f"Le mur compte {poses} vignettes.")
 
     if manquants:

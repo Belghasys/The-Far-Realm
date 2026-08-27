@@ -25,6 +25,7 @@
  */
 import React from 'react';
 import { T, DISP, BODY, onTint, hardShadow } from '../../theme/tokens';
+import { artUrl, artSrcSet } from '../../theme/art';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    Feuille locale.
@@ -130,7 +131,7 @@ type CarteBase = {
  * Le visuel est décoratif (`alt` vide) : le nom figure juste en dessous, en
  * toutes lettres, et un lecteur d'écran l'annoncerait deux fois.
  */
-export function CartePortrait({ slug, nom, desc, note, choisi, onPick, tint, badge }: CarteBase & { slug: string }) {
+export function CartePortrait({ slug, nom, desc, note, choisi, onPick, tint, badge, ratio = '3 / 4' }: CarteBase & { slug: string; ratio?: string }) {
     return (
         <button
             type="button" className="nk-card" onClick={onPick} aria-pressed={choisi}
@@ -138,9 +139,9 @@ export function CartePortrait({ slug, nom, desc, note, choisi, onPick, tint, bad
         >
             {badge && <Badge>{badge}</Badge>}
             <img
-                src={`/art/${slug}.webp`} srcSet={`/art/${slug}.webp 1x, /art/${slug}@2x.webp 2x`}
+                src={artUrl(slug)} srcSet={artSrcSet(slug)}
                 alt="" loading="lazy"
-                style={{ display: 'block', width: '100%', aspectRatio: '3 / 4', objectFit: 'cover', background: T.ink }}
+                style={{ display: 'block', width: '100%', aspectRatio: ratio, objectFit: 'cover', background: T.ink }}
             />
             <Legende nom={nom} note={note} desc={desc} tint={tint} />
         </button>
@@ -157,7 +158,7 @@ export function CartePaysage({ slug, nom, desc, note, choisi, onPick, tint, enfa
             style={{ background: tint, boxShadow: choisi ? ANNEAU : REPOS, transform: choisi ? 'translate(-2px,-2px)' : undefined }}
         >
             <img
-                src={`/art/${slug}.webp`} srcSet={`/art/${slug}.webp 1x, /art/${slug}@2x.webp 2x`}
+                src={artUrl(slug)} srcSet={artSrcSet(slug)}
                 alt="" loading="lazy"
                 style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', background: T.ink }}
             />

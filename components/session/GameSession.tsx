@@ -53,7 +53,7 @@ import { ActionPips } from './ActionPips';
 import { LevelUpModal } from '../panels/LevelUpModal';
 import { campaignEventLog } from '../../services/persistence/campaignEventLog';
 import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../../services/dm/campaignDirector';
-import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
+import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolveMountAfterCombat, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
 import type { ProposedPlayerAction } from '../../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
 import { DeathScreen } from './DeathScreen';
@@ -67,6 +67,7 @@ import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
 import { foldText } from '../../engine/skillSystem';
+import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
 import { summarizeCurrentChapter } from '../../services/dm/llmService';
 import { reconcileMissingDigests, maybeFreezeChapterVolume } from '../../services/dm/chapterChronicle';
@@ -1097,7 +1098,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       currentTurn: next.currentTurn,
       round: next.round,
     });
-    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Turn advanced to ${next.currentTurn}]*` }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsTurnAdvanced(next.currentTurn)}]*` }]);
   };
 
   // C1 — garde central : sous condition incapacitante (Paralyzed, Stunned,
@@ -1139,18 +1140,19 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const freshChar = useGameStore.getState().character;
     if (!freshChar) return;
     let synced = syncCompanionsFromState(freshChar, state?.combatants || []);
-    // Monture tombée à 0 : morte (retirée de la fiche) — SAUF le Destrier
-    // céleste, esprit qui regagne les plans et revient au prochain repos long.
-    if (synced.mount?.hp && synced.mount.hp.current <= 0) {
-      if (synced.mount.kind === 'destrier_celeste') {
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✨ ${synced.mount!.name} se dissout en lumière — le destrier céleste reviendra au prochain repos long.]*` }]);
-        if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] The celestial steed ${synced.mount.name} was slain and returned to the higher planes. It will answer the paladin's call again after a LONG REST. Narrate its luminous departure.`);
-      } else {
-        const fallenName = synced.mount.name;
-        synced = { ...synced, mount: undefined };
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🐴 ${fallenName} est tombé au combat.]*` }]);
-        if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] The hero's mount ${fallenName} was KILLED in this fight. It is gone — narrate the loss with weight; a new mount must be found or bought.`);
-      }
+    // Monture tombée : la règle vit dans le MOTEUR (resolveMountAfterCombat) —
+    // elle était ici seule, et l'autre porte de sortie (l'outil end_combat,
+    // pour une fin narrée par le MJ) ne l'appliquait donc jamais.
+    const mountOutcome = resolveMountAfterCombat(synced);
+    synced = mountOutcome.character;
+    if (mountOutcome.fallen) {
+      const { name, celestial } = mountOutcome.fallen;
+      setTranscript(prev => [...prev, { speaker: 'dm', text: celestial
+        ? `*[SYSTEM: ✨ ${tr.sysCelestialSteedGone(name)}]*`
+        : `*[SYSTEM: 🐴 ${tr.sysMountFallen(name)}]*` }]);
+      if (dm && isConnected) dm.sendSystemMessage(celestial
+        ? `[SYSTEM] The celestial steed ${name} was slain and returned to the higher planes. It will answer the paladin's call again after a LONG REST. Narrate its luminous departure.`
+        : `[SYSTEM] The hero's mount ${name} was KILLED in this fight. It is gone — narrate the loss with weight; a new mount must be found or bought.`);
     }
     if (synced !== freshChar) syncCharacterUpdate(synced);
   };
@@ -1171,7 +1173,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       // testé (victoryXP) : xp explicite du MJ → bestiaire → estimation par PV.
       const xp = victoryXP(state.combatants || [], departed);
       if (xp > 0) grantXP(xp, tr.reasonCombatVictory);
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Victoire ! +${xp} XP]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsVictory(xp)}]*` }]);
       if (dm && isConnected) dm.sendSystemMessage(`[SYSTEM] Combat is over (victory). ${describeFightEnd(state.combatants || [], departed)}. Enemies listed as FLED or SURRENDERED are ALIVE — they ran or yielded, they did NOT die and they may return later: narrate the aftermath accordingly (no corpse, no loot from them).`);
       musicDirector.handleMusicTag('victory');
       // Log de campagne : UNE ligne-résumé (ennemis, PV perdus, XP, attaques
@@ -1437,7 +1439,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             ...prev,
             combatants: prev.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: ticked.activeEffects } : c),
           }));
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effet(s) dissipé(s) : ${ticked.expired.join(', ')}]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsEffectsExpired(ticked.expired.join(', '))}]*` }]);
           if (dm && isConnected) {
             dm.sendSystemMessage(`[SYSTEM] Effect(s) expired on the player: ${ticked.expired.join(', ')}. Weave it into the narration if relevant.`);
           }
@@ -1524,7 +1526,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       bonusMax: 1,
       bonusUsed: 0,
     }));
-    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat repris — c'est à toi de jouer.]*` }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsCombatResumed}]*` }]);
   }, [combatState.isActive, combatState.combatants, combatState.currentTurn, character, setCombatState, setIsNPCTurn, setTranscript]);
 
   // ── Réaction « Bouclier » ────────────────────────────────────────────────
@@ -1598,10 +1600,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       if (concentration.broken) {
         setTranscript(prev => [...prev, {
           speaker: 'dm',
-          text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map(effect => effect.name).join(', ')}]*`
+          text: `*[SYSTEM: ${tr.sysConcentrationBroken(concentration.removedEffects.map(effect => effect.name).join(', '))}]*`
         }]);
       } else {
-        setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Concentration maintained]*' }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsConcentrationHeld}]*` }]);
       }
     }
 
@@ -1762,7 +1764,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const swept = sweepExpiredEffects(character, hour);
     if (!swept.expired.length) return;
     syncCharacterCritical(swept.character, 'hp');
-    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Effet(s) dissipé(s) avec le temps : ${swept.expired.join(', ')}]*` }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsEffectsExpiredTime(swept.expired.join(', '))}]*` }]);
     if (dm && isConnected) {
       dm.sendSystemMessage(`[SYSTEM] Time passed — effect(s) expired on the player: ${swept.expired.join(', ')}. Mention it only if relevant.`);
     }
@@ -1868,7 +1870,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     });
     musicDirector.handleRestMusic(false);
     advanceWorldTime({ step: true });
-    setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Short rest completed]*' }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.sysShortRest}]*` }]);
     // Le bouton doit PARLER au MJ — sinon la narration ignore le repos.
     if (dm && isConnected) {
       dm.sendUserMessage(`[SYSTEM] The player takes a SHORT REST (~1 hour). HP now ${updated.hp.current}/${updated.hp.max}; short-rest resources recovered. Narrate the breather in the current scene (where they sit, what they see/hear, a small character beat), then resume.`);
@@ -1895,7 +1897,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     });
     musicDirector.handleRestMusic(true);
     advanceWorldTime({ newDay: true });
-    setTranscript(prev => [...prev, { speaker: 'dm', text: '*[SYSTEM: Long rest completed]*' }]);
+    setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.sysLongRest}]*` }]);
 
     // Une nuit passe : tick des horloges du monde (le bouton manuel ne le
     // faisait pas — seul l'outil long_rest du MJ tiquait) + narration.
@@ -2335,7 +2337,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 <h2 className="truncate font-fantasy text-lg font-bold tracking-wide text-white">
                   {character.name}
                 </h2>
-                <p className="truncate text-xs text-white/45">{tr.lvlAbbrev} {character.level} {character.race} {character.class}</p>
+                <p className="truncate text-xs text-white/45">{tr.lvlAbbrev} {character.level} {dispRace(character.race, language)} {dispClass(character.class, language)}</p>
               </div>
               {queuedMessageCount > 0 && (
                 <div className="ml-auto shrink-0 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-200">
@@ -2423,12 +2425,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             if (healing > 0) {
               setPlayerRoll({ result: healing, reason: `${name} : +${healing} ${tr.hp}` });
               logCombatRoll({ type: 'damage', name: `${tr.potion} : ${name}`, total: healing, formula: formula || tr.healing, isDM: false });
-              setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${name} consommé — +${healing} PV]*` }]);
+              setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsPotionDrunk(name, healing)}]*` }]);
               if (dm && isConnected) {
                 dm.sendSystemMessage(`[SYSTEM] Player consumed ${name} outside combat and healed ${healing} HP. Briefly acknowledge it in the fiction if relevant.`);
               }
             } else {
-              setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${name} utilisé]*` }]);
+              setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsItemUsed(name)}]*` }]);
               if (dm && isConnected) {
                 dm.sendSystemMessage(`[SYSTEM] Player used the item "${name}" from their inventory (no mechanical healing parsed). Adjudicate its effect narratively.`);
               }
@@ -2494,7 +2496,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             const updated = { ...character, storyMode: value };
             onCharacterUpdate(updated);
             syncCharacterCritical(updated, 'hp');
-            setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Mode histoire ${value ? 'activé — potions et sorts de soin rendent leur maximum' : 'désactivé — les soins redeviennent des jets'}]*` }]);
+            setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${value ? tr.gsStoryModeOn : tr.gsStoryModeOff}]*` }]);
           }}
         />
       )}
@@ -2717,7 +2719,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 } else if (!spendInspirationForReroll()) { finalizeRollOutcome(offer.outcome); return; }
                 const second = resolveRollPrompt(activePrompt);
                 showRollFeedback(second, language === 'fr' ? ' (relance)' : ' (reroll)');
-                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🎲 ${offer.currency === 'indomitable' ? 'Inflexible' : 'Inspiration brûlée'} — relance : ${second.total} vs DC ${second.prompt.dc || 10} (${second.success ? 'réussite' : 'échec'})]*` }]);
+                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsReroll(offer.currency === 'indomitable' ? tr.gsRerollLabelIndomitable : tr.gsRerollLabelInspiration, second.total, second.prompt.dc || 10, Boolean(second.success))}]*` }]);
                 finalizeRollOutcome(second, true);
               }}
               className="w-full rounded-xl border border-amber-400 bg-gradient-to-r from-amber-700 to-yellow-600 py-3.5 text-lg font-bold uppercase tracking-wide text-white shadow-lg transition hover:scale-[1.02] hover:from-amber-600 hover:to-yellow-500"

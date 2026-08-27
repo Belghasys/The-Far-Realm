@@ -15,6 +15,7 @@ const DEFAULT_LOADOUT = getDefaultLoadout('Fighter', 'Soldier');
 export const DEFAULT_CHAR: CharacterSheet = {
     name: '',
     race: 'Human',
+    gender: 'male',
     class: 'Fighter',
     level: 1,
     xp: 0,

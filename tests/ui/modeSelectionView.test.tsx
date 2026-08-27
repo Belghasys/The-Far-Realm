@@ -77,6 +77,7 @@ vi.mock('../../store/settingsStore', () => ({
 }));
 
 import { ModeSelectionView } from '../../views/ModeSelectionView';
+import { artUrl } from '../../theme/art';
 
 const b = H.boutique;
 
@@ -270,7 +271,7 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
         fireEvent.click(premiere);
         const vue = screen.getByRole('dialog');
         // L'agrandissement charge la définition double, pas la vignette.
-        expect(vue.querySelector('img')?.getAttribute('src')).toMatch(/@2x\.webp$/);
+        expect(vue.querySelector('img')?.getAttribute('src')).toMatch(/@2x\.webp(\?v=[^&]+)?$/);
 
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(screen.queryByRole('dialog')).toBeNull();

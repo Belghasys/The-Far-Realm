@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, getBaseACFromArmor, getEffectiveStat,
+import { CharacterSheet, Ability, CharacterStoryProfile, SpellEntry, Feature, getBaseACFromArmor, getEffectiveStat,
     getEffectiveMaxHP, getRacialBonus, racialHPBonusPerLevel, DRACONIC_ANCESTRIES } from '../../types';
 import { Shield, Swords, Backpack, Plus, Minus, RefreshCw, UserRound, ScrollText, ChevronLeft, ChevronRight, CheckCircle2, WandSparkles, Trash2 } from 'lucide-react';
 
@@ -11,17 +11,19 @@ interface Props {
 
 import { MARTIAL_CLASSES, RACE_DATA, RACES, BACKGROUNDS, FIGHTING_STYLES, DEITIES, CLASS_DATA, BASE_STAT, MAX_POINTS, getWeaponFromInventory, DEFAULT_CHAR } from '../../data';
 import { CLASS_SKILLS, CLASS_EXPERTISE, ALL_SKILLS } from '../../data/classes';
-import { dispClass, dispRace, dispStyle, dispBackground, dispProf, styleDesc } from '../../data/labels';
-import { CLASS_ART, RACE_ART, BACKGROUND_ART, STYLE_ART } from '../../theme/art';
+import { dispClass, dispRace, dispStyle, dispBackground, dispProf, dispSkill, styleDesc, pick, SKILL_FR } from '../../data/labels';
+import { CLASS_ART, RACE_ART, BACKGROUND_ART, STYLE_ART, DEITY_ART, raceArtSlug, artUrl, artSrcSet } from '../../theme/art';
 import { T, DISP, BODY, onTint, hardShadow } from '../../theme/tokens';
 import {
     SHEET_CSS, Panneau, Titre, CartePortrait, CartePaysage, CarteTexte,
     Pastille, Etiquette, Etiqueter, Champ, Ligne, Liste, Compteur, Cartouche, Grille,
 } from '../neon/SheetKit';
 import { SUBCLASS_DATA, getSubclassFeaturesForLevel } from '../../data/subclasses';
+import { featureName, featureDesc, subclassName, identityLine } from '../../data/labels';
 import { SKILL_ABILITIES, getCheckModifier, passivePerception } from '../../engine/skillSystem';
 import { hasFeatSpecial } from '../../engine/rulesEngine';
 import { SRD51_SPELLS } from '../../data/srd51/spells';
+import { spellLabel } from '../../engine/codexService';
 import { WEAPON_TABLE, WeaponTemplate } from '../../data/weapons';
 import { ARMOR_CATALOG, ArmorTemplate, parsePriceToGp, startingGoldFor, getDefaultLoadout, weaponTemplateToItem, armorTemplateToItem } from '../../data/equipment';
 import { useGameStore } from '../../store/gameStore';
@@ -30,20 +32,14 @@ import { CHARACTER_SHEET_TEXTS as TRANS } from './texts';
 
 type Lang = 'en' | 'fr';
 
-// Localized step labels for the creation wizard (icons are reused from CREATION_STEPS).
-const STEP_LABELS: Record<Lang, Record<CreationStep, string>> = {
-  en: { identity: 'Identity', build: 'Build', gear: 'Equipment', spells: 'Spells', story: 'Story', review: 'Recap' },
-  fr: { identity: 'Identité', build: 'Build', gear: 'Équipement', spells: 'Sorts', story: 'Histoire', review: 'Récap' },
-};
+// Les libelles d'etapes vivaient EN DOUBLE : cette table et tr.step* dans
+// texts.ts. Les deux avaient deja diverge (« Build » cote francais ici). Une
+// seule source desormais : la table de textes du dossier.
+const stepLabel = (tr: (typeof TRANS)['fr'] | (typeof TRANS)['en'], id: CreationStep) => ({
+  identity: tr.stepIdentity, build: tr.stepBuild, gear: tr.stepGear,
+  spells: tr.stepSpells, story: tr.stepStory, review: tr.stepReview,
+}[id]);
 
-// English skill name → French label for the creation UI (proficiencies are stored in English).
-const SKILL_FR: Record<string, string> = {
-    'Acrobatics': 'Acrobaties', 'Animal Handling': 'Dressage', 'Arcana': 'Arcanes', 'Athletics': 'Athlétisme',
-    'Deception': 'Tromperie', 'History': 'Histoire', 'Insight': 'Perspicacité', 'Intimidation': 'Intimidation',
-    'Investigation': 'Investigation', 'Medicine': 'Médecine', 'Nature': 'Nature', 'Perception': 'Perception',
-    'Performance': 'Représentation', 'Persuasion': 'Persuasion', 'Religion': 'Religion', 'Sleight of Hand': 'Escamotage',
-    'Stealth': 'Discrétion', 'Survival': 'Survie',
-};
 const ABILITY_FR_SHEET: Record<string, string> = { STR: 'FOR', DEX: 'DEX', CON: 'CON', INT: 'INT', WIS: 'SAG', CHA: 'CHA' };
 // Ability abbreviation by language: English keys for 'en', French D&D abbreviations for 'fr'.
 const dispAbbr = (a: string, lang: 'en' | 'fr') => (lang === 'fr' ? (ABILITY_FR_SHEET[a] || a) : a);
@@ -324,18 +320,40 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     const raceInfo = RACE_DATA[race];
     const styleInfo = FIGHTING_STYLES.find(s => s.name === style);
 
-    const features: { name: string; description: string }[] = [];
+    // Les aptitudes emportent leur MIROIR de langue (nameFr / descriptionEn) :
+    // sans lui, la fiche en jeu relisait `character.features` — donnée figée —
+    // et retombait sur un nom anglais au-dessus d'une description française.
+    const features: Feature[] = [];
     if (classInfo) {
       features.push(...classInfo.features.filter(feature => feature.level <= c.level).map(feature => ({
         name: feature.name,
+        nameFr: feature.nameFr,
         description: feature.desc,
+        descriptionEn: feature.descEn,
       })));
     }
-    if (bgInfo) features.push(bgInfo.feature);
+    if (bgInfo) features.push({
+      name: bgInfo.feature.name, nameFr: bgInfo.feature.name,
+      description: bgInfo.feature.description, descriptionEn: bgInfo.feature.descriptionEn,
+    });
     if (raceInfo) {
-      features.push(...raceInfo.features.map(feature => ({ name: `${race} Trait`, description: feature })));
+      features.push(...raceInfo.features.map((feature, i) => ({
+        name: `${dispRace(race, 'en')} Trait`,
+        nameFr: `Trait — ${dispRace(race, 'fr')}`,
+        description: feature,
+        descriptionEn: raceInfo.featuresEn[i] ?? feature,
+      })));
     }
-    if (styleInfo) features.push({ name: `Fighting Style (${style})`, description: styleInfo.desc });
+    // FIGHTING_STYLES[].desc est ANGLAIS dans la donnee ; on range le francais
+    // du cote `description` comme partout ailleurs et on garde l'anglais en
+    // miroir. Les sauvegardes deja ecrites gardent leur texte : featureDesc
+    // retombe dessus si le miroir manque.
+    if (styleInfo) features.push({
+      name: `Fighting Style (${style})`,
+      nameFr: `Style de combat (${dispStyle(style, 'fr')})`,
+      description: styleDesc(style, styleInfo.desc, 'fr'),
+      descriptionEn: styleInfo.desc,
+    });
 
     const profs = [
       ...(classInfo ? classInfo.profs : []),
@@ -617,7 +635,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     color: actif ? T.acid : 'inherit', fontSize: 10,
                   }}>{index + 1}</span>
                   {step.icon}
-                  {STEP_LABELS[language][step.id]}
+                  {stepLabel(tr, step.id)}
                 </button>
               );
             })}
@@ -686,6 +704,18 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 className="nk-field"
                 style={{ fontFamily: DISP, fontSize: 'clamp(19px, 3.4vw, 30px)', padding: '15px 17px' }}
               />
+              {/* Le sexe : deux pastilles. Il choisit la planche de race, le
+                  cri de douleur, et il est verrouillé en tête de l'Apparence. */}
+              <div style={{ marginTop: 14 }}>
+                <Etiqueter>{tr.sex}</Etiqueter>
+                <div style={{ display: 'flex', gap: 7 }}>
+                  {(['female', 'male'] as const).map(g => (
+                    <Pastille key={g} couleur={T.magenta} actif={(char.gender || 'male') === g} onClick={() => { if (!readOnly) setChar({ ...char, gender: g }); }}>
+                      {g === 'female' ? tr.female : tr.male}
+                    </Pastille>
+                  ))}
+                </div>
+              </div>
             </Panneau>
 
             {/* Race + sous-race */}
@@ -697,11 +727,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   return (
                     <CartePortrait
                       key={r}
-                      slug={RACE_ART[r]?.slug || 'races/human'}
+                      slug={raceArtSlug(r, char.gender)}
+                      ratio="9 / 16"
                       tint={RACE_ART[r]?.tint || T.azure}
                       nom={dispRace(r, language)}
                       note={raceASI(r) || '—'}
-                      desc={d.desc}
+                      desc={pick(d.desc, d.descEn, language)}
                       choisi={selectedBase === r}
                       onPick={() => pickBaseRace(r)}
                     />
@@ -718,9 +749,9 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     {subraces.map(s => (
                       <CarteTexte
                         key={s}
-                        nom={s}
+                        nom={dispRace(s, language)}
                         note={raceASI(s) || '—'}
-                        desc={RACE_DATA[s].desc}
+                        desc={pick(RACE_DATA[s].desc, RACE_DATA[s].descEn, language)}
                         accent={T.emerald}
                         choisi={char.race === s}
                         onPick={() => handleRaceChange(s)}
@@ -756,11 +787,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <div style={{ marginTop: 18, background: T.ink, border: `3px solid rgba(237,230,216,.16)`, padding: '13px 15px' }}>
                   <Etiqueter note={tr.traits}>{dispRace(char.race, language)}</Etiqueter>
                   <ul style={{ margin: 0, paddingLeft: 19, display: 'grid', gap: 4, fontSize: 12, lineHeight: 1.45, color: 'rgba(237,230,216,.78)' }}>
-                    {selRace.features.map((f, i) => <li key={i}>{f}</li>)}
+                    {pick(selRace.features, selRace.featuresEn, language).map((f, i) => <li key={i}>{f}</li>)}
                   </ul>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 11 }}>
-                    {selRace.profs.length > 0 && <Etiquette couleur={T.cyan}>{tr.proficienciesLabel} {selRace.profs.join(', ')}</Etiquette>}
-                    {selRace.resistances?.length ? <Etiquette couleur={T.pink}>{tr.resistancesLabel} {selRace.resistances.join(', ')}</Etiquette> : null}
+                    {selRace.profs.length > 0 && <Etiquette couleur={T.cyan}>{tr.proficienciesLabel} {selRace.profs.map(p => dispSkill(p, language)).join(', ')}</Etiquette>}
+                    {selRace.resistances?.length ? <Etiquette couleur={T.pink}>{tr.resistancesLabel} {selRace.resistances.map(r => tr.dmgType[r] || r).join(', ')}</Etiquette> : null}
                     {selRace.darkvision ? <Etiquette couleur={T.purple}>{tr.darkvision}</Etiquette> : null}
                   </div>
                 </div>
@@ -775,10 +806,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   <CartePortrait
                     key={c}
                     slug={CLASS_ART[c]?.slug || 'classes/fighter'}
+                    ratio="9 / 16"
                     tint={CLASS_ART[c]?.tint || T.azure}
                     nom={dispClass(c, language)}
                     note={`d${d.hitDie} · ${d.savingThrows.map(s => dispAbbr(s, language)).join('/')}`}
-                    desc={d.desc}
+                    desc={pick(d.desc, d.descEn, language)}
                     choisi={char.class === c}
                     onPick={() => handleClassChange(c)}
                   />
@@ -792,14 +824,14 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               {SUBCLASS_DATA[char.class]?.level === 1 && (
                 <div style={{ marginTop: 18, borderTop: `3px dashed ${T.purple}`, paddingTop: 16 }}>
                   <Titre accent={T.purple} taille={13} note={tr.mandatoryLvl1.replace(/^—\s*/, '')}>
-                    {SUBCLASS_DATA[char.class].label}
+                    {pick(SUBCLASS_DATA[char.class].label, SUBCLASS_DATA[char.class].labelEn, language)}
                   </Titre>
                   <Grille min={220}>
                     {SUBCLASS_DATA[char.class].options.map(o => (
                       <CarteTexte
                         key={o.id}
-                        nom={o.name}
-                        desc={o.description}
+                        nom={subclassName(o, language)}
+                        desc={pick(o.description, o.descriptionEn, language)}
                         accent={T.purple}
                         choisi={char.subclass === o.name}
                         onPick={() => handleSubclassPick(o.name)}
@@ -809,7 +841,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   {char.subclass && (
                     <ul style={{ margin: '12px 0 0', paddingLeft: 20, display: 'grid', gap: 4, fontSize: 12, color: 'rgba(237,230,216,.78)' }}>
                       {getSubclassFeaturesForLevel(char.class, char.subclass, 1).map((f, i) => (
-                        <li key={i}><b style={{ color: T.purple }}>{f.name}</b> — {f.description}</li>
+                        <li key={i}><b style={{ color: T.purple }}>{featureName(f, language)}</b> — {featureDesc(f, language)}</li>
                       ))}
                     </ul>
                   )}
@@ -827,8 +859,8 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   <ul style={{ margin: 0, paddingLeft: 19, display: 'grid', gap: 5, fontSize: 12, lineHeight: 1.45, color: 'rgba(237,230,216,.78)' }}>
                     {selClass.features.filter(f => f.level <= 3).map((f, i) => (
                       <li key={i}>
-                        <b style={{ color: T.cyan }}>{f.name}</b>{' '}
-                        <span style={{ opacity: .5 }}>({tr.lvl} {f.level})</span> — {f.desc}
+                        <b style={{ color: T.cyan }}>{pick(f.nameFr, f.nameEn, language)}</b>{' '}
+                        <span style={{ opacity: .5 }}>({tr.lvl} {f.level})</span> — {pick(f.desc, f.descEn, language)}
                       </li>
                     ))}
                   </ul>
@@ -846,13 +878,14 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     slug={BACKGROUND_ART[b]?.slug || 'backgrounds/acolyte'}
                     tint={BACKGROUND_ART[b]?.tint || T.acid}
                     nom={dispBackground(b, language)}
-                    desc={d.desc}
+                    desc={pick(d.desc, d.descEn, language)}
                     choisi={char.background === b}
                     onPick={() => handleBackgroundChange(b)}
                     enfants={
                       <span style={{ display: 'block', marginTop: 5, fontSize: 10.5, lineHeight: 1.4, opacity: .72 }}>
-                        <b>{tr.skillsAbbr}</b> {d.profs.map(p => language === 'fr' ? (SKILL_FR[p] || p) : p).join(', ')}
-                        <br /><b>{d.feature.name} :</b> {d.feature.description}
+                        <b>{tr.skillsAbbr}</b> {d.profs.map(p => dispSkill(p, language)).join(', ')}
+                        <br /><b>{pick(d.feature.name, d.feature.nameEn, language)}{language === 'fr' ? ' :' : ':'}</b>{' '}
+                        {pick(d.feature.description, d.feature.descriptionEn, language)}
                       </span>
                     }
                   />
@@ -881,21 +914,74 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
               </Panneau>
             )}
 
-            {/* Divinité */}
+            {/* Divinité — vingt-sept choix, optionnels : une grille de cartes
+                ferait de ce détail le plus gros panneau de l'étape. On garde le
+                menu (groupé par alignement, pour qu'on s'y retrouve) et on ne
+                met en image QUE la divinité choisie, en bandeau paysage comme
+                les historiques. Sans planche (Aucune, Tymora), pas de cadre
+                vide : la vignette disparaît. */}
             <Panneau accent={T.purple}>
               <Titre accent={T.purple} note={tr.deityHint.replace(/^—\s*/, '')}>{tr.deity}</Titre>
               <Liste value={char.deity || 'Aucune'} onChange={e => setChar({ ...char, deity: e.target.value })}>
-                {DEITIES.map(d => (
-                  <option key={d.name} value={d.name} style={{ background: T.ink, color: T.paper }}>
-                    {d.name}{d.alignment !== '-' ? ` (${d.alignment})` : ''}
-                  </option>
+                <option value="Aucune" style={{ background: T.ink, color: T.paper }}>{tr.none}</option>
+                {([
+                  [tr.deityGood, (a: string) => a.endsWith('G')],
+                  [tr.deityNeutral, (a: string) => a === 'N' || a === 'LN'],
+                  [tr.deityEvil, (a: string) => a.endsWith('E')],
+                ] as [string, (a: string) => boolean][]).map(([libelle, garde]) => (
+                  <optgroup key={libelle} label={libelle} style={{ background: T.ink, color: T.paper }}>
+                    {DEITIES.filter(d => d.alignment !== '-' && garde(d.alignment)).map(d => (
+                      <option key={d.name} value={d.name} style={{ background: T.ink, color: T.paper }}>
+                        {pick(d.name, d.nameEn, language)} ({d.alignment}) — {pick(d.domain, d.domainEn, language)}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </Liste>
-              {char.deity && DEITIES.find(d => d.name === char.deity)?.desc && (
-                <p style={{ margin: '11px 0 0', fontSize: 12, lineHeight: 1.5, color: 'rgba(237,230,216,.65)' }}>
-                  {DEITIES.find(d => d.name === char.deity)?.desc}
-                </p>
-              )}
+              {(() => {
+                const dieu = DEITIES.find(d => d.name === char.deity && d.alignment !== '-');
+                if (!dieu) return null;
+                const art = DEITY_ART[dieu.name];
+                const lore = pick(dieu.lore, dieu.loreEn, language);
+                return (
+                  <div style={{ marginTop: 13, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'stretch' }}>
+                  <div style={{
+                    flex: '0 1 520px', maxWidth: 520, background: art ? art.tint : T.ink,
+                    color: art ? onTint(art.tint) : T.paper,
+                    boxShadow: hardShadow(T.ink, 6), border: `3px solid ${T.ink}`,
+                  }}>
+                    {art && (
+                      <img
+                        key={art.slug}
+                        src={artUrl(art.slug)}
+                        srcSet={artSrcSet(art.slug)}
+                        alt="" loading="lazy"
+                        style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', background: T.ink }}
+                      />
+                    )}
+                    <div style={{ padding: '9px 12px 11px', display: 'grid', gap: 3 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontFamily: DISP, fontSize: 12 }}>
+                        <span>{pick(dieu.name, dieu.nameEn, language)}</span>
+                        <span style={{ fontFamily: BODY, fontSize: 10, fontWeight: 700, opacity: .75 }}>
+                          {tr.domainLabel}{language === 'fr' ? ' : ' : ': '}{pick(dieu.domain, dieu.domainEn, language)} · {dieu.alignment}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11.5, lineHeight: 1.4, opacity: .85 }}>{pick(dieu.desc, dieu.descEn, language)}</span>
+                    </div>
+                  </div>
+                  {/* Le récit long remplit le cadre vide à droite de la planche —
+                      même corps de texte que les descriptions de race et de classe. */}
+                  {lore && (
+                    <div style={{
+                      flex: '1 1 300px', minWidth: 0, background: T.ink, border: `3px solid rgba(237,230,216,.16)`,
+                      padding: '14px 16px', display: 'flex', alignItems: 'center',
+                    }}>
+                      <p style={{ margin: 0, fontFamily: BODY, fontSize: 13, lineHeight: 1.6, color: 'rgba(237,230,216,.78)' }}>{lore}</p>
+                    </div>
+                  )}
+                  </div>
+                );
+              })()}
             </Panneau>
           </div>
         );
@@ -927,11 +1013,17 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 { cle: 'desire', libelle: `${tr.desire} *`, ph: tr.desirePh, max: 320, h: 92 },
                 { cle: 'personality', libelle: tr.personality, ph: tr.personalityPh, max: 280, h: 78 },
                 { cle: 'fear', libelle: tr.fearWeakness, ph: tr.fearPh, max: 280, h: 78 },
-                { cle: 'bond', libelle: tr.bondLien, ph: tr.bondPh, max: 280, h: 78, chips: BACKGROUNDS[char.background]?.bonds },
+                { cle: 'bond', libelle: tr.bondLien, ph: tr.bondPh, max: 280, h: 78, chips: pick(BACKGROUNDS[char.background]?.bonds, BACKGROUNDS[char.background]?.bondsEn, language) },
                 { cle: 'wound', libelle: tr.woundRegret, ph: tr.woundPh, max: 280, h: 78 },
               ] as const).map(f => (
                 <label key={f.cle} style={{ display: 'block' }}>
                   <Etiqueter>{f.libelle}</Etiqueter>
+                  {f.cle === 'appearance' && (
+                    <div style={{
+                      fontFamily: DISP, fontSize: 11, letterSpacing: .5, padding: '7px 10px', marginBottom: 6,
+                      background: T.ink, color: T.paper, border: `2px solid rgba(237,230,216,.3)`, opacity: .9,
+                    }}>🔒 {identityLine(char, language)}</div>
+                  )}
                   <Champ
                     value={(profile as Record<string, string | undefined>)[f.cle] || ''}
                     onChange={e => updateProfile({ [f.cle]: e.target.value })}
@@ -993,12 +1085,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <label style={{ display: 'block' }}>
                   <Etiqueter>{tr.ideal}</Etiqueter>
                   <Ligne value={profile.ideal || ''} onChange={e => updateProfile({ ideal: e.target.value })} placeholder={tr.idealPh} />
-                  <IbfChips items={BACKGROUNDS[char.background]?.ideals} onPick={v => updateProfile({ ideal: v })} />
+                  <IbfChips items={pick(BACKGROUNDS[char.background]?.ideals, BACKGROUNDS[char.background]?.idealsEn, language)} onPick={v => updateProfile({ ideal: v })} />
                 </label>
                 <label style={{ display: 'block' }}>
                   <Etiqueter>{tr.flaw}</Etiqueter>
                   <Ligne value={profile.flaw || ''} onChange={e => updateProfile({ flaw: e.target.value })} placeholder={tr.flawPh} />
-                  <IbfChips items={BACKGROUNDS[char.background]?.flaws} onPick={v => updateProfile({ flaw: v })} />
+                  <IbfChips items={pick(BACKGROUNDS[char.background]?.flaws, BACKGROUNDS[char.background]?.flawsEn, language)} onPick={v => updateProfile({ flaw: v })} />
                 </label>
               </div>
             </Panneau>
@@ -1376,9 +1468,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 11 }}>
                   <Cartouche titre={tr.castingAbility} valeur={dispAbbr(casterConfig.ability, language)} accent={T.purple} />
                   <div style={{ flex: '1 1 180px', background: T.ink, border: `3px solid ${T.cyan}`, padding: '13px 14px' }}>
-                    <Etiqueter>{tr.focus}</Etiqueter>
+                    <Etiqueter note={tr.focusHint}>{tr.focus}</Etiqueter>
+                    {/* Pré-rempli avec le nom d'objet TRADUIT : la valeur stockée est
+                        la clé anglaise (« Arcane Focus ») et un joueur français la
+                        lisait telle quelle. */}
                     <Ligne
-                      value={char.spellcastingFocus || casterConfig.focus}
+                      value={char.spellcastingFocus || (language === 'fr' ? (ITEM_NAME_FR[casterConfig.focus] || casterConfig.focus) : casterConfig.focus)}
                       onChange={e => setChar(prev => ({ ...prev, spellcastingFocus: e.target.value }))}
                       style={{ padding: '8px 10px', fontSize: 12.5 }}
                     />
@@ -1406,7 +1501,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                       {bloc.options.map(spell => (
                         <CarteTexte
                           key={spell.id}
-                          nom={spell.name}
+                          nom={spellLabel(spell, language)}
                           desc={spell.effectSummary}
                           accent={T.cyan}
                           choisi={bloc.choisis.includes(spell.name)}
@@ -1480,7 +1575,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             <div>
               <Etiqueter>{tr.appearance}</Etiqueter>
               <p style={{ margin: 0, minHeight: 62, padding: '11px 13px', background: T.ink, border: `2px solid rgba(237,230,216,.16)`, fontSize: 12.5, lineHeight: 1.5 }}>
-                {profile.appearance || tr.appearanceMissing}
+                {identityLine(char, language)} — {profile.appearance || tr.appearanceMissing}
               </p>
             </div>
             <div>
@@ -1542,7 +1637,7 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
             >
               {!char.name ? tr.nameRequired
                 : pointsRemaining > 0 ? tr.spendPoints(pointsRemaining)
-                  : !subclassReady ? tr.chooseYour(SUBCLASS_DATA[char.class]?.label || tr.archetype)
+                  : !subclassReady ? tr.chooseYour(SUBCLASS_DATA[char.class] ? pick(SUBCLASS_DATA[char.class].label, SUBCLASS_DATA[char.class].labelEn, language) : tr.archetype)
                     : !requiredNarrativeReady ? tr.addAppearanceDesire
                       : !casterReady ? tr.chooseStartingSpells
                         : <><Swords className="h-5 w-5" /> {tr.toAdventure}</>}
@@ -1591,11 +1686,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-start' }}>
                   {art && (
                     <img
-                      src={`/art/${art.slug}.webp`}
-                      srcSet={`/art/${art.slug}.webp 1x, /art/${art.slug}@2x.webp 2x`}
+                      src={artUrl(art.slug)}
+                      srcSet={artSrcSet(art.slug)}
                       alt="" loading="lazy"
                       style={{
-                        flex: '1 1 190px', maxWidth: 232, aspectRatio: '3 / 4', objectFit: 'cover',
+                        flex: '1 1 190px', maxWidth: 232, aspectRatio: '9 / 16', objectFit: 'cover',
                         display: 'block', background: T.ink, border: `3px solid ${T.ink}`,
                         boxShadow: hardShadow(T.ink, 8),
                       }}
@@ -1603,11 +1698,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                   )}
 
                   <div style={{ flex: '999 1 300px', display: 'grid', gap: 13 }}>
-                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{cls.desc}</p>
+                    <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{pick(cls.desc, cls.descEn, language)}</p>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                       <Cartouche titre={tr.hitDiceLabel} valeur={`d${cls.hitDie}`} accent={T.pink} />
-                      <Cartouche titre={tr.primaryAbility} valeur={dispAbilityExpr(cls.primaryAbility, language)} accent={T.cyan} />
+                      <Cartouche titre={tr.primaryAbility} valeur={dispAbilityExpr(pick(cls.primaryAbility, cls.primaryAbilityEn, language), language)} accent={T.cyan} />
                     </div>
 
                     <div>
@@ -1634,13 +1729,13 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
                     {cls.features.map((f, i) => (
                       <div key={i} style={{ background: T.ink, border: `2px solid rgba(237,230,216,.16)`, padding: '10px 12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
-                          <span style={{ fontFamily: DISP, fontSize: 11.5 }}>{f.name}</span>
+                          <span style={{ fontFamily: DISP, fontSize: 11.5 }}>{pick(f.nameFr, f.nameEn, language)}</span>
                           <span style={{
                             flex: 'none', fontFamily: DISP, fontSize: 9, padding: '3px 8px',
                             background: T.pink, color: onTint(T.pink),
                           }}>{tr.levelAbbr}. {f.level}</span>
                         </div>
-                        <div style={{ fontSize: 11.5, lineHeight: 1.45, opacity: .74, marginTop: 4 }}>{f.desc}</div>
+                        <div style={{ fontSize: 11.5, lineHeight: 1.45, opacity: .74, marginTop: 4 }}>{pick(f.desc, f.descEn, language)}</div>
                       </div>
                     ))}
                   </div>

@@ -9,7 +9,7 @@ import { campaignEventLog } from '../../../../services/persistence/campaignEvent
 import { waitDice } from '../../../../services/media/diceTiming';
 import { auditBus } from '../../../../services/infra/auditBus';
 import { applyAutoDamageSpell, castSpell, combatantSide, applyConditionToCharacter, applyConditionToEncounter, applyDamageToCharacter, applyDamageToEncounter, normalizeRollPrompt, resolveCombatantReference, resolveRollPrompt, resolveSpellAgainstTargets } from '../../../../engine/rulesEngine';
-import { lookupMonster, lookupSpell } from '../../../../engine/codexService';
+import { lookupMonster, lookupSpell, spellLabel } from '../../../../engine/codexService';
 import { getCreature } from '../../../../data/bestiary';
 import { rollDice } from '../../../../engine/utils';
 import { worldHourOf, classSavePassives, hasEvasion, applyDownedDamagePenalty, releaseNpcConcentrationEffect, getProficientSaves, featGrantsAdvantageOn } from '../../../../engine/rulesEngine';
@@ -191,7 +191,7 @@ export async function environmental_damage(args: any, ctx: ToolContext) {
     const rolled = rollDice(damageFormula);
     const amount = Math.max(0, Math.floor(rolled.total * multiplier));
     if (amount > 0) {
-        store.setCurrentRoll({ result: amount, reason: `${hazard} — ${amount} dégâts ${damageType || ''}`, isDM: true });
+        store.setCurrentRoll({ result: amount, reason: sysLine(`${hazard} — ${amount} dégâts ${damageType || ''}`, `${hazard} — ${amount} ${damageType || ''} damage`), isDM: true });
         deps.diceTrayRef.current?.addLog({
             type: 'damage',
             name: `${hazard}${isPlayerTarget ? '' : ` → ${targetRef}`}`,
@@ -289,7 +289,7 @@ export async function environmental_damage(args: any, ctx: ToolContext) {
     };
 }
 export async function cast_spell(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store, sysLine } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     // OU5 — même contrat que request_roll : un seul jet à l'écran.
     // Un cast pendant un jet en attente écrasait le prompt retenu
@@ -298,6 +298,9 @@ export async function cast_spell(args: any, ctx: ToolContext) {
         return { success: false, error: 'A roll is already pending on screen. Wait for its result before casting a spell that needs a roll.' };
     }
     const spellName = String(args.spellName || args.name || '').trim();
+    // Le nom canonique (anglais) reste la donnee ; ce que le joueur LIT dans
+    // son journal suit sa langue (les 114 sorts SRD ont un alias francais).
+    const spellShown = spellLabel(spellName, sysLine('fr', 'en') as 'fr' | 'en');
     if (!spellName) return { success: false, error: 'cast_spell requires spellName' };
     // ÉCONOMIE D'ACTION À LA VOIX (audit 2026-08-21) : un sort coûte
     // l'ACTION entière (ou l'action BONUS si Sort accéléré armé),
@@ -396,8 +399,8 @@ export async function cast_spell(args: any, ctx: ToolContext) {
                     ? { ...c, hp: { ...c.hp, current: Math.min(c.hp.max, c.hp.current + (result.healing || 0)) } }
                     : c),
             }));
-            store.pushCombatRoll({ name: `${spellName} → ${victim.name}`, total: result.healing, formula: result.spell?.healing?.dice || 'heal', isDM: true });
-            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} — ${victim.name} +${result.healing} HP]*` }]);
+            store.pushCombatRoll({ name: `${spellShown} → ${victim.name}`, total: result.healing, formula: result.spell?.healing?.dice || 'heal', isDM: true });
+            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellShown} — ${victim.name} +${result.healing} HP]*` }]);
             campaignEventLog.append('EFFECT_ADDED', `Heal applied to ${victim.name}: +${result.healing}`, { spell: spellName });
             return {
                 success: true,
@@ -444,13 +447,13 @@ export async function cast_spell(args: any, ctx: ToolContext) {
         if (aoe) {
             store.setCombatState(aoe.state);
             if (aoe.sharedDamageRoll > 0) {
-                store.setCurrentRoll({ result: aoe.sharedDamageRoll, reason: `${spellName} — dégâts de zone`, isDM: false });
+                store.setCurrentRoll({ result: aoe.sharedDamageRoll, reason: `${spellShown} — ${sysLine('dégâts de zone', 'area damage')}`, isDM: false });
                 await waitDice();
             }
             for (const r of aoe.results) {
-                store.pushCombatRoll({ name: `${spellName} → ${r.name}`, total: r.damage, formula: `save ${r.saveTotal} vs DC ${result.prompt.dc}${r.saveSuccess ? ' (réussie)' : ''}`, isDM: true });
+                store.pushCombatRoll({ name: `${spellShown} → ${r.name}`, total: r.damage, formula: `save ${r.saveTotal} vs DC ${result.prompt.dc}${r.saveSuccess ? sysLine(' (réussie)', ' (success)') : ''}`, isDM: true });
             }
-            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} (zone) — ${aoe.summary}]*` }]);
+            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellShown} (${sysLine('zone', 'area')}) — ${aoe.summary}]*` }]);
             campaignEventLog.append('EFFECT_ADDED', `AoE spell resolved: ${spellName}`, { results: aoe.results });
             return {
                 success: true,
@@ -479,13 +482,13 @@ export async function cast_spell(args: any, ctx: ToolContext) {
             const applied = applyAutoDamageSpell(liveState, { ...result.autoDamage, targetId: victimId });
             if (!applied) continue;
             store.setCombatState(applied.state);
-            store.setCurrentRoll({ result: applied.damage, reason: `${spellName} → ${applied.target.name}`, isDM: false });
+            store.setCurrentRoll({ result: applied.damage, reason: `${spellShown} → ${applied.target.name}`, isDM: false });
             await waitDice();
-            store.pushCombatRoll({ name: `${spellName} → ${applied.target.name}`, total: applied.damage, formula: result.autoDamage.damageFormula, isDM: false });
+            store.pushCombatRoll({ name: `${spellShown} → ${applied.target.name}`, total: applied.damage, formula: result.autoDamage.damageFormula, isDM: false });
             reports.push(`${applied.target.name}: ${applied.damage}`);
         }
         if (reports.length) {
-            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} — ${reports.join(', ')}]*` }]);
+            store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellShown} — ${reports.join(', ')}]*` }]);
             campaignEventLog.append('EFFECT_ADDED', `Auto-hit spell resolved: ${spellName}`, { reports });
             return {
                 success: true,

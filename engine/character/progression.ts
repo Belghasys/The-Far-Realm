@@ -1,6 +1,7 @@
 /** La progression : des de vie, ressources et emplacements par niveau, repos court et long. */
 import { CharacterSheet, getEffectiveStat, getEffectiveMaxHP } from '../../types';
 import { clampHP } from '../gameValidator';
+import { CELESTIAL_STEED_KIND } from '../../data/companionOptions';
 import { abilityMod, hasFeatSpecial, songOfRestDie } from '../combat/rolls';
 
 function hitDieForClass(cls: string): number {
@@ -323,9 +324,13 @@ export function applyLongRest(character: CharacterSheet): CharacterSheet {
         hp: { ...comp.hp, current: comp.hp.max },
     }));
 
-    // La monture récupère tout — y compris le Destrier céleste tombé, qui est
-    // RE-INVOQUÉ au repos long (Appel de destrier).
-    const mount = ensured.mount?.hp
+    // La monture récupère tout. Une monture TOMBÉE ne se relève pas d'une nuit
+    // de sommeil : seul le Destrier céleste le fait, parce que c'est un esprit
+    // que le paladin RÉ-INVOQUE (Appel de destrier). Avant, le code ne faisait
+    // pas la différence et un cheval mort repartait à neuf au petit matin —
+    // alors que le type documente l'inverse depuis le début.
+    const mountDown = (ensured.mount?.hp?.current ?? 1) <= 0;
+    const mount = ensured.mount?.hp && (!mountDown || ensured.mount.kind === CELESTIAL_STEED_KIND)
         ? { ...ensured.mount, hp: { ...ensured.mount.hp, current: ensured.mount.hp.max } }
         : ensured.mount;
 

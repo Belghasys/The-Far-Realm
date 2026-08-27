@@ -51,7 +51,10 @@ export function styleAnchorKey(adventureId: string | null | undefined): string {
 export function heroDescriptor(character: CharacterSheet | null | undefined): string {
     if (!character) return '';
     const appearance = character.storyProfile?.appearance?.trim();
-    const fallback = [character.race, character.class].filter(Boolean).join(' ').trim();
+    // Sexe en tête (2026-08-27) : sans lui, l'IA image dessinait un homme neuf
+    // fois sur dix quelle que soit la fiche.
+    const sex = character.gender === 'female' ? 'female' : character.gender === 'male' ? 'male' : '';
+    const fallback = [sex, character.race, character.class].filter(Boolean).join(' ').trim();
     if (appearance) {
         // Cap volontairement bas : le prompt complet doit tenir sous les 1200
         // caractères imposés par le proxy Firebase, description du MJ incluse.

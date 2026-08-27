@@ -16,6 +16,7 @@
  */
 import React, { useRef, useState } from 'react';
 import { T, DISP, BODY, onTint, hardShadow } from '../../theme/tokens';
+import { artUrl, artSrcSet } from '../../theme/art';
 
 type Props = {
     /** Chemin sous /art, sans extension. */
@@ -28,12 +29,11 @@ type Props = {
     tint: string;
     shadow?: string;
     width?: number;
-    height?: number;
 };
 
 export function AlterEgoFrame({
     faceSlug, alterSlug, label, caption, hint, tint,
-    shadow = T.ink, width = 200, height = 266,
+    shadow = T.ink, width = 200,
 }: Props) {
     const ref = useRef<HTMLDivElement>(null);
     const [tilt, setTilt] = useState('none');
@@ -64,11 +64,13 @@ export function AlterEgoFrame({
             flexDirection: 'column',
         }}>
             <img
-                src={`/art/${slug}.webp`}
-                srcSet={`/art/${slug}.webp 1x, /art/${slug}@2x.webp 2x`}
+                src={artUrl(slug)}
+                srcSet={artSrcSet(slug)}
                 alt={dos ? caption : label}
                 loading={dos ? 'eager' : 'lazy'}
-                style={{ display: 'block', width: '100%', height, objectFit: 'cover', background: T.ink }}
+                // Les planches sont en 9:16 depuis le 2026-08-27 : la hauteur suit
+                // la largeur, une hauteur fixe rognait le haut et le bas.
+                style={{ display: 'block', width: '100%', aspectRatio: '9 / 16', objectFit: 'cover', background: T.ink }}
             />
             {dos ? (
                 <div style={{

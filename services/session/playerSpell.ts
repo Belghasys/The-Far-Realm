@@ -9,7 +9,7 @@ import { useGameStore } from '../../store/gameStore';
 import { combatantSide } from '../../engine/combatants';
 import { resolvePendingSpellRoll, resolveRollPrompt, castSpell, applyStoryModifiersToPrompt, worldHourOf, resolveSpellAgainstTargets, applyAutoDamageSpell } from '../../engine/rulesEngine';
 import { getCreature } from '../../data/bestiary';
-import { lookupMonster, lookupSpell } from '../../engine/codexService';
+import { lookupMonster, lookupSpell, spellLabel } from '../../engine/codexService';
 import { playSpellSfx } from '../media/combatSfx';
 import { waitDice } from '../media/diceTiming';
 import type { SessionContext } from './context';
@@ -57,11 +57,15 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
         : (target ? target.name : 'Target');
 
     // NF4 — sort de CONTACT : la cible doit être au corps à corps.
+    // Le nom CANONIQUE (anglais) reste la donnee — il part au MJ et au
+    // moteur. Ce que le joueur LIT passe par spellLabel : sinon la partie
+    // francaise affichait « Fire Bolt » dans son propre journal.
+    const spellShown = spellLabel(spellName, language === 'fr' ? 'fr' : 'en');
     const touchSpellDef = lookupSpell(spellName);
     if (touchSpellDef && /^touch$/i.test(String(touchSpellDef.range || ''))
         && target && !target.isPlayer
         && (((target as any).range || 'melee') !== 'melee')) {
-      showActionToast(`✋ ${spellName} — ${language === 'fr' ? 'sort de contact : la cible doit être au corps à corps' : 'touch spell: the target must be in melee reach'}`);
+      showActionToast(`✋ ${spellShown} — ${language === 'fr' ? 'sort de contact : la cible doit être au corps à corps' : 'touch spell: the target must be in melee reach'}`);
       return;
     }
 
@@ -98,7 +102,7 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
       // Échec SILENCIEUX auparavant (console.error seulement) : le joueur
       // cliquait « Lancer le sort » et il ne se passait rien. On dit pourquoi.
       console.error('Spell cast failed:', spellResult.error);
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚠️ ${spellName} — ${spellResult.error || (language === 'fr' ? 'lancement impossible' : 'cast failed')}]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚠️ ${spellShown} — ${spellResult.error || (language === 'fr' ? 'lancement impossible' : 'cast failed')}]*` }]);
       return;
     }
 
@@ -113,14 +117,14 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
       // 1. Roll healing animation
       setPlayerRoll({
         result: spellResult.healing,
-        reason: tr.castHealedLabel(spellName, spellResult.healing)
+        reason: tr.castHealedLabel(spellShown, spellResult.healing)
       });
       await waitDice();
 
       // 2. Add log
       logCombatRoll({
         type: 'damage',
-        name: `Healed: ${spellName}`,
+        name: `${tr.healing}: ${spellShown}`,
         total: spellResult.healing,
         formula: spellResult.spell?.healing?.dice || '1d8',
         isDM: false
@@ -162,14 +166,14 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
         const applied = applyAutoDamageSpell(state, { ...auto, targetId: victim.id, target: victim.name });
         if (!applied) continue;
         state = applied.state;
-        setPlayerRoll({ result: applied.damage, reason: `${spellName} → ${victim.name} (${applied.damage} ${auto.damageType || tr.damage})` });
+        setPlayerRoll({ result: applied.damage, reason: `${spellShown} → ${victim.name} (${applied.damage} ${auto.damageType || tr.damage})` });
         await waitDice();
-        logCombatRoll({ type: 'damage', name: `${spellName} → ${victim.name}`, total: applied.damage, formula: auto.damageFormula, isDM: false });
+        logCombatRoll({ type: 'damage', name: `${spellShown} → ${victim.name}`, total: applied.damage, formula: auto.damageFormula, isDM: false });
         reports.push(`${victim.name}: ${applied.damage}${applied.mitigation !== 'normal' ? ` (${applied.mitigation})` : ''}`);
       }
       setCombatState(state);
       if (reports.length) {
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} — ${reports.join(', ')}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellShown} — ${reports.join(', ')}]*` }]);
       }
       if (dm && isConnected) {
         await dm.sendUserMessage(reports.length
@@ -186,23 +190,23 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
       if (aoe) {
         setCombatState(aoe.state);
         if (aoe.sharedDamageRoll > 0) {
-          setPlayerRoll({ result: aoe.sharedDamageRoll, reason: `${spellName} — ${language === 'fr' ? 'dégâts de zone' : 'area damage'}` });
+          setPlayerRoll({ result: aoe.sharedDamageRoll, reason: `${spellShown} — ${tr.aoeDamageRoll}` });
           await waitDice();
         }
         for (const r of aoe.results) {
           logCombatRoll({
             type: 'save',
-            name: `${r.name} — ${spellName}`,
+            name: `${r.name} — ${spellShown}`,
             total: r.saveTotal,
             formula: `vs DC ${prompt.dc}`,
             isDM: true,
             success: r.saveSuccess,
           });
           if (r.damage > 0) {
-            logCombatRoll({ type: 'damage', name: `${spellName} → ${r.name}`, total: r.damage, formula: prompt.pendingSpell?.damageFormula || '', isDM: false });
+            logCombatRoll({ type: 'damage', name: `${spellShown} → ${r.name}`, total: r.damage, formula: prompt.pendingSpell?.damageFormula || '', isDM: false });
           }
         }
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellName} (zone) — ${aoe.summary}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${spellShown} (${language === 'fr' ? 'zone' : 'area'}) — ${aoe.summary}]*` }]);
         if (dm && isConnected) {
           await dm.sendUserMessage(`[SYSTEM] Player cast ${spellName} on ALL enemies (area). Per-target results: ${aoe.summary}. All HP changes are applied — narrate the blast in ONE beat, do not re-roll anything.`);
         }

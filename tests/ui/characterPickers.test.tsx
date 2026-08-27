@@ -35,6 +35,7 @@ vi.mock('../../store/gameStore', () => ({
 }));
 
 import { CharacterSheetUI } from '../../components/hall/CharacterSheet';
+import { artUrl } from '../../theme/art';
 
 const monter = () => render(<CharacterSheetUI onSave={vi.fn()} />);
 
@@ -208,7 +209,7 @@ describe('Fiche — choix de classe et de race', () => {
 
             const portraits = Array.from(fenetre()!.querySelectorAll('img'))
                 .map(i => i.getAttribute('src') || '');
-            expect(portraits).toContain('/art/classes/bard.webp');
+            expect(portraits).toContain(artUrl('classes/bard'));
         });
 
         it('se ferme à la croix ET à la touche Échap', () => {

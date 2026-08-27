@@ -6,7 +6,7 @@ import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { NeonButton, NeonInput } from '../components/neon/NeonButton';
-import { BANNER } from '../theme/art';
+import { BANNER, artUrl, artSrcSet } from '../theme/art';
 import { LOGIN_VIEW_TEXTS as TRANS } from './texts';
 
 /** Le « G » de Google, dessiné ici plutôt que chargé depuis un CDN tiers. */
@@ -123,8 +123,8 @@ export function LoginView() {
                     <p style={{ margin: 0, maxWidth: 480, fontSize: 16, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{tr.pitch}</p>
 
                     <img
-                        src={`/art/${BANNER.cover}.webp`}
-                        srcSet={`/art/${BANNER.cover}.webp 1x, /art/${BANNER.cover}@2x.webp 2x`}
+                        src={artUrl(BANNER.cover)}
+                        srcSet={artSrcSet(BANNER.cover)}
                         alt=""
                         style={{
                             display: 'block', width: '100%', maxWidth: 560, marginTop: 6,

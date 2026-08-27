@@ -183,7 +183,7 @@ export async function set_time_of_day(args: any, _ctx: ToolContext) {
 }
 
 export async function grant_xp(args: any, ctx: ToolContext) {
-    const { d, store, sysLine } = ctx;
+    const { d, store, sysLine , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const xpBefore = store.character.xp;
     // ENEMIES only — allies (companion, rescued NPCs) are !isPlayer
@@ -198,7 +198,7 @@ export async function grant_xp(args: any, ctx: ToolContext) {
     const xpReason = stringArg(args.reason, 120) || sysLine('progression', 'progress');
     d.grantXP(amount, xpReason);
     campaignEventLog.append('XP_GRANTED', `Awarded ${amount} XP for ${xpReason}`, { amount, reason: xpReason });
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Awarded ${amount} XP for ${xpReason}]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysXpAwarded(amount, xpReason)}]*` }]);
     return { success: true, total_xp: xpBefore + amount, amount };
 }
 
@@ -490,7 +490,7 @@ export async function apply_complication(args: any, ctx: ToolContext) {
 }
 
 export async function short_rest(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     // If the DM didn't specify hit dice, auto-spend enough to cover
     // missing HP — otherwise a short rest would heal nothing.
@@ -518,12 +518,12 @@ export async function short_rest(args: any, ctx: ToolContext) {
         hitDice: char.hitDice,
     });
     if (d.musicDirector) d.musicDirector.handleRestMusic(false);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Short rest completed]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysShortRest}]*` }]);
     return { success: true, hp: char.hp, resources: char.resources, hitDice: char.hitDice, timeOfDay: useGameStore.getState().campaignRuntime.timeOfDay };
 }
 
 export async function long_rest(_args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     // PL13 — garde anti-DOUBLE (partagée avec le bouton) : le MJ
     // vocal ré-appelait parfois long_rest en re-narrant la nuit.
@@ -556,7 +556,7 @@ export async function long_rest(_args: any, ctx: ToolContext) {
         hitDice: char.hitDice,
     });
     if (d.musicDirector) d.musicDirector.handleRestMusic(true);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Long rest completed]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysLongRest}]*` }]);
      // AUTONOMOUS WORLD CLOCKS: a long rest means a night passes — every
     // active clock ticks +1 mechanically. Without this, a clock the DM
     // forgets to advance by hand is a dead clock and the world stops

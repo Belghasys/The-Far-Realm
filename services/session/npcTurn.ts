@@ -126,7 +126,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
               const conc = resolveConcentrationAfterDamage(struck, applied.amountApplied);
               if (conc.broken) {
                 syncCharacterCritical(conc.character, 'hp');
-                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Concentration broken: ${conc.removedEffects.map(e => e.name).join(', ')}]*` }]);
+                setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.sysConcentrationBroken(conc.removedEffects.map(e => e.name).join(', '))}]*` }]);
               } else if (struck.hp.current > 0 && conc.prompt) {
                 setActivePrompt(conc.prompt);
                 campaignEventLog.append('ROLL_REQUESTED', 'Concentration save requested after damage', conc.prompt);
@@ -188,6 +188,21 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       if (dm && isConnected) {
         dm.sendSystemMessage(`[SYSTEM] ${npc.name} is ${npcCapability.blockedBy} and CANNOT act (no actions or reactions). Its turn was skipped by the engine — narrate the helplessness in one short beat. Do NOT roll or resolve anything for it.`);
       }
+      const live = useGameStore.getState().combatState;
+      if (maybeEndCombat(live)) return;
+      setCombatState(advanceTurn(live));
+      return;
+    }
+
+    // MONTURE EN SELLE : elle ne joue PAS de tour à elle. Une monture montée
+    // est sous le contrôle de son cavalier (SRD) — elle le porte, elle ne
+    // choisit pas sa propre cible. Avant, elle roulait son initiative et
+    // attaquait un ennemi différent de celui du héros : une action gratuite
+    // par round, sans contrepartie. À pied, elle redevient un allié autonome
+    // et repasse par la branche ci-dessous.
+    if (npc.id === 'mount' && character.mount && character.mount.mounted !== false) {
+      // Silencieux dans le transcript : une ligne par round ferait du bruit.
+      auditBus.publish('combat', `🐴 ${npc.name} : en selle, pas de tour propre`);
       const live = useGameStore.getState().combatState;
       if (maybeEndCombat(live)) return;
       setCombatState(advanceTurn(live));
@@ -271,7 +286,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
           : '';
         dm.sendSystemMessage(`[SYSTEM] It is your ally ${npc.name}'s turn (enemies: ${enemyList}). You control this ally — IMMEDIATELY resolve its action with your tools (resolve_attack attacker="${npc.id}" / apply_condition) and narrate it.${attackHint} You have a short window (~8s); the engine will then advance to the next combatant automatically — do NOT call advance_turn.`);
       }
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Allied ${npc.name}'s turn — the DM directs them]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.npcAllyTurn(npc.name)}]*` }]);
       // Give the DM a real window to PLAY the ally before moving on — but
       // advance EARLY the moment its action is spent or the turn moved. The old
       // flat 8s sleep taxed every Beast Master round even when the DM resolved
@@ -307,7 +322,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       // Whole party (player + allies) is down. Do NOT keep cycling enemy turns
       // forever — surface defeat and stop the loop.
       setIsNPCTurn(false);
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Défaite — toute la partie est à terre.]*` }]);
+      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.npcPartyDown}]*` }]);
       if (dm && isConnected) {
         dm.sendSystemMessage('[SYSTEM] The whole party (player and allies) has fallen. Narrate the defeat / capture / aftermath.');
       }
@@ -451,7 +466,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
           name: breath.name, kind: 'aoe_save', saveAbility: breath.dc.ability, dc: breath.dc.value,
           formula: part.dice, damageType: part.type as any, halfOnSave: breath.dc.successType === 'half',
         }, kit0, heroesUp);
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Turn completed for ${npc.name}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.sysTurnCompleted(npc.name)}]*` }]);
         const freshEnd = useGameStore.getState().combatState;
         if (maybeEndCombat(freshEnd)) return;
         setCombatState(advanceTurn(freshEnd));
@@ -469,9 +484,16 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
       const usedSpells: Record<string, number> = liveRow?.spellUses || {};
       const usesLeft = (s: MonsterSpell) => s.uses === undefined ? Infinity : Math.max(0, s.uses - (usedSpells[s.name] || 0));
       const heroesUp = useGameStore.getState().combatState.combatants.filter((c: any) => isHero(c) && c.hp.current > 0);
-      const chosen = casterKit.spells.find(s => s.kind === 'aoe_save' && usesLeft(s) > 0 && heroesUp.length >= 2)
-        || casterKit.spells.find(s => s.uses !== undefined && usesLeft(s) > 0 && s.kind !== 'aoe_save')
-        || casterKit.spells.find(s => s.uses === undefined);
+      // SOIN (2026-08-27) : un prêtre relève d'abord son camp. Cible = l'allié
+      // du lanceur (lui compris) le plus entamé, s'il est sous la moitié.
+      const woundedAlly = [...useGameStore.getState().combatState.combatants]
+        .filter((c: any) => combatantSide(c) === 'enemy' && c.hp.current > 0 && c.hp.current * 2 < c.hp.max)
+        .sort((a: any, b: any) => (a.hp.current / a.hp.max) - (b.hp.current / b.hp.max))[0];
+      const healSpell = woundedAlly ? casterKit.spells.find(s => s.kind === 'heal' && s.formula && usesLeft(s) > 0) : undefined;
+      const chosen = healSpell
+        || casterKit.spells.find(s => s.kind === 'aoe_save' && usesLeft(s) > 0 && heroesUp.length >= 2)
+        || casterKit.spells.find(s => s.uses !== undefined && usesLeft(s) > 0 && s.kind !== 'aoe_save' && s.kind !== 'heal')
+        || casterKit.spells.find(s => s.uses === undefined && s.kind !== 'heal');
       if (chosen) {
         if (chosen.uses !== undefined) {
           setCombatState((prev: any) => ({
@@ -482,6 +504,26 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
           }));
         }
         auditBus.publish('combat', `🪄 ${npc.name} lance ${chosen.name} (${chosen.kind}, DD ${chosen.dc ?? casterKit.dc})`, chosen);
+        if (chosen.kind === 'heal' && woundedAlly) {
+          const healed = rollDice(chosen.formula || '1d8').total;
+          const liveNow = useGameStore.getState().combatState;
+          const target = liveNow.combatants.find((c: any) => c.id === woundedAlly.id);
+          const after = target ? Math.min(target.hp.max, target.hp.current + healed) : 0;
+          const gained = target ? after - target.hp.current : 0;
+          setCombatState((prev: any) => ({
+            ...prev,
+            combatants: prev.combatants.map((c: any) => c.id === woundedAlly.id ? { ...c, hp: { ...c.hp, current: after } } : c),
+          }));
+          logCombatRoll({ type: 'heal', name: `${npc.name} : ${chosen.name} → ${woundedAlly.name}`, total: gained, formula: chosen.formula || '', isDM: true });
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ✨ ${tr.npcHeals(npc.name, chosen.name, woundedAlly.name, gained)}]*` }]);
+          const freshHeal = useGameStore.getState().combatState;
+          if (maybeEndCombat(freshHeal)) return;
+          setCombatState(advanceTurn(freshHeal));
+          if (dm && isConnected) {
+            dm.sendSystemMessage(`[SYSTEM] ${npc.name} CAST ${chosen.name} on its ally ${woundedAlly.name}, restoring ${gained} HP (already applied). Narrate the healing in one beat; do NOT re-roll it.`);
+          }
+          return;
+        }
         if (chosen.kind === 'attack') {
           // Jet d'ATTAQUE de sort → réutilise tel quel le chemin d'attaque
           // complet ci-dessous (réaction Bouclier, résistances, journal).
@@ -494,7 +536,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         } else {
           setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🪄 ${npc.name} ${language === 'fr' ? 'lance' : 'casts'} ${chosen.name} !]*` }]);
           await runEnemySaveSpell(npc, target, chosen, casterKit, heroesUp);
-          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Turn completed for ${npc.name}]*` }]);
+          setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.sysTurnCompleted(npc.name)}]*` }]);
           const freshEnd = useGameStore.getState().combatState;
           if (maybeEndCombat(freshEnd)) return;
           setCombatState(advanceTurn(freshEnd));
@@ -567,10 +609,10 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         // d'UNE bande (loin → à distance, ou à distance → contact). Depuis
         // « loin », il lui faut donc 2 tours pour arriver au contact.
         const advNpc = (result as any).advanced as { from: string; to: string };
-        const bandFrNpc = (b: string) => b === 'far' ? 'loin' : b === 'near' ? 'à distance' : 'au contact';
+        const bandFrNpc = (b: string) => b === 'far' ? tr.bandFar : b === 'near' ? tr.bandNear : tr.bandMelee;
         currentState = result.state;
         setCombatState(currentState);
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${npc.name} se rapproche (${bandFrNpc(advNpc.from)} → ${bandFrNpc(advNpc.to)}).]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.npcCloseDistance(npc.name, bandFrNpc(advNpc.from), bandFrNpc(advNpc.to))}]*` }]);
         if (dm && isConnected) {
           dm.sendSystemMessage(`[SYSTEM] ${npc.name} CLOSED THE DISTANCE (${advNpc.from} → ${advNpc.to}) instead of striking — that consumed its turn. Narrate the advance in one short beat and ALWAYS state the new distance.`);
         }
@@ -636,7 +678,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         const line = res.reaction === 'uncanny_dodge'
           ? tr.reactionUncanny
           : tr.reactionDeflect(res.reactionAmount || 0);
-        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌀 ${line}${res.reaction === 'deflect_missiles' && res.damage === 0 ? ' — projectile ATTRAPÉ !' : ''}]*` }]);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🌀 ${line}${res.reaction === 'deflect_missiles' && res.damage === 0 ? tr.npcMissileCaught : ''}]*` }]);
         pushCombatRoll({ name: line, total: res.damage, formula: res.reaction, isDM: false });
         if (dm && isConnected) {
           dm.sendSystemMessage(`[SYSTEM] The player's ${res.reaction === 'uncanny_dodge' ? 'UNCANNY DODGE halved the blow' : `DEFLECT MISSILES turned aside ${res.reactionAmount} damage${res.damage === 0 ? ' — they CAUGHT the projectile' : ''}`} (reaction, already resolved). Weave it into the narration.`);
@@ -721,14 +763,14 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
               syncCharacterCritical(concentration.character, 'hp');
               setTranscript(prev => [...prev, {
                 speaker: 'dm',
-                text: `*[SYSTEM: Concentration broken: ${concentration.removedEffects.map(e => e.name).join(', ')}]*`
+                text: `*[SYSTEM: ${tr.sysConcentrationBroken(concentration.removedEffects.map(e => e.name).join(', '))}]*`
               }]);
             } else if (struck.hp.current > 0 && concentration.prompt) {
               setActivePrompt(concentration.prompt);
               campaignEventLog.append('ROLL_REQUESTED', 'Concentration save requested after damage', concentration.prompt);
               setTranscript(prev => [...prev, {
                 speaker: 'dm',
-                text: `*[SYSTEM: Concentration save required, DC ${concentration.dc} after ${res.damage} damage]*`
+                text: `*[SYSTEM: ${tr.sysConcentrationSave(concentration.dc, res.damage)}]*`
               }]);
             }
           }
@@ -748,7 +790,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
 
     setTranscript(prev => [...prev, {
       speaker: 'dm',
-      text: `*[SYSTEM: Turn completed for ${npc.name}]*`
+      text: `*[SYSTEM: ${tr.sysTurnCompleted(npc.name)}]*`
     }]);
 
     // Reconcile the enemy-turn outcome onto the FRESHEST combat state, not the

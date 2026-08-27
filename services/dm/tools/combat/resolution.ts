@@ -418,7 +418,7 @@ export async function apply_damage(args: any, ctx: ToolContext) {
     // actually lands (calls below) — logging up-front showed a phantom roll
     // even when the target didn't exist and nothing was applied.
     const logDamage = (resolvedName: string) => {
-        store.pushCombatRoll({ name: `${resolvedName} : dégâts`, total: amount, formula: String(args.damageType || ''), isDM: true });
+        store.pushCombatRoll({ name: `${resolvedName} : ${sysLine('dégâts', 'damage')}`, total: amount, formula: String(args.damageType || ''), isDM: true });
         auditBus.publish('combat', `apply_damage → ${resolvedName}: ${amount} ${args.damageType || ''}`, { target: resolvedName, amount, damageType: args.damageType });
     };
      const isPlayerTarget = store.character && (

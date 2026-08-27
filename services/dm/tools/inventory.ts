@@ -13,7 +13,7 @@ import { stringArg, stringListArg } from './shared';
 import type { ToolContext } from './context';
 
 export async function add_inventory_item(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const itemName = String(args.name || '').trim();
     if (!itemName) return { success: false, error: 'Item name required' };
@@ -76,12 +76,12 @@ export async function add_inventory_item(args: any, ctx: ToolContext) {
     if (isMagic || getMagicItemByName(itemName)) {
         appendCampaignLog('loot', `Loot: ${qty > 1 ? `${qty}x ` : ''}${itemName}`);
     }
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Added ${qty}x ${itemName} to inventory]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysItemAdded(qty, itemName)}]*` }]);
     return { success: true, item: itemName, total: totalQty };
 }
 
 export async function remove_inventory_item(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store , sysText } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const itemName = String(args.name || '').trim();
     if (!itemName) return { success: false, error: 'Item name required' };
@@ -103,7 +103,7 @@ export async function remove_inventory_item(args: any, ctx: ToolContext) {
         removed = true;
         d.syncCharacterUpdate(char);
         campaignEventLog.append('ITEM_REMOVED', `Removed ${qty}x ${itemName}`, { name: itemName, quantity: qty });
-        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Removed up to ${Math.min(originalQty, qty)}x ${itemName} from inventory]*` }]);
+        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysItemRemoved(Math.min(originalQty, qty), itemName)}]*` }]);
     }
     // ou-m6 — échec EXPLIQUÉ : sans champ error, le MJ ne savait
     // pas si l'objet était introuvable ou mal orthographié.
@@ -120,7 +120,7 @@ export async function remove_inventory_item(args: any, ctx: ToolContext) {
 }
 
 export async function add_gold(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store, sysLine } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     // TP10 (contre-audit) — borner la magnitude comme l'XP (sanitizeXPGrant) :
     // un MJ hallucinant `amount: 1e9` créditait un milliard de po en un appel.
@@ -153,7 +153,7 @@ export async function add_gold(args: any, ctx: ToolContext) {
     if (Math.abs(delta) >= 25) {
         appendCampaignLog('gold', `Gold ${delta > 0 ? '+' : ''}${delta} gp${reason} (purse: ${after})`);
     }
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${delta > 0 ? '+' : ''}${delta} po${reason} — bourse : ${after} po]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysLine(`${delta > 0 ? '+' : ''}${delta} po${reason} — bourse : ${after} po`, `${delta > 0 ? '+' : ''}${delta} gp${reason} — purse: ${after} gp`)}]*` }]);
     return { success: true, gold: after, delta };
 }
 
@@ -227,7 +227,7 @@ export async function close_shop(_args: any, _ctx: ToolContext) {
 }
 
 export async function roll_loot(args: any, ctx: ToolContext) {
-    const { d, store } = ctx;
+    const { d, store, sysLine } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
     const rarityHint = stringArg(args.rarityHint, 30).toLowerCase() as MagicItemRarity;
     const validRarities: MagicItemRarity[] = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
@@ -255,7 +255,7 @@ export async function roll_loot(args: any, ctx: ToolContext) {
     char.inventory = nextInventory;
     d.syncCharacterUpdate(char);
     campaignEventLog.append('ITEM_ADDED', `Loot rolled: ${awarded.map(a => a.name).join(', ')}`, { context: stringArg(args.context, 160), awarded });
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Loot — ${awarded.map(a => `${a.name} (${a.rarity})`).join(', ')} added to inventory]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysLine('Butin', 'Loot')} — ${awarded.map(a => `${a.name} (${a.rarity})`).join(', ')} ${sysLine("ajouté à l'inventaire", 'added to inventory')}]*` }]);
     return {
         success: true,
         loot: awarded,

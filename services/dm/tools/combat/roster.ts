@@ -13,12 +13,12 @@ import { assessEncounterPressure, buildEncounter, lookupSpell } from '../../../.
 import { BESTIARY, getCreature, suggestCreatures } from '../../../../data/bestiary';
 import { effectivePartySize } from '../../../../engine/partyWeight';
 import { pickSpecimen } from '../../../../engine/monsterPick';
-import { syncCompanionsFromState, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
+import { syncCompanionsFromState, resolveMountAfterCombat, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
 
 export async function start_combat(_args: any, ctx: ToolContext) {
-    const { d, store, logNewPlayerInitiative, scheduleCombatImageOnce } = ctx;
+    const { d, store, logNewPlayerInitiative, scheduleCombatImageOnce , sysText } = ctx;
     const character = store.character;
     if (!character) return { success: false, error: 'No character loaded' };
     // GARDE PAR ÉTAT (audit 2026-08-24, B4). Trace du 23/08 à
@@ -40,14 +40,14 @@ export async function start_combat(_args: any, ctx: ToolContext) {
     store.setCombatState(state);
     store.clearCombatRolls();
     campaignEventLog.append('ENCOUNTER_STARTED', 'Combat started', state);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat Started]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysCombatStart}]*` }]);
      logNewPlayerInitiative(false, character, state);
      if (d.musicDirector) d.musicDirector.handleMusicTag('combat');
     scheduleCombatImageOnce('hostile forces', store.journal.locations?.slice(-1)?.[0]?.name || 'current battlefield');
     return { success: true };
 }
 export async function end_combat(args: any, ctx: ToolContext) {
-    const { d, store, sysLine, scenePromptOptions, scheduleSceneImage } = ctx;
+    const { d, store, sysLine, scenePromptOptions, scheduleSceneImage , sysText } = ctx;
     // Idempotency guard: maybeEndCombat (GameSession) may have already
     // auto-resolved victory + granted XP. If combat is no longer active,
     // narrate but do NOT grant XP again (was a double-grant / level-up dupe).
@@ -75,8 +75,20 @@ export async function end_combat(args: any, ctx: ToolContext) {
     {
         const freshChar = useGameStore.getState().character;
         if (freshChar) {
-            const synced = syncCompanionsFromState(freshChar, rosterAtEnd);
+            // Monture tombée : MÊME règle que la fin de combat côté écran. Cette
+            // porte-ci (fin narrée par le MJ : fuite, reddition, négociation) ne
+            // l'appliquait pas — la monture morte restait sur la fiche à 0 PV,
+            // sans un mot, et repartait guérie au premier repos long.
+            const mountOutcome = resolveMountAfterCombat(syncCompanionsFromState(freshChar, rosterAtEnd));
+            const synced = mountOutcome.character;
             if (synced !== freshChar) d.syncCharacterUpdate(synced);
+            if (mountOutcome.fallen) {
+                const { name, celestial } = mountOutcome.fallen;
+                store.setTranscript(prev => [...prev, { speaker: 'dm', text: celestial
+                    ? `*[SYSTEM: ✨ ${sysText().sysCelestialSteedGone(name)}]*`
+                    : `*[SYSTEM: 🐴 ${sysText().sysMountFallen(name)}]*` }]);
+                campaignEventLog.append('JOURNAL_UPDATED', `Mount ${celestial ? 'returned to the planes' : 'killed'}: ${name}`, mountOutcome.fallen);
+            }
         }
     }
     campaignEventLog.append('ENCOUNTER_ENDED', `Combat ended. Awarded ${xpAwarded} XP`, { xpAwarded, enemyNames });
@@ -99,7 +111,7 @@ export async function end_combat(args: any, ctx: ToolContext) {
             departed: describeDeparted(departedAtEnd) || undefined,
         }));
     } catch { /* la chronique ne casse jamais la fin de combat */ }
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Combat Ended. Awarded ${xpAwarded} XP]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysCombatEnd(xpAwarded)}]*` }]);
     if (d.musicDirector) d.musicDirector.handleMusicTag('exploration');
     // Aftermath image: illustrate the resolution of the battle —
     // « fallen foes » seulement s'il en reste ; des fuyards, ça se
@@ -117,7 +129,7 @@ export async function end_combat(args: any, ctx: ToolContext) {
     return { success: true, xpAwarded };
 }
 export async function add_enemy_init(args: any, ctx: ToolContext) {
-    const { store, name, logInitiativeRoll, logNewPlayerInitiative, scheduleCombatImageOnce } = ctx;
+    const { store, name, logInitiativeRoll, logNewPlayerInitiative, scheduleCombatImageOnce , sysText } = ctx;
     // État FRAIS : un handler précédent encore en vol (dés 4 s, jet
     // retenu 90 s) peut avoir modifié le combat depuis le snapshot.
     const live = useGameStore.getState();
@@ -205,7 +217,7 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
         : added;
     store.setCombatState(state);
     campaignEventLog.append('COMBATANT_ADDED', `Added ${combatant.name} to initiative${returning ? ' (back after having ' + returning.reason + ')' : ''}`, combatant);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Added ${combatant.name} to Initiative (HP: ${combatant.hp.current}, AC: ${combatant.ac})]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysInitiativeAdded(combatant.name, combatant.hp.current, combatant.ac)}]*` }]);
      logNewPlayerInitiative(hadPlayerBefore, character, state);
      // Log enemy initiative to DiceTray
     const creature = getCreature(combatant.name);
@@ -416,7 +428,7 @@ export async function propose_player_action(args: any, ctx: ToolContext) {
     return { success: true, proposed: label, instruction: 'Action card shown to the player. Briefly narrate the set-up, then wait — the player will trigger it and you will get a [SYSTEM] result to narrate.' };
 }
 export async function grant_player_action(args: any, ctx: ToolContext) {
-    const { store } = ctx;
+    const { store, sysLine } = ctx;
     // Add an extra action pip to the player's HUD for this turn
     // (Action Surge / Haste / a rewarded heroic surge). Resets next turn.
     if (!store.combatState.isActive) return { success: false, error: 'No active combat' };
@@ -435,12 +447,12 @@ export async function grant_player_action(args: any, ctx: ToolContext) {
         return { ...prev, actionEconomy: { ...(prev.actionEconomy || {}), player: next } };
     });
     const label = kind === 'action' ? `${count} action${count > 1 ? 's' : ''} principale${count > 1 ? 's' : ''}` : `${count} action${count > 1 ? 's' : ''} bonus`;
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ +${label} accordée${count > 1 ? 's' : ''} ce tour${args.reason ? ` (${stringArg(args.reason, 60)})` : ''}]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚡ +${label} ${sysLine(`accordée${count > 1 ? 's' : ''} ce tour`, 'granted this turn')}${args.reason ? ` (${stringArg(args.reason, 60)})` : ''}]*` }]);
     campaignEventLog.append('EFFECT_ADDED', `Granted player ${kind} x${count}`, { kind, count, reason: args.reason });
     return { success: true, kind, count };
 }
 export async function build_encounter(args: any, ctx: ToolContext) {
-    const { d, store, scheduleCombatImageOnce, optionalBoolean } = ctx;
+    const { d, store, scheduleCombatImageOnce, optionalBoolean , sysText } = ctx;
     const character = store.character;
     // La taille du groupe est CALCULÉE (héros + alliés pondérés par CR), pas
     // déclarée par le MJ : compagnons persistants et alliés déjà en combat.
@@ -478,7 +490,7 @@ export async function build_encounter(args: any, ctx: ToolContext) {
         if (d.musicDirector) d.musicDirector.handleMusicTag('combat');
         const mainEnemy = encounter.monsters[0]?.name || 'hostile forces';
         scheduleCombatImageOnce(mainEnemy, store.journal.locations?.slice(-1)?.[0]?.name || 'current battlefield');
-        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Encounter started from Codex: ${encounter.monsters.map(m => m.name).join(', ')}]*` }]);
+        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysEncounterFromCodex(encounter.monsters.map(m => m.name).join(', '))}]*` }]);
     }
      campaignEventLog.append('ENCOUNTER_STARTED', 'Encounter built from SRD Codex and current bestiary', encounter);
     return { success: true, encounter };

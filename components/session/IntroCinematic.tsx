@@ -6,6 +6,7 @@ import { lyriaMusicService } from '../../services/media/lyriaMusic';
 import { portraitService, npcPortraitKey, portraitPrompt } from '../../services/media/portraitService';
 import { log } from '../../services/infra/logger';
 import { INTRO_CINEMATIC_TEXTS as TRANS } from './texts';
+import { dispRace, dispClass } from '../../data/labels';
 
 interface Props {
   character: CharacterSheet;
@@ -141,7 +142,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
         <div className="w-full px-5 pb-8 md:px-12 md:pb-12">
           <div className="max-w-4xl">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
-              {character.name || tr.hero} / {character.race} {character.class}
+              {character.name || tr.hero} / {dispRace(character.race, language === 'fr' ? 'fr' : 'en')} {dispClass(character.class, language === 'fr' ? 'fr' : 'en')}
             </p>
             <h1 className="font-fantasy text-3xl font-black leading-tight text-white drop-shadow-2xl md:text-6xl">
               {title}

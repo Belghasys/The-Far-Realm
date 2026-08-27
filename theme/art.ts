@@ -43,6 +43,11 @@ export const RACE_ART: Record<string, ArtEntry> = {
     Dragonborn: { slug: 'races/dragonborn', tint: T.pink },
 };
 
+/** Planche de race selon le SEXE (2026-08-27) : races/<race>-male|female,
+ *  toutes en 9:16. Une fiche sans sexe (d'avant le champ) prend l'homme. */
+export const raceArtSlug = (race: string, gender?: string): string =>
+    `${RACE_ART[race]?.slug || 'races/human'}-${gender === 'female' ? 'female' : 'male'}`;
+
 
 /**
  * Historiques — les dix cles de data/backgrounds.ts.
@@ -84,6 +89,45 @@ export const STYLE_ART: Record<string, ArtEntry> = {
     'Great Weapon Fighting': { slug: 'styles/great-weapon-fighting', tint: T.pink },
     Protection: { slug: 'styles/protection', tint: T.acid },
     'Two-Weapon Fighting': { slug: 'styles/two-weapon-fighting', tint: T.acid },
+};
+
+/**
+ * Divinités — les clés sont les `name` de data/deities.ts (ce qui voyage dans
+ * la sauvegarde). Paysage 16:9 comme les historiques : un dieu est une scène,
+ * pas un portrait. « Aucune » et Tymora n'ont pas de planche : la vignette
+ * se retire d'elle-même, sans cadre vide.
+ *
+ * Teintes échantillonnées dans l'aplat dominant de chaque planche (mesure de
+ * teinte, cf. BACKGROUND_ART) ; parchemin pour les deux planches sans couleur
+ * saturée (Kelemvor, Myrkul — des dieux des morts, ça se défend).
+ */
+export const DEITY_ART: Record<string, ArtEntry> = {
+    'Selûne': { slug: 'deities/selune', tint: T.azure },
+    Bahamut: { slug: 'deities/bahamut', tint: T.azure },
+    Tempus: { slug: 'deities/tempus', tint: T.pink },
+    Tyr: { slug: 'deities/tyr', tint: T.acid },
+    Helm: { slug: 'deities/helm', tint: T.acid },
+    Ilmater: { slug: 'deities/ilmater', tint: T.pink },
+    Mystra: { slug: 'deities/mystra', tint: T.purple },
+    Oghma: { slug: 'deities/oghma', tint: T.acid },
+    Kelemvor: { slug: 'deities/kelemvor', tint: T.paper },
+    Moradin: { slug: 'deities/moradin', tint: T.acid },
+    'Corellon Larethian': { slug: 'deities/corellon', tint: T.purple },
+    'Garl Glittergold': { slug: 'deities/garl-glittergold', tint: T.acid },
+    Yondalla: { slug: 'deities/yondalla', tint: T.emerald },
+    Lolth: { slug: 'deities/lolth', tint: T.purple },
+    Gruumsh: { slug: 'deities/gruumsh', tint: T.pink },
+    Tiamat: { slug: 'deities/tiamat', tint: T.purple },
+    Eilistraee: { slug: 'deities/eilistraee', tint: T.azure },
+    Lathander: { slug: 'deities/lathander', tint: T.acid },
+    Talos: { slug: 'deities/talos', tint: T.azure },
+    Mielikki: { slug: 'deities/mielikki', tint: T.emerald },
+    Bane: { slug: 'deities/bane', tint: T.pink },
+    Bhaal: { slug: 'deities/bhaal', tint: T.pink },
+    Laduguer: { slug: 'deities/laduguer', tint: T.emerald },
+    Myrkul: { slug: 'deities/myrkul', tint: T.paper },
+    Shar: { slug: 'deities/shar', tint: T.purple },
+    Vlaakith: { slug: 'deities/vlaakith', tint: T.cyan },
 };
 
 /** Bandeaux d'ambiance, et la couverture du jeu. */
@@ -190,3 +234,15 @@ export const coverArt = (id: string) => COVER_ART[id] || COVER_IMPROVISED;
  */
 export const WALL_COUNT = 53;
 export const wallSlug = (i: number) => `wall/w${String(i).padStart(2, '0')}`;
+
+/**
+ * Version des planches (2026-08-27). Firebase sert /art avec un cache d'une
+ * heure et le navigateur garde l'ancienne image sous la même URL : les cartes
+ * de classe refaites en 9:16 ne s'affichaient pas pour qui avait déjà visité.
+ * Toute URL d'image passe par ici ; incrémenter la version à chaque refonte
+ * des planches force le rechargement partout, et firebase.json peut alors
+ * servir /art en cache long sans risque.
+ */
+export const ART_VERSION = '9b79aaf656';
+export const artUrl = (slug: string, suffix: '' | '@2x' = ''): string => `/art/${slug}${suffix}.webp?v=${ART_VERSION}`;
+export const artSrcSet = (slug: string): string => `${artUrl(slug)} 1x, ${artUrl(slug, '@2x')} 2x`;

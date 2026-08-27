@@ -62,6 +62,7 @@ vi.mock('../../store/settingsStore', () => ({
 
 import { LobbyView } from '../../views/LobbyView';
 import { ADVENTURES } from '../../data/adventures';
+import { artUrl } from '../../theme/art';
 
 const b = H.boutique;
 const boutonCreer = () => screen.getByRole('button', { name: /Cr(é|e)er/i });
@@ -126,8 +127,8 @@ describe('LobbyView — contrat à préserver pendant la refonte', () => {
 
         // Les deux en-têtes de famille : la plume pour l'écrit, les dés jetés
         // dans la nébuleuse pour l'improvisé.
-        expect(sources).toContain('/art/covers/_custom.webp');
-        expect(sources).toContain('/art/covers/_improvised.webp');
+        expect(sources).toContain(artUrl('covers/_custom'));
+        expect(sources).toContain(artUrl('covers/_improvised'));
 
         // Et une couverture propre par campagne — aucune ne doit retomber sur
         // le repli, sinon deux aventures se ressemblent dans la grille.

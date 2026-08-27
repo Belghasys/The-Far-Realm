@@ -71,6 +71,15 @@ export type InventoryItem = Item;
 export interface Feature {
   name: string;
   description: string;
+  /**
+   * Miroir d'AFFICHAGE bilingue (2026-08-27). `name` (anglais, canonique — le
+   * moteur s'y accroche) et `description` (français) restent la DONNÉE : ils
+   * sont recopiés dans character.features et partent au MJ. Ces deux champs-là
+   * ne servent qu'à l'écran, via featureName / featureDesc (data/labels.ts).
+   * Absents = on retombe sur la donnée, ce qui reste lisible.
+   */
+  nameFr?: string;
+  descriptionEn?: string;
 }
 
 export interface Weapon {
@@ -237,6 +246,9 @@ export interface MountSheet {
    *  montée (loin → contact + frappe) exige d'être en selle : posséder une
    *  monture ne suffit pas. Bascule via l'UI compagnons ou l'outil set_mounted. */
   mounted?: boolean;
+  /** Le MJ a posé les PV à la main (set_mount hp:…) : ce maximum est une
+   *  décision, la synchro ne le remplace jamais par celui du catalogue. */
+  customHp?: boolean;
   description?: string;
   acquiredAt: number;
 }
@@ -255,6 +267,10 @@ export interface FamiliarSheet {
 export interface CharacterSheet {
   name: string;
   race: string;
+  /** Sexe du héros (2026-08-27). Verrouillé en tête de l'Apparence envoyée au
+   *  MJ et au portrait ; choisit la planche de race et le cri de douleur.
+   *  Absent = fiche d'avant le champ, traitée comme un homme. */
+  gender?: 'male' | 'female';
   class: string;
   /** Archetype/subclass (Hunter, Champion, Life Domain…) — chosen at the class's
    *  subclass level via the level-up modal or the character sheet. */

@@ -109,6 +109,8 @@ const CombatantRow: React.FC<{
     playerStoryModifiers?: any[];
     isSelectedTarget?: boolean;
     onClick?: () => void;
+    /** Monture EN SELLE : elle n'a pas de tour propre, le tracker le dit. */
+    ridden?: boolean;
     tr: Tr;
 }> = ({
     combatant,
@@ -121,6 +123,7 @@ const CombatantRow: React.FC<{
     playerStoryModifiers,
     isSelectedTarget,
     onClick,
+    ridden,
     tr,
 }) => {
     const percent = hpPercent(combatant);
@@ -207,6 +210,7 @@ const CombatantRow: React.FC<{
                                 <span title={displayName} className={`line-clamp-2 break-words text-sm font-black uppercase leading-4 ${isTurn ? 'text-amber-200' : 'text-white/85'}`}>
                                     {displayName}
                                 </span>
+                                {ridden && <span className="block text-[10px] font-semibold normal-case text-emerald-300/80">{tr.riddenMount}</span>}
                                 {isSelectedTarget && (
                                     <span className="shrink-0 inline-flex items-center gap-0.5 rounded bg-red-500/20 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-400 animate-pulse">
                                         {tr.target}
@@ -351,6 +355,7 @@ export function CombatTracker({
     // crash when isActive toggled.)
     const combatRolls = useGameStore(s => s.combatRolls);
     const language = useGameStore(s => s.language);
+    const heroMount = useGameStore(s => s.character?.mount);
     const tr = TRANS[language];
 
     if (!isActive || !combatants.length) return null;
@@ -441,6 +446,7 @@ export function CombatTracker({
                             onToggleAction={onToggleAction}
                             playerStoryModifiers={playerStoryModifiers}
                             isSelectedTarget={selectedTargetId === combatant.id}
+                            ridden={combatant.id === 'mount' && !!heroMount && heroMount.mounted !== false && combatant.hp.current > 0}
                             onClick={() => {
                                 if (combatant.hp.current > 0 && onSelectTarget) {
                                     onSelectTarget(combatant.id);

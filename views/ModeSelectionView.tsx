@@ -26,7 +26,7 @@ import { NeonCard } from '../components/neon/NeonButton';
 import { AlterEgoFrame } from '../components/neon/AlterEgoFrame';
 import { CollageWall } from '../components/neon/CollageWall';
 import { TavernPlayer, TavernLink } from '../components/neon/TavernPlayer';
-import { CLASS_ART, ALTER_ART, ALTER_CAPTION, BANNER } from '../theme/art';
+import { CLASS_ART, ALTER_ART, ALTER_CAPTION, BANNER, artUrl, artSrcSet } from '../theme/art';
 import { dispClass } from '../data/labels';
 import { CLASS_DATA } from '../data';
 
@@ -171,7 +171,6 @@ export function ModeSelectionView() {
                     caption={ALTER_CAPTION[cle][lang]}
                     hint={t.flipHint}
                     width={172}
-                    height={230}
                 />
             ))}
         </div>
@@ -327,8 +326,8 @@ export function ModeSelectionView() {
                             opacity: .9, pointerEvents: 'none', zIndex: 0,
                         }} />
                         <img
-                            src={`/art/${BANNER.party}.webp`}
-                            srcSet={`/art/${BANNER.party}.webp 1x, /art/${BANNER.party}@2x.webp 2x`}
+                            src={artUrl(BANNER.party)}
+                            srcSet={artSrcSet(BANNER.party)}
                             alt=""
                             style={{
                                 position: 'relative', zIndex: 1,

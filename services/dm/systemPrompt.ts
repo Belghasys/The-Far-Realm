@@ -10,6 +10,7 @@ import { passivePerception, SKILL_ABILITIES } from '../../engine/skillSystem';
 import { CLASS_DATA } from '../../data/classes';
 import { RACE_DATA } from '../../data/races';
 import { getFeatById } from '../../data/feats';
+import { identityLineEn } from '../../data/labels';
 
 interface SystemPromptContext {
   character: CharacterSheet;
@@ -80,7 +81,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
     if (lvl >= 6) kit.push('Aura of Protection: the engine already adds +CHA (min +1) to the hero\'s saving throws.');
     if (lvl >= 11) kit.push('Improved Divine Smite: every melee weapon hit already deals +1d8 radiant (engine).');
     kit.push('Divine Smite / Divine Sense / oath Channel Divinity are BUTTONS the player clicks — narrate the [SYSTEM] reports, never re-resolve.');
-    if (sub === 'Cavalier') kit.push('Cavalier: bonded mount has +level HP; a mounted charge (melee attack on a FAR foe) auto-adds +1d8; the Cavalier Challenge locks an enemy\'s target onto the paladin.');
+    if (sub === 'Cavalier') kit.push(`Cavalier: bonded mount has +level HP; a mounted charge (melee attack on a FAR foe) auto-adds ${lvl >= 15 ? '+2d8 (Unstoppable Charge)' : '+1d8'}; the Cavalier Challenge locks an enemy's target onto the paladin.`);
   }
   if (cls === 'Barbarian') {
     if (lvl >= 2) kit.push('Danger Sense: DEX saves auto-roll with advantage. Reckless Attack is a button.');
@@ -223,7 +224,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       - Weapon: ${describeWeapon(character.weapon) || 'Unarmed — 1d4 bludgeoning · MELEE (reach 5 ft)'}
       - Equipped weapons: ${equippedWeaponLines.length ? `\n        ${equippedWeaponLines.join('\n        ')}` : 'none besides the above'}
       - NEVER narrate a RANGED weapon as a melee strike: with a bow or crossbow the hero looses from a distance — describe the range, the arc, the ammunition. At arm's reach the shot is awkward (the engine already applies disadvantage); never turn the bow into a club.
-      - Appearance: ${compact(profile.appearance, 260) || 'Not specified'}
+      - Appearance: ${identityLineEn(character)}. ${compact(profile.appearance, 260) || 'Not specified'}
       - Personality: ${compact(profile.personality, 220) || 'Not specified'}
       - Desire: ${compact(profile.desire, 220) || 'Not specified'}
       - Fear/Wound/Bond: ${[profile.fear, profile.wound, profile.bond].filter(Boolean).map(item => compact(item, 140)).join(' | ') || 'Not specified'}
@@ -266,7 +267,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       ## ALLIES & COMPANIONS
       - add_ally_init(name, template) for a rescued NPC or a summon that fights ONE combat; recruit_companion(name, template, description) when an NPC DURABLY joins the party (max 2 — auto-joins every fight, HP persists, rests heal; dismiss_companion when they leave or die). Stats ALWAYS come from the bestiary template (commoner, guard, acolyte, veteran, knight, mage, wolf…), never from you; an ally weighs in the encounter budget by its CR, so a rescued baker makes nothing safer — protect them. Play companions as living characters with a voice.
       - The engine plays EVERY allied turn — companions, the beast, the mount, spawned allies — and reports "[SYSTEM] Ally X attacked…": narrate it in one beat, never re-roll it.
-      - Mounts: set_mount(kind, name) when the hero acquires one (typed kinds are listed in the tool); set_mounted(true/false) whenever the fiction has them mount up or dismount — only in the saddle does a melee attack on a far foe become a charge. A paladin of level 5+ can summon a celestial steed (kind "destrier_celeste") — offer that ritual moment. dismiss_mount when it is sold or stabled; flying mounts are rare late-game prizes.
+      - Mounts: set_mount(kind, name) when the hero acquires one (typed kinds are listed in the tool; a hero who already has a mount must dismiss_mount first, or the call needs replace:true); set_mounted(true/false) whenever the fiction has them mount up or dismount — only in the saddle does a melee attack on a far foe become a charge. A RIDDEN mount does NOT fight on its own: it carries the rider and takes no turn of its own; on foot it is an autonomous ally again. A FLYING mount (griffon, pegasus) keeps the pair airborne — ground melee attackers strike upward at disadvantage against both rider and mount, and difficult terrain no longer slows travel; narrate that height. A mount that drops to 0 HP is DEAD and gone and the rider is dismounted — only the celestial steed comes back, at the next long rest. A paladin of level 5+ can summon a celestial steed (kind "destrier_celeste") — offer that ritual moment. dismiss_mount when it is sold or stabled; flying mounts are rare late-game prizes.
       - A Beast Master ranger picks their beast with set_beast_companion(kind) — ask which; a caster bonds a familiar with set_familiar(kind, name) when they learn Find Familiar or during a mystical encounter — it scouts, warns and amuses, and its "Familiar: Help" button is narrated from the report.
 
       ## ADJUDICATION — GENEROUS, VISIBLE, FAIL FORWARD (CRITICAL)

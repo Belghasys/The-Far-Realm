@@ -10,7 +10,7 @@ import { findQuestByTitle, foldTitle, questCreationBlockedBy } from '../../../en
 import type { ToolContext } from './context';
 
 export async function add_quest(args: any, ctx: ToolContext) {
-    const { store, syncJournal, optionalBoolean } = ctx;
+    const { store, syncJournal, optionalBoolean , sysText } = ctx;
     // ou-m5 — titre requis : une quête « » polluait le journal.
     const questTitle = stringArg(args.title, 160);
     if (!questTitle) return { success: false, error: 'add_quest requires a non-empty title' };
@@ -73,7 +73,7 @@ export async function add_quest(args: any, ctx: ToolContext) {
     }), true);
     campaignEventLog.append('JOURNAL_UPDATED', `Quest added: ${questTitle}`, args);
     appendCampaignLog('quest', `Quest accepted: "${questTitle}"`);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Quest Added: ${questTitle}]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysQuestAdded(questTitle)}]*` }]);
     return { success: true, steps: questSteps.map(s => s.text) };
 }
 
@@ -120,7 +120,7 @@ export async function update_quest_step(args: any, ctx: ToolContext) {
 }
 
 export async function complete_quest(args: any, ctx: ToolContext) {
-    const { store, syncJournal } = ctx;
+    const { store, syncJournal , sysText } = ctx;
     const questTitle = String(args.title || '').trim();
     if (!questTitle) return { success: false, error: 'complete_quest requires a title' };
     // TR8/TP9 (audit trame) — match foldText tolérant (accents,
@@ -142,7 +142,7 @@ export async function complete_quest(args: any, ctx: ToolContext) {
     if (found) {
         campaignEventLog.append('JOURNAL_UPDATED', `Quest completed: ${completedTitle}`, args);
         appendCampaignLog('quest', `Quest COMPLETED: "${completedTitle}"`);
-        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Quest Completed: ${completedTitle}]*` }]);
+        store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysQuestCompleted(completedTitle)}]*` }]);
         return { success: true, quest: completedTitle };
     }
     const activeTitles = (useGameStore.getState().journal.quests || [])
@@ -229,7 +229,7 @@ export async function update_npc(args: any, ctx: ToolContext) {
 }
 
 export async function add_location(args: any, ctx: ToolContext) {
-    const { store, syncJournal } = ctx;
+    const { store, syncJournal , sysText } = ctx;
     // ou-m5 — nom requis + DÉDUP insensible aux accents (comme
     // add_npc) : répéter la même taverne créait des doublons.
     const locName = stringArg(args.name, 160);
@@ -251,7 +251,7 @@ export async function add_location(args: any, ctx: ToolContext) {
             }]
     }), true);
     campaignEventLog.append('JOURNAL_UPDATED', `Location discovered: ${locName}`, args);
-    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: Location ${existingLoc ? 'Updated' : 'Discovered'}: ${locName}]*` }]);
+    store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysLocationFound(locName, Boolean(existingLoc))}]*` }]);
     return { success: true, updated: Boolean(existingLoc) };
 }
 

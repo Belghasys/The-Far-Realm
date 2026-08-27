@@ -201,6 +201,25 @@ export function lookupSpell(name: string): SpellEntry | null {
     return exactThenFuzzy(SRD51_SPELLS, name, (spell, n) => textIncludes(spell, n));
 }
 
+/**
+ * Nom AFFICHABLE d'un sort (2026-08-27).
+ *
+ * Le SRD est anglais et c'est le nom canonique qui voyage partout : dans
+ * character.cantrips / knownSpells, dans les outils du MJ, dans le moteur. La
+ * traduction française vit dans `aliases[0]` (les 114 sorts en ont une). Les
+ * écrans affichaient donc « Fire Bolt » au milieu d'une interface française.
+ *
+ * On accepte une chaîne (le nom stocké) ou l'entrée déjà résolue, pour éviter
+ * une recherche floue quand l'appelant l'a en main.
+ */
+export function spellLabel(spell: SpellEntry | string | null | undefined, lang: 'en' | 'fr'): string {
+    const entry = typeof spell === 'string' ? lookupSpell(spell) : spell;
+    const fallback = typeof spell === 'string' ? spell : (spell?.name || '');
+    if (!entry) return fallback;
+    if (lang === 'fr') return entry.aliases?.[0] || entry.name;
+    return entry.name;
+}
+
 /** Sort de ZONE ? Détecté sur les champs structurés (target/mechanics) : cône,
  *  rayon, cube, ligne, sphère, « each creature », marqueur 'Area spell.'. Sert
  *  au panneau de combat pour ne proposer « tous les ennemis » que sur les

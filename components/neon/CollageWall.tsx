@@ -24,7 +24,7 @@
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { T, DISP, BODY, onTint } from '../../theme/tokens';
-import { WALL_COUNT, wallSlug } from '../../theme/art';
+import { WALL_COUNT, wallSlug, artUrl } from '../../theme/art';
 
 const TAILLE = 10;
 
@@ -164,7 +164,7 @@ export function CollageWall({
                             }}
                         >
                             <img
-                                src={`/art/${wallSlug(indice)}.webp`}
+                                src={artUrl(wallSlug(indice))}
                                 alt=""
                                 loading="lazy"
                                 style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
@@ -187,7 +187,7 @@ export function CollageWall({
                     }}
                 >
                     <img
-                        src={`/art/${wallSlug(agrandi)}@2x.webp`}
+                        src={artUrl(wallSlug(agrandi), '@2x')}
                         alt=""
                         style={{
                             display: 'block', maxWidth: '100%', maxHeight: '84vh', objectFit: 'contain',

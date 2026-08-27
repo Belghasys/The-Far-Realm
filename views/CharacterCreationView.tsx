@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CharacterSheetUI } from '../components/hall/CharacterSheet';
 import { useGameStore } from '../store/gameStore';
@@ -10,6 +10,7 @@ import { AdventureManifest, CharacterSheet, DEFAULT_CAMPAIGN_RUNTIME } from '../
 import { ensureProgressionState } from '../engine/rulesEngine';
 import { getAdventureById } from '../data/adventures';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
+import { LoadingVideo, preloadLoadingVideo, prefersReducedMotion } from '../components/shared/LoadingVideo';
 import { T, DISP, BODY } from '../theme/tokens';
 import { Panneau, Titre } from '../components/neon/SheetKit';
 import { NeonButton } from '../components/neon/NeonButton';
@@ -46,6 +47,25 @@ export function CharacterCreationView() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationStep, setGenerationStep] = useState('');
     const [generationError, setGenerationError] = useState<string | null>(null);
+    // La vidéo d'attente : on ne bascule en session qu'une fois qu'elle est
+    // finie (ou passée) ET que le manifeste est prêt — sinon le joueur la
+    // verrait coupée net au milieu.
+    const [videoDone, setVideoDone] = useState(false);
+    const videoDoneRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
+
+    useEffect(() => { preloadLoadingVideo(); }, []);
+
+    const beginVideo = () => {
+        let resolve: () => void = () => undefined;
+        const promise = new Promise<void>(r => { resolve = r; });
+        videoDoneRef.current = { promise, resolve };
+        if (prefersReducedMotion()) { resolve(); setVideoDone(true); }
+        else setVideoDone(false);
+    };
+    const finishVideo = () => {
+        videoDoneRef.current?.resolve();
+        setVideoDone(true);
+    };
 
     const startAdventure = async (char: CharacterSheet) => {
         const readyCharacter = ensureProgressionState({
@@ -65,6 +85,7 @@ export function CharacterCreationView() {
         setSelectedAdventure(adventureId);
         setCampaignRuntime(DEFAULT_CAMPAIGN_RUNTIME);
         setCharacter(readyCharacter);
+        beginVideo();
         setIsGenerating(true);
 
         const adventureInfo = getAdventureById(adventureId);
@@ -164,6 +185,7 @@ export function CharacterCreationView() {
             console.error('Failed to create adventure save:', e);
         }
 
+        await videoDoneRef.current?.promise;
         setIsGenerating(false);
         navigate('/session');
     };
@@ -184,6 +206,9 @@ export function CharacterCreationView() {
                 display: 'grid', placeItems: 'center', padding: 'clamp(16px, 4vw, 40px)',
             }}>
                 <style>{FORGE_CSS}</style>
+                {!generationError && !videoDone && (
+                    <LoadingVideo onDone={finishVideo} skipLabel={tr.skipVideo} />
+                )}
                 <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 20 }}><MenuMusicToggle /></div>
 
                 <div style={{ width: '100%', maxWidth: 620 }}>
