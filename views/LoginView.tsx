@@ -90,7 +90,7 @@ export function LoginView() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
+        <div className="vh-full" style={{ background: T.void, color: T.paper, fontFamily: BODY }}>
 
             <header style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',

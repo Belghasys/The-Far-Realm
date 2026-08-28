@@ -3,7 +3,9 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- viewport-fit=cover : la page s'étend sous l'encoche et la barre d'accueil,
+       et les barres fixes se recalent avec env(safe-area-inset-*). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -17,6 +19,14 @@
 
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png" />
+
+  <!-- « Ajouter à l'écran d'accueil » : plein écran sans barre d'URL — la
+       moitié du problème 100vh mobile disparaît pour qui l'utilise. -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#14023C" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
   <meta property="og:title" content="The Last Basement" />
   <meta property="og:description"

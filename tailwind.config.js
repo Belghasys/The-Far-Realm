@@ -114,6 +114,11 @@ export default {
             none: 'none',
         },
         extend: {
+            screens: {
+                // Téléphone en paysage : ~360-430 px de HAUTEUR. Le paysage se
+                // règle à la hauteur, pas à la largeur — un `md:` y ment.
+                short: { raw: '(max-height: 500px)' },
+            },
             fontFamily: {
                 fantasy: ['Bungee', 'Impact', 'Arial Black', 'sans-serif'],
                 rpg: BODY,

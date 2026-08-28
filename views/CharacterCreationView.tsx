@@ -201,8 +201,8 @@ export function CharacterCreationView() {
          * le jeu ne bascule sur sa table medievale.
          */
         return (
-            <div style={{
-                minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY,
+            <div className="vh-full" style={{
+                background: T.void, color: T.paper, fontFamily: BODY,
                 display: 'grid', placeItems: 'center', padding: 'clamp(16px, 4vw, 40px)',
             }}>
                 <style>{FORGE_CSS}</style>
@@ -270,7 +270,7 @@ export function CharacterCreationView() {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
+        <div className="vh-full" style={{ background: T.void, color: T.paper, fontFamily: BODY }}>
             {/* La charte du hall va maintenant jusqu'au bout : la fiche de
                 création est peinte comme le menu, cartes illustrées comprises.
                 La bascule vers le parchemin et l'or n'a lieu qu'au premier

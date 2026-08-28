@@ -48,8 +48,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         if (this.state.hasError) {
             const tr = TRANS[useGameStore.getState().language] || TRANS.en;
             return (
-                <div style={{
-                    minHeight: '100vh',
+                <div className="vh-full" style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',

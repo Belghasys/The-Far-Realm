@@ -15,7 +15,7 @@ export function NavButton({ icon, label, onClick, active, danger }: {
         <button
             onClick={onClick}
             title={label}
-            className={`group flex h-14 w-[4.35rem] flex-col items-center justify-center gap-1 rounded-md border text-[10px] font-bold uppercase tracking-wide transition
+            className={`group flex h-14 w-[4.35rem] shrink-0 flex-col items-center justify-center gap-1 rounded-md border text-[10px] font-bold uppercase tracking-wide transition
            ${active ? 'border-amber-400/40 bg-amber-400/15 text-gold' : 'border-white/10 bg-white/[0.03] text-white/45 hover:bg-white/10 hover:text-white'}
            ${danger ? 'hover:border-red-400/40 hover:text-red-300' : ''}
         `}

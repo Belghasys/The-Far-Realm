@@ -47,7 +47,7 @@ export function AbilityHotbar({ onUseAbility, selectedTargetId, disabled = false
         <div className={`pointer-events-auto fixed bottom-[5.75rem] z-40 hidden md:block ${
             combatState.isActive ? 'right-[33rem]' : 'right-3'
         }`}>
-            <div className="flex max-h-[62vh] flex-col items-center gap-1.5 overflow-y-auto rounded-lg border border-white/12 bg-zinc-950/85 px-1.5 py-2 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl custom-scrollbar">
+            <div className="flex max-h-[62dvh] flex-col items-center gap-1.5 overflow-y-auto rounded-lg border border-white/12 bg-zinc-950/85 px-1.5 py-2 shadow-[0_10px_40px_rgba(0,0,0,0.5)] backdrop-blur-xl custom-scrollbar">
                 <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-300/60">{tr.title}</span>
                 {entries.map(entry => {
                     const locked = disabled || entry.disabled || !isPlayerTurn;

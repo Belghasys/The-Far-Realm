@@ -67,7 +67,7 @@ function AuditConsoleView() {
     active.has(e.channel) && (!q || `${e.title} ${e.detail || ''}`.toLowerCase().includes(q)));
 
   return (
-    <div className="flex h-screen flex-col bg-zinc-950 font-mono text-xs text-zinc-100">
+    <div className="flex vh-screen flex-col bg-zinc-950 font-mono text-xs text-zinc-100">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 bg-black/60 p-2">
         <span className="font-bold text-amber-300">{tr.title}</span>

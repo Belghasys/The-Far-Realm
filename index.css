@@ -2,59 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 3D Dice Styles */
-
-/* 3D Dice Styles */
-.dice-container {
-    perspective: 1000px;
-    width: 200px;
-    height: 200px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* ===== Socle mobile (2026-08-28) =====
+   Sur téléphone, 100vh compte la barre d'URL : un écran « plein » déborde
+   sous le pli. 100dvh suit la barre ; le repli 100vh reste pour les
+   navigateurs qui l'ignorent (l'ordre des déclarations fait le repli).
+   tests/mobileLayout.test.ts verrouille ces utilitaires. */
+.vh-screen {
+    height: 100vh;
+    height: 100dvh;
 }
 
-.dice-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
+.vh-full {
+    min-height: 100vh;
+    min-height: 100dvh;
 }
 
-.dice-overlay.active {
-    opacity: 1;
-    pointer-events: all;
-    cursor: pointer;
+/* Chrome Android : sans ça, tirer la chronique vers le bas quand elle est
+   déjà en haut RECHARGE la page — en pleine partie. */
+html,
+body {
+    overscroll-behavior-y: none;
 }
 
-@keyframes spin {
-    0% {
-        transform: rotate(0deg) scale(1);
-    }
-
-    50% {
-        transform: rotate(180deg) scale(1.2);
-    }
-
-    100% {
-        transform: rotate(360deg) scale(1);
-    }
-}
-
-.rolling-d20 {
-    animation: spin 0.5s linear infinite;
-}
-
-/* ===== MOBILE RESPONSIVE STYLES ===== */
-
-/* Touch-friendly buttons on mobile */
 @media (max-width: 768px) {
 
     /* Prevent iOS zoom without rewriting every Tailwind utility globally. */
@@ -67,153 +36,6 @@
     button {
         touch-action: manipulation;
     }
-
-    /* Stack sidebar content vertically */
-    .sidebar-left,
-    .sidebar-right {
-        width: 100% !important;
-        max-width: none !important;
-    }
-
-    /* Battle grid scaling */
-    .battle-grid {
-        transform: scale(0.6);
-        transform-origin: center center;
-    }
-
-    /* Bottom nav adjustments */
-    .bottom-nav {
-        padding: 0.5rem !important;
-        gap: 0.5rem !important;
-    }
-
-    /* Hide less important elements on mobile */
-    .hide-on-mobile {
-        display: none !important;
-    }
-
-    /* Modal fullscreen on mobile */
-    .modal-content {
-        width: 100% !important;
-        height: 100% !important;
-        max-width: none !important;
-        border-radius: 0 !important;
-    }
-
-    /* Character sheet adjustments */
-    .character-sheet .grid-cols-3 {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* Combat action bar - make it sticky and full width */
-    .combat-action-bar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        border-radius: 0 !important;
-        z-index: 50 !important;
-    }
-}
-
-/* Small phone adjustments */
-@media (max-width: 480px) {
-    .battle-grid {
-        transform: scale(0.5);
-    }
-}
-
-/* Landscape phone optimization */
-@media (max-height: 500px) and (orientation: landscape) {
-    .bottom-nav {
-        padding: 0.25rem !important;
-    }
-
-    /* Reduce heights in landscape */
-    .h-screen {
-        min-height: 100vh;
-        min-height: -webkit-fill-available;
-    }
-}
-
-/* Cinematic Effects & Premium Aesthetics */
-:root {
-    /* Charte « crayon + néon » (theme/tokens.ts) : l'or est devenu acide,
-       le sang est devenu rose, et rien ne brille jamais en flou — les ombres
-       sont dures et décalées. */
-    --gold: #F2E637;
-    --gold-glow: rgba(242, 230, 55, 0.35);
-    --crimson: #F43292;
-    --crimson-glow: rgba(244, 50, 146, 0.35);
-    --ink: #05001A;
-    --glass: rgba(15, 15, 20, 0.7);
-}
-
-.glass-panel {
-    background: var(--glass);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.gold-border {
-    border: 2px solid var(--gold);
-    box-shadow: 4px 4px 0 var(--ink);
-}
-
-.gold-text-glow {
-    text-shadow: none;
-}
-
-.gold-btn {
-    background: var(--gold);
-    color: var(--ink);
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
-    box-shadow: 6px 6px 0 var(--ink);
-}
-
-.gold-btn:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0 var(--ink);
-}
-
-.cinematic-vignette {
-    pointer-events: none;
-    background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
-}
-
-.magic-border {
-    position: relative;
-    overflow: hidden;
-}
-
-.magic-border::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(from 0deg, transparent 70%, var(--gold) 100%);
-    animation: rotate 4s linear infinite;
-    z-index: -1;
-}
-
-@keyframes rotate {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.scroll-smooth {
-    scroll-behavior: smooth;
 }
 
 /* Custom Scrollbar for Adventure Logs */
@@ -234,6 +56,37 @@
     background: #22E9FF;
 }
 
+/* Ces deux @keyframes portent les MÊMES noms que ceux que Tailwind génère
+   pour animate-spin et animate-pulse — et, déclarés après la couche
+   utilities, ce sont EUX qui gagnent partout. Le dé qui gonfle en tournant
+   (scale 1.2) et le pouls qui descend à .7 (au lieu de .5) sont le rendu
+   historique du jeu : on les garde. */
+@keyframes spin {
+    0% {
+        transform: rotate(0deg) scale(1);
+    }
+
+    50% {
+        transform: rotate(180deg) scale(1.2);
+    }
+
+    100% {
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .7;
+    }
+}
+
 @keyframes float-up {
     0% {
         transform: translate(-50%, 0);
@@ -252,20 +105,4 @@
 
 .animate-float-up {
     animation: float-up 3s ease-out forwards;
-}
-
-.animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: .7;
-    }
 }

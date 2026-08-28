@@ -377,8 +377,10 @@ export function CombatTracker({
     const playerActionUsed = Boolean(isPlayerTurn && actionEconomy?.[playerCombatant?.id || 'player']?.actionUsed);
     const recentRolls = combatRolls.slice(-8);
 
+    // Mobile : calé juste au-dessus de la chronique (--chron-h, posée par
+    // GameSession) — le combat ne recouvre ni la saisie ni le micro.
     return (
-        <aside className="fixed bottom-28 left-3 right-3 z-50 max-h-[48vh] overflow-hidden rounded-md border border-white/12 bg-zinc-950/92 text-white shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:bottom-auto md:left-auto md:right-4 md:top-4 md:w-[488px] md:max-h-[calc(100vh-2rem)] flex flex-col">
+        <aside className="fixed bottom-[calc(var(--chron-h)+0.5rem)] left-3 right-3 z-50 max-h-[44dvh] overflow-hidden rounded-md border border-white/12 bg-zinc-950/92 text-white shadow-[0_18px_60px_rgba(0,0,0,0.55)] backdrop-blur-xl md:bottom-auto md:left-auto md:right-4 md:top-4 md:w-[488px] md:max-h-[calc(100dvh-2rem)] flex flex-col">
             <div className="border-b border-white/10 bg-black/45 p-3 flex-none">
                 <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">

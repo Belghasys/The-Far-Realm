@@ -219,7 +219,7 @@ export function LobbyView() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: T.void, color: T.paper, fontFamily: BODY }}>
+        <div className="vh-full" style={{ background: T.void, color: T.paper, fontFamily: BODY }}>
             <header style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 gap: 16, padding: '18px clamp(20px, 5vw, 64px)', borderBottom: `2px solid ${T.cyan}59`,

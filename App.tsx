@@ -21,7 +21,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
    const authReady = useGameStore(state => state.authReady);
    // Wait for Firebase to rehydrate the session before deciding — otherwise a page
    // refresh (user still null for a tick) would eject a logged-in player to login.
-   if (!authReady) return <div className="min-h-screen bg-gray-950 text-white grid place-items-center">Chargement…</div>;
+   if (!authReady) return <div className="vh-full bg-gray-950 text-white grid place-items-center">Chargement…</div>;
    if (!user) return <Navigate to="/" replace />;
    return <>{children}</>;
 }
@@ -63,7 +63,7 @@ export default function App() {
    return (
       <ErrorBoundary>
          <BrowserRouter>
-            <Suspense fallback={<div className="min-h-screen bg-gray-950 text-white grid place-items-center">Loading...</div>}>
+            <Suspense fallback={<div className="vh-full bg-gray-950 text-white grid place-items-center">Loading...</div>}>
                <Routes>
                   <Route path="/" element={<LoginView />} />
                   <Route path="/legal/:page" element={<LegalView />} />

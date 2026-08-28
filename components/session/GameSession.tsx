@@ -1920,8 +1920,11 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     }
   };
 
+  // Mobile (< md) : pile verticale — la scène en haut, la chronique en bas
+  // sur --chron-h (le suivi de combat et les toasts se calent dessus).
+  // Bureau : la rangée historique rail | poignée | scène, inchangée.
   return (
-    <div className="relative flex h-screen bg-black text-parchment overflow-hidden font-sans">
+    <div className="relative flex flex-col md:flex-row vh-screen [--chron-h:42dvh] bg-black text-parchment overflow-hidden font-sans">
 
       {/* Reconnection Overlay */}
       {(isReconnecting || reconnectFailed) && (
@@ -2023,7 +2026,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
 
       {activeReferenceUrl && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative flex h-[85vh] w-full max-w-5xl flex-col rounded-md border border-white/10 bg-zinc-950 text-white shadow-2xl">
+          <div className="relative flex h-[85dvh] w-full max-w-5xl flex-col rounded-md border border-white/10 bg-zinc-950 text-white shadow-2xl">
             <header className="flex items-center justify-between border-b border-white/10 bg-black/45 px-4 py-3">
               <h3 className="font-fantasy text-lg font-bold tracking-wide text-amber-300">{tr.reference}</h3>
               <button
@@ -2046,12 +2049,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         </div>
       )}
 
-      {/* LEFT SIDEBAR: Logs & Dice (Fixed width) */}
-      <div style={{ width: rail.width }} className="shrink-0 flex flex-col border-r border-gray-800 bg-gray-950/90 z-20 hidden md:flex">
+      {/* LEFT SIDEBAR: Logs & Dice. Sur bureau, sa largeur (réglable) passe par
+          --rail-w : un `width` inline s'imposerait aussi au téléphone, où le
+          rail devient la bande du bas, pleine largeur, à hauteur --chron-h.
+          Le padding bas suit la zone sûre (barre d'accueil iPhone). */}
+      <div
+        style={{ '--rail-w': `${rail.width}px` } as React.CSSProperties}
+        className="order-2 h-[var(--chron-h)] w-full shrink-0 flex flex-col border-t border-gray-800 bg-gray-950/90 z-20 pb-[env(safe-area-inset-bottom)] md:order-none md:h-auto md:w-[var(--rail-w)] md:border-t-0 md:border-r md:pb-0"
+      >
         <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Chronicle Log */}
-          <div className="h-3/5 border-b border-gray-800 flex flex-col">
+          {/* Chronicle Log — toute la bande sur mobile, 3/5 du rail sur bureau */}
+          <div className="flex-1 min-h-0 md:flex-initial md:h-3/5 border-b border-gray-800 flex flex-col">
             <div className="p-3 bg-gray-900 border-b border-gray-800 text-xs font-bold uppercase text-gold/70 flex items-center justify-between">
               <span className="flex items-center gap-2"><MessageSquare className="w-3 h-3" /> {tr.chronicleHeader}</span>
             </div>
@@ -2113,7 +2122,10 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             </div>
           </div>
 
-          <div className="h-2/5 flex flex-col bg-gray-900/30">
+          {/* Plateau de dés : bureau seulement. Caché en CSS, pas démonté — sa
+              ref reste vivante et le journal des jets continue de s'y écrire
+              (les jets eux-mêmes se résolvent dans le moteur et ActionPrompt). */}
+          <div className="hidden md:flex md:h-2/5 flex-col bg-gray-900/30">
             <DiceTray ref={diceTrayRef} onRoll={handleManualRoll} />
           </div>
         </div>
@@ -2137,7 +2149,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       />
 
       {/* MAIN CONTENT Area */}
-      <div className="flex-1 relative bg-black flex flex-col items-center justify-center">
+      <div className="flex-1 min-h-0 relative bg-black flex flex-col items-center justify-center">
         {/* Dynamic Background */}
         <div
           className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 opacity-60 ${isGeneratingImage ? 'animate-pulse blur-sm scale-105' : 'scale-100'}`}
@@ -2245,7 +2257,9 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 />
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-1 sm:justify-end">
+              {/* Mobile : une seule rangée qui défile au doigt (8 boutons ne
+                  tiennent pas en 390 px sans manger la scène). */}
+              <div className="flex flex-nowrap items-center justify-start gap-1 overflow-x-auto md:flex-wrap md:justify-end md:overflow-visible">
                 <NavButton
                   icon={<User className="w-5 h-5" />}
                   label={t('game.character', language as Language)}
@@ -2547,7 +2561,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       {/* Audit / dev control cluster — always visible (fixed, bottom-left). The
           audit console opens in a SEPARATE OS window; Dév toggles developer mode
           (same as typing IDDAD in the chat). */}
-      <div className="fixed bottom-3 left-3 z-[60] flex gap-2">
+      <div className="fixed bottom-3 left-3 z-[60] hidden gap-2 md:flex">
         <button
           onClick={() => setAuditOpen(o => !o)}
           title={tr.auditTitle}
@@ -2623,7 +2637,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       {actionToast && (
         <div
           key={actionToast.id}
-          className="fixed bottom-24 left-1/2 z-[95] -translate-x-1/2 rounded-md border border-amber-400/40 bg-black/85 px-4 py-2 text-sm font-semibold text-amber-200 shadow-xl"
+          className="fixed bottom-[calc(var(--chron-h)+1rem)] left-1/2 z-[95] -translate-x-1/2 rounded-md border border-amber-400/40 bg-black/85 px-4 py-2 text-sm font-semibold text-amber-200 shadow-xl md:bottom-24"
         >
           {actionToast.text}
         </div>

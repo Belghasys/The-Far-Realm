@@ -1,0 +1,15 @@
+{
+    "id": "/",
+    "name": "The Last Basement",
+    "short_name": "Last Basement",
+    "description": "Un jeu de rôle sur table en ligne : campagnes complètes, personnages, et un maître du jeu qui parle, écoute et se souvient de tout.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "background_color": "#14023C",
+    "theme_color": "#14023C",
+    "icons": [
+        { "src": "/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+        { "src": "/favicon-180.png", "sizes": "180x180", "type": "image/png" }
+    ]
+}

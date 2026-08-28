@@ -118,7 +118,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
   const scene = manifest.firstScene;
 
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-black text-white">
+    <div className="relative flex vh-screen w-screen overflow-hidden bg-black text-white">
       <style>{`
         @keyframes introCinematicDrift {
           from { transform: scale(1.02) translate3d(0, 0, 0); }
@@ -138,7 +138,7 @@ export function IntroCinematic({ character, manifest, language, onComplete }: Pr
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.28)_48%,rgba(0,0,0,0.86)_100%)]" />
       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black via-black/70 to-transparent" />
 
-      <div className="relative z-10 flex min-h-screen w-full items-end">
+      <div className="relative z-10 flex vh-full w-full items-end">
         <div className="w-full px-5 pb-8 md:px-12 md:pb-12">
           <div className="max-w-4xl">
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.35em] text-amber-300/80">
