@@ -4,7 +4,7 @@ import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { LEGAL_TEXTS, type LegalPage } from './legalTexts';
 
-const PAGES: LegalPage[] = ['terms', 'privacy', 'notice'];
+const PAGES: LegalPage[] = ['terms', 'privacy', 'refund', 'notice'];
 
 /** /legal/:page — CGU, confidentialité, mentions légales. Accessible sans compte. */
 export function LegalView() {
@@ -17,7 +17,7 @@ export function LegalView() {
     const user = useGameStore(s => s.user);
 
     return (
-        <div style={{ minHeight: '100vh', background: T.ink, color: T.paper, fontFamily: BODY }}>
+        <div className="vh-full" style={{ background: T.ink, color: T.paper, fontFamily: BODY }}>
             <header style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '18px clamp(16px, 4vw, 48px)', borderBottom: '2px solid rgba(237,230,216,.15)' }}>
                 <span style={{ fontFamily: DISP, fontSize: 14, letterSpacing: 1, marginRight: 'auto' }}>THE LAST BASEMENT</span>
                 <nav style={{ display: 'flex', gap: 6 }}>

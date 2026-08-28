@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../services/persistence/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
@@ -70,6 +70,22 @@ export function LoginView() {
             navigate('/mode');
         } catch (e: any) {
             setAuthError(tr.googleLoginFailed + formatAuthError(e));
+        }
+    };
+
+    /**
+     * Sans compte : un utilisateur Firebase ANONYME. Il a un uid réel, donc les
+     * règles Firestore, les quotas et les sauvegardes cloud marchent tels quels ;
+     * seule la persistance est fragile (liée au navigateur). Firebase permet de
+     * lier un e-mail ou Google plus tard sans perdre l'uid.
+     */
+    const handleGuestLogin = async () => {
+        try {
+            setAuthError(null);
+            await signInAnonymously(auth);
+            navigate('/mode');
+        } catch (e: any) {
+            setAuthError(tr.guestLoginFailed + formatAuthError(e));
         }
     };
 
@@ -188,8 +204,22 @@ export function LoginView() {
                         {tr.signInGoogle}
                     </button>
 
+                    <button
+                        onClick={handleGuestLogin}
+                        style={{
+                            fontFamily: DISP, fontSize: 13, width: '100%', marginTop: 12,
+                            background: 'transparent', color: T.paper,
+                            border: '2px solid rgba(237,230,216,.35)',
+                            padding: '15px 20px', cursor: 'pointer',
+                        }}
+                    >
+                        {tr.playAsGuest}
+                    </button>
+                    <p style={{ fontSize: 11, lineHeight: 1.5, color: 'rgba(237,230,216,.5)', margin: '8px 0 0', textAlign: 'center' }}>{tr.guestHint}</p>
+
                     <nav style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, marginTop: 14, fontSize: 11, fontFamily: BODY }}>
-                        {([['terms', language === 'fr' ? 'Conditions d’utilisation' : 'Terms of Use'], ['privacy', language === 'fr' ? 'Confidentialité' : 'Privacy'], ['notice', language === 'fr' ? 'Mentions légales' : 'Legal notice']] as const).map(([p, label]) => (
+                        <a href="/pricing" style={{ color: T.acid, textDecoration: 'underline', fontWeight: 700 }}>{language === 'fr' ? 'Tarifs' : 'Pricing'}</a>
+                        {([['terms', language === 'fr' ? 'Conditions d’utilisation' : 'Terms of Use'], ['privacy', language === 'fr' ? 'Confidentialité' : 'Privacy'], ['refund', language === 'fr' ? 'Remboursement' : 'Refunds'], ['notice', language === 'fr' ? 'Mentions légales' : 'Legal notice']] as const).map(([p, label]) => (
                             <a key={p} href={`/legal/${p}`} style={{ color: 'rgba(237,230,216,.55)', textDecoration: 'underline' }}>{label}</a>
                         ))}
                     </nav>

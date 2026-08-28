@@ -5,13 +5,13 @@
  * mise en vente : identité, adresse, e-mail de contact. Tant qu'ils sont là,
  * tests/legal.test.ts échoue en mode « production » (voir ce test).
  */
-export type LegalPage = 'terms' | 'privacy' | 'notice';
+export type LegalPage = 'terms' | 'privacy' | 'notice' | 'refund';
 
 export const LEGAL_PLACEHOLDERS = {
-    publisher: '[Nom ou raison sociale de l’éditeur]',
-    address: '[Adresse postale de l’éditeur]',
-    email: '[adresse e-mail de contact]',
-    registration: '[SIREN / numéro d’immatriculation, le cas échéant]',
+    publisher: 'Abdeslem Salim Belghazi',
+    address: 'Abraj Tower 1, 1709 Doha, Qatar',
+    email: 'salimbelghazi705@gmail.com',
+    registration: 'Personne physique — édition à titre individuel',
 };
 
 export const LAST_UPDATED = '2026-08-27';
@@ -23,7 +23,7 @@ const P = LEGAL_PLACEHOLDERS;
 
 export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { nav: Record<LegalPage, string>; back: string; updated: string }> = {
     fr: {
-        nav: { terms: 'Conditions d’utilisation', privacy: 'Confidentialité', notice: 'Mentions légales' },
+        nav: { terms: 'Conditions d’utilisation', privacy: 'Confidentialité', notice: 'Mentions légales', refund: 'Remboursement' },
         back: 'Retour au jeu',
         updated: `Dernière mise à jour : ${LAST_UPDATED}`,
         terms: {
@@ -44,10 +44,11 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                 { title: '4. Abonnement et paiement', body: [
                     'Les offres payantes sont vendues par notre partenaire Paddle.com Market Ltd, qui agit en tant que marchand officiel (« Merchant of Record ») : Paddle encaisse le paiement, émet la facture et gère la TVA. Le paiement est soumis aux conditions de Paddle.',
                     'L’abonnement se renouvelle automatiquement à chaque période jusqu’à résiliation. Vous pouvez résilier à tout moment ; l’accès au plan payant reste actif jusqu’à la fin de la période déjà payée.',
-                    'Droit de rétractation : en acceptant l’activation immédiate du service, vous reconnaissez que le droit de rétractation de 14 jours ne s’applique plus une fois le service pleinement exécuté. Pour toute demande de remboursement, contactez-nous ou Paddle.',
+                    'Rétractation et remboursement : les achats sont conclus avec Paddle, qui applique sa propre politique de remboursement (délai de 14 jours pour les consommateurs, selon les conditions de Paddle). Pour toute demande, contactez Paddle via le lien de votre e-mail de facturation, ou écrivez-nous.',
                 ] },
                 { title: '5. Contenu généré et propriété intellectuelle', body: [
                     'Le contenu généré pendant vos parties (récits, images, journaux) vous est destiné pour un usage personnel. Vous pouvez le partager (captures, vidéos, diffusion en direct) en mentionnant The Last Basement.',
+                    'Les illustrations sont celles du jeu : scènes, créatures et personnages fictifs. Le portrait de votre héros est dessiné à partir de sa fiche (race, classe, apparence décrite), jamais à partir d’une photographie ni de la ressemblance d’une personne réelle — le jeu n’accepte aucune image envoyée par le joueur. Il est interdit d’utiliser le service pour produire du contenu représentant une personne identifiable.',
                     'Le jeu, son code, ses campagnes originales, ses musiques et ses interfaces restent la propriété de l’éditeur.',
                     'Le jeu utilise le System Reference Document 5.1 de Wizards of the Coast LLC, disponible sous licence Creative Commons Attribution 4.0 International (https://creativecommons.org/licenses/by/4.0/legalcode). The Last Basement n’est ni affilié ni approuvé par Wizards of the Coast.',
                 ] },
@@ -58,7 +59,7 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                     'Nous pouvons faire évoluer le service et ces conditions ; les changements substantiels sont annoncés dans l’application. Vous pouvez supprimer votre compte à tout moment depuis l’écran « Compte » : vos données sont alors effacées (voir la politique de confidentialité).',
                 ] },
                 { title: '8. Droit applicable', body: [
-                    `Ces conditions sont régies par le droit français. Tout litige relève des tribunaux compétents, après tentative de résolution amiable par écrit à ${P.email}.`,
+                    `Ces conditions sont régies par le droit de l’État du Qatar, où l’éditeur est établi, sans priver le consommateur des protections impératives du droit de son pays de résidence. Tout litige relève des tribunaux compétents de Doha, après tentative de résolution amiable par écrit à ${P.email}. Les achats eux-mêmes sont conclus avec Paddle et régis par ses conditions.`,
                 ] },
             ],
         },
@@ -91,6 +92,22 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                 ] },
             ],
         },
+        refund: {
+            title: 'Remboursement et résiliation',
+            intro: 'Une seule offre payante, sans engagement. Voici exactement ce qui se passe quand vous résiliez ou demandez un remboursement.',
+            sections: [
+                { title: 'Résilier', body: [
+                    'Vous pouvez résilier à tout moment depuis le portail client Paddle (lien dans votre panneau Compte et dans chaque e-mail de facturation). L’accès au plan Aventurier reste actif jusqu’à la fin de la période déjà payée ; aucun prélèvement n’a lieu ensuite.',
+                ] },
+                { title: 'Remboursement', body: [
+                    'Les achats sont conclus avec Paddle.com Market Ltd, marchand officiel, qui applique sa politique de remboursement : pour les consommateurs, une demande dans les 14 jours suivant l’achat est remboursée intégralement. Au-delà, contactez-nous — nous examinons chaque demande de bonne foi, notamment en cas de panne du service.',
+                    'Le remboursement est effectué par Paddle sur le moyen de paiement d’origine, généralement sous 5 à 10 jours ouvrés.',
+                ] },
+                { title: 'Comment demander', body: [
+                    `Par e-mail à ${P.email} (indiquez l’adresse de votre compte et la date de l’achat), ou directement auprès de Paddle via le lien de votre e-mail de facturation.`,
+                ] },
+            ],
+        },
         notice: {
             title: 'Mentions légales',
             sections: [
@@ -104,7 +121,7 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
         },
     },
     en: {
-        nav: { terms: 'Terms of Use', privacy: 'Privacy', notice: 'Legal notice' },
+        nav: { terms: 'Terms of Use', privacy: 'Privacy', notice: 'Legal notice', refund: 'Refunds' },
         back: 'Back to the game',
         updated: `Last updated: ${LAST_UPDATED}`,
         terms: {
@@ -125,10 +142,11 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                 { title: '4. Subscription and payment', body: [
                     'Paid plans are sold by our partner Paddle.com Market Ltd, acting as Merchant of Record: Paddle collects payment, issues the invoice and handles VAT. Payment is subject to Paddle’s terms.',
                     'Subscriptions renew automatically each period until cancelled. You can cancel at any time; the paid plan stays active until the end of the period already paid.',
-                    'Withdrawal: by accepting immediate activation, you acknowledge that the 14-day withdrawal right no longer applies once the service has been fully performed. For refund requests, contact us or Paddle.',
+                    'Withdrawal and refunds: purchases are concluded with Paddle, which applies its own refund policy (a 14-day window for consumers, under Paddle’s terms). For any request, contact Paddle through the link in your billing e-mail, or write to us.',
                 ] },
                 { title: '5. Generated content and intellectual property', body: [
                     'Content generated during your games (stories, images, journals) is for your personal use. You may share it (screenshots, videos, live streams) with a mention of The Last Basement.',
+                    'Illustrations are the game’s own: scenes, creatures and fictional characters. Your hero’s portrait is drawn from the character sheet (race, class, described appearance), never from a photograph or the likeness of a real person — the game accepts no image uploaded by the player. Using the service to produce content depicting an identifiable person is prohibited.',
                     'The game, its code, original campaigns, music and interfaces remain the property of the publisher.',
                     'The game uses the System Reference Document 5.1 by Wizards of the Coast LLC, available under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode). The Last Basement is neither affiliated with nor endorsed by Wizards of the Coast.',
                 ] },
@@ -139,7 +157,7 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                     'We may change the service and these terms; substantial changes are announced in the app. You can delete your account at any time from the “Account” screen: your data is then erased (see the privacy policy).',
                 ] },
                 { title: '8. Governing law', body: [
-                    `These terms are governed by French law. Disputes fall to the competent courts, after an attempt at amicable resolution in writing to ${P.email}.`,
+                    `These terms are governed by the laws of the State of Qatar, where the publisher is established, without depriving consumers of the mandatory protections of the law of their country of residence. Disputes fall to the competent courts of Doha, after an attempt at amicable resolution in writing to ${P.email}. Purchases themselves are concluded with Paddle and governed by its terms.`,
                 ] },
             ],
         },
@@ -169,6 +187,22 @@ export const LEGAL_TEXTS: Record<'fr' | 'en', Record<LegalPage, LegalDoc> & { na
                 ] },
                 { title: 'Cookies and local storage', body: [
                     'The game uses browser local storage for the sign-in session, your settings (volume, voice, language) and a media cache. No advertising cookies.',
+                ] },
+            ],
+        },
+        refund: {
+            title: 'Refunds and cancellation',
+            intro: 'One paid plan, no commitment. Here is exactly what happens when you cancel or ask for a refund.',
+            sections: [
+                { title: 'Cancelling', body: [
+                    'You can cancel at any time from the Paddle customer portal (linked from your Account panel and from every billing e-mail). Adventurer access stays active until the end of the period already paid; no further charge is taken.',
+                ] },
+                { title: 'Refunds', body: [
+                    'Purchases are concluded with Paddle.com Market Ltd, the merchant of record, which applies its refund policy: for consumers, a request within 14 days of purchase is refunded in full. Beyond that, contact us — we review every request in good faith, in particular when the service has been unavailable.',
+                    'Refunds are issued by Paddle to the original payment method, usually within 5 to 10 business days.',
+                ] },
+                { title: 'How to ask', body: [
+                    `By e-mail to ${P.email} (include your account address and the purchase date), or directly with Paddle through the link in your billing e-mail.`,
                 ] },
             ],
         },

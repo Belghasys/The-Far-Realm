@@ -1,5 +1,18 @@
 {
   "projects": {
     "default": "mydndadventure"
-  }
+  },
+  "targets": {
+    "mydndadventure": {
+      "hosting": {
+        "app": [
+          "thelastbasement"
+        ],
+        "legacy": [
+          "mydndadventure"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

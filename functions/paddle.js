@@ -16,6 +16,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
 const { verifyPaddleSignature } = require("./paddleSignature");
+const { isFromPaddle, clientIp } = require("./paddleIps");
 const { PLAN_LIMITS } = require("./plans");
 
 const db = admin.firestore();
@@ -51,6 +52,9 @@ exports.paddleWebhook = onRequest(
     { region: REGION, secrets: [PADDLE_WEBHOOK_SECRET], timeoutSeconds: 30, maxInstances: 5 },
     async (req, res) => {
         if (req.method !== "POST") { res.status(405).send("POST only"); return; }
+        // Défense en profondeur : seules les IP publiées par Paddle passent
+        // (https://api.paddle.com/ips). La signature reste vérifiée derrière.
+        if (!(await isFromPaddle(req))) { console.warn("paddleWebhook: IP hors liste Paddle", clientIp(req)); res.status(403).send("forbidden"); return; }
         const ok = verifyPaddleSignature(req.get("paddle-signature"), req.rawBody, PADDLE_WEBHOOK_SECRET.value());
         if (!ok) { console.warn("paddleWebhook: signature invalide"); res.status(401).send("bad signature"); return; }
 

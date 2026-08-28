@@ -12,6 +12,8 @@ import { FUNCTIONS_REGION } from '../infra/geminiClient';
 export type PlanName = 'free' | 'adventurer';
 
 export interface PlanDoc {
+    /** Identifiant client PADDLE (ctm_…), écrit par le webhook — sert à Retain (pwCustomer). */
+    paddleCustomerId?: string | null;
     plan: PlanName;
     status: string;
     subscriptionId?: string | null;
@@ -21,6 +23,14 @@ export interface PlanDoc {
 
 /** Miroir de functions/plans.js — à garder synchrone (affichage seulement ;
  *  la vérité est côté serveur). */
+/**
+ * Le prix AFFICHÉ sur le site. Paddle vérifie, avant d'approuver un compte,
+ * que le tarif visible correspond au catalogue live : aujourd'hui aucun montant
+ * n'apparaissait nulle part. Catalogue live : pri_01m12b7a3v2fdhj94bp1d88sta,
+ * 9,99 USD / mois. À changer ICI si le prix Paddle change.
+ */
+export const PLAN_PRICE = { adventurer: { amount: 9.99, currency: 'USD', interval: 'month' as const } };
+
 export const PLAN_LIMITS: Record<PlanName, { live: number; text: number; images: number }> = {
     free: { live: 6, text: 80, images: 15 },
     adventurer: { live: 60, text: 400, images: 60 },

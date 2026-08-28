@@ -13,6 +13,7 @@ const ModeSelectionView = React.lazy(() => import('./views/ModeSelectionView').t
 const LobbyView = React.lazy(() => import('./views/LobbyView').then(module => ({ default: module.LobbyView })));
 const CharacterCreationView = React.lazy(() => import('./views/CharacterCreationView').then(module => ({ default: module.CharacterCreationView })));
 const LegalView = React.lazy(() => import('./views/LegalView').then(module => ({ default: module.LegalView })));
+const PricingView = React.lazy(() => import('./views/PricingView').then(module => ({ default: module.PricingView })));
 const GameSessionView = React.lazy(() => import('./views/GameSessionView').then(module => ({ default: module.GameSessionView })));
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -66,6 +67,7 @@ export default function App() {
                <Routes>
                   <Route path="/" element={<LoginView />} />
                   <Route path="/legal/:page" element={<LegalView />} />
+                  <Route path="/pricing" element={<PricingView />} />
 
                   <Route path="/mode" element={
                      <AuthGuard><ModeSelectionView /></AuthGuard>

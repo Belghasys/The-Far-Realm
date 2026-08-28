@@ -3,26 +3,28 @@ import { Link } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { T, DISP, BODY, onTint } from '../../theme/tokens';
 import { NeonButton } from '../neon/NeonButton';
-import { deleteMyAccount, effectivePlan, PLAN_LIMITS, subscribeToPlan, type PlanDoc } from '../../services/persistence/accountService';
-import { openCheckout, paddleConfigured } from '../../services/infra/paddle';
+import { deleteMyAccount, effectivePlan, PLAN_LIMITS, PLAN_PRICE, subscribeToPlan, type PlanDoc } from '../../services/persistence/accountService';
+import { openCheckout, paddleConfigured, paddleConfigProblem, customerPortalUrl } from '../../services/infra/paddle';
 import { trackEvent } from '../../services/infra/monitoring';
 
 const TEXTS = {
     fr: {
-        title: 'Compte', close: 'Fermer', signedAs: 'Connecté en tant que',
+        title: 'Compte', close: 'Fermer', signedAs: 'Connecté en tant que', guest: 'invité (sans compte)',
         plan: 'Votre plan', free: 'Découverte', adventurer: 'Aventurier',
-        perDay: 'par jour', live: 'sessions vocales', text: 'appels au Maître de jeu', images: 'images',
+        perDay: 'par jour', live: 'sessions de jeu à la voix', text: 'tours de jeu écrits', images: 'illustrations',
         subscribe: 'Passer Aventurier', subscribing: 'Ouverture du paiement…', notConfigured: 'Abonnement bientôt disponible.',
+        priceLine: '9,99 $ US / mois · sans engagement, résiliable à tout moment', portal: 'Gérer mon abonnement (factures, carte, résiliation)', refund: 'Remboursement et résiliation',
         active: 'Abonnement actif', renews: 'Renouvellement le', cancels: 'Prend fin le', manage: 'Pour résilier ou changer de carte : le lien dans votre e-mail de facturation Paddle.',
         legal: 'Conditions d’utilisation', privacy: 'Confidentialité', notice: 'Mentions légales',
         danger: 'Supprimer mon compte', dangerBody: 'Efface définitivement vos personnages, sauvegardes, journaux et votre plan, puis ferme le compte. Aucun retour en arrière.',
         typeToConfirm: 'Tapez SUPPRIMER pour confirmer', confirmWord: 'SUPPRIMER', deleting: 'Suppression…', deleteNow: 'Supprimer définitivement',
     },
     en: {
-        title: 'Account', close: 'Close', signedAs: 'Signed in as',
+        title: 'Account', close: 'Close', signedAs: 'Signed in as', guest: 'guest (no account)',
         plan: 'Your plan', free: 'Discovery', adventurer: 'Adventurer',
-        perDay: 'per day', live: 'voice sessions', text: 'Game Master calls', images: 'images',
+        perDay: 'per day', live: 'voice play sessions', text: 'written game turns', images: 'illustrations',
         subscribe: 'Go Adventurer', subscribing: 'Opening checkout…', notConfigured: 'Subscriptions coming soon.',
+        priceLine: '$9.99 USD / month · no commitment, cancel anytime', portal: 'Manage my subscription (invoices, card, cancellation)', refund: 'Refunds & cancellation',
         active: 'Subscription active', renews: 'Renews on', cancels: 'Ends on', manage: 'To cancel or change card: the link in your Paddle billing e-mail.',
         legal: 'Terms of Use', privacy: 'Privacy', notice: 'Legal notice',
         danger: 'Delete my account', dangerBody: 'Permanently erases your characters, saves, journals and plan, then closes the account. No way back.',
@@ -54,7 +56,7 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
         setError(null); setBusy('checkout');
         try {
             trackEvent('checkout_open');
-            await openCheckout({ uid: user.uid, email: user.email, locale: lang });
+            await openCheckout({ uid: user.uid, email: user.email, locale: lang, paddleCustomerId: planDoc?.paddleCustomerId ?? null });
         } catch (e) {
             setError(e instanceof Error ? e.message : String(e));
         } finally { setBusy(null); }
@@ -86,7 +88,7 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
                     <h2 style={{ fontFamily: DISP, fontSize: 24, marginRight: 'auto' }}>{t.title}</h2>
                     <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'rgba(237,230,216,.6)', cursor: 'pointer', fontFamily: DISP, fontSize: 12 }}>{t.close}</button>
                 </div>
-                <p style={{ fontSize: 13, color: 'rgba(237,230,216,.55)', marginBottom: 20 }}>{t.signedAs} <strong style={{ color: T.paper }}>{user.email || user.uid}</strong></p>
+                <p style={{ fontSize: 13, color: 'rgba(237,230,216,.55)', marginBottom: 20 }}>{t.signedAs} <strong style={{ color: T.paper }}>{user.isAnonymous ? t.guest : (user.email || user.uid)}</strong></p>
 
                 <section style={{ marginBottom: 22 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -99,13 +101,23 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
                     {plan === 'free' ? (
                         <div style={{ marginTop: 14 }}>
                             {paddleConfigured()
-                                ? <NeonButton onClick={handleCheckout} fullWidth>{busy === 'checkout' ? t.subscribing : t.subscribe}</NeonButton>
-                                : <p style={{ fontSize: 13, color: 'rgba(237,230,216,.55)' }}>{t.notConfigured}</p>}
+                                ? <>
+                                    <NeonButton onClick={handleCheckout} fullWidth>{busy === 'checkout' ? t.subscribing : t.subscribe}</NeonButton>
+                                    {/* Le tarif visible = le catalogue Paddle live (PLAN_PRICE). */}
+                                    <p style={{ fontSize: 12, color: 'rgba(237,230,216,.6)', marginTop: 8, textAlign: 'center' }}>{t.priceLine}</p>
+                                </>
+                                : <p style={{ fontSize: 13, color: 'rgba(237,230,216,.55)' }}>
+                                    {t.notConfigured}
+                                    {/* En dev seulement : la RAISON, pour ne plus chercher une heure. */}
+                                    {import.meta.env.DEV && <><br /><code style={{ fontSize: 11, opacity: .8 }}>{paddleConfigProblem()}</code></>}
+                                </p>}
                         </div>
                     ) : (
                         <div style={{ marginTop: 12, fontSize: 13, color: 'rgba(237,230,216,.75)' }}>
                             <div>{t.active}{periodEnd ? ` · ${planDoc?.scheduledChange === 'cancel' ? t.cancels : t.renews} ${periodEnd}` : ''}</div>
-                            <div style={{ marginTop: 4, color: 'rgba(237,230,216,.5)' }}>{t.manage}</div>
+                            {customerPortalUrl()
+                                ? <a href={customerPortalUrl()!} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8, color: T.acid, fontFamily: DISP, fontSize: 12 }}>{t.portal} →</a>
+                                : <div style={{ marginTop: 4, color: 'rgba(237,230,216,.5)' }}>{t.manage}</div>}
                         </div>
                     )}
                 </section>
@@ -113,7 +125,7 @@ export function AccountPanel({ onClose }: { onClose: () => void }) {
                 <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 14, fontSize: 13, marginBottom: 24 }}>
                     <Link to="/legal/terms" style={{ color: T.acid }}>{t.legal}</Link>
                     <Link to="/legal/privacy" style={{ color: T.acid }}>{t.privacy}</Link>
-                    <Link to="/legal/notice" style={{ color: T.acid }}>{t.notice}</Link>
+                    <Link to="/legal/notice" style={{ color: T.acid }}>{t.notice}</Link><Link to="/legal/refund" style={{ color: T.acid }}>{t.refund}</Link>
                 </nav>
 
                 <section style={{ border: '2px solid rgba(255,90,90,.5)', padding: 14 }}>
