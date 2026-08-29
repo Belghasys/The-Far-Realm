@@ -108,6 +108,11 @@ export async function lookup_campaign(args: any, ctx: ToolContext) {
         for (const fact of (rt.canonFacts || [])) {
             consider('memory', 'Fait établi', fact, fact);
         }
+        // Pierres tombales (constat 11) : un fait retiré reste consultable,
+        // étiqueté comme tel — le MJ peut vérifier qu'il n'a plus cours.
+        for (const fact of (rt.retiredFacts || [])) {
+            consider('memory', 'Fait PÉRIMÉ (retired — no longer true)', fact, fact);
+        }
         // C1 — le verrou voyage AVEC le secret : le remonter nu
         // par lookup_campaign contournait l'étiquetage du bloc
         // directeur, et c'est justement là que le MJ va chercher
@@ -122,6 +127,19 @@ export async function lookup_campaign(args: any, ctx: ToolContext) {
             consider('memory', `PNJ ${npc.name}`,
                 `${npc.description || ''}${npc.location ? ` @ ${npc.location}` : ''}${facts ? ` — ${facts}` : ''}`,
                 `${npc.name} ${npc.description || ''} ${npc.location || ''} ${facts}`);
+        }
+    }
+    // QUÊTES (constat 11, 2026-08-29) : elles n'étaient consultables nulle
+    // part — le bloc directeur ne sert que les actives, et sans leurs dates.
+    // Chaque étape franchie porte son jour de jeu (« [x J4] »).
+    if (!kind || kind === 'quest') {
+        for (const q of (useGameStore.getState().journal.quests || []) as any[]) {
+            const steps = ((q.steps || []) as any[])
+                .map(st => `${st.done ? `[x${st.doneAt ? ` J${st.doneAt}` : ''}]` : '[ ]'} ${st.text}`)
+                .join('; ');
+            consider('quest', `Quête « ${q.title} » (${q.status})`,
+                `${q.description || ''}${steps ? ` — steps: ${steps}` : ''}`,
+                `${q.title} ${q.description || ''} ${((q.steps || []) as any[]).map(st => st.text).join(' ')} quete quest mission`);
         }
     }
     // MÉCHANT : jamais fouillé jusqu'ici. Le SECRET n'est rendu

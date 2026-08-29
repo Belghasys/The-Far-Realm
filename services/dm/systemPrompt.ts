@@ -177,7 +177,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       }).join('\n      ')}`
     : '';
 
-  // Long-term memory: the cumulative AI summary produced at each 60K-token purge.
+  // Long-term memory: the cumulative AI summary produced at each 15K-token purge.
   // This is what lets the DM remember chapters that fell out of the sliding
   // window — without it, a reload only knows the last RESTORE_LIMIT beats.
   // Cap sized to fit the summarizer's 450-word ceiling (~2700 FR chars) so a

@@ -770,29 +770,6 @@ class SaveService {
         });
     }
 
-    // Update transcript in real-time
-    async updateTranscript(transcript: { speaker: 'user' | 'dm', text: string }[]): Promise<void> {
-        if (!this.currentSaveId) return;
-
-        return this.writeQueue.enqueue(async () => {
-            try {
-                const userId = this.getCurrentUserId();
-                const saveRef = doc(db, 'users', userId, 'saves', this.currentSaveId!);
-
-                await setDoc(saveRef, this.sanitize({
-                    transcript,
-                    updatedAt: Timestamp.now(),
-                }), { merge: true });
-
-                console.log('💬 Transcript synced:', transcript.length, 'messages');
-                this.reportSync(true);
-            } catch (error) {
-                console.error('❌ Transcript sync failed:', error);
-                this.reportSync(false);
-            }
-        });
-    }
-
     // ========== SUMMARIZATION & ARCHIVING ==========
 
     // Archive old conversation with summary when 60K token threshold is reached

@@ -627,6 +627,9 @@ export interface CampaignRuntimeState {
   activeBranch: CampaignSubBranchPlan | null;
   branchHistory: CampaignSubBranchPlan[];
   canonFacts: string[];
+  /** Faits canon RETIRÉS avec pierre tombale (engine/canonFacts) : hors du
+   *  bloc directeur, consultables via lookup_campaign(kind:'memory'). */
+  retiredFacts?: string[];
   protectedSecrets: string[];
   worldClocks: CampaignWorldClock[];
   /** In-world calendar: day counter (starts at 1) + moment of the day. Long
@@ -677,6 +680,9 @@ export interface QuestStep {
   id: string;
   text: string;
   done: boolean;
+  /** Jour de JEU où l'étape a été franchie (update_quest_step). Le temps
+   *  réel reste au moteur ; le MJ ne voit que le calendrier du monde. */
+  doneAt?: number;
 }
 
 export interface QuestEntry {

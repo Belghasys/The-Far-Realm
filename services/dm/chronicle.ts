@@ -121,6 +121,15 @@ export function formatCombatChronicleLine(opts: {
     outcome: 'victory' | 'defeat' | 'narrative' | 'interrupted';
     departed?: string;
 }): string {
+    // Constat 11 (2026-08-29) : quand TOUS les ennemis quittent le combat
+    // vivants, ils passent dans `departed` et sortent du roster — la ligne
+    // disait « vs unknown foes — fled: Elephant ». Les noms sont là : on les
+    // reprend du segment departed (« fled: 2x Goblin; surrendered: Bandit »).
+    const foes = opts.foes && opts.foes !== 'unknown foes'
+        ? opts.foes
+        : (opts.departed
+            ? opts.departed.split(';').map(part => part.replace(/^\s*\w+:\s*/, '').trim()).filter(Boolean).join(', ') || 'unknown foes'
+            : 'unknown foes');
     const lost = Math.max(0, (opts.hpStart ?? opts.hpMax) - opts.hpCurrent);
     const ratio = opts.hpMax > 0 ? lost / opts.hpMax : 0;
     const qual = lost <= 0 ? 'unscathed' : ratio <= 0.25 ? 'lightly wounded' : ratio <= 0.5 ? 'wounded' : ratio <= 0.75 ? 'badly wounded' : 'mortally wounded';
@@ -132,5 +141,5 @@ export function formatCombatChronicleLine(opts: {
     const xpTxt = opts.xp && opts.xp > 0 ? ` — +${opts.xp} XP` : '';
     const departedTxt = opts.departed ? ` — ${opts.departed}` : '';
     const customTxt = opts.custom?.length ? ` — custom moves: ${opts.custom.slice(0, 5).join(', ')}` : '';
-    return `Combat: ${opts.heroName} vs ${opts.foes} — ${state}${xpTxt}${departedTxt}${customTxt}`;
+    return `Combat: ${opts.heroName} vs ${foes} — ${state}${xpTxt}${departedTxt}${customTxt}`;
 }

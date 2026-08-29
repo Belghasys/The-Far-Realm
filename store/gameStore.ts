@@ -258,6 +258,7 @@ function normalizeRuntime(runtime?: Partial<CampaignRuntimeState> | null): Campa
         activeBranch: runtime?.activeBranch || null,
         branchHistory: runtime?.branchHistory || [],
         canonFacts: runtime?.canonFacts || [],
+        retiredFacts: runtime?.retiredFacts || [],
         protectedSecrets: runtime?.protectedSecrets || [],
         worldClocks: runtime?.worldClocks || [],
         campaignLog: runtime?.campaignLog || [],

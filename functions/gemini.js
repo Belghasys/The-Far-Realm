@@ -39,6 +39,10 @@ const LIVE_TOKEN_CONNECT_WINDOW_MIN = 2; // délai pour OUVRIR la session après
 // Appels texte : ~1 résumé + 1 greffier + 1 audit par chapitre, quelques
 // branches — une partie longue fait ~40 appels.
 const TEXT_GLOBAL_DAILY_LIMIT = 20000;
+// Passes de MÉMOIRE (greffier, résumés, auditeur, extraction de faits) : la
+// comptabilité interne du jeu, jamais facturée comme usage du joueur —
+// champ `memory`, plafond global large, garde-fou par joueur dans plans.js.
+const MEMORY_GLOBAL_DAILY_LIMIT = 60000;
 const TEXT_MAX_PAYLOAD_BYTES = 400 * 1024; // contents + config sérialisés
 
 // Seuls les modèles Gemini passent — ni Imagen, ni Veo, ni un nom forgé.
@@ -170,7 +174,11 @@ exports.geminiText = onCall(
             throw new HttpsError("invalid-argument", "Requête trop volumineuse.");
         }
 
-        await reserveCredit(uid, "text", TEXT_GLOBAL_DAILY_LIMIT, "appels");
+        // `purpose: "memory"` = passe de fond (voir geminiClient.ts) : elle a son
+        // propre champ de quota. Un client trafiqué qui étiquetterait tout en
+        // memory gagnerait au plus le plafond de plans.js — borné, pas gratuit.
+        const purpose = request.data?.purpose === "memory" ? "memory" : "text";
+        await reserveCredit(uid, purpose, purpose === "memory" ? MEMORY_GLOBAL_DAILY_LIMIT : TEXT_GLOBAL_DAILY_LIMIT, purpose === "memory" ? "passes de mémoire" : "appels");
 
         try {
             const response = await client().models.generateContent({ model, contents, config });
@@ -185,7 +193,7 @@ exports.geminiText = onCall(
                 text,
             };
         } catch (err) {
-            await refundCredit(uid, "text");
+            await refundCredit(uid, purpose);
             console.error(`geminiText ${model} failed:`, err?.message || err);
             // Le message Gemini est relayé : le client a une chaîne de repli
             // par modèle et doit savoir POURQUOI (429, modèle inconnu…).

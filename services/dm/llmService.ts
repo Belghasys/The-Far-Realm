@@ -103,6 +103,7 @@ export async function summarizeHistory(
 
     try {
         const result = await generateWithFallback(SUMMARY_CHAIN, {
+            purpose: 'memory',
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {
                 thinkingConfig: { thinkingLevel: 'LOW' }
@@ -148,6 +149,7 @@ export async function summarizeChapterDigest(
     `;
     try {
         const result = await generateWithFallback(SUMMARY_CHAIN, {
+            purpose: 'memory',
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: { thinkingConfig: { thinkingLevel: 'LOW' } } as any,
         });
@@ -185,6 +187,7 @@ export async function summarizeActDigest(
     `;
     try {
         const result = await generateWithFallback(SUMMARY_CHAIN, {
+            purpose: 'memory',
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: { thinkingConfig: { thinkingLevel: 'LOW' } } as any,
         });
@@ -225,6 +228,7 @@ export async function summarizeCurrentChapter(
         // Le résumé roulant fait partie du RÉSUMEUR → même chaîne 3.7→3.6→3.5
         // (il était sur le modèle léger d'extraction, moins fiable en synthèse).
         const result = await generateWithFallback(SUMMARY_CHAIN, {
+            purpose: 'memory',
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: { thinkingConfig: { thinkingLevel: 'LOW' } } as any,
         });
@@ -242,6 +246,9 @@ export async function summarizeCurrentChapter(
 // update_campaign_runtime. Merged into campaignRuntime + journal by the caller.
 export interface ExtractedCampaignFacts {
     canonFacts: string[];
+    /** Faits CONNUS que ce segment rend faux ou résolus — retirés avec pierre
+     *  tombale par engine/canonFacts.retireFacts (jamais supprimés). */
+    obsoleteFacts: { fact: string; replacedBy: string }[];
     npcUpdates: { name: string; note?: string; location?: string; dispositionDelta?: number }[];
     promises: string[];
     threats: string[];
@@ -271,11 +278,13 @@ export async function extractCampaignFacts(
     - npcUpdates: NPCs whose relationship with the hero changed. dispositionDelta: -2 (angered) to +2 (won over). note: one short sentence of what they now know/feel. location if they moved.
     - promises: unresolved oaths, debts, deals ("X owes the hero", "the hero swore to...")
     - threats: looming dangers set in motion and not yet resolved
+    - obsoleteFacts: KNOWN facts (listed above) that this segment makes FALSE or RESOLVED — a captive was freed, a threat was ended, an ally died, a debt was paid. Copy the known fact VERBATIM in "fact", and put the new fact that replaces it in "replacedBy" (it must also appear in canonFacts). Max 4. When in doubt, leave the fact alone.
     Max 6 items per list, each under 140 characters. Empty arrays are fine — do not invent.
     `;
 
     try {
         const result = await client.models.generateContent({
+            purpose: 'memory',
             model: FACTS_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {
@@ -300,8 +309,16 @@ export async function extractCampaignFacts(
                         },
                         promises: { type: 'ARRAY', items: { type: 'STRING' } },
                         threats: { type: 'ARRAY', items: { type: 'STRING' } },
+                        obsoleteFacts: {
+                            type: 'ARRAY',
+                            items: {
+                                type: 'OBJECT',
+                                properties: { fact: { type: 'STRING' }, replacedBy: { type: 'STRING' } },
+                                required: ['fact', 'replacedBy'],
+                            },
+                        },
                     },
-                    required: ['canonFacts', 'npcUpdates', 'promises', 'threats'],
+                    required: ['canonFacts', 'npcUpdates', 'promises', 'threats', 'obsoleteFacts'],
                 },
             } as any
         });
@@ -315,6 +332,10 @@ export async function extractCampaignFacts(
             : [];
         return {
             canonFacts: strList(parsed.canonFacts),
+            obsoleteFacts: (Array.isArray(parsed.obsoleteFacts) ? parsed.obsoleteFacts : [])
+                .map((o: any) => ({ fact: String(o?.fact || '').trim(), replacedBy: String(o?.replacedBy || '').trim() }))
+                .filter((o: any) => o.fact && o.replacedBy)
+                .slice(0, 4),
             promises: strList(parsed.promises),
             threats: strList(parsed.threats),
             npcUpdates: (Array.isArray(parsed.npcUpdates) ? parsed.npcUpdates : [])

@@ -84,6 +84,7 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
 
     try {
         const result = await getGeminiClient().models.generateContent({
+            purpose: 'memory',
             model: AUDIT_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {
@@ -112,4 +113,21 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
         log.debug('Narration audit failed (non-fatal):', e);
         return null;
     }
+}
+
+/**
+ * Cadence de l'auditeur (2026-08-29). C'est un VÉRIFICATEUR, pas une mémoire :
+ * à 90 s il était le premier poste de dépense du quota (jusqu'à 40 appels/h)
+ * sans qu'une contradiction relevée 4 min plus tard coûte quoi que ce soit.
+ * Et pas de passe si l'état vérifié n'a pas bougé depuis la dernière — sauf en
+ * combat, où les chiffres changent à chaque tour.
+ */
+export const NARRATION_AUDIT_INTERVAL_MS = 240_000;
+
+export function auditCadenceDue(input: {
+    now: number; lastAt: number; lastStateHash: string; stateHash: string; combatActive: boolean;
+}): boolean {
+    if (input.now - input.lastAt < NARRATION_AUDIT_INTERVAL_MS) return false;
+    if (!input.combatActive && input.stateHash === input.lastStateHash) return false;
+    return true;
 }

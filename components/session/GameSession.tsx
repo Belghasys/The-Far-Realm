@@ -6,6 +6,7 @@ import { useDMConnection } from '../../hooks/useDMConnection';
 import { useToolProcessor } from '../../hooks/useToolProcessor';
 import { useMusicDirector } from '../../hooks/useMusicDirector';
 import { useReconnectCountdown } from '../../hooks/useReconnectCountdown';
+import { useWakeLock } from '../../hooks/useWakeLock';
 import { useRailWidth } from '../../hooks/useRailWidth';
 import type { SessionContext } from '../../services/session/context';
 import { handlePlayerCastSpell as handlePlayerCastSpellAction } from '../../services/session/playerSpell';
@@ -27,7 +28,7 @@ const RECONNECT_WINDOW_S = 20;
 import { useGameStore } from '../../store/gameStore';
 import { LiveConnectionManager } from '../../services/dm/geminiRealtime';
 import { auditBus } from '../../services/infra/auditBus';
-import { auditNarration } from '../../services/dm/narrationAuditor';
+import { auditNarration, auditCadenceDue } from '../../services/dm/narrationAuditor';
 import { runJournalKeeper } from '../../services/dm/journalKeeper';
 import { sessionTrace } from '../../services/infra/sessionTrace';
 
@@ -67,6 +68,7 @@ import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
 import { foldText } from '../../engine/skillSystem';
+import { hiddenFactsMentioned } from '../../engine/canonFacts';
 import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
 import { summarizeCurrentChapter } from '../../services/dm/llmService';
@@ -504,6 +506,9 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   });
 
   const reconnectSeconds = useReconnectCountdown(isReconnecting, RECONNECT_WINDOW_S * 1000);
+  // Lot D mobile : l'écran ne s'éteint pas pendant la partie — sans ça le
+  // WebSocket Live meurt au verrouillage et chaque reconnexion coûte un crédit.
+  useWakeLock(isConnected);
 
   useEffect(() => {
     if (!dm || !isConnected || openingKickoffSentRef.current) return;
@@ -607,18 +612,15 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // Throttled async Flash pass comparing the DM's latest narration to the REAL
   // engine state (HP, gold, inventory, combat). On a clear contradiction it
   // sends a private corrective note so the DM realigns in the next beat —
-  // invisible to the player, at most one check per 90s.
-  const lastNarrationAuditRef = React.useRef({ at: 0, transcriptLen: 0 });
+  // invisible to the player, at most one check per 4 min (auditCadenceDue).
+  const lastNarrationAuditRef = React.useRef({ at: 0, transcriptLen: 0, stateHash: '' });
   useEffect(() => {
     if (!dm || !isConnected || transcript.length === 0) return;
     const last = transcript[transcript.length - 1];
     if (last.speaker !== 'dm') return;
     if (/^\s*\*?\[/.test(last.text.trim())) return; // skip [SYSTEM]/marker lines
     if (last.text.trim().length < 120) return;      // too short to contradict anything material
-    const now = Date.now();
-    if (now - lastNarrationAuditRef.current.at < 90000) return;
     if (transcript.length === lastNarrationAuditRef.current.transcriptLen) return;
-    lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length };
 
     const runtimeNow = useGameStore.getState().campaignRuntime;
     const activeQuestLine = (useGameStore.getState().journal?.quests || [])
@@ -640,6 +642,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       ...(activeQuestLine ? [`Active quests: ${activeQuestLine}`] : []),
       `In-world time: Day ${runtimeNow.dayCount || 1}, ${runtimeNow.timeOfDay || 'day'}`,
     ];
+    // Cadence (2026-08-29) : 4 min, et pas de passe si l'état vérifié n'a pas
+    // bougé — c'est un VÉRIFICATEUR, et le premier poste de dépense du quota.
+    const now = Date.now();
+    const stateHash = stateFacts.join('|');
+    if (!auditCadenceDue({ now, lastAt: lastNarrationAuditRef.current.at, lastStateHash: lastNarrationAuditRef.current.stateHash, stateHash, combatActive: combatState.isActive })) return;
+    lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length, stateHash };
     // C1 — les secrets dont le chapitre de révélation n'est pas atteint, verrou
     // CALCULÉ depuis la position réelle. L'auditeur ne surveillait que les
     // chiffres (PV, or, inventaire, combat, objectif, heure) : une révélation
@@ -794,6 +802,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // ancien est nommé dans l'échange, souffler discrètement sa fiche au MJ
   // (faits connus, disposition) pour qu'il le joue avec sa mémoire.
   const npcRecallRef = React.useRef<Record<string, number>>({});
+  const canonRecallRef = React.useRef<Record<string, number>>({});
   useEffect(() => {
     if (!dm || !isConnected || transcript.length === 0) return;
     const last = transcript[transcript.length - 1];
@@ -811,6 +820,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const facts = (npc.knownFacts || []).slice(-3).join(' | ');
       dm.sendSystemMessage(`[NPC MEMORY] ${npc.name}${npc.location ? ` (last seen: ${npc.location})` : ''}${typeof npc.disposition === 'number' && npc.disposition !== 0 ? `, disposition ${npc.disposition > 0 ? '+' : ''}${npc.disposition}` : ''}${facts ? ` — known facts: ${facts}` : ''}. Play this NPC consistently with what they know and feel.`);
       break; // un seul rappel par message
+    }
+    // Faits canon CACHÉS (constat 11, 2026-08-29) — même mécanique que les
+    // PNJ : le bloc directeur ne montre que les 4 premiers et 10 derniers
+    // faits ; quand le sujet d'un fait invisible revient dans l'échange, on
+    // le souffle. Zéro appel LLM ; au plus 3 faits par réplique, 10 min de
+    // silence par fait. C'est ce qui aurait rappelé « Trenn est un allié ».
+    const facts = useGameStore.getState().campaignRuntime?.canonFacts || [];
+    const mentioned = hiddenFactsMentioned(facts, last.text, { exclude: [character.name] })
+      .filter(i => Date.now() - (canonRecallRef.current[facts[i]] || 0) >= 10 * 60_000);
+    if (mentioned.length) {
+      for (const i of mentioned) canonRecallRef.current[facts[i]] = Date.now();
+      dm.sendSystemMessage(`[CANON MEMORY] Established facts about what was just mentioned — honor them: ${mentioned.map(i => facts[i]).join(' | ')}`);
     }
   }, [dm, isConnected, transcript]);
 

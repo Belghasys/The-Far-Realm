@@ -172,6 +172,15 @@ export class LiveDungeonMaster {
         // fuirait dans le premier turnComplete de la nouvelle.
         this.dmTranscriptBuffer = '';
         this.userTranscriptBuffer = '';
+        // Compteurs de fenêtre (audit 2026-08-29) : remis à zéro pour TOUTE
+        // session neuve, pas seulement sur goAway. Sinon une reconnexion
+        // ordinaire comparait le plancher de la session neuve au dernier relevé
+        // de la session morte : fausse « compression détectée » à chaque coupure
+        // réseau et chaque verrouillage d'écran mobile — et la télémétrie qui a
+        // servi à régler la compression en était polluée.
+        this.firstPromptTokenCount = 0;
+        this.lastPromptTokenCount = 0;
+        this.lastTracedTokenCount = 0;
 
         // A FRESH session (no resumption handle) has no memory of the previous
         // connection's tool-call ids — replaying queued tool responses into it
@@ -735,12 +744,8 @@ export class LiveDungeonMaster {
         const s = this.session;
         this.session = null;
         if (s) { try { s.close(); } catch(_) {} }
-        // Un goAway est une passation PLANIFIÉE par Google, pas une panne : les
-        // compteurs de fenêtre repartent de zéro sur la nouvelle session, sinon
-        // la première mesure serait lue comme une compression géante.
-        this.firstPromptTokenCount = 0;
-        this.lastPromptTokenCount = 0;
-        this.lastTracedTokenCount = 0;
+        // Les compteurs de fenêtre repartent de zéro dans connect(), pour
+        // toute session neuve (goAway compris).
         this.onConnectionChange(false);
         this.attemptReconnect();
     }

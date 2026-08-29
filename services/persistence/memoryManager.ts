@@ -5,8 +5,8 @@
  * Key responsibilities:
  * - Store chat history and combat state in localStorage
  * - Count tokens (approximate: 4 chars ≈ 1 token)
- * - Trigger summarization at 60K tokens
- * - Purge old history keeping last 20%
+ * - Trigger summarization at TOKEN_THRESHOLD (15K tokens ≈ 1h30-2h30 of voice play)
+ * - Purge old history keeping the last PURGE_KEEP_PERCENT (30 %) verbatim
  */
 
 import { saveService } from './saveService';

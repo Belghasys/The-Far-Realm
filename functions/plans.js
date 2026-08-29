@@ -9,9 +9,11 @@
 
 const PLAN_LIMITS = Object.freeze({
     // Découverte : de quoi jouer une vraie séance par jour, pas d'en faire un usage illimité.
-    free: Object.freeze({ live: 6, text: 80, images: 15 }),
+    // `memory` = passes de fond (greffier, résumés, auditeur, faits) : la
+    // comptabilité interne du jeu, pas l'usage du joueur — garde-fou large.
+    free: Object.freeze({ live: 6, text: 80, images: 15, memory: 600 }),
     // Aventurier (abonnement Paddle) : une journée entière de jeu.
-    adventurer: Object.freeze({ live: 60, text: 400, images: 60 }),
+    adventurer: Object.freeze({ live: 60, text: 400, images: 60, memory: 2000 }),
 });
 
 const ACTIVE_STATUSES = new Set(["active", "trialing", "past_due"]);

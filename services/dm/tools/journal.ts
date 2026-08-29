@@ -106,7 +106,14 @@ export async function update_quest_step(args: any, ctx: ToolContext) {
             const steps = [...(q.steps || [])];
             const idx = steps.findIndex((s: any) => qsNorm(s.text) === qsNorm(stepText) || qsNorm(s.text).includes(qsNorm(stepText)) || qsNorm(stepText).includes(qsNorm(s.text)));
             if (idx >= 0) {
-                steps[idx] = { ...steps[idx], done: doneArg ?? true };
+                // doneAt = jour de JEU (constat 11, 2026-08-29) : le MJ peut dire
+                // « tu l'as fait avant-hier ». Décochée, l'étape perd sa date.
+                const done = doneArg ?? true;
+                const rest: any = { ...steps[idx] };
+                delete rest.doneAt;
+                steps[idx] = done
+                    ? { ...rest, done, doneAt: useGameStore.getState().campaignRuntime.dayCount || 1 }
+                    : { ...rest, done };
             } else {
                 steps.push({ id: crypto.randomUUID(), text: stepText, done: doneArg ?? false });
             }

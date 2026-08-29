@@ -7,6 +7,7 @@ import { buildSlimManifestPayload } from '../services/persistence/manifestHydrat
 import { useGameStore } from '../store/gameStore';
 import { memoryManager } from '../services/persistence/memoryManager';
 import { campaignEventLog } from '../services/persistence/campaignEventLog';
+import { mergeExtractedFacts, retireFacts } from '../engine/canonFacts';
 import { ChatMessage } from './useTranscript';
 import { foldText } from '../engine/skillSystem';
 
@@ -249,7 +250,7 @@ export function useSaveSync({
                     memoryManager.updateCombatState(null);
                 }
 
-                // CHECK 60K TOKEN THRESHOLD - Trigger AI summarization if needed
+                // Seuil memoryManager.TOKEN_THRESHOLD (15K) atteint → résumé IA cumulatif
                 if (memoryManager.shouldSummarize()) {
                     console.log('⚠️ Token threshold reached! Triggering AI summarization...');
                     try {
@@ -299,19 +300,24 @@ export function useSaveSync({
                                     const facts = await extractCampaignFacts(archivedMessages, knownFacts, data.language);
                                     if (!facts) return;
 
-                                    const newFacts = [
-                                        ...facts.canonFacts,
-                                        ...facts.promises.map(p => `[Promesse] ${p}`),
-                                        ...facts.threats.map(t => `[Menace] ${t}`),
-                                    ];
-                                    if (newFacts.length) {
+                                    // Constat 11 (2026-08-29) — les faits extraits arrivaient SANS jour de
+                                    // jeu, préfixés `[Menace]` sans voir que le modèle l'avait déjà recopié,
+                                    // dédoublonnés sur la chaîne entière (donc jamais), et rien ne retirait
+                                    // un fait devenu faux : « Trenn captif » et « Trenn allié » coexistaient.
+                                    // engine/canonFacts tague `[J6]`, dédoublonne sur le texte nu, et retire
+                                    // avec une PIERRE TOMBALE — correspondance exacte, remplacement
+                                    // obligatoire, faits d'auteur immunisés (seedCanonFacts).
+                                    const incoming = facts.canonFacts.length + facts.promises.length + facts.threats.length + facts.obsoleteFacts.length;
+                                    if (incoming > 0) {
+                                        const { seedCanonFacts } = await import('../services/dm/adventureStart');
+                                        const seeds = seedCanonFacts(data.adventureManifestData);
                                         useGameStore.getState().setCampaignRuntime(prev => {
-                                            const seen = new Set((prev.canonFacts || []).map(f => f.toLowerCase()));
-                                            const merged = [...(prev.canonFacts || [])];
-                                            for (const fact of newFacts) {
-                                                if (!seen.has(fact.toLowerCase())) { seen.add(fact.toLowerCase()); merged.push(fact); }
-                                            }
-                                            return { ...prev, canonFacts: merged.slice(-80), updatedAt: Date.now() };
+                                            const before = prev.canonFacts || [];
+                                            const day = prev.dayCount || 1;
+                                            const merged = mergeExtractedFacts(before, facts, day);
+                                            const added = merged.filter(f => !before.includes(f));
+                                            const { canonFacts, retiredFacts } = retireFacts(merged, prev.retiredFacts || [], facts.obsoleteFacts, added, seeds, day);
+                                            return { ...prev, canonFacts, retiredFacts, updatedAt: Date.now() };
                                         });
                                         await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);
                                     }
@@ -345,7 +351,7 @@ export function useSaveSync({
                                             saveService.updateJournalDebounced(useGameStore.getState().journal as any);
                                         }
                                     }
-                                    console.log('🧠 Facts extracted & merged:', newFacts.length, 'facts,', facts.npcUpdates.length, 'NPC updates');
+                                    console.log('🧠 Facts extracted & merged:', incoming, 'facts,', facts.obsoleteFacts.length, 'retired,', facts.npcUpdates.length, 'NPC updates');
                                 } catch (e) {
                                     console.error('❌ Fact extraction failed:', e);
                                 }

@@ -176,3 +176,23 @@ export function buildInitialJournal(manifest: AdventureManifest, character: Char
         chronicle: [],
     };
 }
+
+/**
+ * Les faits canon SEMÉS à la création — ceux qu'un retrait de fond ne doit
+ * jamais toucher (engine/canonFacts.retireFacts). Recalculés depuis le
+ * manifeste, donc valables pour les sauvegardes antérieures, sans marqueur.
+ * DOIT refléter le bloc `canonFacts` de buildCampaignRuntime ci-dessus.
+ */
+export function seedCanonFacts(manifest: AdventureManifest | null | undefined): string[] {
+    const out = [...DEFAULT_CAMPAIGN_RUNTIME.canonFacts];
+    if (!manifest) return out;
+    const villain: any = (manifest as any).villain || {};
+    const authoredFacts = manifest.initialCanonFacts || [];
+    out.push(...authoredFacts);
+    if (!authoredFacts.length && villain.name) {
+        const weaknesses = Array.isArray(villain.weaknesses) ? villain.weaknesses.filter(Boolean) : [];
+        if (weaknesses.length) out.push(`Faiblesses de ${villain.name} : ${weaknesses.join(' ; ')}`);
+        if (villain.escalationArc) out.push(`Escalade de ${villain.name} : ${String(villain.escalationArc).slice(0, 400)}`);
+    }
+    return out;
+}

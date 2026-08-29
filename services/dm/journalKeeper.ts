@@ -87,6 +87,7 @@ ${dialogue}
 
     try {
         const result = await getGeminiClient().models.generateContent({
+            purpose: 'memory',
             model: KEEPER_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: {

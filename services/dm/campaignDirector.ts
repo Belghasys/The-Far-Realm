@@ -383,9 +383,11 @@ function campaignChronicleContext(runtime?: CampaignRuntimeState): string[] {
     // fait canon ne compte donc que s'il porte le tag que le jeu écrit lui-même
     // (extractCampaignFacts) ; le texte libre reste balayé côté LOG, où il est
     // écrit par le greffier ou le moteur pour cette raison précise.
+    // Le jour de jeu précède le tag depuis engine/canonFacts (`[J6] [Promesse] …`) :
+    // sans ce préfixe optionnel, une promesse datée redevenait invisible.
     const promiseFacts = (runtime?.canonFacts || [])
-        .filter(f => /^\s*\[Promesse\]/i.test(f))
-        .map(f => f.replace(/^\s*\[Promesse\]\s*/i, ''));
+        .filter(f => /^\s*(?:\[J\d+\]\s*)?\[Promesse\]/i.test(f))
+        .map(f => f.replace(/^\s*(?:\[J\d+\]\s*)?\[Promesse\]\s*/i, ''));
     const promises = [...new Set([...promiseFacts, ...promiseLines])].slice(-8);
     if (promises.length) {
         lines.push(`Open promises & debts (NEVER forget or drop these): ${promises.join(' | ')}`);
@@ -410,7 +412,9 @@ function campaignSpineContext(manifest?: AdventureManifest | null, manifestoText
         .slice()
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
         .slice(0, 6)
-        .map(clock => `${clock.name} ${clock.stage}/${clock.maxStage}: ${trimText(clock.description, INJECTION_BUDGETS.worldClock)}`);
+        // Constat 11 (2026-08-29) : une horloge à 6/6 restait « active » avec
+        // une description vide — un compteur au maximum sans consigne.
+        .map(clock => `${clock.name} ${clock.stage}/${clock.maxStage}${clock.stage >= clock.maxStage ? ' [MAXED — resolve it (status resolved) or fire its consequence now]' : ''}: ${trimText(clock.description, INJECTION_BUDGETS.worldClock)}`);
 
     const lines: string[] = [];
 

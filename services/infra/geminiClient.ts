@@ -19,6 +19,9 @@ export interface GeminiTextRequest {
     model: string;
     contents: ContentListUnion;
     config?: GenerateContentConfig;
+    /** `memory` = passe de fond (greffier, résumés, auditeur, faits) : son
+     *  propre quota côté serveur, jamais facturée au joueur. Défaut : text. */
+    purpose?: 'memory' | 'text';
 }
 
 /** Ce que le relais renvoie : le sous-ensemble sérialisable de GenerateContentResponse. */
@@ -43,7 +46,7 @@ async function generateContent(request: GeminiTextRequest): Promise<GeminiTextRe
         'geminiText',
     );
     try {
-        const { data } = await fn({ model: request.model, contents: request.contents, ...(request.config ? { config: request.config } : {}) });
+        const { data } = await fn({ model: request.model, contents: request.contents, ...(request.config ? { config: request.config } : {}), ...(request.purpose ? { purpose: request.purpose } : {}) });
         return data ?? {};
     } catch (err: any) {
         // HttpsError → message serveur (quota, connexion requise, erreur
