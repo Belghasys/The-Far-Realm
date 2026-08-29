@@ -38,6 +38,20 @@ export interface GeminiTextClient {
 
 let client: GeminiTextClient | null = null;
 
+export type QuotaPurpose = 'memory' | 'text';
+export interface QuotaExhaustedInfo { purpose: QuotaPurpose; message: string }
+const quotaListeners = new Set<(info: QuotaExhaustedInfo) => void>();
+/** Abonnement aux refus de quota du serveur — services/dm/quotaWatch les
+ *  consigne une fois par jour ; les passes de fond n'ont rien à faire. */
+export function onQuotaExhausted(listener: (info: QuotaExhaustedInfo) => void): () => void {
+    quotaListeners.add(listener);
+    return () => { quotaListeners.delete(listener); };
+}
+/** L'erreur nommée par le relais sur un `resource-exhausted` du serveur. */
+export function isQuotaExhausted(err: unknown): boolean {
+    return (err as { name?: string } | null)?.name === 'QuotaExhaustedError';
+}
+
 async function generateContent(request: GeminiTextRequest): Promise<GeminiTextResponse> {
     const fn = httpsCallable<GeminiTextRequest, GeminiTextResponse>(
         // App Firebase par défaut (initialisée par persistence/firebase.ts
@@ -52,9 +66,13 @@ async function generateContent(request: GeminiTextRequest): Promise<GeminiTextRe
         // HttpsError → message serveur (quota, connexion requise, erreur
         // Gemini relayée) : les appelants ont leurs propres replis.
         const error = new Error(err?.message || 'Relais Gemini injoignable.', { cause: err });
-        // Un refus de QUOTA est nommé : services/dm/quotaWatch le rend visible
-        // (une fois par session) au lieu d'un warn dans une console vide.
-        if (err?.code === 'functions/resource-exhausted') error.name = 'QuotaExhaustedError';
+        // Un refus de QUOTA est nommé et signalé aux abonnés (quotaWatch le
+        // consigne une fois par jour) au lieu d'un warn dans une console vide.
+        if (err?.code === 'functions/resource-exhausted') {
+            error.name = 'QuotaExhaustedError';
+            const info: QuotaExhaustedInfo = { purpose: request.purpose === 'memory' ? 'memory' : 'text', message: error.message };
+            for (const listener of quotaListeners) { try { listener(info); } catch { /* abonné défaillant : ignorer */ } }
+        }
         throw error;
     }
 }

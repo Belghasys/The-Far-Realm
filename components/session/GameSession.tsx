@@ -67,8 +67,9 @@ import { useSettingsStore, RAIL_WIDTH } from '../../store/settingsStore';
 import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
-import { foldText } from '../../engine/skillSystem';
-import { hiddenFactsMentioned, textsMentioned } from '../../engine/canonFacts';
+import { hiddenFactsMentioned } from '../../engine/canonFacts';
+import { buildEntityLexicon, entitiesMentioned, textsCiting } from '../../engine/entities';
+import { installQuotaWatch } from '../../services/dm/quotaWatch';
 import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
 import { summarizeCurrentChapter } from '../../services/dm/llmService';
@@ -461,6 +462,11 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // battement de 8 min. L'abonnement recalcule le bloc ET force son envoi.
   const [summaryVersion, setSummaryVersion] = useState(0);
   useEffect(() => memoryManager.subscribe(() => setSummaryVersion(v => v + 1)), []);
+  // Item 3b : le premier refus de quota du jour finit dans le journal de campagne.
+  useEffect(() => installQuotaWatch(), []);
+  // Le LEXIQUE d'entités (2026-08-29) — un seul apparieur pour l'auditeur
+  // (secrets verrouillés), le rappel de faits canon et le rappel PNJ.
+  const entityLexicon = useMemo(() => buildEntityLexicon({ manifest: adventureManifestData, journal: journal as any, character }), [adventureManifestData, journal, character]);
 
   const directorContext = useMemo(() => buildCampaignDirectorContext({
     character,
@@ -653,7 +659,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // CALCULÉ depuis la position réelle. Calculés AVANT la cadence : si la
     // narration cite le nom de l'un d'eux, le contrôle part sans attendre.
     const lockedSecrets = buildLockedSecretFacts(adventureManifestData, runtimeNow);
-    const secretMentioned = lockedSecrets.length > 0 && textsMentioned(lockedSecrets, last.text, { exclude: [character.name], max: 1 }).length > 0;
+    const secretMentioned = lockedSecrets.length > 0 && textsCiting(lockedSecrets, entityLexicon, entitiesMentioned(entityLexicon, last.text), { max: 1 }).length > 0;
     // Cadence (2026-08-29) : 4 min si l'état vérifié a bougé, 12 min sinon —
     // et tout de suite (plancher 90 s) sur un nom de secret verrouillé. La
     // porte « état inchangé » seule avait éteint l'auditeur en dialogue calme.
@@ -661,10 +667,6 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const stateHash = stateFacts.join('|');
     if (!auditCadenceDue({ now, lastAt: lastNarrationAuditRef.current.at, lastStateHash: lastNarrationAuditRef.current.stateHash, stateHash, combatActive: combatState.isActive, secretMentioned })) return;
     lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length, stateHash };
-    // C1 — les secrets dont le chapitre de révélation n'est pas atteint, verrou
-    // CALCULÉ depuis la position réelle. L'auditeur ne surveillait que les
-    // chiffres (PV, or, inventaire, combat, objectif, heure) : une révélation
-    // prématurée passait sans que rien ne la voie.
     void auditNarration({ narration: last.text, stateFacts, lockedSecrets, language }).then(result => {
       if (!result || result.consistent || !result.note) return;
       auditBus.publish('gemini-system', `Consistency check flagged${result.leak ? ' (SECRET LEAK)' : ''}: ${result.note.slice(0, 80)}`, { note: result.note, leak: result.leak, narration: last.text });
@@ -846,14 +848,13 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     if (!dm || !isConnected || transcript.length === 0) return;
     const last = transcript[transcript.length - 1];
     if (!last?.text || last.text.trimStart().startsWith('*[')) return;
-    const hay = foldText(last.text);
+    const cited = new Set(entitiesMentioned(entityLexicon, last.text).filter(e => e.kind === 'person' && e.id).map(e => e.id));
     const npcs = (useGameStore.getState().journal.npcs || []) as any[];
     const recentIds = new Set(npcs.slice(-8).map(n => n.id || n.name));
     for (const npc of npcs) {
       const key = npc.id || npc.name;
       if (recentIds.has(key)) continue; // déjà dans le top-8 du contexte
-      const folded = foldText(String(npc.name || ''));
-      if (folded.length < 4 || !hay.includes(folded)) continue;
+      if (!cited.has(key)) continue;
       if (Date.now() - (npcRecallRef.current[key] || 0) < 10 * 60_000) continue;
       npcRecallRef.current[key] = Date.now();
       const facts = (npc.knownFacts || []).slice(-3).join(' | ');
@@ -866,7 +867,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // le souffle. Zéro appel LLM ; au plus 3 faits par réplique, 10 min de
     // silence par fait. C'est ce qui aurait rappelé « Trenn est un allié ».
     const facts = useGameStore.getState().campaignRuntime?.canonFacts || [];
-    const mentioned = hiddenFactsMentioned(facts, last.text, { exclude: [character.name] })
+    const mentioned = hiddenFactsMentioned(facts, last.text, { lexicon: entityLexicon })
       .filter(i => Date.now() - (canonRecallRef.current[facts[i]] || 0) >= 10 * 60_000);
     if (mentioned.length) {
       for (const i of mentioned) canonRecallRef.current[facts[i]] = Date.now();

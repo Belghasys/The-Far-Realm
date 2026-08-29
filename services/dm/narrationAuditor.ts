@@ -14,7 +14,6 @@
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
 import { getGeminiClient } from '../infra/geminiClient';
-import { reportQuotaOnce } from './quotaWatch';
 
 // Passe fréquente et mécanique → modèle léger dédié (VITE_AUDIT_MODEL, ex.
 // gemini-3.5-flash-lite) pour épargner le quota du Flash principal. Retombe
@@ -111,7 +110,6 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
             leak: parsed.leak === true,
         };
     } catch (e) {
-        reportQuotaOnce('memory', e);
         log.debug('Narration audit failed (non-fatal):', e);
         return null;
     }
@@ -134,7 +132,7 @@ export const NARRATION_AUDIT_CEILING_MS = 720_000;
 
 export function auditCadenceDue(input: {
     now: number; lastAt: number; lastStateHash: string; stateHash: string; combatActive: boolean;
-    /** La dernière narration cite un nom d'un secret encore verrouillé (engine/canonFacts.textsMentioned). */
+    /** La dernière narration cite une entité d'un secret encore verrouillé (engine/entities). */
     secretMentioned?: boolean;
 }): boolean {
     const since = input.now - input.lastAt;

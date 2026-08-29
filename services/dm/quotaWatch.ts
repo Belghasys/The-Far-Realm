@@ -1,40 +1,48 @@
 /**
- * Une panne de quota se VOIT (item 3b, 2026-08-29).
+ * Une panne de quota se VOIT (item 3b, 2026-08-29) — v2.
  *
  * Quand le relais refuse une passe de fond pour quota épuisé, le greffier,
- * les résumés, l'auditeur et l'extraction de faits s'arrêtaient en silence —
+ * les résumés, l'auditeur et l'extraction de faits s'arrêtaient en silence :
  * un `log.warn` dans une console que personne ne lit, et un MJ qui devient
- * amnésique sans raison visible. Le premier refus de la session part dans le
- * journal de campagne (CONNECTION_EVENT) et dans l'audit ; les suivants se
- * taisent : une passe toutes les 2 min jusqu'à minuit ferait 700 lignes.
+ * amnésique sans raison visible.
+ *
+ * v1 faisait appeler ce module par chaque passe (quatre sites) et attachait
+ * deux modules purs à localStorage. v2 remonte à la SOURCE : le relais
+ * (services/infra/geminiClient) nomme le refus et prévient ses abonnés ;
+ * ce module s'abonne une fois par session (installQuotaWatch, GameSession)
+ * et consigne le premier refus DU JOUR par purpose — le quota renaît à minuit
+ * UTC, le signalement aussi. Pas de « reset pour les tests » dans le bundle :
+ * la clé du jour suffit.
  */
 import { auditBus } from '../infra/auditBus';
+import { onQuotaExhausted, type QuotaPurpose } from '../infra/geminiClient';
 import { campaignEventLog } from '../persistence/campaignEventLog';
 
-export type QuotaPurpose = 'memory' | 'text';
-
-/** L'erreur nommée par geminiClient sur un `resource-exhausted` du serveur. */
-export function isQuotaExhausted(err: unknown): boolean {
-    return (err as { name?: string } | null)?.name === 'QuotaExhaustedError';
-}
-
-const reported = new Set<QuotaPurpose>();
+export type { QuotaPurpose };
 
 const TITLES: Record<QuotaPurpose, string> = {
     memory: 'Quota MÉMOIRE épuisé — greffier, résumés, auditeur et extraction de faits en pause jusqu’à minuit UTC',
     text: 'Quota texte épuisé — génération de campagne, branches et cinématique en pause jusqu’à minuit UTC',
 };
 
-/** true si l'erreur est un refus de quota ET que c'est le premier pour ce purpose. */
-export function reportQuotaOnce(purpose: QuotaPurpose, err: unknown): boolean {
-    if (!isQuotaExhausted(err) || reported.has(purpose)) return false;
-    reported.add(purpose);
-    const message = String((err as { message?: string } | null)?.message || '');
-    auditBus.publish('engine', TITLES[purpose], { purpose, message });
-    campaignEventLog.append('CONNECTION_EVENT', TITLES[purpose], { purpose, message });
+const reported = new Set<string>();
+const dayKey = (now: number) => new Date(now).toISOString().slice(0, 10);
+
+/** true si c'est le premier refus du jour (UTC) pour ce purpose. */
+export function reportQuotaOnce(purpose: QuotaPurpose, message: string, now: number = Date.now()): boolean {
+    const key = `${purpose}:${dayKey(now)}`;
+    if (reported.has(key)) return false;
+    reported.add(key);
+    // Le serveur distingue le quota du JOUEUR (« Quota du jour atteint ») du
+    // plafond GLOBAL du service (« plafond du jour ») : pas la même urgence.
+    const global = /plafond/i.test(String(message || ''));
+    const title = `${TITLES[purpose]}${global ? ' (plafond GLOBAL du service)' : ''}`;
+    auditBus.publish('engine', title, { purpose, message, global });
+    campaignEventLog.append('CONNECTION_EVENT', title, { purpose, message, global });
     return true;
 }
 
-export function resetQuotaWatchForTests(): void {
-    reported.clear();
+/** À monter une fois par session (GameSession). Rend le désabonnement. */
+export function installQuotaWatch(now: () => number = () => Date.now()): () => void {
+    return onQuotaExhausted(info => { reportQuotaOnce(info.purpose, info.message, now()); });
 }

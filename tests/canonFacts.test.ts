@@ -21,8 +21,9 @@
 import { describe, it, expect } from 'vitest';
 import {
     normalizeFactText, tagFact, factKey, mergeExtractedFacts,
-    hiddenCanonFacts, hiddenFactsMentioned, textsMentioned, retireFacts,
+    hiddenCanonFacts, hiddenFactsMentioned, retireFacts,
 } from '../engine/canonFacts';
+import { buildEntityLexicon } from '../engine/entities';
 import { CANON_TRENN, TRENN_ALLY_INDEX, TRENN_CAPTIVE_INDEX } from './fixtures/canonTrenn';
 
 describe('normalisation des tags', () => {
@@ -90,8 +91,19 @@ describe('hiddenCanonFacts — la zone que le bloc directeur ne montre pas', () 
 });
 
 describe('hiddenFactsMentioned — le rappel qui aurait sauvé Trenn', () => {
-    it('remonte les faits cachés dont un nom propre revient dans la réplique', () => {
-        const found = hiddenFactsMentioned(CANON_TRENN, 'Tu aperçois Trenn qui te fait signe depuis le rocher.', { exclude: ['Caelen'] });
+    // Le lexique de la sauvegarde réelle : PNJ et lieux tels que le journal les
+    // porte. Le héros (Caelen) en est exclu à la construction.
+    const LEX = buildEntityLexicon({
+        journal: {
+            npcs: [{ id: 'trenn', name: 'Trenn le Borgne' }, { id: 'skirnir', name: 'Jarl Skirnir' }, { id: 'mirela', name: 'Mirela' }, { id: 'elowen', name: 'Elowen' }],
+            locations: [{ id: 'l1', name: "Village d'Écorce" }, { id: 'l2', name: 'Rivière Noire' }, { id: 'l3', name: 'Roches Claires' }],
+            quests: [], chronicle: [],
+        } as any,
+        character: { name: 'Caelen' } as any,
+    });
+
+    it('remonte les faits cachés qui parlent de l’entité citée', () => {
+        const found = hiddenFactsMentioned(CANON_TRENN, 'Tu aperçois Trenn qui te fait signe depuis le rocher.', { lexicon: LEX });
         expect(found).toContain(TRENN_ALLY_INDEX);
         // Jamais un fait déjà visible.
         expect(found).not.toContain(TRENN_CAPTIVE_INDEX);
@@ -99,33 +111,21 @@ describe('hiddenFactsMentioned — le rappel qui aurait sauvé Trenn', () => {
         expect(found.length).toBeLessThanOrEqual(3);
     });
 
-    it('ne se déclenche ni sur le nom du héros, ni sur une réplique sans sujet connu', () => {
-        expect(hiddenFactsMentioned(CANON_TRENN, 'Caelen avance dans la neige.', { exclude: ['Caelen'] })).toEqual([]);
-        expect(hiddenFactsMentioned(CANON_TRENN, 'Le vent souffle.', { exclude: ['Caelen'] })).toEqual([]);
+    it('ne se déclenche ni sur le héros, ni sur une réplique sans entité, ni sur un mot commun capitalisé', () => {
+        expect(hiddenFactsMentioned(CANON_TRENN, 'Caelen avance dans la neige.', { lexicon: LEX })).toEqual([]);
+        expect(hiddenFactsMentioned(CANON_TRENN, 'Le vent souffle.', { lexicon: LEX })).toEqual([]);
+        // « Vision », « fini » : les faux positifs de l’ancienne devinette typographique.
+        expect(hiddenFactsMentioned(CANON_TRENN, "Une vision fugace te traverse : de l'eau noire, puis plus rien.", { lexicon: LEX })).toEqual([]);
+        expect(hiddenFactsMentioned(CANON_TRENN, "Le forgeron te regarde : « J'ai fini ta lame ce matin. »", { lexicon: LEX })).toEqual([]);
     });
 
-    it('tolère accents et casse (foldText)', () => {
-        const found = hiddenFactsMentioned(CANON_TRENN, 'le chef SKIRNIR est mort', { exclude: ['Caelen'] });
+    it('tolère accents et casse (foldText), et reconnaît un lieu par sa phrase entière', () => {
+        const found = hiddenFactsMentioned(CANON_TRENN, 'le chef SKIRNIR est mort', { lexicon: LEX });
         expect(found.length).toBeGreaterThan(0);
         expect(found.every(i => /Skirnir/i.test(CANON_TRENN[i]))).toBe(true);
-    });
-});
-
-describe('textsMentioned — le même appariement, au service des secrets verrouillés', () => {
-    // Format exact de buildLockedSecretFacts (campaignDirector).
-    const locked = [
-        'LOCKED DM-only secret (must not be stated as fact before Ch5; the party is at Ch1): Séverin l’Ourdisseur était un Passeur de Vantael qui voulait coudre tous les mondes.',
-        'LOCKED DM-only secret (must not be stated as fact before Ch3; the party is at Ch1): Mirela vend les plans du village aux géants.',
-    ];
-
-    it('repère un nom propre du secret dans la narration', () => {
-        expect(textsMentioned(locked, 'Séverin te regarde en silence, puis détourne les yeux.')).toEqual([0]);
-        expect(textsMentioned(locked, 'Tu croises Mirela près du puits.')).toEqual([1]);
-    });
-
-    it('ne se déclenche ni sur les mots de l’étiquette, ni sur une narration sans nom', () => {
-        expect(textsMentioned(locked, 'Un secret pèse sur la ville, dit le garde, avant le chapitre suivant.')).toEqual([]);
-        expect(textsMentioned(locked, 'Le vent souffle sur les quais.')).toEqual([]);
+        const lieu = hiddenFactsMentioned(CANON_TRENN, 'Vous longez la riviere noire jusqu’au pont.', { lexicon: LEX });
+        expect(lieu.every(i => /Rivière Noire/.test(CANON_TRENN[i]))).toBe(true);
+        expect(lieu.length).toBeGreaterThan(0);
     });
 });
 

@@ -1,8 +1,7 @@
 import { CharacterSheet, AdventureManifest } from "../../types";
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
-import { getGeminiClient, type GeminiTextResponse } from '../infra/geminiClient';
-import { reportQuotaOnce } from './quotaWatch';
+import { getGeminiClient, isQuotaExhausted, type GeminiTextResponse } from '../infra/geminiClient';
 import { collectTokens, substituteTokens } from '../persistence/manifestTokens';
 
 const PRO_MODEL = requireViteEnv('VITE_LLM_MODEL', import.meta.env.VITE_LLM_MODEL);
@@ -41,11 +40,13 @@ async function generateWithFallback(chain: string[], request: Record<string, unk
             return await getGeminiClient().models.generateContent({ ...request, model: chain[i] } as any);
         } catch (e) {
             lastError = e;
+            // Quota refusé côté SERVEUR, avant Gemini : les replis échoueraient
+            // pareil — trois allers-retours pour rien (audit du 2026-08-29).
+            if (isQuotaExhausted(e)) break;
             const next = chain[i + 1];
             log.warn(`LLM ${chain[i]} a échoué${next ? ` → bascule sur ${next}` : ' (plus de repli)'}:`, e instanceof Error ? e.message : e);
         }
     }
-    reportQuotaOnce((request as { purpose?: string }).purpose === 'memory' ? 'memory' : 'text', lastError);
     throw lastError;
 }
 
@@ -353,7 +354,6 @@ export async function extractCampaignFacts(
                 .slice(0, 6),
         };
     } catch (e) {
-        reportQuotaOnce('memory', e);
         log.error('Fact extraction error (Gemini):', e);
         return null;
     }
