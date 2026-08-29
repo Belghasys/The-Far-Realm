@@ -35,6 +35,8 @@ export interface JournalKeeperInput {
     /** Chronicle titles already recorded (avoid duplicates). */
     recentMoments: string[];
     language: string;
+    /** A1 — position courante et suivante, pour dire si la fiction les a atteintes. */
+    position?: { chapter: string; scene?: string; nextScene?: string; nextChapter?: string };
 }
 
 export interface JournalKeeperResult {
@@ -47,6 +49,8 @@ export interface JournalKeeperResult {
     npcFacts: Array<{ name: string; fact: string }>;
     /** Campaign-log lines (EN): decisions, promises, discoveries the ENGINE can't see. */
     logLines: string[];
+    /** A1 — la scène/le chapitre SUIVANT est clairement atteint (preuve citée), sinon null. */
+    positionReached: { target: 'next_scene' | 'next_chapter'; evidence: string } | null;
 }
 
 export async function runJournalKeeper(input: JournalKeeperInput): Promise<JournalKeeperResult | null> {
@@ -72,6 +76,12 @@ ${input.npcNames.join(', ') || 'none'}
 ## CHRONICLE MOMENTS ALREADY RECORDED (do not re-log these)
 ${input.recentMoments.map(m => `- ${m}`).join('\n') || '- none'}
 
+## CAMPAIGN POSITION (main storyline)
+${input.position ? `Current chapter: ${input.position.chapter}
+Current scene: ${input.position.scene || 'unknown'}
+Next scene: ${input.position.nextScene || 'none (last scene of this chapter)'}
+Next chapter: ${input.position.nextChapter || 'none (final chapter)'}` : 'unknown'}
+
 ## RECENT DIALOGUE (player + DM)
 ${dialogue}
 
@@ -82,6 +92,7 @@ ${dialogue}
 - moments: a MAJOR story beat (revelation, victory, betrayal, arrival at a landmark, pact) with no matching chronicle entry. Max 2. Title ≤ 60 chars, description 1-2 sentences, in ${input.language === 'fr' ? 'French' : 'English'}.
 - npcFacts: a concrete fact learned about a KNOWN NPC (motive, secret, location, promise). Max 3, each ≤ 140 chars.
 - logLines: campaign-log entries IN ENGLISH for story beats the game engine cannot detect on its own — a decision the player committed to, a promise made or received, a deadline accepted, a route/destination chosen, a key discovery. One factual sentence each, ≤ 160 chars, past tense (e.g. "Salim promised the innkeeper to find her missing son before the full moon."). Max 3. NEVER log combat results, loot, gold, XP or quest updates — the engine records those itself.
+- positionReached: ONLY if the dialogue shows the party has CLEARLY ARRIVED at the next scene (target "next_scene") or has CLEARLY fulfilled the chapter objective and moved on (target "next_chapter"). Quote one sentence of evidence from the dialogue. Otherwise target "none". A plan, an intention or a departure is NOT an arrival — never guess.
 - When nothing qualifies, return empty arrays. That is the NORMAL outcome.
 `;
 
@@ -154,8 +165,9 @@ ${dialogue}
                             },
                         },
                         logLines: { type: 'ARRAY', items: { type: 'STRING' } },
+                        positionReached: { type: 'OBJECT', properties: { target: { type: 'STRING' }, evidence: { type: 'STRING' } }, required: ['target', 'evidence'] },
                     },
-                    required: ['newQuests', 'questCompletions', 'questStepUpdates', 'moments', 'npcFacts', 'logLines'],
+                    required: ['newQuests', 'questCompletions', 'questStepUpdates', 'moments', 'npcFacts', 'logLines', 'positionReached'],
                 },
             } as any,
         });
@@ -190,6 +202,9 @@ ${dialogue}
             moments: Array.isArray(parsed.moments) ? parsed.moments.slice(0, 2) : [],
             npcFacts: Array.isArray(parsed.npcFacts) ? parsed.npcFacts.slice(0, 3) : [],
             logLines: Array.isArray(parsed.logLines) ? parsed.logLines.filter((l: unknown) => typeof l === 'string' && l.trim()).slice(0, 3) : [],
+            positionReached: parsed.positionReached && (parsed.positionReached.target === 'next_scene' || parsed.positionReached.target === 'next_chapter')
+                ? { target: parsed.positionReached.target, evidence: cleanText(parsed.positionReached.evidence, 300) }
+                : null,
         };
     } catch (e) {
         // warn, pas debug : une passe qui échoue en silence est indistinguable

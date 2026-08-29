@@ -78,6 +78,8 @@ export const INJECTION_BUDGETS = {
     worldClock: 340,
     canonFact: 300,
     protectedSecret: 360,
+    /** M2 : le but d'une branche close, rappelé comme passé établi. */
+    branchHistory: 120,
 } as const;
 
 /**
@@ -392,6 +394,14 @@ function campaignChronicleContext(runtime?: CampaignRuntimeState): string[] {
     if (promises.length) {
         lines.push(`Open promises & debts (NEVER forget or drop these): ${promises.join(' | ')}`);
     }
+    // M2 (contre-audit 2026-08-29) — les branches CLOSES n'étaient relues nulle
+    // part : le plan vivait dans campaignEventLog, rien ne le ramenait au MJ.
+    // Les 2 dernières, au budget branchHistory ; le reste via lookup_campaign.
+    const closedBranches = (runtime?.branchHistory || []).filter(b => b.status !== 'active').slice(-2);
+    if (closedBranches.length) {
+        lines.push(`Resolved side branches (settled PAST — reference only, never replay): ${closedBranches
+            .map(b => `${b.branchTitle} (${b.status}) — ${trimText(b.purpose, INJECTION_BUDGETS.branchHistory)}`).join(' | ')}`);
+    }
     return lines;
 }
 
@@ -677,4 +687,40 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
         'Instruction: use this context to stay coherent. Do not recite it. Ask the rules engine/tools for rolls or state changes.',
         '[/CAMPAIGN_DIRECTOR_CONTEXT]',
     ].join('\n');
+}
+
+// ═══════ A1 — AVANCE DE POSITION PAR LE GREFFIER (2026-08-29) ═══════
+// Sauvegarde réelle : chapitre 1, scène 1b, au niveau 9, jour 6. Le MJ vocal
+// n'appelle presque jamais set_campaign_position. Le greffier dit si la scène
+// ou le chapitre SUIVANT est atteint ; le moteur décide de la cible — jamais
+// de saut, jamais de retour — et tient la cadence.
+export type PositionTarget = 'next_scene' | 'next_chapter';
+
+/** null si la position est inconnue, sur la dernière scène (il faut clore le
+ *  chapitre), ou après le dernier chapitre. */
+export function resolvePositionTarget(
+    manifest: AdventureManifest | null | undefined,
+    runtime: CampaignRuntimeState | null | undefined,
+    target: PositionTarget,
+): { chapterId: string; sceneId?: string } | null {
+    const chapters = manifest?.chapters || [];
+    if (!chapters.length || !runtime?.currentChapterId) return null;
+    const ci = chapters.findIndex(c => c.id === runtime.currentChapterId);
+    if (ci < 0) return null;
+    if (target === 'next_scene') {
+        const scenes = chapters[ci].scenes || [];
+        const next = scenes[scenes.findIndex(sc => sc.id === runtime.currentSceneId) + 1];
+        return next ? { chapterId: chapters[ci].id, sceneId: next.id } : null;
+    }
+    const nextChapter = chapters[ci + 1];
+    if (!nextChapter) return null;
+    const first = nextChapter.scenes?.[0];
+    return first ? { chapterId: nextChapter.id, sceneId: first.id } : { chapterId: nextChapter.id };
+}
+
+/** Une preuve citée (≥ 40 car.) et au plus une avance par 10 min : une avance
+ *  à tort gèle un digest trop tôt et efface l'objectif improvisé. */
+export function positionAdvanceAllowed(input: { evidence: string; lastAt: number; now: number; cooldownMs?: number }): boolean {
+    if (String(input.evidence || '').trim().length < 40) return false;
+    return input.now - input.lastAt >= (input.cooldownMs ?? 10 * 60_000);
 }

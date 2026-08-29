@@ -34,8 +34,27 @@ beforeEach(() => {
         character: { ...DEFAULT_CHAR, name: 'Test' },
         journal: { quests: [], npcs: [], locations: [], chronicle: [] },
         adventureManifestData: { chapters: [], villain: { name: 'X', archetype: 'x', description: '', secret: '' }, introduction: '', fullManifesto: '' },
-        campaignRuntime: { ...useGameStore.getState().campaignRuntime, dayCount: 4, canonFacts: [], retiredFacts: [] },
+        campaignRuntime: { ...useGameStore.getState().campaignRuntime, dayCount: 4, canonFacts: [], retiredFacts: [], campaignLog: [] },
     } as any);
+});
+
+describe('questId — le log de campagne sait à quelle quête appartient chaque ligne', () => {
+    it('acceptation, étape et clôture portent l’id de la quête ; lookup les rend avec elle', async () => {
+        await runTool(refs(), { name: 'add_quest', args: { title: 'Les Fumées', description: 'Voir', steps: ['Approcher'] } });
+        await runTool(refs(), { name: 'update_quest_step', args: { questTitle: 'Les Fumées', step: 'Approcher', done: true } });
+        await runTool(refs(), { name: 'complete_quest', args: { title: 'Les Fumées' } });
+        const quest: any = useGameStore.getState().journal.quests.find((q: any) => q.title === 'Les Fumées');
+        const lines = (useGameStore.getState().campaignRuntime.campaignLog || []).filter((l: any) => l.questId === quest.id);
+        expect(lines.map((l: any) => l.text)).toEqual([
+            'Quest accepted: "Les Fumées"',
+            'Quest "Les Fumées": step done — Approcher',
+            'Quest COMPLETED: "Les Fumées"',
+        ]);
+        const r: any = await runTool(refs(), { name: 'lookup_campaign', args: { query: 'Fumées', kind: 'quest' } });
+        const hit = r.results.find((x: any) => x.type === 'quest');
+        expect(hit.text).toContain('log:');
+        expect(hit.text).toContain('step done — Approcher');
+    });
 });
 
 describe('doneAt', () => {

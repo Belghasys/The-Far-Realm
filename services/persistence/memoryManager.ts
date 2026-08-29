@@ -72,7 +72,10 @@ const CHARS_PER_TOKEN = 3.5;
 
 class MemoryManager {
     private memory: ShortTermMemory;
-    private cachedSummary: { text: string; messageCount: number } | null = null;
+    private cachedSummary: { text: string; messageCount: number; updatedAt?: number } | null = null;
+    /** M3 (2026-08-29) : GameSession s'abonne pour renvoyer le bloc directeur
+     *  dès qu'un résumé arrive — sans attendre le battement de 8 min. */
+    private summaryListeners = new Set<() => void>();
     private userId = 'anonymous';
     private activeSaveId: string | null = null;
 
@@ -89,7 +92,7 @@ class MemoryManager {
         return `${SUMMARY_CACHE_KEY}:${this.userId}:${this.activeSaveId || 'no-save'}`;
     }
 
-    private loadSummaryCache(): { text: string; messageCount: number } | null {
+    private loadSummaryCache(): { text: string; messageCount: number; updatedAt?: number } | null {
         try {
             const scoped = localStorage.getItem(this.summaryKey());
             if (scoped) return JSON.parse(scoped);
@@ -114,13 +117,42 @@ class MemoryManager {
         } catch { /* ignore */ }
     }
 
-    getCachedSummary(): { text: string; messageCount: number } | null {
+    getCachedSummary(): { text: string; messageCount: number; updatedAt?: number } | null {
         return this.cachedSummary;
     }
 
-    setCachedSummary(text: string): void {
-        this.cachedSummary = { text, messageCount: this.memory.chatHistory.length };
+    subscribe(listener: () => void): () => void {
+        this.summaryListeners.add(listener);
+        return () => { this.summaryListeners.delete(listener); };
+    }
+
+    private notifySummary(): void {
+        for (const l of this.summaryListeners) { try { l(); } catch { /* auditeur défaillant : ignorer */ } }
+    }
+
+    /** Résumé produit ICI (purge) : horodaté à maintenant. */
+    setCachedSummary(text: string, updatedAt: number = Date.now()): void {
+        this.cachedSummary = { text, messageCount: this.memory.chatHistory.length, updatedAt };
         this.saveSummaryCache();
+        this.notifySummary();
+    }
+
+    /**
+     * C2 (contre-audit 2026-08-29) — résumé venu d'AILLEURS (archive Firestore,
+     * donc peut-être d'un autre appareil) : adopté seulement s'il est plus
+     * récent que le cache. Un cache hérité sans date perd toujours. Sans ça,
+     * un PC gardait son résumé périmé après une session sur téléphone et le
+     * repliait comme dernière archive : deux chaînes divergentes, à jamais.
+     */
+    adoptSummaryIfNewer(text: string, archivedAt: number): boolean {
+        const clean = String(text || '').trim();
+        if (!clean) return false;
+        const current = this.cachedSummary;
+        if (current && (current.updatedAt || 0) >= archivedAt) return false;
+        this.cachedSummary = { text: clean, messageCount: current?.messageCount ?? this.memory.chatHistory.length, updatedAt: archivedAt };
+        this.saveSummaryCache();
+        this.notifySummary();
+        return true;
     }
 
     // Load from localStorage

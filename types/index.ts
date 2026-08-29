@@ -596,6 +596,9 @@ export interface CampaignLogEntry {
   kind: 'combat' | 'loot' | 'quest' | 'levelup' | 'gold' | 'down' | 'note';
   text: string;
   createdAt: number;
+  /** La quête concernée (outils de quête) : l'historique par quête se lit
+   *  via lookup_campaign(kind:'quest') — jamais injecté dans le bloc. */
+  questId?: string;
 }
 
 /** Digest FIGÉ d'un chapitre clos : rédigé une fois à la clôture, plus jamais

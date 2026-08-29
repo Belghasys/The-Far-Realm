@@ -113,6 +113,12 @@ export async function lookup_campaign(args: any, ctx: ToolContext) {
         for (const fact of (rt.retiredFacts || [])) {
             consider('memory', 'Fait PÉRIMÉ (retired — no longer true)', fact, fact);
         }
+        // M2 — les branches closes, consultables au-delà des 2 du bloc.
+        for (const b of (rt.branchHistory || [])) {
+            consider('memory', `Branche « ${b.branchTitle} » (${b.status})`,
+                `${b.purpose || ''}${b.reconnectHooks?.length ? ` — reconnect: ${b.reconnectHooks.map(h => h.description).join('; ')}` : ''}`,
+                `${b.branchTitle} ${b.purpose || ''} branche branch detour`);
+        }
         // C1 — le verrou voyage AVEC le secret : le remonter nu
         // par lookup_campaign contournait l'étiquetage du bloc
         // directeur, et c'est justement là que le MJ va chercher
@@ -137,8 +143,11 @@ export async function lookup_campaign(args: any, ctx: ToolContext) {
             const steps = ((q.steps || []) as any[])
                 .map(st => `${st.done ? `[x${st.doneAt ? ` J${st.doneAt}` : ''}]` : '[ ]'} ${st.text}`)
                 .join('; ');
+            const qlog = ((useGameStore.getState().campaignRuntime.campaignLog || []) as any[])
+                .filter(l => l.questId === q.id).slice(-5)
+                .map(l => `[D${l.day}] ${l.text}`).join('; ');
             consider('quest', `Quête « ${q.title} » (${q.status})`,
-                `${q.description || ''}${steps ? ` — steps: ${steps}` : ''}`,
+                `${q.description || ''}${steps ? ` — steps: ${steps}` : ''}${qlog ? ` — log: ${qlog}` : ''}`,
                 `${q.title} ${q.description || ''} ${((q.steps || []) as any[]).map(st => st.text).join(' ')} quete quest mission`);
         }
     }

@@ -13,7 +13,7 @@ import { makeSceneVisualId, useGameStore } from '../../store/gameStore';
 /** Écrit une ligne dans le log de campagne — l'écrivain MOTEUR (gratuit,
  *  fiable, immédiat) de l'architecture secrétaire+résumeur. Horodate avec le
  *  calendrier du monde + chapitre courant, plafonne le log vivant à 200. */
-export function appendCampaignLog(kind: CampaignLogEntry['kind'], text: string): void {
+export function appendCampaignLog(kind: CampaignLogEntry['kind'], text: string, opts?: { questId?: string }): void {
     const clean = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 220);
     if (!clean) return;
     useGameStore.getState().setCampaignRuntime(prev => ({
@@ -28,6 +28,7 @@ export function appendCampaignLog(kind: CampaignLogEntry['kind'], text: string):
                 kind,
                 text: clean,
                 createdAt: Date.now(),
+                ...(opts?.questId ? { questId: opts.questId } : {}),
             },
         ],
     }));

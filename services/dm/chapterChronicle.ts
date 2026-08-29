@@ -60,6 +60,11 @@ export async function freezeChapterDigest(chapterId: string, chapterTitle: strin
     // le chapitre nommé — cf. plus bas.
     const belongs = (entryChapterId: string | undefined) => entryChapterId === chapterId || !entryChapterId;
     const entries = (rt.campaignLog || []).filter(l => belongs(l.chapterId));
+    // C1 (contre-audit 2026-08-29) — le CLICHÉ des ids à purger, pris AVANT
+    // l'await : une ligne écrite pendant le résumé n'en fait pas partie et
+    // survit (elle sera résumée au gel suivant). Même recette que TP5 dans
+    // memoryManager. Les orphelines n'y sont jamais (voir plus bas).
+    const snapshotIds = new Set(entries.filter(l => l.chapterId === chapterId).map(l => l.id));
     if (!entries.length) return true;
 
     const days = (() => {
@@ -97,7 +102,9 @@ export async function freezeChapterDigest(chapterId: string, chapterTitle: strin
         // orphelines : le premier gel effaçait le journal ENTIER de la campagne.
         // On ne supprime donc que ce qui porte explicitement ce chapitre — les
         // orphelines sont résumées dans le digest, puis conservées.
-        campaignLog: (prev.campaignLog || []).filter(l => l.chapterId !== chapterId),
+        // …et seulement celles du CLICHÉ : purger « tout le chapitre » effaçait
+        // aussi les lignes arrivées pendant l'appel LLM, jamais résumées.
+        campaignLog: (prev.campaignLog || []).filter(l => !(l.chapterId === chapterId && snapshotIds.has(l.id))),
         updatedAt: Date.now(),
     }));
     await saveService.updateCampaignRuntime(useGameStore.getState().campaignRuntime);

@@ -38,6 +38,29 @@ describe('horloges au maximum', () => {
     });
 });
 
+describe('branches terminées (M2)', () => {
+    const history = [
+        { id: 'b1', branchTitle: 'La grotte', purpose: 'Retrouver le fils du meunier', status: 'resolved', scenes: [] },
+        { id: 'b2', branchTitle: 'Le pont', purpose: 'Empêcher le sabotage', status: 'abandoned', scenes: [] },
+        { id: 'b3', branchTitle: 'Le puits', purpose: 'Descendre chercher la clé', status: 'merged_into_main', scenes: [] },
+        { id: 'b4', branchTitle: 'En cours', purpose: 'x', status: 'active', scenes: [] },
+    ];
+
+    it('les 2 dernières branches closes sont rappelées comme passé établi, jamais une active', () => {
+        const ctx = build({ branchHistory: history });
+        const line = ctx.split('\n').find(l => l.startsWith('Resolved side branches'));
+        expect(line).toBeDefined();
+        expect(line).toContain('Le pont');
+        expect(line).toContain('Le puits');
+        expect(line).not.toContain('La grotte');
+        expect(line).not.toContain('En cours');
+    });
+
+    it('aucune ligne sans branche close', () => {
+        expect(build({ branchHistory: [] })).not.toMatch(/Resolved side branches/);
+    });
+});
+
 describe('promesses taguées du jour de jeu', () => {
     it('« [J6] [Promesse] X » apparaît dans la ligne « Open promises », sans ses tags', () => {
         const ctx = build({ canonFacts: ['[J6] [Promesse] Retrouver le fils de l’aubergiste avant la pleine lune.'] });

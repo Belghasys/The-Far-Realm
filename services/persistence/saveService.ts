@@ -806,7 +806,9 @@ class SaveService {
 
     // Fetch the most recent archived summary for a save — used to rehydrate the
     // long-term memory cache after a reload on a fresh device/localStorage.
-    async loadLatestArchiveSummary(saveId?: string): Promise<string | null> {
+    /** La dernière archive : son résumé ET sa date (C2 — « le plus récent
+     *  gagne » entre le cache local et Firestore, voir memoryManager). */
+    async loadLatestArchive(saveId?: string): Promise<{ summary: string; archivedAt: number } | null> {
         const id = saveId || this.currentSaveId;
         if (!id) return null;
         try {
@@ -814,8 +816,10 @@ class SaveService {
             const archivesRef = collection(db, 'users', userId, 'saves', id, 'archives');
             const q = query(archivesRef, orderBy('archivedAt', 'desc'), limit(1));
             const snapshot = await getDocs(q);
-            const summary = snapshot.docs[0]?.data()?.summary;
-            return typeof summary === 'string' && summary.trim() ? summary : null;
+            const data = snapshot.docs[0]?.data();
+            const summary = data?.summary;
+            const archivedAt = typeof data?.archivedAt?.toMillis === 'function' ? data.archivedAt.toMillis() : 0;
+            return typeof summary === 'string' && summary.trim() ? { summary, archivedAt } : null;
         } catch (error) {
             console.error('❌ Archive summary load failed:', error);
             return null;

@@ -53,7 +53,7 @@ import { StatusBar, StatusEffect } from './StatusBar';
 import { ActionPips } from './ActionPips';
 import { LevelUpModal } from '../panels/LevelUpModal';
 import { campaignEventLog } from '../../services/persistence/campaignEventLog';
-import { buildCampaignDirectorContext, buildLockedSecretFacts } from '../../services/dm/campaignDirector';
+import { buildCampaignDirectorContext, buildLockedSecretFacts, resolvePositionTarget, positionAdvanceAllowed } from '../../services/dm/campaignDirector';
 import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolveMountAfterCombat, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
 import type { ProposedPlayerAction } from '../../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
@@ -456,6 +456,11 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // moteur ne re-rendaient pas, le contexte directeur restait périmé.
   const [eventVersion, setEventVersion] = useState(0);
   useEffect(() => campaignEventLog.subscribe(() => setEventVersion(v => v + 1)), []);
+  // M3 (2026-08-29) — le résumé cumulatif était lu dans ce memo SANS dépendance :
+  // adopté après la connexion (archive Firestore), il n'atteignait le MJ qu'au
+  // battement de 8 min. L'abonnement recalcule le bloc ET force son envoi.
+  const [summaryVersion, setSummaryVersion] = useState(0);
+  useEffect(() => memoryManager.subscribe(() => setSummaryVersion(v => v + 1)), []);
 
   const directorContext = useMemo(() => buildCampaignDirectorContext({
     character,
@@ -480,6 +485,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     // engine events append to the log WITHOUT touching transcript.length, so the
     // director context's event slice would otherwise go stale after them.
     eventVersion,
+    summaryVersion,
   ]);
 
   const { processToolCall } = useToolProcessor({
@@ -576,6 +582,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         .map((q: any) => `${q.id}:${(q.steps || []).filter((s: any) => s.done).length}/${(q.steps || []).length}`)
         .join(','),
       (journal.npcs || []).length,
+      summaryVersion,
     ].join('|');
     if (directorPushKeyRef.current === significanceKey) return;
     const isFirstRun = directorPushKeyRef.current === '';
@@ -673,6 +680,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // Curseur à -1 = pas encore amorcé (voir plus bas : le transcript restauré
   // n'arrive qu'après le premier rendu).
   const journalKeeperRef = React.useRef({ at: 0, transcriptLen: -1, running: false, startedAt: 0, pass: 0 });
+  const positionAdvanceRef = React.useRef(0);
   useEffect(() => {
     if (!isConnected || combatState.isActive) return;
     const now = Date.now();
@@ -714,6 +722,19 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const activeQuests = (journalNow.quests || [])
       .filter((q: any) => q.status === 'active')
       .map((q: any) => `${q.title} — steps: ${(q.steps || []).map((s: any) => `${s.done ? '[x]' : '[ ]'} ${s.text}`).join('; ') || 'none'}`);
+    // A1 — la position courante et la suivante (~300 car.) : le greffier dit
+    // si la fiction les a atteintes, le moteur décide de la cible.
+    const keeperPosition = (() => {
+      const rtNow = useGameStore.getState().campaignRuntime;
+      const chapters = adventureManifestData?.chapters || [];
+      const ci = chapters.findIndex(c => c.id === rtNow.currentChapterId);
+      if (ci < 0) return undefined;
+      const scenes = chapters[ci].scenes || [];
+      const si = scenes.findIndex(sc => sc.id === rtNow.currentSceneId);
+      const label = (x?: { id?: string; title?: string }) => x ? `${x.id} — ${x.title}` : undefined;
+      return { chapter: `${chapters[ci].id} — ${chapters[ci].title}: ${String(chapters[ci].objective || '').slice(0, 160)}`,
+        scene: label(scenes[si]), nextScene: label(scenes[si + 1]), nextChapter: label(chapters[ci + 1]) };
+    })();
     const input = {
       transcriptLines: fresh
         // 300 caractères coupaient les tirades du MJ (souvent 1000-2000) en
@@ -733,6 +754,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       npcNames: (journalNow.npcs || []).map((n: any) => n.name),
       recentMoments: (journalNow.chronicle || []).slice(-14).map((c: any) => String(c.title || '').replace(/^\[J\d+\]\s*/, '')),
       language,
+      position: keeperPosition,
     };
     void runJournalKeeper(input).then(async result => {
       if (passId !== journalKeeperRef.current.pass) return; // passe périmée
@@ -780,6 +802,16 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         appendCampaignLog('note', line);
       }
       if (result.logLines?.length) applied.push(`${result.logLines.length} ligne(s) de trame`);
+      if (result.positionReached && positionAdvanceAllowed({ evidence: result.positionReached.evidence, lastAt: positionAdvanceRef.current, now: Date.now() })) {
+        const st = useGameStore.getState();
+        const target = resolvePositionTarget(st.adventureManifestData, st.campaignRuntime, result.positionReached.target);
+        if (target) {
+          positionAdvanceRef.current = Date.now();
+          const r: any = await processToolCall({ name: 'set_campaign_position', args: target });
+          if (r?.success) applied.push(`position → ${target.chapterId}${target.sceneId ? `/${target.sceneId}` : ''}`);
+          auditBus.publish('engine', `Greffier : avance de position (${result.positionReached.target}) — ${result.positionReached.evidence.slice(0, 120)}`, r);
+        }
+      }
       if (applied.length) {
         auditBus.publish('gemini-system', `Journal keeper logged: ${applied.join(', ')}`, result);
         campaignEventLog.append('JOURNAL_UPDATED', `Journal keeper (background) logged: ${applied.join(', ')}`, result as any);

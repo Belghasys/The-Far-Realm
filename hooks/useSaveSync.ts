@@ -175,17 +175,16 @@ export function useSaveSync({
             campaignEventLog.setCampaignId(saveId);
             console.log('📍 Active save set for real-time sync:', saveId);
 
-            // Rehydrate long-term memory from the Firestore archives when this
-            // device's localStorage has no cached summary (fresh device / cleared
-            // storage). Without this, the "story so far" only survives locally.
-            if (!memoryManager.getCachedSummary()) {
-                void saveService.loadLatestArchiveSummary(saveId).then(summary => {
-                    if (summary && !memoryManager.getCachedSummary()) {
-                        memoryManager.setCachedSummary(summary);
-                        console.log('🧠 Long-term summary rehydrated from Firestore archives');
-                    }
-                }).catch(() => { /* non-fatal */ });
-            }
+            // C2 (contre-audit 2026-08-29) — TOUJOURS lire la dernière archive
+            // Firestore, et garder le plus récent des deux résumés. L'ancienne
+            // garde « seulement si le cache est vide » laissait un PC sur son
+            // résumé périmé après une session sur téléphone, puis le repliait
+            // comme dernière archive : deux chaînes « story so far » divergentes.
+            void saveService.loadLatestArchive(saveId).then(archive => {
+                if (archive && memoryManager.adoptSummaryIfNewer(archive.summary, archive.archivedAt)) {
+                    console.log('🧠 Long-term summary adopted from Firestore archives (newer than local cache)');
+                }
+            }).catch(() => { /* non-fatal */ });
         }
 
         // Flush pending saves before browser unload/visibility loss.

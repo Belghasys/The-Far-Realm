@@ -57,13 +57,14 @@ export async function add_quest(args: any, ctx: ToolContext) {
                 : q)
         }), true);
         campaignEventLog.append('JOURNAL_UPDATED', `Quest refreshed (dedup): ${questTitle}`, args);
-        appendCampaignLog('quest', `Quest refreshed: "${questTitle}"`);
+        appendCampaignLog('quest', `Quest refreshed: "${questTitle}"`, { questId: existingQuest.id });
         return { success: true, updated: true, note: 'Quest already existed — refreshed instead of duplicating.' };
     }
+    const newQuestId = crypto.randomUUID();
     await syncJournal((prev: any) => ({
         ...prev,
         quests: [...(prev.quests || []), {
-            id: crypto.randomUUID(),
+            id: newQuestId,
             title: questTitle,
             description: args.description,
             status: 'active',
@@ -72,7 +73,7 @@ export async function add_quest(args: any, ctx: ToolContext) {
         }]
     }), true);
     campaignEventLog.append('JOURNAL_UPDATED', `Quest added: ${questTitle}`, args);
-    appendCampaignLog('quest', `Quest accepted: "${questTitle}"`);
+    appendCampaignLog('quest', `Quest accepted: "${questTitle}"`, { questId: newQuestId });
     store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysQuestAdded(questTitle)}]*` }]);
     return { success: true, steps: questSteps.map(s => s.text) };
 }
@@ -122,7 +123,7 @@ export async function update_quest_step(args: any, ctx: ToolContext) {
         }),
     }), true);
     campaignEventLog.append('JOURNAL_UPDATED', `Quest step ${doneArg === false ? 'updated' : 'checked'}: ${quest.title} — ${stepText}`, args);
-    if (doneArg !== false) appendCampaignLog('quest', `Quest "${quest.title}": step done — ${stepText}`);
+    if (doneArg !== false) appendCampaignLog('quest', `Quest "${quest.title}": step done — ${stepText}`, { questId: quest.id });
     return { success: true, quest: quest.title, steps: resultingSteps.map((s: any) => `${s.done ? '✓' : '○'} ${s.text}`) };
 }
 
@@ -148,7 +149,7 @@ export async function complete_quest(args: any, ctx: ToolContext) {
     }
     if (found) {
         campaignEventLog.append('JOURNAL_UPDATED', `Quest completed: ${completedTitle}`, args);
-        appendCampaignLog('quest', `Quest COMPLETED: "${completedTitle}"`);
+        appendCampaignLog('quest', `Quest COMPLETED: "${completedTitle}"`, { questId: cqPick.quest.id });
         store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysQuestCompleted(completedTitle)}]*` }]);
         return { success: true, quest: completedTitle };
     }
