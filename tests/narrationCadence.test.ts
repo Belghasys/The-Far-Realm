@@ -9,7 +9,7 @@
  * à chaque tour.
  */
 import { describe, it, expect } from 'vitest';
-import { auditCadenceDue, NARRATION_AUDIT_INTERVAL_MS } from '../services/dm/narrationAuditor';
+import { auditCadenceDue, narrationUnseen, NARRATION_AUDIT_INTERVAL_MS } from '../services/dm/narrationAuditor';
 
 const base = { now: 1_000_000, lastAt: 0, lastStateHash: 'a', stateHash: 'b', combatActive: false };
 
@@ -60,5 +60,25 @@ describe('auditCadenceDue — fuite de secret et plafond', () => {
             if (auditCadenceDue({ ...calm, now: t, lastAt: last.at })) { passes++; last = { at: t }; }
         }
         expect(passes).toBe(2);
+    });
+});
+
+describe('narrationUnseen — le signet de l’auditeur retient le numéro ET le texte', () => {
+    // Audit croisé du 2026-08-29 (constat B) : une tirade qui GRANDIT (outil au
+    // milieu du tour, reprise après coupure) garde son numéro de ligne. Un
+    // signet par numéro seul la rendait invisible — et le raccourci des secrets
+    // (plancher 90 s) n'était même plus calculé sur la partie ajoutée.
+    const done = { len: 12, text: 'Trenn te barre la route.' };
+
+    it('même numéro, même texte → déjà vue', () => {
+        expect(narrationUnseen(done, 12, 'Trenn te barre la route.')).toBe(false);
+    });
+
+    it('même numéro, texte grandi → à examiner', () => {
+        expect(narrationUnseen(done, 12, 'Trenn te barre la route. Il murmure : « Ysolde est la fille du Jarl. »')).toBe(true);
+    });
+
+    it('nouvelle ligne → à examiner, même si le texte est identique', () => {
+        expect(narrationUnseen(done, 13, 'Trenn te barre la route.')).toBe(true);
     });
 });

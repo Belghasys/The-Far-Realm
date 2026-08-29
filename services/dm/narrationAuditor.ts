@@ -141,3 +141,12 @@ export function auditCadenceDue(input: {
     if (input.combatActive || input.stateHash !== input.lastStateHash) return true;
     return since >= NARRATION_AUDIT_CEILING_MS;
 }
+
+/** La dernière narration est-elle NOUVELLE pour l'auditeur ? Numéro ET texte
+ *  (audit croisé du 2026-08-29, constat B) : une tirade qui GRANDIT — outil au
+ *  milieu du tour, reprise après coupure — garde son numéro de ligne. Un signet
+ *  par numéro seul la rendait invisible, et avec elle le raccourci des secrets
+ *  (plancher 90 s), qui n'était même plus calculé sur la partie ajoutée. */
+export function narrationUnseen(done: { len: number; text: string }, len: number, text: string): boolean {
+    return done.len !== len || done.text !== text;
+}

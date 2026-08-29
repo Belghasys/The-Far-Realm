@@ -7,6 +7,7 @@ import { useToolProcessor } from '../../hooks/useToolProcessor';
 import { useMusicDirector } from '../../hooks/useMusicDirector';
 import { useReconnectCountdown } from '../../hooks/useReconnectCountdown';
 import { useWakeLock } from '../../hooks/useWakeLock';
+import { useMemoryRecall } from '../../hooks/useMemoryRecall';
 import { useRailWidth } from '../../hooks/useRailWidth';
 import type { SessionContext } from '../../services/session/context';
 import { handlePlayerCastSpell as handlePlayerCastSpellAction } from '../../services/session/playerSpell';
@@ -28,7 +29,7 @@ const RECONNECT_WINDOW_S = 20;
 import { useGameStore } from '../../store/gameStore';
 import { LiveConnectionManager } from '../../services/dm/geminiRealtime';
 import { auditBus } from '../../services/infra/auditBus';
-import { auditNarration, auditCadenceDue } from '../../services/dm/narrationAuditor';
+import { auditNarration, auditCadenceDue, narrationUnseen } from '../../services/dm/narrationAuditor';
 import { runJournalKeeper } from '../../services/dm/journalKeeper';
 import { sessionTrace } from '../../services/infra/sessionTrace';
 
@@ -67,8 +68,7 @@ import { useSettingsStore, RAIL_WIDTH } from '../../store/settingsStore';
 import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
-import { hiddenFactsMentioned } from '../../engine/canonFacts';
-import { buildEntityLexicon, entitiesMentioned, textsCiting, npcRecallTarget } from '../../engine/entities';
+import { buildEntityLexicon, entitiesMentioned, textsCiting } from '../../engine/entities';
 import { installQuotaWatch } from '../../services/dm/quotaWatch';
 import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
@@ -465,8 +465,12 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // Item 3b : le premier refus de quota du jour finit dans le journal de campagne.
   useEffect(() => installQuotaWatch(), []);
   // Le LEXIQUE d'entités (2026-08-29) — un seul apparieur pour l'auditeur
-  // (secrets verrouillés), le rappel de faits canon et le rappel PNJ.
-  const entityLexicon = useMemo(() => buildEntityLexicon({ manifest: adventureManifestData, journal: journal as any, character }), [adventureManifestData, journal, character]);
+  // (secrets verrouillés), le rappel de faits canon et le rappel PNJ. Clé sur
+  // le NOM du héros, pas l'objet : le personnage ne sert qu'à l'exclure, et
+  // l'objet change à chaque point de vie — le lexique se recalculait pour rien
+  // et relançait le rappel sur la même réplique (voir hooks/useMemoryRecall).
+  const heroName = character?.name;
+  const entityLexicon = useMemo(() => buildEntityLexicon({ manifest: adventureManifestData, journal: journal as any, character: heroName ? { name: heroName } as any : null }), [adventureManifestData, journal, heroName]);
 
   const directorContext = useMemo(() => buildCampaignDirectorContext({
     character,
@@ -626,14 +630,16 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // engine state (HP, gold, inventory, combat). On a clear contradiction it
   // sends a private corrective note so the DM realigns in the next beat —
   // invisible to the player, at most one check per 4 min (auditCadenceDue).
-  const lastNarrationAuditRef = React.useRef({ at: 0, transcriptLen: 0, stateHash: '' });
+  const lastNarrationAuditRef = React.useRef({ at: 0, transcriptLen: 0, text: '', stateHash: '' });
   useEffect(() => {
     if (!dm || !isConnected || transcript.length === 0) return;
     const last = transcript[transcript.length - 1];
     if (last.speaker !== 'dm') return;
     if (/^\s*\*?\[/.test(last.text.trim())) return; // skip [SYSTEM]/marker lines
     if (last.text.trim().length < 120) return;      // too short to contradict anything material
-    if (transcript.length === lastNarrationAuditRef.current.transcriptLen) return;
+    // Signet numéro ET texte (narrationUnseen) : une tirade qui grandit après un
+    // outil ou une coupure gardait son numéro et n'était plus jamais examinée.
+    if (!narrationUnseen({ len: lastNarrationAuditRef.current.transcriptLen, text: lastNarrationAuditRef.current.text }, transcript.length, last.text)) return;
 
     const runtimeNow = useGameStore.getState().campaignRuntime;
     const activeQuestLine = (useGameStore.getState().journal?.quests || [])
@@ -666,7 +672,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     const now = Date.now();
     const stateHash = stateFacts.join('|');
     if (!auditCadenceDue({ now, lastAt: lastNarrationAuditRef.current.at, lastStateHash: lastNarrationAuditRef.current.stateHash, stateHash, combatActive: combatState.isActive, secretMentioned })) return;
-    lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length, stateHash };
+    lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length, text: last.text, stateHash };
     void auditNarration({ narration: last.text, stateFacts, lockedSecrets, language }).then(result => {
       if (!result || result.consistent || !result.note) return;
       auditBus.publish('gemini-system', `Consistency check flagged${result.leak ? ' (SECRET LEAK)' : ''}: ${result.note.slice(0, 80)}`, { note: result.note, leak: result.leak, narration: last.text });
@@ -838,39 +844,15 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       });
   }, [isConnected, transcript, combatState.isActive, language, processToolCall]);
 
-  // ── TR1 (audit trame) — rappel PNJ automatique ────────────────────────────
-  // Le contexte directeur ne porte que les ~8 derniers PNJ : quand un PNJ plus
-  // ancien est nommé dans l'échange, souffler discrètement sa fiche au MJ
-  // (faits connus, disposition) pour qu'il le joue avec sa mémoire.
-  const npcRecallRef = React.useRef<Record<string, number>>({});
-  const canonRecallRef = React.useRef<Record<string, number>>({});
-  useEffect(() => {
-    if (!dm || !isConnected || transcript.length === 0) return;
-    const last = transcript[transcript.length - 1];
-    if (!last?.text || last.text.trimStart().startsWith('*[')) return;
-    // La décision vit dans engine/entities.npcRecallTarget — testée sur les trois
-    // campagnes en régime réel (13 PNJ) : hors du top-8, nommé, pas rappelé
-    // depuis 10 min, un seul par réplique.
-    const recall = npcRecallTarget({ npcs: (useGameStore.getState().journal.npcs || []) as any[], lexicon: entityLexicon, line: last.text, lastRecall: npcRecallRef.current, now: Date.now() });
-    if (recall) {
-      const npc: any = recall.npc;
-      npcRecallRef.current[recall.key] = Date.now();
-      const facts = (npc.knownFacts || []).slice(-3).join(' | ');
-      dm.sendSystemMessage(`[NPC MEMORY] ${npc.name}${npc.location ? ` (last seen: ${npc.location})` : ''}${typeof npc.disposition === 'number' && npc.disposition !== 0 ? `, disposition ${npc.disposition > 0 ? '+' : ''}${npc.disposition}` : ''}${facts ? ` — known facts: ${facts}` : ''}. Play this NPC consistently with what they know and feel.`);
-    }
-    // Faits canon CACHÉS (constat 11, 2026-08-29) — même mécanique que les
-    // PNJ : le bloc directeur ne montre que les 4 premiers et 10 derniers
-    // faits ; quand le sujet d'un fait invisible revient dans l'échange, on
-    // le souffle. Zéro appel LLM ; au plus 3 faits par réplique, 10 min de
-    // silence par fait. C'est ce qui aurait rappelé « Trenn est un allié ».
-    const facts = useGameStore.getState().campaignRuntime?.canonFacts || [];
-    const mentioned = hiddenFactsMentioned(facts, last.text, { lexicon: entityLexicon })
-      .filter(i => Date.now() - (canonRecallRef.current[facts[i]] || 0) >= 10 * 60_000);
-    if (mentioned.length) {
-      for (const i of mentioned) canonRecallRef.current[facts[i]] = Date.now();
-      dm.sendSystemMessage(`[CANON MEMORY] Established facts about what was just mentioned — honor them: ${mentioned.map(i => facts[i]).join(' | ')}`);
-    }
-  }, [dm, isConnected, transcript, entityLexicon]);
+  // ── TR1 (audit trame) — rappel PNJ et faits canon cachés ─────────────────
+  // Le bloc directeur ne porte que les ~8 derniers PNJ et une partie des faits :
+  // quand une réplique (MJ ou joueur) nomme ce qu'il ne voit plus, on le lui
+  // souffle. Mécanique, signet et pièges : hooks/useMemoryRecall.
+  useMemoryRecall({
+    dm, isConnected, transcript, lexicon: entityLexicon,
+    getNpcs: () => (useGameStore.getState().journal.npcs || []) as any[],
+    getFacts: () => useGameStore.getState().campaignRuntime?.canonFacts || [],
+  });
 
   // ── Résumé roulant du chapitre courant (log/secrétaire/résumeur) ─────────
   // Toutes les 60 s : si ≥50 messages se sont accumulés depuis le dernier
