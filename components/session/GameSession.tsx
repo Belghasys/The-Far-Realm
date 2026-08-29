@@ -68,7 +68,7 @@ import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
 import { foldText } from '../../engine/skillSystem';
-import { hiddenFactsMentioned } from '../../engine/canonFacts';
+import { hiddenFactsMentioned, textsMentioned } from '../../engine/canonFacts';
 import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
 import { summarizeCurrentChapter } from '../../services/dm/llmService';
@@ -649,17 +649,22 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       ...(activeQuestLine ? [`Active quests: ${activeQuestLine}`] : []),
       `In-world time: Day ${runtimeNow.dayCount || 1}, ${runtimeNow.timeOfDay || 'day'}`,
     ];
-    // Cadence (2026-08-29) : 4 min, et pas de passe si l'état vérifié n'a pas
-    // bougé — c'est un VÉRIFICATEUR, et le premier poste de dépense du quota.
+    // C1 — les secrets dont le chapitre de révélation n'est pas atteint, verrou
+    // CALCULÉ depuis la position réelle. Calculés AVANT la cadence : si la
+    // narration cite le nom de l'un d'eux, le contrôle part sans attendre.
+    const lockedSecrets = buildLockedSecretFacts(adventureManifestData, runtimeNow);
+    const secretMentioned = lockedSecrets.length > 0 && textsMentioned(lockedSecrets, last.text, { exclude: [character.name], max: 1 }).length > 0;
+    // Cadence (2026-08-29) : 4 min si l'état vérifié a bougé, 12 min sinon —
+    // et tout de suite (plancher 90 s) sur un nom de secret verrouillé. La
+    // porte « état inchangé » seule avait éteint l'auditeur en dialogue calme.
     const now = Date.now();
     const stateHash = stateFacts.join('|');
-    if (!auditCadenceDue({ now, lastAt: lastNarrationAuditRef.current.at, lastStateHash: lastNarrationAuditRef.current.stateHash, stateHash, combatActive: combatState.isActive })) return;
+    if (!auditCadenceDue({ now, lastAt: lastNarrationAuditRef.current.at, lastStateHash: lastNarrationAuditRef.current.stateHash, stateHash, combatActive: combatState.isActive, secretMentioned })) return;
     lastNarrationAuditRef.current = { at: now, transcriptLen: transcript.length, stateHash };
     // C1 — les secrets dont le chapitre de révélation n'est pas atteint, verrou
     // CALCULÉ depuis la position réelle. L'auditeur ne surveillait que les
     // chiffres (PV, or, inventaire, combat, objectif, heure) : une révélation
     // prématurée passait sans que rien ne la voie.
-    const lockedSecrets = buildLockedSecretFacts(adventureManifestData, runtimeNow);
     void auditNarration({ narration: last.text, stateFacts, lockedSecrets, language }).then(result => {
       if (!result || result.consistent || !result.note) return;
       auditBus.publish('gemini-system', `Consistency check flagged${result.leak ? ' (SECRET LEAK)' : ''}: ${result.note.slice(0, 80)}`, { note: result.note, leak: result.leak, narration: last.text });
@@ -680,7 +685,9 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   // Curseur à -1 = pas encore amorcé (voir plus bas : le transcript restauré
   // n'arrive qu'après le premier rendu).
   const journalKeeperRef = React.useRef({ at: 0, transcriptLen: -1, running: false, startedAt: 0, pass: 0 });
-  const positionAdvanceRef = React.useRef(0);
+  // Démarre à « maintenant » : la première avance possible est à 10 min de jeu,
+  // pas à la 2e minute (audit du 2026-08-29) — le temps que la scène se pose.
+  const positionAdvanceRef = React.useRef(Date.now());
   useEffect(() => {
     if (!isConnected || combatState.isActive) return;
     const now = Date.now();

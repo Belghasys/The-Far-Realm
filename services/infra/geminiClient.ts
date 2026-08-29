@@ -51,7 +51,11 @@ async function generateContent(request: GeminiTextRequest): Promise<GeminiTextRe
     } catch (err: any) {
         // HttpsError → message serveur (quota, connexion requise, erreur
         // Gemini relayée) : les appelants ont leurs propres replis.
-        throw new Error(err?.message || 'Relais Gemini injoignable.', { cause: err });
+        const error = new Error(err?.message || 'Relais Gemini injoignable.', { cause: err });
+        // Un refus de QUOTA est nommé : services/dm/quotaWatch le rend visible
+        // (une fois par session) au lieu d'un warn dans une console vide.
+        if (err?.code === 'functions/resource-exhausted') error.name = 'QuotaExhaustedError';
+        throw error;
     }
 }
 

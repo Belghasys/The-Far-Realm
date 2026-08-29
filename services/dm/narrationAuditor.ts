@@ -14,6 +14,7 @@
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
 import { getGeminiClient } from '../infra/geminiClient';
+import { reportQuotaOnce } from './quotaWatch';
 
 // Passe fréquente et mécanique → modèle léger dédié (VITE_AUDIT_MODEL, ex.
 // gemini-3.5-flash-lite) pour épargner le quota du Flash principal. Retombe
@@ -110,6 +111,7 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
             leak: parsed.leak === true,
         };
     } catch (e) {
+        reportQuotaOnce('memory', e);
         log.debug('Narration audit failed (non-fatal):', e);
         return null;
     }
@@ -123,11 +125,21 @@ If inconsistent, write ONE short corrective instruction for the DM (max 160 char
  * combat, où les chiffres changent à chaque tour.
  */
 export const NARRATION_AUDIT_INTERVAL_MS = 240_000;
+/** Plancher quand la narration cite un secret VERROUILLÉ : le contrôle part vite. */
+export const NARRATION_AUDIT_SECRET_FLOOR_MS = 90_000;
+/** Plafond : jamais plus de 12 min sans passe, état ou pas — la porte « état
+ *  inchangé » seule éteignait l'auditeur pendant tout un dialogue calme
+ *  (0 passe en 30 min), là où les secrets fuient. Audit du 2026-08-29. */
+export const NARRATION_AUDIT_CEILING_MS = 720_000;
 
 export function auditCadenceDue(input: {
     now: number; lastAt: number; lastStateHash: string; stateHash: string; combatActive: boolean;
+    /** La dernière narration cite un nom d'un secret encore verrouillé (engine/canonFacts.textsMentioned). */
+    secretMentioned?: boolean;
 }): boolean {
-    if (input.now - input.lastAt < NARRATION_AUDIT_INTERVAL_MS) return false;
-    if (!input.combatActive && input.stateHash === input.lastStateHash) return false;
-    return true;
+    const since = input.now - input.lastAt;
+    if (input.secretMentioned && since >= NARRATION_AUDIT_SECRET_FLOOR_MS) return true;
+    if (since < NARRATION_AUDIT_INTERVAL_MS) return false;
+    if (input.combatActive || input.stateHash !== input.lastStateHash) return true;
+    return since >= NARRATION_AUDIT_CEILING_MS;
 }

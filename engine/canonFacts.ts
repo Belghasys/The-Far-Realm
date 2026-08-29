@@ -87,26 +87,30 @@ export function hiddenCanonFacts(facts: string[], head = CANON_HEAD, tail = CANO
 
 /** Mots capitalisés d'au moins 4 lettres — les noms propres d'un fait. */
 const PROPER_NOUN = /\p{Lu}[\p{L}'’-]{3,}/gu;
-/** Capitalisés mais communs : ils feraient remonter n'importe quoi. */
-const STOP = new Set(['village', 'menace', 'promesse', 'locked', 'first', 'scene', 'objective', 'nord', 'sud', 'ouest', 'est']);
+/** Capitalisés mais communs — ou mots des étiquettes (« LOCKED DM-only secret ») :
+ *  ils feraient remonter n'importe quoi. */
+const STOP = new Set(['village', 'menace', 'promesse', 'locked', 'first', 'scene', 'objective', 'nord', 'sud', 'ouest', 'est', 'secret', 'dm-only', 'dmonly']);
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Les faits CACHÉS dont un nom propre revient dans la réplique — au plus
- * `max`, jamais un fait déjà visible, jamais sur le nom du héros (`exclude`).
+ * Parmi `texts` (ou les seuls `indices` donnés), ceux dont un nom propre
+ * revient dans la réplique — au plus `max`, jamais sur le nom du héros
+ * (`exclude`). Sert aux faits canon cachés ET aux secrets verrouillés : quand
+ * la narration cite le nom d'un secret, l'auditeur part sans attendre.
  */
-export function hiddenFactsMentioned(
-    facts: string[],
+export function textsMentioned(
+    texts: string[],
     line: string,
-    opts: { exclude?: string[]; head?: number; tail?: number; max?: number } = {},
+    opts: { exclude?: string[]; max?: number; indices?: number[] } = {},
 ): number[] {
     const hay = ` ${foldText(String(line || ''))} `;
     if (hay.trim().length < 3) return [];
     const exclude = new Set((opts.exclude || []).map(x => foldText(String(x || ''))).filter(Boolean));
     const max = opts.max ?? 3;
     const out: number[] = [];
-    for (const i of hiddenCanonFacts(facts, opts.head, opts.tail)) {
-        const names = normalizeFactText(facts[i]).match(PROPER_NOUN) || [];
+    const indices = opts.indices ?? (texts || []).map((_, i) => i);
+    for (const i of indices) {
+        const names = normalizeFactText(texts[i]).match(PROPER_NOUN) || [];
         const hit = names.some(name => {
             const tok = foldText(name);
             if (tok.length < 4 || STOP.has(tok) || exclude.has(tok)) return false;
@@ -118,6 +122,18 @@ export function hiddenFactsMentioned(
         }
     }
     return out;
+}
+
+/**
+ * Les faits CACHÉS dont un nom propre revient dans la réplique — au plus
+ * `max`, jamais un fait déjà visible, jamais sur le nom du héros (`exclude`).
+ */
+export function hiddenFactsMentioned(
+    facts: string[],
+    line: string,
+    opts: { exclude?: string[]; head?: number; tail?: number; max?: number } = {},
+): number[] {
+    return textsMentioned(facts, line, { exclude: opts.exclude, max: opts.max, indices: hiddenCanonFacts(facts, opts.head, opts.tail) });
 }
 
 export interface ObsoleteFact { fact: string; replacedBy: string }

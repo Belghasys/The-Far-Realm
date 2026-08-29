@@ -38,15 +38,10 @@ export function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntim
     // ÉCRITES (Chant Brisé, Hiver sans Aube, Portes de l'Exil) y posent déjà ces
     // faits AVEC leur calendrier de révélation — les dupliquer les écraserait.
     const villain: any = (manifest as any).villain || {};
-    const authoredFacts = manifest.initialCanonFacts || [];
     const authoredSecrets = manifest.initialProtectedSecrets || [];
-    const villainFacts: string[] = [];
     const villainSecrets: string[] = [];
-    if (!authoredFacts.length && villain.name) {
-        const weaknesses = Array.isArray(villain.weaknesses) ? villain.weaknesses.filter(Boolean) : [];
-        if (weaknesses.length) villainFacts.push(`Faiblesses de ${villain.name} : ${weaknesses.join(' ; ')}`);
-        if (villain.escalationArc) villainFacts.push(`Escalade de ${villain.name} : ${String(villain.escalationArc).slice(0, 400)}`);
-    }
+    // Les FAITS semés vivent dans seedCanonFacts (source unique) : ce sont
+    // aussi ceux que retireFacts n'a jamais le droit de retirer.
     if (!authoredSecrets.length && villain.name && villain.secret) {
         // Porte de révélation synthétisée : sans elle, un secret injecté à
         // chaque tour finit par fuiter dès le premier chapitre.
@@ -65,9 +60,7 @@ export function buildInitialRuntime(manifest: AdventureManifest): CampaignRuntim
             ? manifest.initialWorldClocks.map(c => ({ ...c, updatedAt: Date.now() }))
             : DEFAULT_CAMPAIGN_RUNTIME.worldClocks,
         canonFacts: [
-            ...DEFAULT_CAMPAIGN_RUNTIME.canonFacts,
-            ...authoredFacts,
-            ...villainFacts,
+            ...seedCanonFacts(manifest),
             `Locked first scene: ${title}${location ? ` at ${location}` : ''}${objective ? `; objective: ${objective}` : ''}`,
         ],
         // Seed authored villain secret/weaknesses so the live DM actually knows them
@@ -178,10 +171,11 @@ export function buildInitialJournal(manifest: AdventureManifest, character: Char
 }
 
 /**
- * Les faits canon SEMÉS à la création — ceux qu'un retrait de fond ne doit
- * jamais toucher (engine/canonFacts.retireFacts). Recalculés depuis le
- * manifeste, donc valables pour les sauvegardes antérieures, sans marqueur.
- * DOIT refléter le bloc `canonFacts` de buildCampaignRuntime ci-dessus.
+ * Les faits canon SEMÉS à la création — SOURCE UNIQUE : buildInitialRuntime
+ * l'appelle, et retireFacts s'en sert pour savoir ce qu'il n'a jamais le droit
+ * de retirer. Recalculés depuis le manifeste, donc valables pour les
+ * sauvegardes antérieures. La scène verrouillée est ajoutée à part et protégée
+ * par son préfixe (tests/seedParity.test.ts).
  */
 export function seedCanonFacts(manifest: AdventureManifest | null | undefined): string[] {
     const out = [...DEFAULT_CAMPAIGN_RUNTIME.canonFacts];

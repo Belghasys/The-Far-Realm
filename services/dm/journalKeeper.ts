@@ -14,6 +14,7 @@
 import { log } from '../infra/logger';
 import { requireViteEnv, viteEnv } from '../infra/modelConfig';
 import { getGeminiClient } from '../infra/geminiClient';
+import { reportQuotaOnce } from './quotaWatch';
 
 // Même famille que l'auditeur : extraction mécanique fréquente → modèle léger
 // (VITE_AUDIT_MODEL), fallback sur le modèle de résumé si absent.
@@ -207,6 +208,7 @@ ${dialogue}
                 : null,
         };
     } catch (e) {
+        reportQuotaOnce('memory', e);
         // warn, pas debug : une passe qui échoue en silence est indistinguable
         // d'une passe « rien à signaler » — c'est ce qui a masqué le bug LM7.
         log.warn('Journal keeper pass failed (non-fatal):', e);

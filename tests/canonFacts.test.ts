@@ -21,7 +21,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     normalizeFactText, tagFact, factKey, mergeExtractedFacts,
-    hiddenCanonFacts, hiddenFactsMentioned, retireFacts,
+    hiddenCanonFacts, hiddenFactsMentioned, textsMentioned, retireFacts,
 } from '../engine/canonFacts';
 import { CANON_TRENN, TRENN_ALLY_INDEX, TRENN_CAPTIVE_INDEX } from './fixtures/canonTrenn';
 
@@ -108,6 +108,24 @@ describe('hiddenFactsMentioned — le rappel qui aurait sauvé Trenn', () => {
         const found = hiddenFactsMentioned(CANON_TRENN, 'le chef SKIRNIR est mort', { exclude: ['Caelen'] });
         expect(found.length).toBeGreaterThan(0);
         expect(found.every(i => /Skirnir/i.test(CANON_TRENN[i]))).toBe(true);
+    });
+});
+
+describe('textsMentioned — le même appariement, au service des secrets verrouillés', () => {
+    // Format exact de buildLockedSecretFacts (campaignDirector).
+    const locked = [
+        'LOCKED DM-only secret (must not be stated as fact before Ch5; the party is at Ch1): Séverin l’Ourdisseur était un Passeur de Vantael qui voulait coudre tous les mondes.',
+        'LOCKED DM-only secret (must not be stated as fact before Ch3; the party is at Ch1): Mirela vend les plans du village aux géants.',
+    ];
+
+    it('repère un nom propre du secret dans la narration', () => {
+        expect(textsMentioned(locked, 'Séverin te regarde en silence, puis détourne les yeux.')).toEqual([0]);
+        expect(textsMentioned(locked, 'Tu croises Mirela près du puits.')).toEqual([1]);
+    });
+
+    it('ne se déclenche ni sur les mots de l’étiquette, ni sur une narration sans nom', () => {
+        expect(textsMentioned(locked, 'Un secret pèse sur la ville, dit le garde, avant le chapitre suivant.')).toEqual([]);
+        expect(textsMentioned(locked, 'Le vent souffle sur les quais.')).toEqual([]);
     });
 });
 

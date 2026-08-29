@@ -36,6 +36,16 @@ describe('compteurs de fenêtre', () => {
     });
 });
 
+describe('le cadran de mesure (item 14)', () => {
+    it('chaque jeton voix est tracé sur disque avec le crédit restant et le numéro de connexion', () => {
+        const src = lire('services/dm/live/core.ts');
+        const start = src.indexOf('async connect()');
+        const body = src.slice(start, src.indexOf('private restoreHistory'));
+        expect(body).toMatch(/sessionTrace\.trace\('connexion'[^\n]*remainingToday/);
+        expect(body).toMatch(/connectCount/);
+    });
+});
+
 describe('code mort et documentation', () => {
     it('saveService n’a plus de updateTranscript (sans plafond d’octets)', () => {
         expect(lire('services/persistence/saveService.ts')).not.toMatch(/updateTranscript\s*\(/);

@@ -71,6 +71,8 @@ export class LiveDungeonMaster {
     private firstPromptTokenCount = 0;
     private lastPromptTokenCount = 0;
     private lastTracedTokenCount = 0;
+    /** Item 14 (mesure) : chaque connect() tire un jeton = un crédit voix. */
+    private connectCount = 0;
 
     // Buffer for accumulating DM transcript across multiple server messages
     private dmTranscriptBuffer: string = '';
@@ -213,6 +215,11 @@ export class LiveDungeonMaster {
         // Les jetons ne sont acceptés que sur l'API v1alpha.
         const { token, remainingToday } = await fetchLiveToken(AUDIO_MODEL);
         auditBus.publish('engine', `Live token — reste ${remainingToday} sessions vocales aujourd'hui`);
+        // Le CADRAN de la mesure (item 14) : sur disque, pas seulement dans
+        // l'audit mémoire — c'est ce qui permet de compter, après une soirée,
+        // les connexions, les goAway et les crédits consommés.
+        this.connectCount += 1;
+        sessionTrace.trace('connexion', `Jeton voix n°${this.connectCount} — reste ${remainingToday} aujourd'hui${this.sessionResumptionHandle ? ' (reprise par handle)' : ''}`, { remainingToday, connectCount: this.connectCount });
         const ai = new GoogleGenAI({
             apiKey: token,
             httpOptions: { apiVersion: 'v1alpha' }
