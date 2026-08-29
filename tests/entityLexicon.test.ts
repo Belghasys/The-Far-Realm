@@ -107,6 +107,37 @@ describe('sur les trois campagnes écrites', () => {
     }
 });
 
+describe('buildEntityLexicon — le journal est la vérité vivante', () => {
+    it("l'identifiant du journal survit quand le manifeste nomme la même personne", () => {
+        // Régression du 2026-08-29 : le manifeste passe avant le journal et gagnait
+        // la clé ; seul le journal porte un id ; le rappel PNJ filtre dessus → mort.
+        const lex = buildEntityLexicon({
+            manifest: { supportingCast: [{ name: 'Capitaine Halvard', role: 'ally', description: '' }] } as any,
+            journal: { npcs: [{ id: 'npc-1', name: 'Capitaine Halvard' }], locations: [], quests: [], chronicle: [] } as any,
+        });
+        const halvard = lex.filter(e => e.key === 'halvard');
+        expect(halvard).toHaveLength(1);
+        expect(halvard[0].id).toBe('npc-1');
+        // Le libellé reste celui de la première source : l'ordre d'affichage ne bouge pas.
+        expect(halvard[0].label).toBe('Capitaine Halvard');
+    });
+
+    it('un lieu du journal garde son identifiant face au lieu de scène homonyme', () => {
+        const lex = buildEntityLexicon({
+            manifest: { chapters: [{ id: '1', title: 'x', scenes: [{ id: '1a', title: 'x', location: 'Quais d’Os' }] }] } as any,
+            journal: { npcs: [], locations: [{ id: 'loc-1', name: 'Quais d’Os' }], quests: [], chronicle: [] } as any,
+        });
+        expect(lex.find(e => e.kind === 'place')?.id).toBe('loc-1');
+    });
+
+    it('les compagnons, la monture et le familier ne sont PAS des entités : ils sont déjà dans le bloc directeur', () => {
+        // « Un loup hurle au loin » faisait remonter « Caelen a recruté Loup ».
+        const hero: any = { ...HERO, companions: [{ name: 'Loup' }, { name: 'Ombre' }], mount: { name: 'Éclair' }, familiar: { name: 'Plume' } };
+        const lex = buildEntityLexicon({ manifest: null, journal: null, character: hero });
+        expect(lex).toEqual([]);
+    });
+});
+
 describe('textsCiting — le lien entre une réplique et les textes concernés', () => {
     it('ne rend que les textes qui citent une entité citée par la réplique, bornés à max', () => {
         const lex = buildEntityLexicon({ journal: { npcs: [{ id: 'n1', name: 'Trenn le Borgne' }, { id: 'n2', name: 'Skirnir' }], locations: [], quests: [], chronicle: [] } as any });

@@ -23,8 +23,17 @@
  *     de la Lisière » ne doit pas faire remonter chaque orée de bois) ;
  *   — un LIEU ou un OBJET ne livre que sa phrase entière, et un seul mot
  *     seulement s'il est long ou composé : « Lisière », « Pont », « Salle »
- *     sont des mots de tous les jours.
- * Vérifié en seuils sur les trois campagnes écrites (tests/entityLexicon).
+ *     sont des mots de tous les jours ;
+ *   — les compagnons, la monture et le familier n'entrent PAS : ils sont déjà
+ *     dans le bloc directeur à chaque envoi, et « un loup hurle au loin »
+ *     faisait remonter « Caelen a recruté Loup » (audit du 2026-08-29).
+ * Le JOURNAL est la vérité vivante : quand le manifeste et lui nomment la même
+ * personne, l'entrée garde le libellé du premier mais l'IDENTIFIANT du
+ * journal — sans quoi le rappel PNJ, qui filtre dessus, ne se déclenche jamais
+ * pour la distribution d'une campagne écrite (régression e608fb9, mesurée à
+ * 0/5 sur un journal de 13 PNJ).
+ * Vérifié en seuils sur les trois campagnes écrites (tests/entityLexicon,
+ * tests/npcRecall).
  */
 import { foldText } from './skillSystem';
 import type { AdventureManifest, CharacterSheet, JournalState } from '../types';
@@ -116,7 +125,8 @@ export interface LexiconInput {
     character?: CharacterSheet | null;
 }
 
-/** Le lexique d'une partie : manifeste + journal + compagnons, héros exclu. */
+/** Le lexique d'une partie : manifeste + journal, héros exclu (le personnage
+ *  ne sert qu'à l'exclusion — ses compagnons ne sont pas des entités). */
 export function buildEntityLexicon(input: LexiconInput): EntityRef[] {
     const m: any = input.manifest || {};
     const j: any = input.journal || {};
@@ -129,21 +139,21 @@ export function buildEntityLexicon(input: LexiconInput): EntityRef[] {
     for (const x of m.rewardTable || []) if (x?.item) sources.push({ name: x.item, kind: 'item' });
     for (const x of j.npcs || []) if (x?.name) sources.push({ name: x.name, kind: 'person', id: x.id || x.name });
     for (const x of j.locations || []) if (x?.name) sources.push({ name: x.name, kind: 'place', id: x.id || x.name });
-    for (const x of c.companions || []) if (x?.name) sources.push({ name: x.name, kind: 'person' });
-    if (c.mount?.name) sources.push({ name: c.mount.name, kind: 'item' });
-    if (c.familiar?.name) sources.push({ name: c.familiar.name, kind: 'item' });
 
     const heroKeys = new Set(c.name ? entityAliases(String(c.name), 'person') : []);
-    const seen = new Set<string>();
-    const out: EntityRef[] = [];
+    // Enrichir, jamais jeter : la première source garde le libellé (l'ordre
+    // d'affichage ne bouge pas), mais une source suivante qui apporte un
+    // identifiant le pose sur l'entrée existante.
+    const byKey = new Map<string, EntityRef>();
     for (const src of sources) {
         for (const key of entityAliases(src.name, src.kind)) {
-            if (seen.has(key) || heroKeys.has(key)) continue;
-            seen.add(key);
-            out.push({ key, label: src.name, kind: src.kind, ...(src.id ? { id: src.id } : {}) });
+            if (heroKeys.has(key)) continue;
+            const known = byKey.get(key);
+            if (!known) { byKey.set(key, { key, label: src.name, kind: src.kind, ...(src.id ? { id: src.id } : {}) }); continue; }
+            if (src.id && !known.id) known.id = src.id;
         }
     }
-    return out;
+    return [...byKey.values()];
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -194,4 +204,34 @@ export function textsCiting(
         }
     }
     return out;
+}
+
+/**
+ * Le PNJ à rappeler au MJ pour cette réplique, ou null — la décision du rappel
+ * PNJ (GameSession, TR1), sortie du composant pour être testable. Trois
+ * conditions : il est HORS des `recentCount` derniers (les seuls que le bloc
+ * directeur porte), la réplique le nomme (lexique, à bornes de mots), et il
+ * n'a pas été rappelé depuis `cooldownMs`. Un seul par réplique.
+ */
+export function npcRecallTarget<T extends { id?: string; name: string }>(input: {
+    npcs: T[];
+    lexicon: EntityRef[];
+    line: string;
+    lastRecall: Record<string, number>;
+    now: number;
+    recentCount?: number;
+    cooldownMs?: number;
+}): { key: string; npc: T } | null {
+    const recentCount = input.recentCount ?? 8;
+    const cooldownMs = input.cooldownMs ?? 10 * 60_000;
+    const cited = new Set(entitiesMentioned(input.lexicon, input.line).filter(e => e.kind === 'person' && e.id).map(e => e.id as string));
+    if (!cited.size) return null;
+    const recent = new Set(input.npcs.slice(-recentCount).map(n => n.id || n.name));
+    for (const npc of input.npcs) {
+        const key = npc.id || npc.name;
+        if (recent.has(key) || !cited.has(key)) continue;
+        if (input.now - (input.lastRecall[key] || 0) < cooldownMs) continue;
+        return { key, npc };
+    }
+    return null;
 }

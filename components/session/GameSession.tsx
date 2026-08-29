@@ -68,7 +68,7 @@ import { lyriaMusicService } from '../../services/media/lyriaMusic';
 
 import { isSystemLine } from '../../engine/utils';
 import { hiddenFactsMentioned } from '../../engine/canonFacts';
-import { buildEntityLexicon, entitiesMentioned, textsCiting } from '../../engine/entities';
+import { buildEntityLexicon, entitiesMentioned, textsCiting, npcRecallTarget } from '../../engine/entities';
 import { installQuotaWatch } from '../../services/dm/quotaWatch';
 import { dispRace, dispClass } from '../../data/labels';
 import { appendCampaignLog, combatChronicle, describeCombatFoes, describeDeparted, describeFightEnd, formatCombatChronicleLine } from '../../services/dm/chronicle';
@@ -677,7 +677,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         ? `[SYSTEM] SECRET GATE — your last narration stated a DM-only secret whose reveal chapter is not reached: ${result.note} Do NOT correct this aloud and do not repeat it. From now on, treat it as an unverified claim: let the speaker be uncertain, mistaken or self-serving, and keep the confirmation for its proper chapter.`
         : `[SYSTEM] Consistency check — the engine state disagrees with your last narration: ${result.note} Honor the engine values from now on; do not announce a correction, just weave the true state into the fiction.`);
     });
-  }, [dm, isConnected, transcript, character, combatState, language]);
+  }, [dm, isConnected, transcript, character, combatState, language, adventureManifestData, entityLexicon]);
 
   // ── Greffier de journal (background scribe) ──────────────────────────────
   // Toutes les ~2 min hors combat, relit le dialogue récent et consigne ce que
@@ -848,18 +848,15 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     if (!dm || !isConnected || transcript.length === 0) return;
     const last = transcript[transcript.length - 1];
     if (!last?.text || last.text.trimStart().startsWith('*[')) return;
-    const cited = new Set(entitiesMentioned(entityLexicon, last.text).filter(e => e.kind === 'person' && e.id).map(e => e.id));
-    const npcs = (useGameStore.getState().journal.npcs || []) as any[];
-    const recentIds = new Set(npcs.slice(-8).map(n => n.id || n.name));
-    for (const npc of npcs) {
-      const key = npc.id || npc.name;
-      if (recentIds.has(key)) continue; // déjà dans le top-8 du contexte
-      if (!cited.has(key)) continue;
-      if (Date.now() - (npcRecallRef.current[key] || 0) < 10 * 60_000) continue;
-      npcRecallRef.current[key] = Date.now();
+    // La décision vit dans engine/entities.npcRecallTarget — testée sur les trois
+    // campagnes en régime réel (13 PNJ) : hors du top-8, nommé, pas rappelé
+    // depuis 10 min, un seul par réplique.
+    const recall = npcRecallTarget({ npcs: (useGameStore.getState().journal.npcs || []) as any[], lexicon: entityLexicon, line: last.text, lastRecall: npcRecallRef.current, now: Date.now() });
+    if (recall) {
+      const npc: any = recall.npc;
+      npcRecallRef.current[recall.key] = Date.now();
       const facts = (npc.knownFacts || []).slice(-3).join(' | ');
       dm.sendSystemMessage(`[NPC MEMORY] ${npc.name}${npc.location ? ` (last seen: ${npc.location})` : ''}${typeof npc.disposition === 'number' && npc.disposition !== 0 ? `, disposition ${npc.disposition > 0 ? '+' : ''}${npc.disposition}` : ''}${facts ? ` — known facts: ${facts}` : ''}. Play this NPC consistently with what they know and feel.`);
-      break; // un seul rappel par message
     }
     // Faits canon CACHÉS (constat 11, 2026-08-29) — même mécanique que les
     // PNJ : le bloc directeur ne montre que les 4 premiers et 10 derniers
@@ -873,7 +870,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       for (const i of mentioned) canonRecallRef.current[facts[i]] = Date.now();
       dm.sendSystemMessage(`[CANON MEMORY] Established facts about what was just mentioned — honor them: ${mentioned.map(i => facts[i]).join(' | ')}`);
     }
-  }, [dm, isConnected, transcript]);
+  }, [dm, isConnected, transcript, entityLexicon]);
 
   // ── Résumé roulant du chapitre courant (log/secrétaire/résumeur) ─────────
   // Toutes les 60 s : si ≥50 messages se sont accumulés depuis le dernier

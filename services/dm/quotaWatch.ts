@@ -13,6 +13,12 @@
  * et consigne le premier refus DU JOUR par purpose — le quota renaît à minuit
  * UTC, le signalement aussi. Pas de « reset pour les tests » dans le bundle :
  * la clé du jour suffit.
+ *
+ * Limite connue (audit du 2026-08-29) : HORS session — génération de campagne,
+ * cinématique d'intro — rien n'est monté, et un refus de quota n'est visible
+ * que par l'erreur que l'écran de création affiche lui-même. La v1 l'écrivait
+ * depuis les passes ; la v2 a préféré leur pureté. À monter dans la vue de
+ * création si ce cas devient fréquent.
  */
 import { auditBus } from '../infra/auditBus';
 import { onQuotaExhausted, type QuotaPurpose } from '../infra/geminiClient';
