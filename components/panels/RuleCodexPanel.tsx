@@ -10,6 +10,9 @@ import { RULE_CODEX_PANEL_TEXTS as TRANS } from './texts';
 
 type CodexTab = 'spell' | 'rule' | 'item' | 'condition' | 'monster';
 
+/** Le catalogue entier : voir la note sur `entries`. */
+const SANS_PLAFOND = Number.POSITIVE_INFINITY;
+
 type Tr = typeof TRANS['en'] | typeof TRANS['fr'];
 
 function entrySubtitle(entry: CodexEntry, tr: Tr): string {
@@ -66,14 +69,22 @@ export function RuleCodexPanel({
         return () => { alive = false; };
     }, []);
 
+    // Le codex ne PLAFONNE pas : on vient y chercher une entrée précise, et un
+    // catalogue amputé est pire qu'un catalogue lent. Les anciennes bornes (60,
+    // 80) coupaient dans l'ordre du fichier : les 60 premiers sorts ne dépassent
+    // pas le niveau 3, donc 54 sorts — TOUS les niveaux 4 à 9 — étaient
+    // injoignables (vu à l'écran le 2026-08-30). Le plafond précédait la liste
+    // déroulante ; celle-ci en a fait le seul moyen de parcourir, donc un trou.
+    // `searchCodex` garde son paramètre pour l'outil du MJ, qui lui a besoin
+    // d'une réponse courte.
     const entries = useMemo(() => {
         if (tab === 'rule') {
             return [
-                ...searchCodex('rule', query, 40),
-                ...searchCodex('action' as CodexEntryKind, query, 20),
+                ...searchCodex('rule', query, SANS_PLAFOND),
+                ...searchCodex('action' as CodexEntryKind, query, SANS_PLAFOND),
             ];
         }
-        return searchCodex(tab, query, tab === 'monster' ? 80 : 60);
+        return searchCodex(tab, query, SANS_PLAFOND);
     }, [bestiaryReady, query, tab]);
 
     const selected = entries.find(entry => entry.id === selectedId) || entries[0];

@@ -11,8 +11,15 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { RuleCodexPanel } from '../../components/panels/RuleCodexPanel';
+import { SRD51_SPELLS } from '../../data/srd51';
 
-const rendre = () => render(<RuleCodexPanel onClose={() => {}} initialTab="monster" />);
+const rendre = (tab: 'monster' | 'spell' | 'item' | 'condition' | 'rule' = 'monster') =>
+    render(<RuleCodexPanel onClose={() => {}} initialTab={tab} />);
+
+const options = async () => {
+    const select = await screen.findByRole('combobox');
+    return within(select).getAllByRole('option') as HTMLOptionElement[];
+};
 
 describe('RuleCodexPanel — onglet Monstres', () => {
     it('le sélecteur se remplit avec le bestiaire, et la première fiche s’affiche', async () => {
@@ -59,5 +66,27 @@ describe('RuleCodexPanel — onglet Monstres', () => {
         await waitFor(() => expect(within(select).getAllByRole('option').length).toBeGreaterThan(10));
         const valeurs = within(select).getAllByRole('option').map(o => (o as HTMLOptionElement).value);
         for (const k of ['orcus', 'zariel', 'moloch', 'belaphoss', 'laeral_silverhand']) expect(valeurs, k).not.toContain(k);
+    });
+
+    it('TOUS les sorts du SRD sont proposés — pas seulement les 60 premiers', async () => {
+        // Défaut vu à l'écran le 2026-08-30 : la liste s'arrêtait au niveau 3.
+        // `searchCodex` tronquait à 60 entrées, et les 60 premières du fichier ne
+        // dépassent pas le niveau 3 — 54 sorts, dont TOUS les niveaux 4 à 9,
+        // étaient injoignables. Le plafond existait avant la liste déroulante,
+        // mais celle-ci en a fait le seul moyen de parcourir le codex.
+        rendre('spell');
+        const noms = (await options()).map(o => o.textContent || '');
+        expect(noms).toHaveLength(SRD51_SPELLS.length);
+        for (const n of ['Meteor Swarm', 'Power Word Kill', 'Chain Lightning', 'Disintegrate']) {
+            expect(noms.some(x => x.startsWith(n)), n).toBe(true);
+        }
+    });
+
+    it('les autres onglets sont complets aussi', async () => {
+        for (const [tab, attendu] of [['condition', 15], ['item', 19]] as const) {
+            const { unmount } = rendre(tab);
+            expect((await options()).length, tab).toBe(attendu);
+            unmount();
+        }
     });
 });
