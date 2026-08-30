@@ -40,7 +40,7 @@ import {
     structureInventoryItem
 } from '../engine/codexService';
 import { DEFAULT_CHAR } from '../data/character';
-import { getStartingEquipment } from '../data/equipment';
+import { getDefaultLoadout } from '../data/equipment';
 import { getPlayerAttackModifier, getEffectiveAC, getEffectiveSpeed, getEffectiveStat, getXPProgress } from '../types';
 import { getSubclassConfig, getSubclassFeaturesForLevel, subclassNeedsChoice } from '../data/subclasses';
 import { asiLevelsBetween } from '../data/classFeatures';
@@ -1080,7 +1080,9 @@ describe('character creation defaults', () => {
     });
 
     it('maps the Mage class to arcane starting equipment', () => {
-        const kit = getStartingEquipment('Mage', 'Sage', 'Dueling');
+        // Repointe le 2026-08-30 sur le generateur REEL : getStartingEquipment,
+        // que ce test etait seul a appeler, a ete retire avec le vieux kit fixe.
+        const kit = getDefaultLoadout('Mage', 'Sage');
         expect(kit.some(item => item.name === 'Spellbook')).toBe(true);
         expect(kit.some(item => item.name === 'Component Pouch')).toBe(true);
     });
