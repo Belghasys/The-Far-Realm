@@ -73,8 +73,13 @@ export interface CreatureStats {
     action?: string;          // Action text from CSV
     speedStr?: string;        // Full text speed from CSV
     skill?: string;           // Skill text from CSV
-    url?: string;             // External reference URL
-    imageUrl?: string;        // Image URL derived from reference
+    /** Fiche externe. Toujours VIDE pour le bestiaire : la carte du codex a
+     *  remplacé le cadre vers aidedd.org (2026-08-29), et les liens ont quitté
+     *  la source (2026-08-30). Le champ reste pour d'éventuelles fiches d'auteur. */
+    url?: string;
+    /** Illustration servie par NOUS : public/art/monsters/<id>.webp,
+     *  fabriquée par tools/build_monster_cards.py. */
+    imageUrl?: string;
 }
 
 // ========== HELPER ==========
@@ -130,7 +135,7 @@ export async function loadBestiary(): Promise<Record<string, CreatureStats>> {
 /**
  * Les actions d'un bloc SRD que le moteur a le droit de jouer : tout, SAUF
  * les capacités complétées de mémoire sur une fiche de confiance « basse »
- * (Moloch, Laeral…) — leurs chiffres n'ont pas été relus, ils restent du
+ * (fiches hors SRD complétées de mémoire) — leurs chiffres n'ont pas été relus, ils restent du
  * texte pour le MJ. Contre-audit du 2026-08-26.
  */
 export function playableActions(bloc: SrdMonster | null | undefined): SrdMonster['actions'] {
@@ -147,7 +152,12 @@ async function getBestiary(): Promise<Record<string, CreatureStats>> {
         const { SRD_MONSTERS } = await import('./monsterData2');
         _lazyBestiary = {};
         for (const [id, m] of Object.entries(SRD_MONSTERS)) {
-            _lazyBestiary[id] = m.base;
+            // L'illustration vient de CHEZ NOUS (2026-08-29) : `base` ne porte
+            // plus aucun lien (les colonnes url/imageUrl d'aidedd.org ont quitté
+            // la source le 2026-08-30). Le chemin est posé ici, une fois, pour
+            // que les trois consommateurs — portrait de combat, portrait du
+            // codex, carte — suivent sans le savoir.
+            _lazyBestiary[id] = { ...m.base, imageUrl: `/art/monsters/${id}.webp`, url: '' };
             SRD_ABILITIES[id] = m;
         }
     }

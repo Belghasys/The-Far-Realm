@@ -47,6 +47,7 @@ import { AuditWindow } from './AuditConsole';
 import { ActionPrompt } from './ActionPrompt';
 import { JournalPanel } from '../panels/JournalPanel';
 import { CampaignBoardPanel } from '../panels/CampaignBoardPanel';
+import { MonsterCard } from '../panels/MonsterCard';
 import { saveService } from '../../services/persistence/saveService';
 import { memoryManager } from '../../services/persistence/memoryManager';
 import { t, Language } from '../../services/i18n/translations';
@@ -128,29 +129,29 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
   const dmLanguage = language === 'fr' ? 'French' : 'English';
   const [codexInitialTab, setCodexInitialTab] = useState<'spell' | 'rule' | 'item' | 'condition' | 'monster'>('spell');
   const [codexInitialQuery, setCodexInitialQuery] = useState('');
-  const [activeReferenceUrl, setActiveReferenceUrl] = useState<string | null>(null);
+  // La carte LOCALE du monstre (components/panels/MonsterCard) a remplacé le
+  // cadre vers aidedd.org le 2026-08-29 : illustration, lore et fiche viennent
+  // désormais de chez nous, s'affichent hors ligne et sont commercialisables.
+  const [activeMonsterCard, setActiveMonsterCard] = useState<string | null>(null);
 
-  const handleOpenReference = (name: string, url: string) => {
-    setCodexInitialTab('monster');
-    setCodexInitialQuery(name);
-    setActivePanel('codex');
-    setActiveReferenceUrl(url);
+  const handleOpenMonsterCard = (name: string) => {
+    setActiveMonsterCard(name);
   };
 
   // ui-m5 — Échap ferme l'overlay de référence AU-DESSUS du Codex, pas le
   // Codex en dessous : écouteur en phase capture + stopImmediatePropagation
   // pour passer avant le listener Échap de GameWindow.
   useEffect(() => {
-    if (!activeReferenceUrl) return;
+    if (!activeMonsterCard) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.stopImmediatePropagation();
       event.preventDefault();
-      setActiveReferenceUrl(null);
+      setActiveMonsterCard(null);
     };
     window.addEventListener('keydown', onKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', onKeyDown, { capture: true });
-  }, [activeReferenceUrl]);
+  }, [activeMonsterCard]);
 
   // ─── Zustand store — single source of truth for shared session state ──────
   const bgImage = useGameStore(s => s.bgImage);
@@ -2064,26 +2065,23 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         />
       )}
 
-      {activeReferenceUrl && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="relative flex h-[85dvh] w-full max-w-5xl flex-col rounded-md border border-white/10 bg-zinc-950 text-white shadow-2xl">
+      {activeMonsterCard && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4" onClick={() => setActiveMonsterCard(null)}>
+          <div className="relative flex max-h-[88dvh] w-full max-w-4xl flex-col rounded-md border border-white/10 bg-zinc-950 text-white shadow-2xl" onClick={e => e.stopPropagation()}>
             <header className="flex items-center justify-between border-b border-white/10 bg-black/45 px-4 py-3">
               <h3 className="font-fantasy text-lg font-bold tracking-wide text-amber-300">{tr.reference}</h3>
               <button
                 type="button"
-                onClick={() => setActiveReferenceUrl(null)}
+                onClick={() => setActiveMonsterCard(null)}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/10 text-white/55 hover:bg-white/10 hover:text-white font-bold"
               >
                 ✕
               </button>
             </header>
-            <div className="flex-1 overflow-hidden">
-              <iframe
-                src={activeReferenceUrl}
-                className="h-full w-full bg-white border-none"
-                title="Reference Viewer"
-                sandbox="allow-scripts allow-same-origin"
-              />
+            <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+              {/* En combat la carte s'ouvre DÉJÀ RETOURNÉE : on vient y chercher
+                  la CA et les PV, pas admirer l'illustration. */}
+              <MonsterCard nameOrId={activeMonsterCard} initialFace="back" />
             </div>
           </div>
         </div>
@@ -2527,7 +2525,6 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
             onClose={() => setActivePanel('none')}
             initialTab={codexInitialTab}
             initialQuery={codexInitialQuery}
-            onOpenExternalReference={setActiveReferenceUrl}
           />
         </React.Suspense>
       )}
@@ -2564,7 +2561,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         departed={combatState.departed}
         onAdvanceTurn={endPlayerTurnIfActive}
         onEndCombat={handleManualEndCombat}
-        onOpenReference={handleOpenReference}
+        onOpenMonsterCard={handleOpenMonsterCard}
         actionEconomy={combatState.actionEconomy}
         onToggleAction={handleToggleActionEconomy}
         playerStoryModifiers={character?.storyModifiers || []}

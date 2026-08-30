@@ -119,3 +119,41 @@ describe('La chronique sur téléphone (lot B1)', () => {
         expect(gs()).toMatch(/safe-area-inset-bottom/);
     });
 });
+
+describe('Le codex et les cartes de monstre sur téléphone (2026-08-30)', () => {
+    const codex = () => lire('components/panels/RuleCodexPanel.tsx');
+    const carte = () => lire('components/panels/MonsterCard.tsx');
+    const gs = () => lire('components/session/GameSession.tsx');
+
+    it('le codex choisit par LISTE DÉROULANTE, pas par une liste qui mange l’écran', () => {
+        // L'ancienne colonne prenait `max-h-[44vh]` sur mobile : on cherchait une
+        // créature dans une lucarne et la fiche tenait dans le reste. Le sélecteur
+        // natif rend l'écran au contenu et se parcourt bien plus vite au doigt.
+        expect(codex()).toMatch(/<select/);
+        expect(codex()).not.toMatch(/max-h-\[44vh\]/);
+    });
+
+    it('la fiche du codex prend toute la largeur : plus de colonne latérale figée', () => {
+        expect(codex()).not.toMatch(/lg:w-80/);
+    });
+
+    it('la carte de monstre s’empile sur téléphone et ne passe en deux colonnes qu’au large', () => {
+        expect(carte()).toMatch(/flex-col gap-5 lg:flex-row/);
+    });
+
+    it('la carte en surimpression se mesure en dvh et respecte la barre d’accueil', () => {
+        const t = gs();
+        expect(t).toMatch(/max-h-\[88dvh\]/);
+        expect(t).toMatch(/pb-\[max\(0\.75rem,env\(safe-area-inset-bottom\)\)\]/);
+    });
+
+    it('aucun des écrans neufs ne fige un plein écran en 100vh', () => {
+        for (const f of ['components/panels/MonsterCard.tsx', 'components/panels/RuleCodexPanel.tsx', 'components/neon/CodexShowcase.tsx']) {
+            expect(lire(f), f).not.toMatch(/\b100vh\b/);
+        }
+    });
+
+    it('le bouton qui ouvre la fiche en combat est une vraie cible tactile (36 px)', () => {
+        expect(lire('components/combat/CombatTracker.tsx')).toMatch(/h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white\/10 text-sky-300/);
+    });
+});

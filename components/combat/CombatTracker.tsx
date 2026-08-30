@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ExternalLink, Heart, Shield, SkipForward, Skull, Swords, User, XCircle } from 'lucide-react';
+import { Activity, BookOpen, Heart, Shield, SkipForward, Skull, Swords, User, XCircle } from 'lucide-react';
 import { getCreature, formatCR } from '../../data/bestiary';
 import { getCreatureAttacks } from '../../engine/monsterAttacks';
 import type { ActiveEffect } from '../../types';
@@ -22,7 +22,9 @@ interface Props {
     onAdvanceTurn?: () => void;
     isActive?: boolean;
     round?: number;
-    onOpenReference?: (name: string, url: string) => void;
+    /** Ouvre la carte LOCALE du monstre (illustration + lore + fiche).
+     *  Remplace le cadre vers aidedd.org depuis le 2026-08-29. */
+    onOpenMonsterCard?: (name: string) => void;
     actionEconomy?: Record<string, any>;
     onToggleAction?: (combatantId: string, kind: 'action' | 'bonusAction' | 'extraAttack' | 'reaction') => void;
     playerStoryModifiers?: any[];
@@ -103,7 +105,9 @@ const CombatantRow: React.FC<{
     index: number;
     displayName: string;
     isTurn: boolean;
-    onOpenReference?: (name: string, url: string) => void;
+    /** Ouvre la carte LOCALE du monstre (illustration + lore + fiche).
+     *  Remplace le cadre vers aidedd.org depuis le 2026-08-29. */
+    onOpenMonsterCard?: (name: string) => void;
     actionEconomy?: any;
     onToggleAction?: (combatantId: string, kind: 'action' | 'bonusAction' | 'extraAttack' | 'reaction') => void;
     playerStoryModifiers?: any[];
@@ -117,7 +121,7 @@ const CombatantRow: React.FC<{
     index,
     displayName,
     isTurn,
-    onOpenReference,
+    onOpenMonsterCard,
     actionEconomy,
     onToggleAction,
     playerStoryModifiers,
@@ -155,14 +159,7 @@ const CombatantRow: React.FC<{
                 <CombatantPortrait 
                     combatant={combatant} 
                     isTurn={isTurn} 
-                    onClick={creature?.url ? (e) => {
-                        e.stopPropagation();
-                        if (onOpenReference) {
-                            onOpenReference(combatant.name, creature.url || '');
-                        } else {
-                            window.open(creature.url, '_blank');
-                        }
-                    } : undefined}
+                    onClick={creature && onOpenMonsterCard ? (e) => { e.stopPropagation(); onOpenMonsterCard(combatant.name); } : undefined}
                 />
 
                 <div className="min-w-0 flex-1">
@@ -215,6 +212,21 @@ const CombatantRow: React.FC<{
                                     <span className="shrink-0 inline-flex items-center gap-0.5 rounded bg-red-500/20 border border-red-500/40 px-1.5 py-0.5 text-[9px] font-black uppercase text-red-400 animate-pulse">
                                         {tr.target}
                                     </span>
+                                )}
+                                {/* La fiche se consulte quand le joueur en a besoin, pas
+                                    seulement pendant le tour du monstre (l'ancien bouton
+                                    n'existait que sous `isTurn` : inutilisable au moment
+                                    où l'on cherche la CA). Cible tactile de 28 px. */}
+                                {creature && onOpenMonsterCard && (
+                                    <button
+                                        type="button"
+                                        title={tr.reference}
+                                        aria-label={`${tr.reference} — ${displayName}`}
+                                        onClick={(e) => { e.stopPropagation(); onOpenMonsterCard(combatant.name); }}
+                                        className="ml-auto inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 text-sky-300/70 transition-colors hover:border-sky-400/40 hover:bg-sky-400/10 hover:text-sky-200 active:bg-sky-400/20"
+                                    >
+                                        <BookOpen className="h-3.5 w-3.5" />
+                                    </button>
                                 )}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/45">
@@ -305,23 +317,6 @@ const CombatantRow: React.FC<{
                         <Activity className="h-3.5 w-3.5" />
                         {tr.currentTurn}
                     </span>
-                    {creature?.url && (
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (onOpenReference) {
-                                    onOpenReference(combatant.name, creature.url || '');
-                                } else {
-                                    window.open(creature.url, '_blank');
-                                }
-                            }}
-                            className="inline-flex items-center gap-1 text-sky-300 hover:text-sky-200 text-xs"
-                        >
-                            <ExternalLink className="h-3 w-3" />
-                            {tr.reference}
-                        </button>
-                    )}
                 </div>
             )}
         </div>
@@ -335,7 +330,7 @@ export function CombatTracker({
     onAdvanceTurn, 
     isActive, 
     round = 1, 
-    onOpenReference,
+    onOpenMonsterCard,
     actionEconomy,
     onToggleAction,
     playerStoryModifiers,
@@ -443,7 +438,7 @@ export function CombatTracker({
                             index={index}
                             displayName={displayNames.get(combatantMapKey(combatant, index)) || combatant.name}
                             isTurn={normalizeTurn(combatant.name) === normalizeTurn(currentTurn) || combatant.id === currentTurn}
-                            onOpenReference={onOpenReference}
+                            onOpenMonsterCard={onOpenMonsterCard}
                             actionEconomy={actionEconomy?.[combatant.id || combatant.name] || actionEconomy?.[combatant.name]}
                             onToggleAction={onToggleAction}
                             playerStoryModifiers={playerStoryModifiers}

@@ -88,7 +88,7 @@ describe('équilibre : un kit ne doit jamais affaiblir son monstre', () => {
     });
 
     it('les monstres à grosse mêlée n\'ont AUCUN sort à volonté', () => {
-        for (const id of ['pit_fiend', 'zariel', 'orcus', 'solar', 'planetar', 'moloch', 'sibriex']) {
+        for (const id of ['pit_fiend', 'solar', 'planetar', 'sibriex']) {
             const aVolonte = CASTER_KITS[id].spells.filter(s => s.uses === undefined);
             expect(aVolonte.map(s => s.name), id).toEqual([]);
         }

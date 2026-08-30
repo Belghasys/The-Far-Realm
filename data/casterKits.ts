@@ -264,13 +264,6 @@ export const CASTER_KITS: Record<string, CasterKit> = {
             { name: 'Flame Strike', kind: 'aoe_save', saveAbility: 'DEX', formula: '8d6', damageType: 'fire', uses: 2 },
         ],
     },
-    laeral_silverhand: {
-        dc: 19, attackBonus: 11,
-        spells: [
-            { name: 'Fireball', kind: 'aoe_save', saveAbility: 'DEX', formula: '8d6', damageType: 'fire', uses: 2 },
-            { name: 'Fire Bolt', kind: 'attack', formula: '4d10', damageType: 'fire' },
-        ],
-    },
     sibriex: {
         dc: 21, attackBonus: 13,
         spells: [
@@ -296,31 +289,10 @@ export const CASTER_KITS: Record<string, CasterKit> = {
             { name: 'Ray of Frost', kind: 'attack', formula: '4d8', damageType: 'cold' },
         ],
     },
-    moloch: {
-        dc: 21, attackBonus: 13,
-        spells: [
-            { name: 'Flame Strike', kind: 'aoe_save', saveAbility: 'DEX', formula: '8d6', damageType: 'fire', uses: 2 },
-            { name: 'Wall of Fire', kind: 'aoe_save', saveAbility: 'DEX', formula: '5d8', damageType: 'fire', uses: 1, concentration: true },
-        ],
-    },
     solar: {
         dc: 25, attackBonus: 17,
         spells: [
             { name: 'Blade Barrier', kind: 'aoe_save', saveAbility: 'DEX', formula: '6d10', damageType: 'slashing', uses: 2 },
-        ],
-    },
-    orcus: {
-        dc: 23, attackBonus: 15,
-        spells: [
-            { name: 'Finger of Death', kind: 'save', saveAbility: 'CON', formula: '7d8+30', damageType: 'necrotic', uses: 1 },
-            { name: 'Blight', kind: 'save', saveAbility: 'CON', formula: '8d8', damageType: 'necrotic', uses: 2 },
-        ],
-    },
-    zariel: {
-        dc: 26, attackBonus: 18,
-        spells: [
-            { name: 'Finger of Death', kind: 'save', saveAbility: 'CON', formula: '7d8+30', damageType: 'necrotic', uses: 2 },
-            { name: 'Blade Barrier', kind: 'aoe_save', saveAbility: 'DEX', formula: '6d10', damageType: 'slashing', uses: 1 },
         ],
     },
 };

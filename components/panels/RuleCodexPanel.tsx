@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, ExternalLink, Search, Shield, Swords, Wand2 } from 'lucide-react';
+import { BookOpen, ExternalLink, Search, Swords } from 'lucide-react';
 import { preloadCodexBestiary, searchCodex } from '../../engine/codexService';
 import { formatCR } from '../../data/bestiary';
 import { CodexEntry, CodexEntryKind } from '../../types';
 import { GameWindow, WindowTabs } from './GameWindow';
+import { MonsterCard } from './MonsterCard';
 import { useGameStore } from '../../store/gameStore';
 import { RULE_CODEX_PANEL_TEXTS as TRANS } from './texts';
 
@@ -91,13 +92,19 @@ export function RuleCodexPanel({
             zIndex="z-[70]"
             bodyClassName="min-h-0 flex flex-1 flex-col overflow-hidden"
         >
-            <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-                <aside className="flex max-h-[44vh] min-h-0 shrink-0 flex-col border-b border-white/10 bg-black/25 lg:max-h-none lg:w-80 lg:border-b-0 lg:border-r">
+            {/* Une BARRE, plus une colonne. La liste défilante prenait 44 % de la
+                hauteur sur téléphone : on cherchait une créature dans une lucarne,
+                et la fiche — ce qu'on est venu lire — tenait dans le reste. La
+                liste déroulante rend l'écran entier au contenu, et sur mobile
+                elle ouvre le sélecteur natif du système, bien plus rapide à
+                parcourir que 80 boutons empilés. */}
+            <div className="flex min-h-0 flex-1 flex-col">
+                <div className="shrink-0 border-b border-white/10 bg-black/25">
                     <WindowTabs tabs={TABS} active={tab} onChange={setTab} />
 
-                    <div className="border-b border-white/10 p-3">
-                        <label className="flex items-center gap-2 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white/60">
-                            <Search className="h-4 w-4" />
+                    <div className="flex flex-col gap-2 p-3 sm:flex-row">
+                        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-white/10 bg-black/30 px-3 py-2 text-white/60">
+                            <Search className="h-4 w-4 shrink-0" />
                             <input
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
@@ -105,34 +112,28 @@ export function RuleCodexPanel({
                                 className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/30"
                             />
                         </label>
-                    </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-2 custom-scrollbar">
-                        {entries.map(entry => (
-                            <button
-                                key={`${entry.kind}-${entry.id}`}
-                                type="button"
-                                onClick={() => setSelectedId(entry.id)}
-                                className={`mb-1 flex w-full items-center gap-3 rounded-md border p-2 text-left transition ${
-                                    selected?.id === entry.id
-                                        ? 'border-amber-400/40 bg-amber-500/15'
-                                        : 'border-white/5 bg-white/[0.03] hover:border-white/15 hover:bg-white/[0.06]'
-                                }`}
-                            >
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-black/30 text-white/55">
-                                    {entry.kind === 'spell' ? <Wand2 className="h-4 w-4" /> : entry.kind === 'monster' ? <Swords className="h-4 w-4" /> : <Shield className="h-4 w-4" />}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="truncate text-sm font-bold text-white/85">{entry.name}</div>
-                                    <div className="truncate text-xs text-white/40">{entrySubtitle(entry, tr)}</div>
-                                </div>
-                            </button>
-                        ))}
-                        {!entries.length && (
-                            <div className="rounded-md border border-white/10 p-4 text-sm text-white/45">{tr.noEntry}</div>
-                        )}
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                            {entries.length > 0 ? (
+                                <select
+                                    value={selected?.id || ''}
+                                    onChange={(event) => setSelectedId(event.target.value)}
+                                    aria-label={tr.selectEntry}
+                                    className="min-w-0 flex-1 rounded-md border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-amber-400/40"
+                                >
+                                    {entries.map(entry => (
+                                        <option key={`${entry.kind}-${entry.id}`} value={entry.id}>
+                                            {entry.name} — {entrySubtitle(entry, tr)}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <div className="flex-1 rounded-md border border-white/10 px-3 py-2 text-sm text-white/45">{tr.noEntry}</div>
+                            )}
+                            <span className="shrink-0 text-xs tabular-nums text-white/35">{entries.length}</span>
+                        </div>
                     </div>
-                </aside>
+                </div>
 
                 <div className="min-h-0 flex-1 bg-gradient-to-b from-zinc-950 to-black">
                     {selected ? <Detail entry={selected} onOpenExternalReference={onOpenExternalReference} tr={tr} /> : <div className="p-6 text-white/50">{tr.selectEntry}</div>}
@@ -151,15 +152,6 @@ function Detail({ entry, onOpenExternalReference, tr }: { entry: CodexEntry; onO
                     <h3 className="mt-1 text-2xl font-fantasy font-bold text-white">{entry.name}</h3>
                     <p className="text-sm text-white/50">{entrySubtitle(entry, tr)}</p>
                 </div>
-                {entry.kind === 'monster' && entry.portrait && (
-                    <img
-                        src={entry.portrait}
-                        alt={entry.name}
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                        className="h-20 w-20 rounded-md border border-white/15 object-cover"
-                    />
-                )}
             </div>
 
             <div className="mt-4 space-y-4 text-sm text-white/75">
@@ -218,15 +210,15 @@ function Detail({ entry, onOpenExternalReference, tr }: { entry: CodexEntry; onO
 
                 {entry.kind === 'monster' && (
                     <>
+                        {/* La carte remplace la grille de chiffres : elle porte
+                            l'illustration, le lore et la fiche complete. Le
+                            ROLE tactique n'est pas dans le SRD — il reste ici. */}
+                        <MonsterCard nameOrId={entry.id} />
                         <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
-                            <Info label={tr.hp} value={`${entry.hp}${entry.hpDice ? ` (${entry.hpDice})` : ''}`} />
-                            <Info label={tr.ac} value={String(entry.ac)} />
-                            <Info label={tr.xp} value={String(entry.xp)} />
                             <Info label={tr.role} value={entry.role} />
                             <Info label={tr.size} value={entry.size} />
                             <Info label={tr.type} value={entry.type} />
                         </div>
-                        <Mechanics tr={tr} items={entry.attacks.map(attack => `${attack.name}: +${attack.attackBonus}, ${attack.damage} ${attack.damageType}`)} />
                     </>
                 )}
             </div>

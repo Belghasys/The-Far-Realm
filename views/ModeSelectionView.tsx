@@ -25,6 +25,13 @@ import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
 import { NeonCard } from '../components/neon/NeonButton';
 import { AlterEgoFrame } from '../components/neon/AlterEgoFrame';
 import { CollageWall } from '../components/neon/CollageWall';
+import { CodexShowcase } from '../components/neon/CodexShowcase';
+
+// Le codex du JEU, tel quel : sorts, règles, objets, états, monstres. Il tire le
+// bestiaire complet (1,5 Mo), donc il n'entre dans la page qu'à l'ouverture.
+const RuleCodexPanel = React.lazy(() =>
+    import('../components/panels/RuleCodexPanel').then(m => ({ default: m.RuleCodexPanel })),
+);
 import { TavernPlayer, TavernLink } from '../components/neon/TavernPlayer';
 import { CLASS_ART, ALTER_ART, ALTER_CAPTION, BANNER, artUrl, artSrcSet } from '../theme/art';
 import { dispClass } from '../data/labels';
@@ -60,6 +67,7 @@ export function ModeSelectionView() {
     const navigate = useNavigate();
     const { language, setLanguage, setGameMode, setSelectedAdventure, setActiveSaveId, loadSaveState } = useGameStore();
     const [showLoadMenu, setShowLoadMenu] = useState(false);
+    const [codexOuvert, setCodexOuvert] = useState(false);
     const taverne = useRef<HTMLDivElement>(null);
 
     const TRANS = {
@@ -94,6 +102,16 @@ export function ModeSelectionView() {
             tavernHint: "The music of the hall plays here, in plain sight. Nothing is streamed from our own servers — the tavern borrows its records.",
             tavernFallback: "If the player cannot load — an ad blocker, a locked-down network, the offline installer — the local theme takes over on its own.",
             tavernDown: "UNAVAILABLE",
+            codexTitle: "THE CODEX",
+            codexHint: "Every creature illustrated and written by hand. Turn a card over: the description is the same one the game shows you at the table.",
+            codexFlip: (n: number) => `Click a card to turn it over, or search all ${n}`,
+            codexFootnote: "Rules from the SRD 5.1 (CC-BY 4.0). Art and text: ours.",
+            codexSearch: "Search the bestiary — a name, a type…",
+            codexShuffle: "OTHER CREATURES",
+            codexOpen: "OPEN THE CODEX",
+            codexLoading: "Opening the codex…",
+            codexResults: (n: number) => n === 1 ? "1 match" : `${n} matches`,
+            codexNone: "Nothing under that name. Try a type: dragon, undead, fiend, beast.",
             wallTitle: "THE WALL",
             wallHint: "Ten scenes the dungeon master keeps pinned above the table. The rules never left — they just moved upstairs.",
             wallRefresh: "SHUFFLE",
@@ -131,6 +149,16 @@ export function ModeSelectionView() {
             tavernHint: "La musique du hall se joue ici, à la vue de tous. Rien n'est diffusé depuis nos propres serveurs — la taverne emprunte ses disques.",
             tavernFallback: "Si le lecteur ne charge pas — bloqueur de publicité, réseau verrouillé, installeur hors ligne — le thème local reprend la main tout seul.",
             tavernDown: "INDISPONIBLE",
+            codexTitle: "LE CODEX",
+            codexHint: "Chaque créature illustrée et écrite à la main. Retournez une carte : la description est celle que le jeu vous montre à la table.",
+            codexFlip: (n: number) => `Cliquez une carte pour la retourner, ou cherchez parmi les ${n}`,
+            codexFootnote: "Règles issues du SRD 5.1 (CC-BY 4.0). Illustrations et textes : les nôtres.",
+            codexSearch: "Chercher dans le bestiaire — un nom, un type…",
+            codexShuffle: "AUTRES CRÉATURES",
+            codexOpen: "OUVRIR LE CODEX",
+            codexLoading: "Ouverture du codex…",
+            codexResults: (n: number) => n === 1 ? "1 résultat" : `${n} résultats`,
+            codexNone: "Rien sous ce nom. Essayez un type : dragon, undead, fiend, beast.",
             wallTitle: "LE MUR",
             wallHint: "Dix scènes que le maître du jeu garde punaisées au-dessus de la table. Les règles ne sont jamais parties — elles ont juste déménagé à l'étage.",
             wallRefresh: "MÉLANGER",
@@ -447,6 +475,20 @@ export function ModeSelectionView() {
                         lang={lang}
                     />
 
+                    <CodexShowcase
+                        title={t.codexTitle}
+                        hint={t.codexHint}
+                        flipHint={t.codexFlip}
+                        footnote={t.codexFootnote}
+                        searchPlaceholder={t.codexSearch}
+                        shuffleLabel={t.codexShuffle}
+                        resultsLabel={t.codexResults}
+                        noResult={t.codexNone}
+                        openLabel={t.codexOpen}
+                        onOpenCodex={() => setCodexOuvert(true)}
+                        lang={lang}
+                    />
+
                     <CollageWall
                         title={t.wallTitle}
                         hint={t.wallHint}
@@ -489,6 +531,19 @@ export function ModeSelectionView() {
                     onClose={() => setShowLoadMenu(false)}
                 />
             )}
+            {codexOuvert && (
+                <React.Suspense fallback={
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center',
+                        background: 'rgba(5,0,26,0.85)', color: T.paper, font: `400 15px/1.4 ${BODY}`,
+                    }}>
+                        {t.codexLoading}
+                    </div>
+                }>
+                    <RuleCodexPanel onClose={() => setCodexOuvert(false)} initialTab="monster" />
+                </React.Suspense>
+            )}
+
         </div>
     );
 }

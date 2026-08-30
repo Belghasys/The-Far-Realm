@@ -1,42 +1,6 @@
 {
   "_lisez_moi": "Complements DE MEMOIRE (Claude, 2026-08-26) pour les fiches hors SRD dont le texte CSV est tronque a 400 caracteres. Chiffres de jeu seulement (bonus, des, DC, recharge) ; les descriptions sont reecrites, jamais copiees. confidence : haute = Monster Manual bien connu ; moyenne = Mordenkainen / Volo ; basse = source obscure, champs laisses vides plutot qu'inventes. A RELIRE avant de s'y fier : le debut visible du CSV fait foi en cas de contradiction (le generateur le signale).",
 
-  "orcus": {
-    "confidence": "moyenne",
-    "actions": [
-      { "name": "Necrotic Bolt", "kind": "attack", "attackBonus": 15, "range": [120, 120], "damage": [{ "dice": "8d10", "type": "necrotic" }], "desc": "Trait de magie necrotique lance a distance." }
-    ],
-    "traits": [
-      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, Orcus reussit une sauvegarde ratee." },
-      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
-      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 23, "spells": [
-        { "name": "Chill Touch", "level": 0, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } },
-        { "name": "Animate Dead", "level": 3, "usage": { "type": "per day", "times": 3 } }, { "name": "Blight", "level": 4, "usage": { "type": "per day", "times": 3 } }, { "name": "Dispel Magic", "level": 3, "usage": { "type": "per day", "times": 3 } },
-        { "name": "Finger of Death", "level": 7, "usage": { "type": "per day", "times": 1 } }, { "name": "Power Word Stun", "level": 8, "usage": { "type": "per day", "times": 1 } }, { "name": "Speak with Dead", "level": 3, "usage": { "type": "per day", "times": 1 } }, { "name": "Time Stop", "level": 9, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee du Prince des morts-vivants." }
-    ],
-    "legendary": { "count": 3, "actions": [
-      { "name": "Tail", "cost": 1, "attackBonus": 16, "damage": [{ "dice": "3d8+8", "type": "force" }, { "dice": "2d8", "type": "poison" }], "desc": "Un coup de queue." },
-      { "name": "Creature of Death (Costs 2 Actions)", "cost": 2, "desc": "Orcus lance un sort ou fait lever un mort-vivant (detail incertain : a relire)." } ] }
-  },
-
-  "zariel": {
-    "confidence": "moyenne",
-    "actions": [
-      { "name": "Horrid Touch (Recharge 5-6)", "kind": "attack", "attackBonus": 16, "reach": 5, "damage": [{ "dice": "8d10", "type": "necrotic" }], "onHitSave": { "ability": "CON", "value": 26 }, "usage": { "type": "recharge on roll", "dice": "1d6", "minValue": 5 }, "desc": "Toucher horrible : sur un echec a la sauvegarde, la cible est empoisonnee une minute et aveuglee tant qu'elle l'est." },
-      { "name": "Teleport", "kind": "narrative", "desc": "Zariel se teleporte jusqu'a 120 pieds vers un espace libre qu'elle voit." }
-    ],
-    "traits": [
-      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, Zariel reussit une sauvegarde ratee." },
-      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
-      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 26, "spells": [
-        { "name": "Alter Self", "level": 2, "usage": { "type": "at will" } }, { "name": "Detect Evil and Good", "level": 1, "usage": { "type": "at will" } }, { "name": "Fireball", "level": 3, "usage": { "type": "at will" } },
-        { "name": "Blade Barrier", "level": 6, "usage": { "type": "per day", "times": 3 } }, { "name": "Dispel Evil and Good", "level": 5, "usage": { "type": "per day", "times": 3 } }, { "name": "Finger of Death", "level": 7, "usage": { "type": "per day", "times": 3 } }, { "name": "Wall of Fire", "level": 4, "usage": { "type": "per day", "times": 3 } } ] }, "desc": "Magie innee de l'archiduchesse d'Averne." }
-    ],
-    "legendary": { "count": 3, "actions": [
-      { "name": "Immolating Gaze (Costs 2 Actions)", "cost": 2, "dc": { "ability": "DEX", "value": 26, "successType": "half" }, "damage": [{ "dice": "12d6", "type": "fire" }], "desc": "Regard incendiaire sur une creature a 120 pieds (des de degats : a relire)." },
-      { "name": "Teleport", "cost": 1, "desc": "Zariel utilise Teleport." } ] }
-  },
-
   "astral-dreadnought": {
     "confidence": "moyenne",
     "actions": [
@@ -50,40 +14,6 @@
     "legendary": { "count": 3, "actions": [
       { "name": "Claw", "cost": 1, "attackBonus": 16, "damage": [{ "dice": "3d10+9", "type": "slashing" }], "desc": "Une attaque de griffe." },
       { "name": "Donjon Visit (Costs 2 Actions)", "cost": 2, "dc": { "ability": "CHA", "value": 19, "successType": "none" }, "desc": "Une creature engloutie doit reussir la sauvegarde ou etre projetee dans le donjon du dreadnought." } ] }
-  },
-
-  "moloch": {
-    "confidence": "basse",
-    "actions": [
-      { "name": "Bite", "kind": "attack", "attackBonus": 14, "reach": 5, "damage": [{ "dice": "2d10+8", "type": "piercing" }], "desc": "Morsure (chiffres a relire)." },
-      { "name": "Claw", "kind": "attack", "attackBonus": 14, "reach": 5, "damage": [{ "dice": "2d6+8", "type": "slashing" }], "desc": "Griffe (chiffres a relire)." },
-      { "name": "Many-Tailed Whip", "kind": "attack", "attackBonus": 14, "reach": 30, "damage": [{ "dice": "2d6+8", "type": "bludgeoning" }], "desc": "Fouet a plusieurs queues (chiffres a relire)." },
-      { "name": "Breath of Despair (Recharge 5-6)", "kind": "breath", "dc": { "ability": "WIS", "value": 21, "successType": "none" }, "damage": [{ "dice": "10d8", "type": "psychic" }], "usage": { "type": "recharge on roll", "dice": "1d6", "minValue": 5 }, "desc": "Cone de 30 pieds : sur un echec, degats psychiques et effroi pour une minute." },
-      { "name": "Teleport", "kind": "narrative", "desc": "Moloch se teleporte jusqu'a 120 pieds." }
-    ],
-    "traits": [
-      { "name": "Legendary Resistance", "usage": { "type": "per day", "times": 3 }, "desc": "Trois fois par jour, il reussit une sauvegarde ratee." },
-      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." },
-      { "name": "Spellcasting", "spellcasting": { "ability": "CHA", "dc": 21, "spells": [
-        { "name": "Alter Self", "level": 2, "usage": { "type": "at will" } }, { "name": "Animate Dead", "level": 3, "usage": { "type": "at will" } }, { "name": "Burning Hands", "level": 1, "usage": { "type": "at will" } }, { "name": "Confusion", "level": 4, "usage": { "type": "at will" } }, { "name": "Detect Magic", "level": 1, "usage": { "type": "at will" } }, { "name": "Fly", "level": 3, "usage": { "type": "at will" } }, { "name": "Stinking Cloud", "level": 3, "usage": { "type": "at will" } }, { "name": "Suggestion", "level": 2, "usage": { "type": "at will" } }, { "name": "Wall of Fire", "level": 4, "usage": { "type": "at will" } },
-        { "name": "Dominate Person", "level": 5, "usage": { "type": "per day", "times": 3 } }, { "name": "Flame Strike", "level": 5, "usage": { "type": "per day", "times": 3 } },
-        { "name": "Dominate Monster", "level": 8, "usage": { "type": "per day", "times": 1 } } ] }, "desc": "Magie innee de l'archidiable dechu." }
-    ],
-    "legendary": { "count": 3, "actions": [
-      { "name": "Attack", "cost": 1, "desc": "Une attaque de morsure, de griffe ou de fouet." },
-      { "name": "Teleport", "cost": 1, "desc": "Moloch utilise Teleport." },
-      { "name": "Cast a Spell (Costs 2 Actions)", "cost": 2, "desc": "Moloch lance un sort a volonte." } ] }
-  },
-
-  "belaphoss": {
-    "confidence": "basse",
-    "actions": [
-      { "name": "Whip", "kind": "attack", "attackBonus": 14, "reach": 30, "damage": [{ "dice": "2d6+8", "type": "slashing" }], "desc": "Fouet de flammes : la cible peut etre tiree jusqu'a 25 pieds vers Belaphoss (detail a relire)." },
-      { "name": "Teleport", "kind": "narrative", "desc": "Belaphoss se teleporte jusqu'a 120 pieds." }
-    ],
-    "traits": [
-      { "name": "Magic Resistance", "desc": "Avantage aux sauvegardes contre les sorts." }
-    ]
   },
 
   "sibriex": {
@@ -103,17 +33,6 @@
       { "name": "Cast a Spell", "cost": 1, "desc": "Le sibriex lance un sort." },
       { "name": "Spray Bile", "cost": 1, "desc": "Le sibriex utilise Squirt Bile." },
       { "name": "Warp Creature (Costs 2 Actions)", "cost": 2, "desc": "Le sibriex utilise Warp Creature sur une creature." } ] }
-  },
-
-  "laeral-silverhand": {
-    "confidence": "basse",
-    "actions": [
-      { "name": "Flame Tongue", "kind": "attack", "attackBonus": 11, "reach": 5, "damage": [{ "dice": "1d8+3", "type": "slashing" }, { "dice": "2d6", "type": "fire" }], "desc": "Epee langue-de-feu (des de degats a relire)." }
-    ],
-    "traits": [
-      { "name": "Spellcasting", "spellcasting": { "ability": "INT", "dc": 19, "spells": [
-        { "name": "Fire Bolt", "level": 0, "usage": { "type": "at will" } }, { "name": "Mage Hand", "level": 0, "usage": { "type": "at will" } }, { "name": "Shield", "level": 1 }, { "name": "Mage Armor", "level": 1 }, { "name": "Misty Step", "level": 2 }, { "name": "Counterspell", "level": 3 }, { "name": "Fireball", "level": 3 }, { "name": "Dimension Door", "level": 4 } ] }, "desc": "Magicienne de haut niveau ; liste de sorts partielle, a relire." }
-    ]
   },
 
   "drow-inquisitor": {

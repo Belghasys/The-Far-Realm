@@ -708,7 +708,9 @@ describe('SRD 5.1 Codex integration', () => {
         const goblin = getCreature('Goblin');
         expect(goblin?.hp.base).toBe(7);
         expect(goblin?.ac).toBe(15);
-        expect(goblin?.imageUrl).toContain('goblin.jpg');
+        // L'illustration vient de public/art/monsters (la nôtre), plus d'aidedd.org.
+        expect(goblin?.imageUrl).toBe('/art/monsters/goblin.webp');
+        expect(goblin?.url).toBe('');
 
         const attacks = getCreatureAttacks(goblin);
         expect(attacks.map(attack => attack.name)).toEqual(expect.arrayContaining(['Scimitar', 'Shortbow']));

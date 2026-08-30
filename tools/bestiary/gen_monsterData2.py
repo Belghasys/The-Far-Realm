@@ -390,6 +390,10 @@ M = json.load(open(SRD, encoding='utf-8'))
 par_nom = {norm(x['name']): x for x in M}
 rows = list(csv.DictReader(io.open(CSV, encoding='utf-8')))
 completions = json.load(open(COMPLETIONS, encoding='utf-8'))
+# Les personnages NOMMES (Orcus, Zariel, Moloch, Belaphoss, Laeral Silverhand)
+# ont ete retires de la SOURCE le 2026-08-30 : dnd_monsters.csv et
+# nonSrd_completions.json ne les contiennent plus. Un nom propre attache a une
+# histoire precise, hors SRD, ne se renomme pas — c'est le recit qui l'identifie.
 resultat, absents, avertissements = {}, [], []
 for r in rows:
     csv_id = re.sub(r'[^a-z0-9]+', '_', r['name'].lower()).strip('_')
