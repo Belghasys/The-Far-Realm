@@ -19,6 +19,7 @@ import { buildSlimManifestPayload } from '../services/persistence/manifestHydrat
 import { personalizeAuthoredManifest } from '../services/dm/llmService';
 import { buildInitialRuntime, ensureLockedFirstScene, buildInitialJournal } from '../services/dm/adventureStart';
 import { CHARACTER_CREATION_VIEW_TEXTS as TRANS } from './texts';
+import { SignInGate } from '../components/hall/SignInGate';
 
 /**
  * Les trois animations de l'ecran de forge.
@@ -51,6 +52,11 @@ export function CharacterCreationView() {
     // finie (ou passée) ET que le manifeste est prêt — sinon le joueur la
     // verrait coupée net au milieu.
     const [videoDone, setVideoDone] = useState(false);
+    // Le héros forgé, mis de côté pendant que le visiteur se crée un compte.
+    // On ne relance PAS depuis un état global : le personnage qui repart est
+    // exactement celui qui a été validé, pas celui du magasin (que la connexion
+    // pourrait avoir rafraîchi entre-temps).
+    const [heroEnAttente, setHeroEnAttente] = useState<CharacterSheet | null>(null);
     const videoDoneRef = useRef<{ promise: Promise<void>; resolve: () => void } | null>(null);
 
     useEffect(() => { preloadLoadingVideo(); }, []);
@@ -68,6 +74,17 @@ export function CharacterCreationView() {
     };
 
     const startAdventure = async (char: CharacterSheet) => {
+        // Dernière marche avant la partie : on peut forger son héros sans
+        // compte, pas jouer. Le geste n'est pas perdu — il reprend ici même
+        // dès que la connexion est faite.
+        // Lu au moment du clic, jamais figé dans la fermeture : quand la
+        // porte de connexion rend la main, ce même appel repart, et il doit
+        // voir le compte QUI VIENT d'arriver, pas celui du rendu précédent.
+        const compte = useGameStore.getState().user;
+        if (!compte || compte.isAnonymous) {
+            setHeroEnAttente(char);
+            return;
+        }
         const readyCharacter = ensureProgressionState({
             ...char,
             backstory: char.customBackground || char.backstory || '',
@@ -306,6 +323,18 @@ export function CharacterCreationView() {
                 onSave={(char) => startAdventure(char)}
             />
             </div>
+
+            {heroEnAttente && (
+                <SignInGate
+                    reason="launch"
+                    onClose={() => setHeroEnAttente(null)}
+                    onSuccess={() => {
+                        const heros = heroEnAttente;
+                        setHeroEnAttente(null);
+                        void startAdventure(heros);
+                    }}
+                />
+            )}
         </div>
     );
 }

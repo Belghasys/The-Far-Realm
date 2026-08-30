@@ -49,8 +49,12 @@ describe('parseSecretGate : lire le chapitre de déverrouillage', () => {
         expect(CB_PROTECTED_SECRETS.map(parseSecretGate)).toEqual([4, 5, 7, null, null]);
     });
 
+    // Refonte du 2026-08-28 : 4 secrets, dont 3 portent un verrou explicite
+    // (le rite d'Ysolde au Ch4, la trahison d'Aldwin au Ch5, Korin au Ch3).
+    // Celui des Suspendus n'en a pas : il se découvre en touchant un poignet,
+    // à n'importe quel chapitre.
     it('Hiver sans Aube', () => {
-        expect((HIVER_SANS_AUBE.initialProtectedSecrets || []).map(parseSecretGate)).toEqual([4]);
+        expect((HIVER_SANS_AUBE.initialProtectedSecrets || []).map(parseSecretGate)).toEqual([4, 5, null, 3]);
     });
 
     it('campagne GÉNÉRÉE : la porte synthétisée à la création', () => {

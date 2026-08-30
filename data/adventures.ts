@@ -200,6 +200,7 @@ export const ADVENTURES: AdventureOption[] = [
         sessions: '10 to 14',
         authored: true,
         chapters: 7,
+        acts: 3,
     },
     {
         id: 'chant_brise',

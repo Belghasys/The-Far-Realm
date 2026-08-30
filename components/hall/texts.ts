@@ -240,3 +240,47 @@ export const LOAD_GAME_MENU_TEXTS = {
         locale: 'fr-FR',
     },
 } as const;
+
+// ── SignInGate ────────────────────────────────────────────────────────────
+// La fenêtre de connexion qui s'ouvre au-dessus du jeu quand un visiteur sans
+// compte tente de charger une partie ou de lancer son aventure.
+export const SIGN_IN_GATE_TEXTS = {
+    fr: {
+        title: 'Connectez-vous pour continuer',
+        reasonLaunch: 'Votre héros est prêt. Créez un compte — gratuit, en dix secondes — pour lancer l\u2019aventure et la retrouver plus tard.',
+        reasonLoad: 'Les parties sauvegardées appartiennent à un compte. Connectez-vous pour retrouver les vôtres.',
+        characterKept: 'Votre personnage est conservé : il vous suit dans votre nouveau compte.',
+        emailPlaceholder: 'E-mail',
+        passwordPlaceholder: 'Mot de passe',
+        login: 'Connexion',
+        register: 'Créer un compte',
+        working: 'Un instant…',
+        orContinue: 'Ou continuez avec',
+        signInGoogle: 'Continuer avec Google',
+        close: 'Fermer',
+        emailTaken: 'Cette adresse a déjà un compte. Utilisez « Connexion » pour le retrouver.',
+        badCredentials: 'E-mail ou mot de passe incorrect.',
+        weakPassword: 'Mot de passe trop court : six caractères au minimum.',
+        popupClosed: 'La fenêtre Google a été fermée avant la fin.',
+        failed: 'La connexion a échoué. Réessayez.',
+    },
+    en: {
+        title: 'Sign in to continue',
+        reasonLaunch: 'Your hero is ready. Create a free account — it takes ten seconds — to start the adventure and find it again later.',
+        reasonLoad: 'Saved games belong to an account. Sign in to find yours.',
+        characterKept: 'Your character is kept: it follows you into your new account.',
+        emailPlaceholder: 'Email',
+        passwordPlaceholder: 'Password',
+        login: 'Sign in',
+        register: 'Create account',
+        working: 'One moment…',
+        orContinue: 'Or continue with',
+        signInGoogle: 'Continue with Google',
+        close: 'Close',
+        emailTaken: 'That address already has an account. Use "Sign in" to reach it.',
+        badCredentials: 'Wrong email or password.',
+        weakPassword: 'Password too short: six characters minimum.',
+        popupClosed: 'The Google window was closed before finishing.',
+        failed: 'Sign-in failed. Please try again.',
+    },
+} as const;

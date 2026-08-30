@@ -7,9 +7,12 @@
  * couverture d'en-tête — la plume pour l'écrit, les dés jetés dans la nébuleuse
  * pour l'improvisé — et chaque campagne la sienne.
  *
- * La logique est celle d'avant, au caractère près : sélection, reprise de la
- * dernière partie avec son recâblage complet, et le verrou qui interdit de
- * créer un personnage sans avoir choisi d'aventure.
+ * Cet écran ne fait que CHOISIR : il ne charge aucune partie. Reprendre une
+ * sauvegarde a son propre écran, appelé depuis le hall (LoadGameMenu), où le
+ * joueur voit ses parties et désigne celle qu'il veut. Un raccourci « reprendre
+ * la dernière » a vécu ici jusqu'au 2026-08-28 : il ouvrait une partie que
+ * personne n'avait demandée. Reste le verrou qui interdit de créer un
+ * personnage sans avoir choisi d'aventure.
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -17,9 +20,6 @@ import { Share2, MessageCircle, Send, Mail, Layers, Clock, Gauge, Book } from 'l
 import { QRCodeSVG } from 'qrcode.react';
 import { useGameStore } from '../store/gameStore';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
-import { saveService } from '../services/persistence/saveService';
-import { memoryManager } from '../services/persistence/memoryManager';
-import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { ADVENTURES as ADVENTURE_OPTIONS, localizeAdventure, type AdventureDifficulty, type LocalizedAdventure } from '../data/adventures';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
 import { coverArt, COVER_CUSTOM, COVER_IMPROVISED, artUrl, artSrcSet } from '../theme/art';
@@ -177,7 +177,7 @@ function AdventureCard({ adv, tr, picked, onPick }: {
 
 export function LobbyView() {
     const navigate = useNavigate();
-    const { user, gameMode, sessionId, isHost, selectedAdventure, setSelectedAdventure, setActiveSaveId, loadSaveState, language } = useGameStore();
+    const { gameMode, sessionId, isHost, selectedAdventure, setSelectedAdventure, language } = useGameStore();
     const tr = TRANS[language];
 
     // Une seule passe de localisation, puis on scinde par famille.
@@ -186,37 +186,6 @@ export function LobbyView() {
     const classics = localized.filter(a => !a.authored);
 
     const shareUrl = `${window.location.origin}?session=${sessionId}`;
-
-    const handleContinueLatest = async () => {
-        if (!user) return;
-        try {
-            const saves = await saveService.listSaves(1);
-            if (saves.length > 0) {
-                const mostRecentSave = saves[0];
-                const fullSave = await saveService.loadGame(mostRecentSave.id);
-                if (fullSave && fullSave.character) {
-                    // Les gabarits de campagne (550 Ko de source) ne se chargent
-                    // qu'ici, au clic — pas avec le hall. Voir manifestHydration.
-                    const { hydrateSaveData } = await import('../services/persistence/manifestHydration');
-                    loadSaveState(hydrateSaveData(fullSave));
-                    memoryManager.setSaveId(mostRecentSave.id);
-                    memoryManager.importFromSave({ transcript: fullSave.transcript || [], combat: fullSave.combat });
-                    campaignEventLog.setCampaignId(mostRecentSave.id);
-                    campaignEventLog.import(fullSave.events);
-                    setActiveSaveId(mostRecentSave.id);
-                    saveService.setCurrentSave(mostRecentSave.id);
-                    navigate('/session');
-                } else {
-                    alert(tr.saveCorrupted);
-                }
-            } else {
-                alert(tr.noSaves);
-            }
-        } catch (e: any) {
-            console.error("Load Error:", e);
-            alert(tr.loadFailed + e.message);
-        }
-    };
 
     return (
         <div className="vh-full" style={{ background: T.void, color: T.paper, fontFamily: BODY }}>
@@ -319,18 +288,10 @@ export function LobbyView() {
                 </AdventureSection>
 
                 <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
                     gap: 20, flexWrap: 'wrap', marginTop: 20, paddingTop: 28,
                     borderTop: '2px solid rgba(237,230,216,.15)',
                 }}>
-                    <button
-                        onClick={handleContinueLatest}
-                        style={{
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            fontFamily: BODY, fontSize: 14, color: 'rgba(237,230,216,.6)', textDecoration: 'underline',
-                        }}
-                    >{tr.continueExisting}</button>
-
                     <button
                         disabled={!selectedAdventure}
                         onClick={() => navigate('/create')}

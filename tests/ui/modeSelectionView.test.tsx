@@ -23,6 +23,8 @@ const H = vi.hoisted(() => ({
     chargerApiYouTube: vi.fn(),
     boutique: {
         langue: 'fr' as 'fr' | 'en',
+        // `null` = personne, { isAnonymous: true } = visiteur sans compte.
+        user: { uid: 'u1', isAnonymous: false } as { uid: string; isAnonymous: boolean } | null,
         setLanguage: vi.fn(),
         setGameMode: vi.fn(),
         setSelectedAdventure: vi.fn(),
@@ -46,6 +48,16 @@ vi.mock('../../services/media/youtubeMusic', () => ({ chargerApiYouTube: H.charg
 // Le menu de chargement est réduit à sa surface utile : un bouton qui rend la
 // main avec un identifiant. Ce qui nous intéresse est ce que la VUE fait de
 // cet identifiant, pas la liste elle-même.
+vi.mock('../../components/hall/SignInGate', () => ({
+    SignInGate: ({ reason, onSuccess, onClose }: { reason: string; onSuccess: () => void; onClose: () => void }) => (
+        <div>
+            <span>porte-connexion-{reason}</span>
+            <button onClick={onSuccess}>je-me-connecte</button>
+            <button onClick={onClose}>ferme-la-porte</button>
+        </div>
+    ),
+}));
+
 vi.mock('../../components/hall/LoadGameMenu', () => ({
     LoadGameMenu: ({ onLoad, onClose }: { onLoad: (id: string) => void; onClose: () => void }) => (
         <div>
@@ -59,6 +71,7 @@ vi.mock('../../store/gameStore', () => ({
     useGameStore: (selector?: (s: unknown) => unknown) => {
         const b = H.boutique;
         const state = {
+            user: b.user,
             language: b.langue,
             setLanguage: b.setLanguage,
             setGameMode: b.setGameMode,
@@ -84,6 +97,7 @@ const b = H.boutique;
 describe('ModeSelectionView — contrat à préserver pendant la refonte', () => {
     beforeEach(() => {
         b.langue = 'fr';
+        b.user = { uid: 'u1', isAnonymous: false };
         vi.clearAllMocks();
         H.saveService.loadGame.mockResolvedValue({ character: { name: 'Kaelen' }, transcript: [], events: [] });
         H.chargerApiYouTube.mockResolvedValue(null);
@@ -225,9 +239,15 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
     it('porte la promesse du jeu en tête du menu, pas sur l’écran de connexion', () => {
         render(<ModeSelectionView />);
 
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/IL PARLE/);
-        expect(screen.getByText(/Le dernier endroit où l’on joue|Le dernier endroit où l'on joue/)).toBeInTheDocument();
-        expect(screen.getByText(/la table est encore mise/)).toBeInTheDocument();
+        // Le titre geant portait « IL PARLE / IL ECOUTE / IL SE SOUVIENT ».
+        // Il porte desormais la marque, comme l'ecran de connexion, et la
+        // promesse est passee dans le kicker — verifie ici, sinon plus rien
+        // ne garantirait qu'elle est encore sur la page.
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/BASEMENT/);
+        expect(screen.getByText(/GROUPE WHATSAPP/)).toBeInTheDocument();
+        expect(screen.getByText(/commence réellement/)).toBeInTheDocument();
+        expect(screen.getByText(/imite les gobelins/)).toBeInTheDocument();
+        expect(screen.getByText(/pizzas froides/)).toBeInTheDocument();
     });
 
     it('lance l’aventure depuis le héros, sans présélectionner d’aventure', () => {
@@ -283,5 +303,29 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
 
         unmount();
         expect(H.menuTheme.leave).toHaveBeenCalled();
+    });
+
+    /**
+     * Sans compte, charger une partie n'a aucun sens : les sauvegardes vivent
+     * sous `users/{uid}` et un visiteur anonyme n'en a aucune. Avant ce
+     * verrou, le clic ouvrait un menu vide sans expliquer pourquoi.
+     */
+    it('sans compte, « Charger une partie » ouvre la connexion et JAMAIS le menu', () => {
+        b.user = { uid: 'anon', isAnonymous: true };
+        render(<ModeSelectionView />);
+        fireEvent.click(screen.getByText(/Charger une Partie Sauvegardée/));
+
+        expect(screen.getByText('porte-connexion-load')).toBeTruthy();
+        expect(screen.queryByText('continuer-save-42')).toBeNull();
+    });
+
+    it('une fois connecté depuis cette porte, le menu de chargement s’ouvre tout seul', () => {
+        b.user = { uid: 'anon', isAnonymous: true };
+        render(<ModeSelectionView />);
+        fireEvent.click(screen.getByText(/Charger une Partie Sauvegardée/));
+        fireEvent.click(screen.getByText('je-me-connecte'));
+
+        expect(screen.queryByText('porte-connexion-load')).toBeNull();
+        expect(screen.getByText('continuer-save-42')).toBeTruthy();
     });
 });

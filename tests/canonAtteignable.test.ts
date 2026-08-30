@@ -57,7 +57,9 @@ describe('choix de branche : atteignables', () => {
     it('les trois campagnes ont bien des choix à rendre atteignables', () => {
         const total = CAMPAIGNS.reduce((n, [, m]) =>
             n + m.chapters.reduce((k, c) => k + (c.branchingChoices?.length || 0), 0), 0);
-        expect(total).toBe(65);
+        // 70 depuis la refonte de l'Hiver sans Aube (2026-08-28) : ses six
+        // chapitres portent désormais deux choix chacun sauf le dernier.
+        expect(total).toBe(70);
     });
 });
 

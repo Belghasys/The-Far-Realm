@@ -136,23 +136,36 @@ describe('LoginView — contrat à préserver pendant la refonte', () => {
         expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Register' })).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Email')).toBeInTheDocument();
-        // La copie ajoutée par la refonte doit suivre la langue comme le reste.
-        expect(screen.getByText(/A DUNGEON MASTER THAT SPEAKS/)).toBeInTheDocument();
-        expect(screen.getByText(/describes the room out loud/)).toBeInTheDocument();
-        expect(screen.getByText(/The last place where we still play/)).toBeInTheDocument();
-        expect(screen.getByText(/the table is still set/)).toBeInTheDocument();
+        // La copie de l'accroche doit suivre la langue comme le reste. Fragments
+        // choisis sans apostrophe : ils survivent à une retouche de
+        // ponctuation, mais tombent si la phrase change de sens ou de langue.
+        expect(screen.getByText(/DOESN.T CANCEL ON DISCORD/)).toBeInTheDocument();
+        expect(screen.getByText(/actually starts on time/)).toBeInTheDocument();
+        expect(screen.getByText(/voices every drunken NPC/)).toBeInTheDocument();
+        expect(screen.getByText(/No three-week Doodle polls/)).toBeInTheDocument();
+        // Porte invitée : bouton ET avertissement de perte de données. Ce dernier
+        // n'était couvert dans aucune langue — c'est pourtant la seule phrase qui
+        // prévient le joueur que sa partie vit dans son navigateur.
+        expect(screen.getByText(/Barge in without an account/)).toBeInTheDocument();
+        expect(screen.getByText(/deleted into the astral void/)).toBeInTheDocument();
+        // Aucune bavure de français.
         expect(screen.queryByRole('button', { name: 'Connexion' })).toBeNull();
-        expect(screen.queryByText(/QUI PARLE/)).toBeNull();
+        expect(screen.queryByText(/GROUPE WHATSAPP/)).toBeNull();
+        expect(screen.queryByText(/neant astral|néant astral/)).toBeNull();
     });
 
     it('affiche la copie neuve en français', () => {
         render(<LoginView />);
 
-        expect(screen.getByText(/QUI PARLE, ET QUI ÉCOUTE/)).toBeInTheDocument();
-        expect(screen.getByText(/décrit la salle à voix haute/)).toBeInTheDocument();
-        expect(screen.getByText(/Le dernier endroit où l’on joue|Le dernier endroit où l'on joue/)).toBeInTheDocument();
-        expect(screen.getByText(/la table est encore mise/)).toBeInTheDocument();
-        expect(screen.queryByText(/A DUNGEON MASTER THAT SPEAKS/)).toBeNull();
+        expect(screen.getByText(/GROUPE WHATSAPP/)).toBeInTheDocument();
+        expect(screen.getByText(/commence réellement/)).toBeInTheDocument();
+        expect(screen.getByText(/imite les gobelins/)).toBeInTheDocument();
+        expect(screen.getByText(/pizzas froides/)).toBeInTheDocument();
+        expect(screen.getByText(/Entrer sans frapper/)).toBeInTheDocument();
+        expect(screen.getByText(/néant astral/)).toBeInTheDocument();
+        // Aucune bavure d'anglais.
+        expect(screen.queryByText(/CANCEL ON DISCORD/)).toBeNull();
+        expect(screen.queryByText(/Barge in without an account/)).toBeNull();
     });
 
     it('réclame la musique de menu au montage et la relâche au démontage', () => {

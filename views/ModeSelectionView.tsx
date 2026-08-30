@@ -19,6 +19,7 @@ import { saveService } from '../services/persistence/saveService';
 import { memoryManager } from '../services/persistence/memoryManager';
 import { campaignEventLog } from '../services/persistence/campaignEventLog';
 import { LoadGameMenu } from '../components/hall/LoadGameMenu';
+import { SignInGate } from '../components/hall/SignInGate';
 import { auth } from '../services/persistence/firebase';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
 import { T, DISP, BODY, onTint, hardShadow } from '../theme/tokens';
@@ -65,20 +66,23 @@ const PARADE_CSS = `
 
 export function ModeSelectionView() {
     const navigate = useNavigate();
-    const { language, setLanguage, setGameMode, setSelectedAdventure, setActiveSaveId, loadSaveState } = useGameStore();
-    const [showLoadMenu, setShowLoadMenu] = useState(false);
+    const { user, language, setLanguage, setGameMode, setSelectedAdventure, setActiveSaveId, loadSaveState } = useGameStore();
+    // Une partie sauvegardée appartient à un compte : un visiteur anonyme n'en
+    // a aucune, et le menu ne lui montrerait qu'un vide inexplicable. On lui
+    // ouvre la connexion, puis le menu s'ouvre de lui-même.
+    const estInvite = !user || user.isAnonymous;
+    const [porteConnexion, setPorteConnexion] = React.useState(false);
     const [codexOuvert, setCodexOuvert] = useState(false);
+    const ouvrirChargement = () => (estInvite ? setPorteConnexion(true) : setShowLoadMenu(true));
+    const [showLoadMenu, setShowLoadMenu] = useState(false);
     const taverne = useRef<HTMLDivElement>(null);
 
     const TRANS = {
         en: {
-            kicker: "A DUNGEON MASTER THAT SPEAKS, AND LISTENS",
-            line1: "IT SPEAKS.",
-            line2: "IT LISTENS.",
-            line3: "IT REMEMBERS.",
-            tagline: "The last place where we still play like we used to.",
-            pitch: "A tabletop role-playing game with a dungeon master who runs the table live: he describes the room out loud, gives every character its own voice, hears what you answer, and remembers all of it — your choices, your oaths, and the guard you knocked out in chapter 2.",
-            basement: "Doors close. Screens win. Down here, the table is still set.",
+            kicker: "A DUNGEON MASTER WHO DOESN'T CANCEL ON DISCORD 10 MINUTES BEFORE THE SESSION",
+            tagline: "The only tabletop campaign in human history that actually starts on time.",
+            pitch: "A fully voiced DM who runs the table live, voices every drunken NPC, tolerates your party's terrible plans, and remembers precisely which tavern your bard burned down in session 1.",
+            basement: "No three-week Doodle polls, no cold pizza arguments. The dungeon is already open downstairs.",
             start: "START THE ADVENTURE",
             choosePath: "Choose Your Path",
             pathHint: "You can change your mind. Your character, less so.",
@@ -119,13 +123,10 @@ export function ModeSelectionView() {
             wallClose: "Close",
         },
         fr: {
-            kicker: "UN MAÎTRE DU JEU QUI PARLE, ET QUI ÉCOUTE",
-            line1: "IL PARLE.",
-            line2: "IL ÉCOUTE.",
-            line3: "IL SE SOUVIENT.",
-            tagline: "Le dernier endroit où l'on joue encore comme avant.",
-            pitch: "Un jeu de rôle sur table avec un maître du jeu qui mène la partie en direct : il décrit la salle à voix haute, prête sa voix à chaque personnage, entend ce que vous répondez, et se souvient de tout — vos choix, vos serments, et le garde que vous avez assommé au chapitre 2.",
-            basement: "Les portes ferment. Les écrans gagnent. En bas, la table est encore mise.",
+            kicker: "UN MAÎTRE DU JEU QUI NE DISPARAÎT PAS DU GROUPE WHATSAPP",
+            tagline: "Le seul endroit où une session de JdR commence réellement à l'heure prévue.",
+            pitch: "Un vrai Maître du Jeu vocal qui improvise en direct, imite les gobelins, écoute vos pires idées, lance les dés sans tricher (enfin presque) et se souvient exactement de la taverne que votre barde a accidentellement brûlée au niveau 1.",
+            basement: "Pas de pizzas froides à commander, pas de planning Doodle à remplir. Descendez à la cave, le MJ est déjà prêt.",
             start: "LANCER L'AVENTURE",
             choosePath: "Choisissez Votre Voie",
             pathHint: "Vous pourrez changer d'avis. Votre personnage, moins.",
@@ -286,9 +287,7 @@ export function ModeSelectionView() {
                         </div>
 
                         <h1 style={{ fontFamily: DISP, margin: 0, fontSize: 'clamp(34px, 6vw, 62px)', lineHeight: 1.04 }}>
-                            {t.line1}<br />
-                            <span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>{t.line2}</span><br />
-                            {t.line3}
+                            THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span>
                         </h1>
 
                         <p style={{ margin: 0, fontSize: 'clamp(15px, 2vw, 18px)', fontStyle: 'italic', color: T.acid }}>{t.tagline}</p>
@@ -304,7 +303,7 @@ export function ModeSelectionView() {
                                 }}
                             >{t.start}</button>
                             <button
-                                onClick={() => setShowLoadMenu(true)}
+                                onClick={ouvrirChargement}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer',
                                     fontFamily: BODY, fontSize: 15, fontWeight: 700, color: T.paper,
@@ -500,6 +499,27 @@ export function ModeSelectionView() {
                 </div>
             </div>
 
+            {codexOuvert && (
+                <React.Suspense fallback={
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center',
+                        background: 'rgba(5,0,26,0.85)', color: T.paper, font: `400 15px/1.4 ${BODY}`,
+                    }}>
+                        {t.codexLoading}
+                    </div>
+                }>
+                    <RuleCodexPanel onClose={() => setCodexOuvert(false)} initialTab="monster" />
+                </React.Suspense>
+            )}
+
+            {porteConnexion && (
+                <SignInGate
+                    reason="load"
+                    onClose={() => setPorteConnexion(false)}
+                    onSuccess={() => { setPorteConnexion(false); setShowLoadMenu(true); }}
+                />
+            )}
+
             {showLoadMenu && (
                 <LoadGameMenu
                     onLoad={async (saveId) => {
@@ -531,19 +551,6 @@ export function ModeSelectionView() {
                     onClose={() => setShowLoadMenu(false)}
                 />
             )}
-            {codexOuvert && (
-                <React.Suspense fallback={
-                    <div style={{
-                        position: 'fixed', inset: 0, zIndex: 60, display: 'grid', placeItems: 'center',
-                        background: 'rgba(5,0,26,0.85)', color: T.paper, font: `400 15px/1.4 ${BODY}`,
-                    }}>
-                        {t.codexLoading}
-                    </div>
-                }>
-                    <RuleCodexPanel onClose={() => setCodexOuvert(false)} initialTab="monster" />
-                </React.Suspense>
-            )}
-
         </div>
     );
 }

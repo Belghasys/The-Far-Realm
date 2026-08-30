@@ -11,7 +11,7 @@
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 const H = vi.hoisted(() => ({
     navigate: vi.fn(),
@@ -42,16 +42,23 @@ vi.mock('../../services/persistence/memoryManager', () => ({ memoryManager: H.me
 vi.mock('../../services/persistence/campaignEventLog', () => ({ campaignEventLog: H.campaignEventLog }));
 vi.mock('qrcode.react', () => ({ QRCodeSVG: () => <div data-testid="qr" /> }));
 
+const etatBoutique = () => {
+    const b = H.boutique;
+    return {
+        user: b.user, gameMode: b.gameMode, sessionId: b.sessionId, isHost: b.isHost,
+        selectedAdventure: b.selectedAdventure, setSelectedAdventure: b.setSelectedAdventure,
+        setActiveSaveId: b.setActiveSaveId, loadSaveState: b.loadSaveState, language: b.langue,
+    };
+};
+
 vi.mock('../../store/gameStore', () => ({
-    useGameStore: (selector?: (s: unknown) => unknown) => {
-        const b = H.boutique;
-        const state = {
-            user: b.user, gameMode: b.gameMode, sessionId: b.sessionId, isHost: b.isHost,
-            selectedAdventure: b.selectedAdventure, setSelectedAdventure: b.setSelectedAdventure,
-            setActiveSaveId: b.setActiveSaveId, loadSaveState: b.loadSaveState, language: b.langue,
-        };
-        return selector ? selector(state) : state;
-    },
+    useGameStore: Object.assign(
+        (selector?: (s: unknown) => unknown) => (selector ? selector(etatBoutique()) : etatBoutique()),
+        // `getState` existe désormais dans la vue : le compte est relu au clic
+        // (« Continuer ») et non capturé au rendu, pour que la reprise après
+        // connexion voie le compte qui vient d'arriver.
+        { getState: () => etatBoutique() },
+    ),
 }));
 vi.mock('../../store/settingsStore', () => ({
     useSettingsStore: (selector?: (s: unknown) => unknown) => {
@@ -71,6 +78,7 @@ describe('LobbyView — contrat à préserver pendant la refonte', () => {
     beforeEach(() => {
         b.langue = 'fr';
         b.selectedAdventure = null;
+        b.user = { uid: 'u1' } as unknown;
         vi.clearAllMocks();
     });
 
@@ -92,32 +100,6 @@ describe('LobbyView — contrat à préserver pendant la refonte', () => {
         render(<LobbyView />);
         fireEvent.click(screen.getByText(/Retour/i));
         expect(H.navigate).toHaveBeenCalledWith('/mode');
-    });
-
-    it('recâble mémoire et journal en reprenant la dernière partie', async () => {
-        H.saveService.listSaves.mockResolvedValue([{ id: 'save-9' }]);
-        H.saveService.loadGame.mockResolvedValue({ character: { name: 'Kaelen' }, transcript: [], events: [] });
-
-        render(<LobbyView />);
-        fireEvent.click(screen.getByText(/Continuer une Aventure Existante/i));
-
-        await waitFor(() => expect(H.navigate).toHaveBeenCalledWith('/session'));
-        expect(H.memoryManager.setSaveId).toHaveBeenCalledWith('save-9');
-        expect(H.campaignEventLog.setCampaignId).toHaveBeenCalledWith('save-9');
-        expect(b.setActiveSaveId).toHaveBeenCalledWith('save-9');
-        expect(H.saveService.setCurrentSave).toHaveBeenCalledWith('save-9');
-    });
-
-    it('prévient au lieu d’entrer en session quand il n’y a aucune sauvegarde', async () => {
-        H.saveService.listSaves.mockResolvedValue([]);
-        const alerte = vi.spyOn(window, 'alert').mockImplementation(() => { });
-
-        render(<LobbyView />);
-        fireEvent.click(screen.getByText(/Continuer une Aventure Existante/i));
-
-        await waitFor(() => expect(alerte).toHaveBeenCalled());
-        expect(H.navigate).not.toHaveBeenCalledWith('/session');
-        alerte.mockRestore();
     });
 
     it('donne une couverture à chaque campagne, et une à chaque famille', () => {
@@ -143,5 +125,20 @@ describe('LobbyView — contrat à préserver pendant la refonte', () => {
 
         unmount();
         expect(H.menuTheme.leave).toHaveBeenCalled();
+    });
+
+    /**
+     * Le raccourci « Continuer une Aventure Existante » ouvrait la DERNIÈRE
+     * sauvegarde sans laisser choisir : le joueur se retrouvait dans une partie
+     * qu'il n'avait pas demandée. Retiré le 2026-08-28 — reprendre une partie
+     * passe par l'écran de chargement du hall, où l'on désigne la sienne. Ce
+     * test empêche le raccourci de revenir par mégarde.
+     */
+    it('ne charge aucune partie : cet écran ne fait que choisir une campagne', () => {
+        render(<LobbyView />);
+
+        expect(screen.queryByText(/Continuer une Aventure Existante/i)).toBeNull();
+        expect(H.saveService.listSaves).not.toHaveBeenCalled();
+        expect(H.saveService.loadGame).not.toHaveBeenCalled();
     });
 });
