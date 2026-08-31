@@ -119,7 +119,90 @@ export function applyEffectArgs(character: CharacterSheet, args: any): Character
         ],
     };
 }
-function conditionToEffect(condition: ConditionEntry): ActiveEffect {
+// ═══════════ DURÉE DES ÉTATS — table décidée le 2026-08-31 ═══════════
+//
+// Avant, TOUT durait dix rounds : Étourdi comme Empoisonné comme Inconscient
+// (CB6 avait remplacé « permanent » par un forfait, ce qui réglait le poison de
+// piège à vie mais rendait l'Étourdi décisif à lui seul). La table donne à
+// chaque état son propre nombre de tours.
+//
+// `null` = pas de compteur : l'état finit sur un ÉVÉNEMENT, jamais sur le temps.
+// Un Inconscient qui se réveille tout seul rendrait ses actions à un héros à
+// terre pendant que ses jets de mort continuent ; un Agrippé se libère quand
+// l'agrippeur lâche ou meurt ; Pétrifié demande une restauration ; l'Épuisement
+// est un NIVEAU que seul un repos long fait redescendre. Ces quatre-là sortent
+// par `remove_condition`, par les soins ou par le repos.
+export const CONDITION_TURNS: Record<string, number | null> = {
+    // RAW « jusqu'à la fin de ton prochain tour » — collage exact.
+    stunned: 1,
+    // On se relève avec la moitié de son mouvement, donc à son tour suivant.
+    prone: 1,
+    // Presque jamais seul : il accompagne un autre état qui porte la durée.
+    incapacitated: 1,
+    // Hold Person : sauvegarde en fin de chaque tour, ~2 tours en moyenne.
+    paralyzed: 2,
+    // Tant que la source de la peur reste en vue.
+    frightened: 2,
+    // Jusqu'au jet d'évasion.
+    restrained: 2,
+    // RAW une minute, mais dix tours plombent un combat : trois se jouent.
+    blinded: 3,
+    charmed: 3,
+    deafened: 3,
+    // RAW dix (une minute) ; cinq se joue mieux sans dénaturer la règle.
+    poisoned: 5,
+    // Vrai sort d'une minute : ici le dix d'origine était juste.
+    invisible: 10,
+    grappled: null,
+    unconscious: null,
+    petrified: null,
+    exhaustion: null,
+};
+
+/**
+ * FILET (audit inversé du 2026-08-31). « Pas de compteur » est la bonne règle
+ * pour le HÉROS : ses jets de mort gouvernent son sort, et le réveiller au
+ * chrono les casserait. Pour un ENNEMI c'est un trou d'équilibre, parce que les
+ * événements de fin de ces états ne sont PAS implémentés — rien ne réveille un
+ * inconscient aux dégâts, il n'y a pas de jet d'évasion pour l'agrippé, pas de
+ * Restauration supérieure pour le pétrifié.
+ *
+ * Résultat mesuré : un simple apply_condition('unconscious') retirait l'ennemi
+ * du combat DÉFINITIVEMENT (npcTurn saute son tour à chaque round). Le forfait
+ * qui existait avant était grossier, mais c'était une soupape ; l'avoir retiré
+ * sans poser le mécanisme réel a ouvert le trou.
+ *
+ * Ce filet le referme côté ennemi seulement. Ce n'est PAS une règle — c'est un
+ * garde-fou en attendant les vrais événements de fin.
+ */
+export const EVENTLESS_FALLBACK_TURNS = 10;
+
+/**
+ * Le champ de durée d'un état, prêt à étaler dans l'effet.
+ *
+ * ⚠️ L'OFFSET. Le décompte se fait au DÉBUT du tour du porteur
+ * (`tickRoundEffects`, appelé par `advanceTurn` et par GameSession). Un état
+ * stocké à N serait donc décompté à l'ouverture du tour qu'il devait
+ * justement bloquer : un « Étourdi 1 » posé sur un gobelin s'effaçait à
+ * l'ouverture du tour du gobelin, qui jouait normalement — l'état n'avait
+ * jamais mordu. Couvrir N tours COMPLETS demande N+1 bornes de décompte.
+ *
+ * Les buffs de sorts n'ont PAS cet offset et ne passent pas par ici : leur
+ * règle est « jusqu'au DÉBUT de ton prochain tour » (Bouclier), soit une borne
+ * et non N+1. Ajouter l'offset là-bas doublerait leur durée.
+ */
+function conditionDuration(conditionId: string, eventlessFallback = false): Pick<ActiveEffect, 'duration' | 'roundsRemaining'> {
+    const turns = CONDITION_TURNS[conditionId];
+    if (turns === null || turns === undefined) {
+        // Inconnu ou sans compteur : il ne tombe que sur un événement.
+        // `tickRoundEffects` ignore tout ce qui n'est pas 'rounds'/'concentration'.
+        if (!eventlessFallback) return { duration: 'permanent' };
+        return { duration: 'rounds', roundsRemaining: EVENTLESS_FALLBACK_TURNS + 1 };
+    }
+    return { duration: 'rounds', roundsRemaining: turns + 1 };
+}
+
+function conditionToEffect(condition: ConditionEntry, eventlessFallback = false): ActiveEffect {
     const modifiers: ActiveEffect['modifiers'] = [];
     if (condition.movement === 'zero') modifiers.push({ stat: 'speed', bonus: 0, setTo: 0 });
 
@@ -127,12 +210,7 @@ function conditionToEffect(condition: ConditionEntry): ActiveEffect {
         id: makeId('condition'),
         name: condition.name,
         source: 'condition',
-        // CB6 — plus jamais « permanent » : une condition posée en jeu expire
-        // d'elle-même (10 rounds ≈ 1 minute, la durée type des sorts de
-        // contrôle 5e), peut être retirée par l'outil remove_condition, et
-        // saute au repos long. Avant : poison de piège = désavantage à vie.
-        duration: 'rounds',
-        roundsRemaining: 10,
+        ...conditionDuration(condition.id, eventlessFallback),
         description: condition.summary,
         modifiers,
     };
@@ -163,7 +241,8 @@ export function applyConditionToEncounter(
         return { state: current, found: false, condition, ambiguous: lookup.ambiguous };
     }
 
-    const effect = conditionToEffect(condition);
+    // Le filet ne vaut QUE pour les autres que le héros — voir EVENTLESS_FALLBACK_TURNS.
+    const effect = conditionToEffect(condition, !lookup.combatant.isPlayer);
     let target: Combatant | undefined;
     const combatants = current.combatants.map(combatant => {
         if (combatant.id !== lookup.combatant!.id) return combatant;

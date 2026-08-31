@@ -3,6 +3,7 @@ import { CharacterSheet, getEffectiveMaxHP } from '../../types';
 import { normalizeDamageType } from '../codexService';
 import { clampHP } from '../gameValidator';
 import { playerResistances } from '../combat/rolls';
+import { dropHidden } from '../combat/stealth';
 import { RollOutcome } from '../combat/types';
 
 /**
@@ -58,6 +59,14 @@ export function applyDamageToCharacter(
         deathSaves = { successes: 0, failures: 3, isStable: false, isDead: true };
     }
 
+    // CACHÉ — encaisser, c'est être trouvé. Point de passage unique de TOUS les
+    // dégâts subis par le héros (tour PNJ, piège, environnement, sort), donc le
+    // seul endroit où la règle ne peut pas être oubliée par un appelant.
+    // Zéro dégât réel (immunité, absorbé par les PV temporaires) ne révèle rien.
+    const activeEffects = amountApplied > 0
+        ? dropHidden(character.activeEffects).effects
+        : character.activeEffects;
+
     return {
         amountApplied,
         mitigation,
@@ -65,6 +74,7 @@ export function applyDamageToCharacter(
             ...character,
             tempHP,
             deathSaves,
+            activeEffects,
             hp: { ...character.hp, current: nextHP },
         },
     };

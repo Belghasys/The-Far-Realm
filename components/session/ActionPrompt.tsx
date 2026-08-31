@@ -2,6 +2,7 @@ import React from 'react';
 import { Dices, Target, Swords, Sparkles, Shield, ArrowUp, ArrowDown } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
 import { ACTION_PROMPT_TEXTS as TRANS } from './texts';
+import { canSpendInspirationOn } from '../../engine/inspiration';
 
 interface Props {
     checkType: 'CHECK' | 'SAVE' | 'ATTACK' | 'DAMAGE' | 'DEATH_SAVE' | null;
@@ -15,6 +16,11 @@ interface Props {
      *  death save left the hero stuck at 0 HP forever (the prompt key is
      *  memoized and never re-fires). Default true. */
     canDismiss?: boolean;
+    /** Réserve d'Inspiration du héros. > 0 fait apparaître le bouton de
+     *  réussite automatique — l'ancienne inspiration était consommée par le
+     *  moteur avant d'arriver ici, le joueur ne la voyait jamais. */
+    inspiration?: number;
+    onUseInspiration?: () => void;
     onRoll: () => void;
     onDismiss: () => void;
 }
@@ -30,7 +36,7 @@ const parseFormula = (formula: string) => {
     };
 };
 
-export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'normal', dmBonus = 0, contextReasons = [], canDismiss = true, onRoll, onDismiss }: Props) {
+export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'normal', dmBonus = 0, contextReasons = [], canDismiss = true, inspiration = 0, onUseInspiration, onRoll, onDismiss }: Props) {
     const language = useGameStore(s => s.language);
     const tr = TRANS[language];
     if (!checkType) return null;
@@ -144,6 +150,18 @@ export function ActionPrompt({ checkType, checkName, formula, dc, advantage = 'n
                             tr.clickToRoll}
                     <Sparkles className="w-6 h-6 animate-spin-slow" />
                 </button>
+
+                {/* INSPIRATION — payer au lieu de lancer. Le bouton n'existe que
+                    s'il y a une réserve ET que le jet s'y prête (jamais un jet
+                    de mort : on n'achète pas sa survie). */}
+                {onUseInspiration && canSpendInspirationOn(checkType, inspiration) && (
+                    <button
+                        onClick={onUseInspiration}
+                        className="w-full rounded-xl border border-amber-400/60 bg-amber-500/10 py-3 font-bold uppercase tracking-wider text-amber-200 transition-all hover:bg-amber-500/20"
+                    >
+                        ✨ {tr.useInspiration} · {tr.inspirationLeft(inspiration)}
+                    </button>
+                )}
 
                 {/* Dismiss — hidden for mandatory rolls (death save, concentration). */}
                 {canDismiss && (

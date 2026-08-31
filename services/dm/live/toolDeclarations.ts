@@ -161,11 +161,11 @@ export const GAME_TOOL_DECLARATIONS = [
                 skill: { type: "STRING" as any, description: "Skill (English or French): Stealth/Discrétion, Perception, Athletics…" },
                 ability: { type: "STRING" as any, description: "STR/DEX/CON/INT/WIS/CHA for a raw check or a save." },
                 isSave: { type: "BOOLEAN" as any, description: "true for a saving throw." },
-                advantage: { type: "STRING" as any, description: "'ADV' or 'DIS'" },
+                advantage: { type: "STRING" as any, description: "REQUIRED. Judge the idea, not the sheet: 'ADV' if clever, well roleplayed or using the scene, else 'NONE'." },
                 bonus: { type: "INTEGER" as any, description: "Only for a roll the sheet cannot compute." },
                 force: { type: "BOOLEAN" as any, description: "true only when a NEW risky player action follows a branch plan (rolls right after a plan are otherwise rejected)." }
             },
-            required: ["reason", "dc"]
+            required: ["reason", "dc", "advantage"]
         }
     },
     {
@@ -574,14 +574,14 @@ export const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "grant_story_modifier",
-        description: "A temporary story boon or penalty on the next relevant roll(s): a graded bonus for a clever tactic, a blessing, a consequence.",
+        description: "A temporary boon or penalty on the next roll(s): a blessing, a consequence.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
                 name: { type: "STRING" as any },
                 source: { type: "STRING" as any, description: "dm_inspiration | blessing | complication | tactic | consequence" },
                 mode: { type: "STRING" as any, description: "normal | advantage | disadvantage" },
-                bonus: { type: "INTEGER" as any, description: "-5..+5 (a solid idea +2, a brilliant one +5)" },
+                bonus: { type: "INTEGER" as any, description: "-5..+5" },
                 uses: { type: "INTEGER" as any, description: "1-3" },
                 scope: { type: "STRING" as any, description: "any | check | save | attack | death_save" },
                 reason: { type: "STRING" as any }
@@ -591,13 +591,11 @@ export const GAME_TOOL_DECLARATIONS = [
     },
     {
         name: "grant_inspiration",
-        description: "Bank one DM inspiration (the player spends it later for advantage or a reroll) for excellent roleplay.",
+        description: "Bank ONE Inspiration the player spends to auto-succeed a roll. ONLY on a quest resolution or dialogue beat, for the acting: never tied to a roll.",
         parameters: {
             type: "OBJECT" as any,
             properties: {
-                reason: { type: "STRING" as any },
-                scope: { type: "STRING" as any, description: "any | check | save | attack | death_save" },
-                bonus: { type: "INTEGER" as any }
+                reason: { type: "STRING" as any, description: "What you reward." }
             },
             required: ["reason"]
         }

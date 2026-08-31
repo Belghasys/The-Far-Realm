@@ -132,6 +132,11 @@ export interface ActiveEffect {
   grantsAttackersAdvantage?: boolean;
   /** Le porteur attaque avec l'avantage tant que l'effet dure. */
   grantsAttackAdvantage?: boolean;
+  /** Le porteur est CACHÉ. Drapeau distinct de `grantsAttackAdvantage`, que
+   *  l'Attaque téméraire porte aussi : c'est lui qui identifie l'état, jamais
+   *  le nom (la couche UI le traduit). Retiré quand le porteur attaque ou
+   *  encaisse — voir engine/combat/stealth.ts. */
+  hidden?: boolean;
 }
 
 export interface DeathSaves {
@@ -329,6 +334,10 @@ export interface CharacterSheet {
   spellcastingFocus?: string;
   hitDice?: HitDicePool;
   storyModifiers?: StoryRollModifier[];
+  /** Inspiration du MJ : un compteur DÉPENSABLE par le joueur (réussite
+   *  automatique), plafonné par INSPIRATION_MAX. Absent des sauvegardes
+   *  d'avant le 2026-08-31 — toujours le lire via `inspirationOf`. */
+  inspiration?: number;
   deity?: string;           // Patron deity (Selune, Bahamut, etc.)
   customBackground?: string; // Player's custom backstory for RP
   storyProfile?: CharacterStoryProfile; // Structured hooks for campaign writing, DM context, and intro cinematics

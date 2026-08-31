@@ -51,11 +51,13 @@ import { MonsterCard } from '../panels/MonsterCard';
 import { saveService } from '../../services/persistence/saveService';
 import { memoryManager } from '../../services/persistence/memoryManager';
 import { t, Language } from '../../services/i18n/translations';
+import { hiddenEffect, isHidden, isStealthCheck, mirrorPlayerEffects } from '../../engine/combat/stealth';
 import { StatusBar, StatusEffect } from './StatusBar';
 import { ActionPips } from './ActionPips';
 import { LevelUpModal } from '../panels/LevelUpModal';
 import { campaignEventLog } from '../../services/persistence/campaignEventLog';
 import { buildCampaignDirectorContext, buildLockedSecretFacts, resolvePositionTarget, positionAdvanceAllowed } from '../../services/dm/campaignDirector';
+import { inspirationOf, spendInspiration } from '../../engine/inspiration';
 import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolveMountAfterCombat, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
 import type { ProposedPlayerAction } from '../../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
@@ -565,6 +567,17 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       musicDirector.onDMSpeechActivity(false);
     }
   }, [isConnected, audioLevel, musicDirector]);
+
+  // MIROIR fiche → ligne de combat (audit du 2026-08-31). Il n'existait aucune
+  // synchro automatique : chaque écriture sur character.activeEffects devait
+  // patcher la ligne du héros à la main, et les deux chemins qui RETIRENT
+  // l'état caché ne le faisaient pas — le tracker affichait encore CACHÉ après
+  // la révélation. Un point unique remplace la discipline, et vaut pour tous
+  // les effets, pas seulement celui-là. mirrorPlayerEffects rend l'état
+  // IDENTIQUE quand rien n'a bougé : pas de boucle de rendu.
+  useEffect(() => {
+    setCombatState((prev: any) => mirrorPlayerEffects(prev, character.activeEffects));
+  }, [character.activeEffects, setCombatState]);
 
   // ── Voice-mode director context push ─────────────────────────────────────
   // consumePrivateContext only piggybacks the director context on TYPED messages,
@@ -1613,7 +1626,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
     return true;
   };
 
-  const finalizeRollOutcome = (outcome: any, rerolled = false) => {
+  const finalizeRollOutcome = (outcome: any, rerolled = false, parInspiration = false) => {
     const { total, die: dieResult, modifier, success } = outcome;
     const dc = outcome.prompt.dc || 10;
     const rollList = outcome.rolls.join(',');
@@ -1645,6 +1658,23 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         }]);
       } else {
         setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsConcentrationHeld}]*` }]);
+      }
+    }
+
+    // CACHÉ — un test de Discrétion RÉUSSI met le héros hors de vue, en combat
+    // comme en narration (le DD, lui, n'est calculé par le moteur qu'en combat,
+    // là où il connaît les guetteurs). Sa prochaine attaque aura l'avantage, et
+    // pour un Roublard l'attaque sournoise suivra toute seule.
+    if (isStealthCheck(outcome.prompt) && success) {
+      const liveChar = useGameStore.getState().character || character;
+      if (!isHidden(liveChar.activeEffects)) {
+        const caché = hiddenEffect(tr.statusHidden);
+        const cachéChar = { ...liveChar, activeEffects: [...(liveChar.activeEffects || []), caché] };
+        syncCharacterCritical(cachéChar as any, 'hp');
+        setCombatState((prev: any) => prev?.isActive
+          ? { ...prev, combatants: prev.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: cachéChar.activeEffects } : c) }
+          : prev);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsNowHidden}]*` }]);
       }
     }
 
@@ -1687,15 +1717,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
         modifier,
         critical: outcome.critical,
         ...(rerolled ? { rerolledWithInspiration: true } : {}),
+        ...(parInspiration ? { autoSucceededWithInspiration: true } : {}),
         ...(spellSummary ? { spellResolution: spellSummary } : {}),
       },
-      instruction: `The dice have landed — THIS is the official outcome${rerolled ? ' (the player BURNED an Inspiration to reroll; this new result replaces the failed one — acknowledge the twist of fate)' : ''}. Narrate it now (fail forward on a failure). Do not re-roll or second-guess it.`,
+      instruction: parInspiration
+        ? 'The player SPENT an Inspiration instead of rolling: this succeeds, no dice were thrown. Narrate it as a moment of sheer will — earned, not lucky — and name the Inspiration out loud. Do not roll, do not question it.'
+        : `The dice have landed — THIS is the official outcome${rerolled ? ' (the player BURNED an Inspiration to reroll; this new result replaces the failed one — acknowledge the twist of fate)' : ''}. Narrate it now (fail forward on a failure). Do not re-roll or second-guess it.`,
     };
     const deliveredViaTool = activePrompt && typeof (activePrompt as any).resolveToolCall === 'function'
       && (activePrompt as any).resolveToolCall(outcomePayload);
     if (!deliveredViaTool && dm) {
       const successStr = success ? 'true' : 'false';
-      const rollMsg = `[ROLL_RESULT: Check="${outcome.prompt.name}" | Type=${outcome.prompt.type} | Total=${total} | DC=${dc} | Success=${successStr} | Die=${dieResult} | Rolls=${rollList} | Mod=${modifier >= 0 ? '+' : ''}${modifier} | Critical=${outcome.critical}${rerolled ? ' | RerolledWithInspiration=true' : ''}${spellSummary ? ` | Effect=${spellSummary}` : ''}]`;
+      const rollMsg = `[ROLL_RESULT: Check="${outcome.prompt.name}" | Type=${outcome.prompt.type} | Total=${total} | DC=${dc} | Success=${successStr} | Die=${dieResult} | Rolls=${rollList} | Mod=${modifier >= 0 ? '+' : ''}${modifier} | Critical=${outcome.critical}${rerolled ? ' | RerolledWithInspiration=true' : ''}${parInspiration ? ' | AutoSucceededWithInspiration=true' : ''}${spellSummary ? ` | Effect=${spellSummary}` : ''}]`;
       dm.sendUserMessage(rollMsg);
     }
 
@@ -2257,6 +2290,7 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
                 <StatusBar
                   effects={statusEffects}
                   coverBonus={activePrompt?.coverBonus || 0}
+                  inspiration={inspirationOf(character)}
                   onRemoveEffect={handleRemoveEffect}
                 />
               </div>
@@ -2690,6 +2724,18 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
           dmBonus={activePrompt.dmBonus}
           contextReasons={activePrompt.contextReasons}
           canDismiss={activePrompt.type !== 'DEATH_SAVE' && !activePrompt.concentrationDamage}
+          inspiration={inspirationOf(character)}
+          onUseInspiration={() => {
+            // PAYER AU LIEU DE LANCER. On débite d'abord (état FRAIS du store :
+            // la valeur de rendu peut retarder d'un tick), puis on résout avec
+            // le drapeau — aucun dé ne roule, cf. resolveRollPrompt.
+            const live = useGameStore.getState().character;
+            if (!live || inspirationOf(live) <= 0) return;
+            syncCharacterCritical({ ...live, inspiration: spendInspiration(inspirationOf(live)) }, 'hp');
+            const outcome = resolveRollPrompt({ ...activePrompt, autoSuccess: true });
+            showRollFeedback(outcome);
+            finalizeRollOutcome(outcome, false, true);
+          }}
           onDismiss={() => {
             // Release a HELD request_roll/cast_spell tool response: without
             // this the DM stays frozen until the 90s timeout when the player

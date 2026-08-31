@@ -23,7 +23,23 @@ import { rollDice, maxRollOfFormula } from '../../engine/utils';
 import { combatChronicle } from '../../services/dm/chronicle';
 import { playWeaponSwing, playDamageImpact } from '../../services/media/combatSfx';
 import { waitDice } from '../../services/media/diceTiming';
+import { dropHidden } from '../../engine/combat/stealth';
 import type { SessionContext } from './context';
+
+/**
+ * CACHÉ — on est révélé EN attaquant, pas avant. L'attaque a DÉJÀ pris son
+ * avantage (et, pour un Roublard, ses dés sournois) parce que
+ * `deriveRollContext` a lu l'effet au moment du jet : on ne retire l'état
+ * qu'APRÈS la résolution. Appeler ceci avant l'attaque annulerait tout
+ * l'intérêt de s'être caché.
+ */
+function revealAfterStrike(ctx: SessionContext) {
+    const liveChar = useGameStore.getState().character || ctx.character;
+    const unhidden = dropHidden(liveChar.activeEffects);
+    if (!unhidden.dropped) return;
+    ctx.onCharacterUpdate({ ...liveChar, activeEffects: unhidden.effects } as any);
+    ctx.setTranscript((prev: any) => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${ctx.tr.gsNoLongerHidden}]*` }]);
+}
 
 export async function handlePlayerAttack(ctx: SessionContext, weaponItem: any, targetId: string, opts?: { powerAttack?: boolean }) {
     const { actionLockRef, character, combatState, dm, guardPlayerAction, isConnected, language, logCombatRoll, maybeEndCombat, onCharacterUpdate, patchPlayerEconomy, setCombatState, setIsResolvingAction, setPlayerRoll, setTranscript, showActionToast, syncCharacterUpdate, tr } = ctx;
@@ -126,13 +142,19 @@ export async function handlePlayerAttack(ctx: SessionContext, weaponItem: any, t
         auditBus.publish('combat', `Attaque joueur refusée par le moteur : ${result.error || '?'}`);
         return;
       }
+      revealAfterStrike(ctx);
       const res = result.resolution;
       let state = result.state;
 
       // SFX déterministe : geste de l'arme (couvre aussi le raté), puis impact
       // typé si le coup touche.
       playWeaponSwing(weaponItem);
-      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})`, success: res.hit });
+      // Ce qui a pesé sur le jet, dit au joueur. Le moteur le calculait déjà et
+      // ne le montrait que dans ActionPrompt — donc jamais ici, sur le jet le
+      // plus fréquent du jeu. Un désavantage d'empoisonnement se voyait
+      // seulement dans un total plus faible, sans explication (audit 2026-08-31).
+      const raisons = res.reasons?.length ? ` · ${res.reasons.slice(0, 2).join(' · ')}` : '';
+      setPlayerRoll({ result: res.attackRoll.total, reason: `${label} ${tr.vs} ${res.target} (${res.hit ? tr.hit : tr.miss})${raisons}`, success: res.hit });
       await waitDice();
       if (res.hit && res.damage > 0) {
         playDamageImpact(res.damageType, Boolean((res as any).criticalHit), weaponItem?.slot === 'ranged' || Boolean(weaponItem?.range));
@@ -266,6 +288,7 @@ export async function handlePlayerBonusAttack(ctx: SessionContext, weaponItem: a
         console.error('Bonus attack resolution failed:', result.error);
         return;
       }
+      revealAfterStrike(ctx);
       const res = result.resolution;
       let state = result.state;
 

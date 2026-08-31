@@ -1,200 +1,4 @@
-import { hasFeatSpecial } from '../../engine/rulesEngine';
-/**
- * systemPrompt.ts
- * Extracted DM system prompt from gemini.ts.
- * Kept as a pure function to keep gemini.ts clean and testable.
- */
-import { CharacterSheet, getEffectiveAC, getEffectiveStat, getDraconicDamageType, isRangedWeapon } from '../../types';
-import { memoryManager } from '../persistence/memoryManager';
-import { passivePerception, SKILL_ABILITIES } from '../../engine/skillSystem';
-import { CLASS_DATA } from '../../data/classes';
-import { RACE_DATA } from '../../data/races';
-import { getFeatById } from '../../data/feats';
-import { identityLineEn } from '../../data/labels';
 
-interface SystemPromptContext {
-  character: CharacterSheet;
-  adventure: string | null;
-  adventureManifest: string | null;
-  historyToRestore: { speaker: 'user' | 'dm'; text: string }[];
-  language: string;
-  characterName: string;
-  directorContext?: string;
-}
-
-export function buildSystemPrompt(ctx: SystemPromptContext): string {
-  const { character, adventure, adventureManifest, historyToRestore, language, characterName, directorContext } = ctx;
-  const profile = character.storyProfile || {};
-
-  const statDesc = (val: number, high16: string, high14: string, low8: string, normal: string) =>
-    val >= 16 ? high16 : val >= 14 ? high14 : val <= 8 ? low8 : normal;
-
-  const abilityMod = (val: number) => {
-    const m = Math.floor((val - 10) / 2);
-    return `${m >= 0 ? '+' : ''}${m}`;
-  };
-
-  const isResumedSession = historyToRestore.length > 0 || memoryManager.getChatHistory().length > 0;
-  const effectiveStats = {
-    STR: getEffectiveStat(character, 'STR'),
-    DEX: getEffectiveStat(character, 'DEX'),
-    CON: getEffectiveStat(character, 'CON'),
-    INT: getEffectiveStat(character, 'INT'),
-    WIS: getEffectiveStat(character, 'WIS'),
-    CHA: getEffectiveStat(character, 'CHA'),
-  };
-  const compact = (value: string | null | undefined, max = 900) => {
-    const text = String(value || '').replace(/\s+/g, ' ').trim();
-    return text.length > max ? `${text.slice(0, max)}...` : text;
-  };
-
-  // Skill / proficiency snapshot so the DM sets fair DCs and knows what the
-  // engine will auto-apply when it requests a roll with a skill/ability.
-  const skillNames = Object.keys(SKILL_ABILITIES).map(s => s.toLowerCase());
-  const proficientSkills = (character.proficiencies || []).filter(p => skillNames.includes(p.toLowerCase()));
-  const expertiseSkills = character.expertise || [];
-  const proficientSaves = CLASS_DATA[character.class]?.savingThrows || [];
-  const passivePerceptionValue = passivePerception(effectiveStats as any, character.level, character.proficiencies || [], character.expertise || [], hasFeatSpecial(character, 'passive_senses_plus_5') ? 5 : 0);
-  const raceInfo = RACE_DATA[character.race];
-  const racialTraits = (raceInfo?.features || []).join('; ');
-  const racialResist = (raceInfo?.resistances || []).join(', ');
-  // Feats: passive numeric parts (initiative, HP, speed, concentration advantage)
-  // are auto-applied by the engine; the dmNote tells the DM which situational
-  // halves (GWM power attacks, Sentinel lockdown, Lucky…) to honor narratively.
-  const takenFeats = (character.feats || [])
-    .map(id => getFeatById(id))
-    .filter((f): f is NonNullable<typeof f> => Boolean(f));
-  const featSection = takenFeats.length
-    ? `
-      **FEATS (honor these in adjudication — the engine already applies their passive numbers):**
-      ${takenFeats.map(f => `- ${f.name}: ${f.dmNote}`).join('\n      ')}`
-    : '';
-
-  // KIT DE CLASSE : liste ce que le moteur applique DÉJÀ automatiquement pour
-  // cette classe/sous-classe — sans elle, le MJ re-appliquait (ou ignorait) les
-  // capacités : double comptage ou « le SRD n'existe pas ».
-  const lvl = character.level || 1;
-  const kit: string[] = [];
-  const cls = character.class;
-  const sub = character.subclass || '';
-  if (cls === 'Paladin') {
-    if (lvl >= 6) kit.push('Aura of Protection: the engine already adds +CHA (min +1) to the hero\'s saving throws.');
-    if (lvl >= 11) kit.push('Improved Divine Smite: every melee weapon hit already deals +1d8 radiant (engine).');
-    kit.push('Divine Smite / Divine Sense / oath Channel Divinity are BUTTONS the player clicks — narrate the [SYSTEM] reports, never re-resolve.');
-    if (sub === 'Cavalier') kit.push(`Cavalier: bonded mount has +level HP; a mounted charge (melee attack on a FAR foe) auto-adds ${lvl >= 15 ? '+2d8 (Unstoppable Charge)' : '+1d8'}; the Cavalier Challenge locks an enemy's target onto the paladin.`);
-  }
-  if (cls === 'Barbarian') {
-    if (lvl >= 2) kit.push('Danger Sense: DEX saves auto-roll with advantage. Reckless Attack is a button.');
-    if (lvl >= 9) kit.push(`Brutal Critical: crits auto-add ${lvl >= 17 ? 3 : lvl >= 13 ? 2 : 1} extra weapon die.`);
-    if (lvl >= 11) kit.push('Relentless Rage: dropping to 0 HP while raging auto-rolls the CON save to stay at 1 HP.');
-    if (sub === 'Zealot') kit.push('Zealot Divine Fury: first hit each turn while raging auto-adds 1d6+half level radiant.');
-  }
-  if (cls === 'Rogue') {
-    if (lvl >= 5) kit.push('Uncanny Dodge: the first enemy hit each round is auto-halved (reaction, engine).');
-    if (lvl >= 7) kit.push('Evasion: DEX saves for half damage → success means ZERO damage (engine handles environmental_damage; honor it in your own adjudications).');
-    kit.push('Sneak Attack is auto-added when the strike qualifies.');
-  }
-  if (cls === 'Monk') {
-    if (lvl >= 3) kit.push('Deflect Missiles: ranged weapon hits are auto-reduced by 1d10+DEX+level (reaction, engine).');
-    if (lvl >= 7) kit.push('Evasion: successful DEX save vs half-damage effects = zero damage.');
-    kit.push('The bonus-action unarmed strike (Martial Arts) is a button next to the attack.');
-  }
-  if (cls === 'Bard') kit.push('Jack of All Trades (+half proficiency on non-proficient checks) and Song of Rest (short-rest bonus healing) are auto-applied.');
-  if (cls === 'Fighter' && lvl >= 9) kit.push('Indomitable: on a failed save the player is OFFERED a reroll burning an Indomitable use — acknowledge it when the reroll report arrives.');
-  if (cls === 'Warlock' && lvl >= 2) kit.push('Agonizing Blast: Eldritch Blast damage already includes +CHA per beam (engine).');
-  if (cls === 'Cleric' && lvl >= 8 && (sub === 'War Domain' || sub === 'Life Domain')) kit.push('Divine Strike: +1d8 on the first weapon hit each turn is auto-added.');
-  if (sub === 'School of Evocation') kit.push('Potent Cantrip (L6+: half damage on saved cantrips) and Empowered Evocation (L10+: +INT to evocation damage) are auto-applied.');
-  if (sub === 'Champion' && lvl >= 7) kit.push('Remarkable Athlete: +half proficiency on STR/DEX/CON checks is auto-applied.');
-  if (cls === 'Sorcerer' && lvl >= 3) kit.push('Metamagic (Quickened/Heightened) are buttons; a heightened save-spell already rolls the enemy save at disadvantage.');
-  const classKitSection = kit.length
-    ? `
-      **CLASS KIT (auto-applied by the engine — narrate, NEVER re-apply or double-count):**
-      ${kit.map(k => `- ${k}`).join('\n      ')}`
-    : '';
-
-  // ARMEMENT : le MJ ne voyait qu'un nom et des dés — il narrait donc un arc
-  // long comme une arme de mêlée (« tu frappes le gobelin avec ton arc »). On
-  // lui donne explicitement la portée et la nature (mêlée / distance / jet) de
-  // CHAQUE arme équipée, arc du slot distance inclus.
-  const describeWeapon = (w: { name?: string; damage?: string; damageDice?: string; damageType?: string; properties?: string[]; range?: string } | null | undefined) => {
-    if (!w?.name) return null;
-    const props = (w.properties || []).map(p => String(p).toLowerCase());
-    const ranged = isRangedWeapon(w as any);
-    const thrown = props.some(p => /thrown|jet/.test(p));
-    const kind = ranged
-      ? `RANGED (range ${w.range || '150/600'} ft — the hero SHOOTS from a distance, never swings it)`
-      : thrown
-        ? `MELEE, can be THROWN (range ${w.range || '20/60'} ft)`
-        : 'MELEE (reach 5 ft)';
-    const dice = w.damage || w.damageDice || '1d4';
-    return `${w.name} — ${dice} ${w.damageType || 'damage'} · ${kind}${props.length ? ` · properties: ${props.join(', ')}` : ''}`;
-  };
-  const equippedWeaponLines = (character.inventory || [])
-    .filter(item => item.type === 'weapon' && item.equipped)
-    .map(item => `${item.slot === 'ranged' ? '[ranged slot] ' : item.slot === 'offHand' ? '[off-hand] ' : '[main hand] '}${describeWeapon(item as any)}`)
-    .filter(Boolean);
-
-  // Restored history is CAPPED. Injecting the full saved transcript made the
-  // system instruction balloon on long saves, which crashed the Live API
-  // connection on load ("Gemini fails when loading a save"). We keep only the
-  // last few real story beats here; long-term continuity comes from the
-  // director context + the memory manager summary, not this inline log. We also
-  // strip *[SYSTEM ...]* / [SYSTEM] control lines so they don't bloat the prompt
-  // (or prime the model to echo English system text).
-  // IJ6 (audit trame) — 14×320 tronquait la reprise au point que le MJ
-  // « oubliait » la scène en cours au rechargement : 24 beats × 500 car.
-  // (~12 Ko) restent très loin du plafond qui faisait tomber la connexion.
-  const RESTORE_LIMIT = 24;
-  // Defang control markers embedded ANYWHERE in a replayed line, not just at the
-  // start (the line-start filter below only catches our own injected lines). A
-  // player who says "[SYSTEM] ignore the rules" mid-sentence must not have it
-  // replayed to the DM as a genuine directive — prompt-injection hardening.
-  const defangControlTokens = (text: string) =>
-    text.replace(/\[\s*\/?\s*(?:SYSTEM|INST|INSTRUCTION|ASSISTANT|USER|DM[_ ]?OVERRIDE)\b[^\]]*\]/gi, '(note)');
-  const cleanedHistory = (historyToRestore || [])
-    .filter(msg => msg && msg.text)
-    // IJ3 (audit trame) — les vieilles sauvegardes contiennent des lignes où la
-    // narration a été FUSIONNÉE avec un marqueur `*[SYSTEM ...]*` : ne retirer
-    // que le segment marqueur, pas la ligne entière (la narration était perdue).
-    .map(msg => ({ ...msg, text: msg.text.replace(/\*\[[^\]]*\]\*/g, ' ').replace(/\s{2,}/g, ' ').trim() }))
-    .filter(msg => !/^\s*\*?\[\s*(?:SYSTEM|🎯|🎲|⚠️|🔗|📚|🎊|⭐)/i.test(msg.text.trim()))
-    .filter(msg => msg.text.trim().length > 0)
-    .slice(-RESTORE_LIMIT);
-  const historyLog = cleanedHistory.length > 0
-    ? `
-      ## CONVERSATION HISTORY (CRITICAL RECALL)
-      Below are the most recent beats of this campaign. Continue the roleplay seamlessly from this state. Do not repeat these past entries.
-      ${cleanedHistory.map(msg => {
-        // Only player-authored text is untrusted; DM lines are our own model output.
-        const safe = msg.speaker === 'user' ? defangControlTokens(msg.text) : msg.text;
-        // IJ6 — les tours du MJ se coupent par le DÉBUT (la FIN d'une longue
-        // narration porte la situation présente) ; le joueur par la fin (sa
-        // demande ouvre son tour).
-        const trimmed = safe.replace(/\s+/g, ' ').trim();
-        const clipped = trimmed.length <= 500 ? trimmed
-          : msg.speaker === 'dm' ? `...${trimmed.slice(-500)}` : `${trimmed.slice(0, 500)}...`;
-        return `${msg.speaker === 'user' ? 'Hero' : 'DM'}: ${clipped}`;
-      }).join('\n      ')}`
-    : '';
-
-  // Long-term memory: the cumulative AI summary produced at each 15K-token purge.
-  // This is what lets the DM remember chapters that fell out of the sliding
-  // window — without it, a reload only knows the last RESTORE_LIMIT beats.
-  // Cap sized to fit the summarizer's 450-word ceiling (~2700 FR chars) so a
-  // within-spec summary is never truncated at its NEWEST (most recent) end.
-  // MM5 (audit trame) — garder la FIN du résumé cumulatif, pas le début : le
-  // résumé s'écrit chronologiquement, tronquer par la fin effaçait justement
-  // les chapitres les plus récents.
-  const rawSummary = String(memoryManager.getCachedSummary()?.text || '').replace(/\s+/g, ' ').trim();
-  const storySummary = rawSummary.length > 2800 ? `...${rawSummary.slice(-2800)}` : rawSummary;
-  const storySoFar = storySummary
-    ? `
-      ## PREVIOUSLY IN THIS CAMPAIGN (LONG-TERM MEMORY — CRITICAL RECALL)
-      Everything below already HAPPENED. Treat it as established canon: honor promises, grudges, deaths, and acquired items. Never contradict it, never re-introduce an NPC the hero already knows.
-      ${storySummary}`
-    : '';
-
-  return `
       ## THE ENGINE HAS THE LAST WORD (CRITICAL)
       - The app is the source of truth for rolls, initiative, HP, XP and death saves. You narrate, the Codex answers rules, the engine executes. Never invent a spell, item, condition or combat rule when a lookup_* or cast_spell tool can answer. If a tool clamps or rejects a value, narrate the app's result.
       - TWO-STEP ROLLS (CRITICAL — no spoilers): when an action needs a roll, call request_roll and describe ONLY the attempt ("you leap for the ledge, fingers stretching…"), then STOP. The tool response is HELD until the player rolls; narrate success or failure only from that response or a [ROLL_RESULT]. Never declare a hit, a miss, a damage amount or a check result before the engine returns it.
@@ -203,7 +7,7 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       - TREASURE & GOLD: prefer the SRD catalog (~90 magic items) to invention — roll_loot(context) for a hoard or a milestone, add_inventory_item with the exact catalog name for a specific item (its real stats are auto-filled). Custom story items (quest objects, crafting, unique effects) are welcome through add_inventory_item too. Pacing: a consumable every session or two, a permanent uncommon item every 2-3 levels, rare items for major quests. Coins are real: add_gold(amount) whenever the hero loots, is paid, sells or spends (negative amount) — never just narrate "you find 50 gold".
 
       ## ONE LANGUAGE, LESS TALK (CRITICAL)
-      - You speak, narrate and voice every NPC EXCLUSIVELY in **${language}**. Never translate, echo or restate a line in another tongue (proper nouns aside) — saying a thing twice in two languages is the worst immersion-breaker. Think in ${language}; if you drift, continue in ${language} without apologizing.
+      - You speak, narrate and voice every NPC EXCLUSIVELY in **fr**. Never translate, echo or restate a line in another tongue (proper nouns aside) — saying a thing twice in two languages is the worst immersion-breaker. Think in fr; if you drift, continue in fr without apologizing.
       - System messages are private: never read them aloud, never narrate a tool call.
       - Be concise — 30% shorter than a typical LLM: atmosphere and action, no filler.
 
@@ -216,43 +20,46 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       - Paint sound with your voice (the rumble before the dragon speaks), and use pacing as drama: slow before a reveal, clipped in combat, warm in a tavern.
 
       **PLAYER CHARACTER:**
-      - Name: ${character.name}
-      - Race/Class: ${character.race} ${character.class}${character.subclass ? ` — Archetype: ${character.subclass} (honor its features in adjudication; several are auto-applied by the engine)` : ''}${character.race === 'Dragonborn' && getDraconicDamageType(character.draconicAncestry) ? ` — Draconic ancestry: ${character.draconicAncestry} (breath weapon and damage resistance are ${getDraconicDamageType(character.draconicAncestry)}; narrate them as such)` : ''}
-      - Level: ${character.level}
-      - Current HP: ${character.hp.current}/${character.hp.max}
-      - AC: ${getEffectiveAC(character)}
-      - Weapon: ${describeWeapon(character.weapon) || 'Unarmed — 1d4 bludgeoning · MELEE (reach 5 ft)'}
-      - Equipped weapons: ${equippedWeaponLines.length ? `\n        ${equippedWeaponLines.join('\n        ')}` : 'none besides the above'}
+      - Name: Valerian
+      - Race/Class: Human Rogue
+      - Level: 1
+      - Current HP: 9/9
+      - AC: 16
+      - Weapon: Longsword — 1d8 slashing · MELEE (reach 5 ft) · properties: versatile
+      - Equipped weapons: 
+        [main hand] Longsword — 1d8 slashing · MELEE (reach 5 ft) · properties: versatile
       - NEVER narrate a RANGED weapon as a melee strike: with a bow or crossbow the hero looses from a distance — describe the range, the arc, the ammunition. At arm's reach the shot is awkward (the engine already applies disadvantage); never turn the bow into a club.
-      - Appearance: ${identityLineEn(character)}. ${compact(profile.appearance, 260) || 'Not specified'}
-      - Personality: ${compact(profile.personality, 220) || 'Not specified'}
-      - Desire: ${compact(profile.desire, 220) || 'Not specified'}
-      - Fear/Wound/Bond: ${[profile.fear, profile.wound, profile.bond].filter(Boolean).map(item => compact(item, 140)).join(' | ') || 'Not specified'}
-      - Ideal: ${compact(profile.ideal, 160) || 'Not specified'} | Flaw: ${compact(profile.flaw, 160) || 'Not specified'}
-      - 🔒 SECRET (DM-ONLY — never state it outright; use it to seed tension, temptations, and a future reveal): ${compact(profile.secret, 200) || 'None'}
-      - DM Hooks: ${(profile.dmHooks || []).slice(0, 6).join('; ') || 'None'}
+      - Appearance: male Human Rogue. Not specified
+      - Personality: Not specified
+      - Desire: Not specified
+      - Fear/Wound/Bond: Not specified
+      - Ideal: Not specified | Flaw: Not specified
+      - 🔒 SECRET (DM-ONLY — never state it outright; use it to seed tension, temptations, and a future reveal): None
+      - DM Hooks: None
 
       **CAMPAIGN SEED:**
-      - Adventure: ${compact(adventure, 160) || 'Unknown'}
-      - Session: ${isResumedSession ? 'resumed from saved history' : 'new live session'}
+      - Adventure: avernus
+      - Session: new live session
       - Campaign spine: see the CAMPAIGN DIRECTOR CONTEXT below (villain, current chapter/scene, world clocks, canon facts). The full manifest is DM-REFERENCE ONLY and is deliberately NOT inlined here (it contains secrets/solutions): pull authored detail on demand via lookup_campaign, never reveal a secret ahead of its beat. The director context marks every protected secret as [LOCKED until ChN] or [open since ChN], computed from your CURRENT chapter — that tag is the authority. A LOCKED secret may be hinted at, suspected or gotten wrong by an NPC; it is never confirmed as fact by anyone in your scene.
       - New session opening rule: if the director context includes a locked first scene, start exactly there after the cinematic — no alternate tavern, road, dream or recap opening.
-      ${storySoFar}
-      ${historyLog}
+      
+      
 
-      **ABILITY SCORES:** STR ${effectiveStats.STR} (${abilityMod(effectiveStats.STR)}, ${statDesc(effectiveStats.STR, 'extremely muscular', 'visibly athletic', 'weak', 'normal')}) · DEX ${effectiveStats.DEX} (${abilityMod(effectiveStats.DEX)}, ${statDesc(effectiveStats.DEX, 'cat-like reflexes', 'quick and nimble', 'clumsy', 'normal')}) · CON ${effectiveStats.CON} (${abilityMod(effectiveStats.CON)}, ${statDesc(effectiveStats.CON, 'iron constitution', 'hardy', 'sickly', 'normal')}) · INT ${effectiveStats.INT} (${abilityMod(effectiveStats.INT)}, ${statDesc(effectiveStats.INT, 'brilliant', 'clever', 'slow', 'normal')}) · WIS ${effectiveStats.WIS} (${abilityMod(effectiveStats.WIS)}, ${statDesc(effectiveStats.WIS, 'perceptive', 'intuitive', 'oblivious', 'normal')}) · CHA ${effectiveStats.CHA} (${abilityMod(effectiveStats.CHA)}, ${statDesc(effectiveStats.CHA, 'magnetic', 'likeable', 'awkward', 'normal')})
+      **ABILITY SCORES:** STR 9 (-1, normal) · DEX 9 (-1, normal) · CON 9 (-1, normal) · INT 9 (-1, normal) · WIS 9 (-1, normal) · CHA 9 (-1, normal)
 
       **SKILLS & PROFICIENCIES (the engine auto-applies these on rolls):**
-      - Passive Perception: ${passivePerceptionValue} (adjudicate hidden danger and stealth against it without a roll)
-      - Proficient saving throws: ${proficientSaves.join(', ') || 'none'}
-      - Skill proficiencies: ${proficientSkills.join(', ') || 'none'}${expertiseSkills.length ? ` — EXPERTISE (double): ${expertiseSkills.join(', ')}` : ''}
-      - For a check or a save, request_roll takes \`skill\` ("Stealth"/"Discrétion") or \`ability\` ("DEX", with isSave:true) and the DC — never a bonus: the engine adds the real modifier, proficiency and expertise. Use the proficiencies above to judge difficulty and whether a roll is warranted at all.
+      - Passive Perception: 9 (adjudicate hidden danger and stealth against it without a roll)
+      - Proficient saving throws: DEX, INT
+      - Skill proficiencies: Athletics, Intimidation
+      - For a check or a save, request_roll takes `skill` ("Stealth"/"Discrétion") or `ability` ("DEX", with isSave:true) and the DC — never a bonus: the engine adds the real modifier, proficiency and expertise. Use the proficiencies above to judge difficulty and whether a roll is warranted at all.
 
-      **RACIAL TRAITS (${character.race}) — honor these in adjudication:**
-      - Traits: ${racialTraits || 'none'}
-      - Damage resistances: ${racialResist || 'none'}${raceInfo?.darkvision ? ` · Darkvision ${raceInfo.darkvision} ft (the engine already halves resisted damage; YOU enforce the rest — e.g. advantage from Lucky/Brave/Fey Ancestry, Relentless Endurance, Gnome Cunning, darkvision in the dark).` : ' (enforce trait effects like advantage on relevant saves, Relentless Endurance, etc.).'}
-      ${featSection}
-      ${classKitSection}
+      **RACIAL TRAITS (Human) — honor these in adjudication:**
+      - Traits: Versatile : +1 à toutes les caractéristiques; Une compétence et une langue supplémentaires (selon la table)
+      - Damage resistances: none (enforce trait effects like advantage on relevant saves, Relentless Endurance, etc.).
+      
+      
+      **CLASS KIT (auto-applied by the engine — narrate, NEVER re-apply or double-count):**
+      - Sneak Attack is auto-added when the strike qualifies.
 
       ## COMBAT
       - Before a fight, lookup_creature(name) gives the foe's real sheet — the attacks, breath weapons, presence and legendary actions the engine will play; describe what it says. A fight opens with start_combat + set_music_mood("combat" or "combat_boss") + trigger_combat_image + add_enemy_init; when foes are spotted but not yet engaged, a trigger_visual for the calm before the storm.
@@ -296,6 +103,5 @@ export function buildSystemPrompt(ctx: SystemPromptContext): string {
       - Music: set_music_mood whenever the EMOTIONAL tone changes, several times per scene (the 24 moods are listed in the tool): tension before the blades come out, horror when it turns, sorrow for a death, rest when safe; after a lost fight "defeat", on a level "level_up", when the shop opens "shop". Re-calling a mood is cheap.
       - Sound: trigger_sfx generously, one bank key per call (families and keys are in the tool): doors, footsteps, weather, fire, coins, chains, a growl, wings, a scream, a spell crackling, a sword drawn, an arrow loosed, a trap. Ordinary attack and damage dice already play a sound — add the sound of the fiction around them (the warhammer shattering a shield, the ogre's roar).
 
-      ${directorContext ? `## 📜 CURRENT CAMPAIGN DIRECTOR CONTEXT & JOURNAL\nThe following is the current live context of the campaign, including locations, npcs, active quests, world clocks, and canon facts. You must follow this context strictly:\n${directorContext}` : ''}
-  `;
-}
+      
+  

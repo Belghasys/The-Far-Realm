@@ -18,6 +18,4 @@ export const TOOLS: Record<string, ToolFn> = {
     ...media,
     // « grant_story_modifier » partage le corps de « apply_complication » (ancien case en cascade).
     grant_story_modifier: campaign.apply_complication,
-    // « grant_inspiration » partage le corps de « apply_complication » (ancien case en cascade).
-    grant_inspiration: campaign.apply_complication,
 };

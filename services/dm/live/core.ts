@@ -22,6 +22,7 @@ import { GAME_TOOL_DECLARATIONS } from './toolDeclarations';
 import { appendTranscriptChunk } from './transcript';
 import { fetchLiveToken } from './liveToken';
 import { AUDIO_MODEL, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
+import { RECONNECT_STABLE_MS, ReconnectBudget, ToolFailureBreaker } from './resilience';
 
 // --- Live Client ---
 
@@ -50,11 +51,15 @@ export class LiveDungeonMaster {
     private adventureManifest: string;
     private initialHistory: { speaker: 'user' | 'dm', text: string }[] = [];
 
-    private reconnectAttempts: number = 0;
-    private maxReconnectAttempts: number = 3;
+    /** Salve rapprochée puis reprises espacées — plus de verrou définitif. */
+    private reconnectBudget = new ReconnectBudget();
     private isReconnecting: boolean = false;
     private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    /** Arme markStable() quand la connexion a tenu RECONNECT_STABLE_MS. */
+    private stableTimer: ReturnType<typeof setTimeout> | null = null;
     private _lastConnectTime: number = 0; // Track when onopen fires to detect instant-close loops
+    /** Disjoncteur : deux échecs consécutifs par outil, puis coupure. */
+    private toolBreaker = new ToolFailureBreaker();
     private isMuted: boolean = false;
     private playingNodes: AudioBufferSourceNode[] = [];
     private isDisconnected: boolean = false;
@@ -269,7 +274,20 @@ export class LiveDungeonMaster {
                         this.isConnected = true;
                         this._sendGate = true; // Open gate ONLY when connection is confirmed open
                         this._lastConnectTime = Date.now();
-                        // Do NOT reset reconnectAttempts here. It's done intelligently in attemptReconnect.
+                        // Le budget n'est PAS remis à zéro ici : une session qui
+                        // s'ouvre puis meurt aussitôt rechargerait le compteur à
+                        // chaque tour de boucle (LM1). On arme un délai — si la
+                        // connexion tient RECONNECT_STABLE_MS, alors seulement
+                        // elle a mérité une ardoise neuve. C'est ce qui permet
+                        // de se reconnecter des heures après une panne : sans ce
+                        // marquage, les échecs d'hier condamnaient l'instance.
+                        if (this.stableTimer) clearTimeout(this.stableTimer);
+                        this.stableTimer = setTimeout(() => {
+                            this.stableTimer = null;
+                            if (this.isDisconnected || !this.isConnected) return;
+                            this.reconnectBudget.markStable();
+                            this.toolBreaker.reset();
+                        }, RECONNECT_STABLE_MS);
                         this.onConnectionChange(true);
                         if (!resumingFromHandle) this.restoreHistory();
                         this.flushOutboundTextQueue();
@@ -486,6 +504,16 @@ export class LiveDungeonMaster {
 
     public isConnectedState() {
         return this.isConnected;
+    }
+
+    /**
+     * Rendre son budget de reconnexion et son disjoncteur d'outils à une
+     * instance réutilisée. Appelé quand le joueur revient dans une partie dont
+     * la session Live n'a jamais été explicitement déconnectée.
+     */
+    public resetResilience() {
+        this.reconnectBudget.reset();
+        this.toolBreaker.reset();
     }
 
     public isDisconnectedState() {
@@ -764,6 +792,9 @@ export class LiveDungeonMaster {
         if (!spoken) return;
         // Journal de session : les répliques VOCALES du joueur n'apparaissaient
         // nulle part dans l'audit (seules les tirades MJ y passaient).
+        // Le joueur a repris la main : les coupures d'outils valaient pour
+        // l'action précédente, pas pour la partie (voir ToolFailureBreaker).
+        this.toolBreaker.onPlayerAction();
         auditBus.publish('gemini-out', `PLAYER (voix) : ${spoken.slice(0, 90)}`, spoken);
         memoryManager.addMessage({ speaker: 'user', text: spoken });
         this.recordHistory('user', spoken);
@@ -850,6 +881,21 @@ export class LiveDungeonMaster {
             const { name, args, id } = call;
             log.info(`🛠️ Tool Call: ${name}`, JSON.stringify(args));
 
+            // DISJONCTEUR (2026-08-31) — Gemini lit une erreur d'outil comme une
+            // invitation à reformuler et rappelle le même outil. Le prompt dit
+            // déjà « if the engine refuses twice in a row, do not insist », mais
+            // une phrase de prompt n'oblige à rien : après DEUX échecs
+            // consécutifs, le troisième appel n'est plus exécuté du tout et le
+            // MJ reçoit une fin de non-recevoir qui lui rend la main.
+            const blocked = this.toolBreaker.blockedResponse(name);
+            if (blocked) {
+                log.warn(`⛔ Tool circuit breaker: ${name} coupé après ${this.toolBreaker.failureCount(name)} échecs consécutifs`);
+                auditBus.publish('engine', `Disjoncteur outil : ${name} coupé (${this.toolBreaker.failureCount(name)} échecs consécutifs)`, blocked);
+                sessionTrace.trace('director', `disjoncteur ${name}`, blocked.error);
+                this.queueToolResponses([{ id, name, response: blocked }]);
+                continue;
+            }
+
             let result: any = { error: "Unknown function" };
 
             if (name === "lookup_creature") {
@@ -903,6 +949,10 @@ export class LiveDungeonMaster {
                     result = { error: e.message || "Execution failed" };
                 }
             }
+
+            // Compte l'issue AVANT de répondre : un succès efface l'ardoise de
+            // cet outil, un échec la charge (voir isToolFailure).
+            this.toolBreaker.record(name, result);
 
             auditBus.publish('gemini-tool', name, { args, result });
 
@@ -1046,6 +1096,11 @@ export class LiveDungeonMaster {
         // stay out of memory: they are mechanics, not story.
         const spoken = String(text || '').trim();
         if (spoken && !spoken.startsWith('[')) {
+            // Même règle que la voix : une vraie réplique du joueur ouvre une
+            // nouvelle action, donc efface les coupures d'outils. Les charges
+            // moteur entre crochets ([SYSTEM], [ROLL_RESULT]) ne comptent pas —
+            // ce sont les relances du modèle, pas une décision du joueur.
+            this.toolBreaker.onPlayerAction();
             this.recordHistory('user', spoken);
             memoryManager.addMessage({ speaker: 'user', text: spoken });
         }
@@ -1065,9 +1120,9 @@ export class LiveDungeonMaster {
 
         // Detect if the previous connection was stable or an "instant close"
         const connectionLivedMs = Date.now() - this._lastConnectTime;
-        if (connectionLivedMs > 5000 && this._lastConnectTime > 0) {
+        if (connectionLivedMs > RECONNECT_STABLE_MS && this._lastConnectTime > 0) {
             log.info(`⚡ Connection was stable for ${connectionLivedMs}ms before drop, resetting reconnect attempts.`);
-            this.reconnectAttempts = 0;
+            this.reconnectBudget.markStable();
             // LM1 (contre-audit) — consommer le timestamp APRÈS la décision :
             // _lastConnectTime n'est réécrit qu'à onopen, donc chaque échec
             // suivant re-mesurait la MÊME vieille session « stable » et remettait
@@ -1083,20 +1138,37 @@ export class LiveDungeonMaster {
             this.storeResumptionHandle(null);
         }
 
-        if (this.isReconnecting || this.reconnectAttempts >= this.maxReconnectAttempts) {
-            if (this.reconnectAttempts >= this.maxReconnectAttempts && this.onReconnectFailed) {
-                log.error('❌ Max reconnect attempts reached. Stopping.');
-                this.onReconnectFailed();
-            }
+        if (this.isReconnecting) return;
+
+        // BUDGET (2026-08-31) — l'ancienne règle « 3 tentatives puis stop »
+        // condamnait l'INSTANCE, pas l'incident : trois coupures brèves et le
+        // joueur ne pouvait plus se connecter du tout, même une heure plus tard
+        // et même en revenant dans la partie (le gestionnaire réutilise le MJ
+        // tant qu'il n'a pas été explicitement déconnecté). La salve rapprochée
+        // reste, mais elle est suivie de reprises espacées.
+        const decision = this.reconnectBudget.next();
+        if (decision.action === 'cooldown') {
+            log.warn(`⏳ Salve de reconnexion épuisée — reprise espacée n°${decision.round} dans ${Math.round(decision.delayMs / 1000)} s.`);
+            auditBus.publish('engine', `Reconnexion : reprise espacée n°${decision.round} programmée (${Math.round(decision.delayMs / 1000)} s)`);
+            // La sauvegarde d'urgence est câblée sur onReconnectFailed : elle
+            // part au PREMIER épuisement, pas à chaque reprise, sinon chaque
+            // minute de panne déclencherait une sauvegarde complète.
+            if (decision.firstExhaustion && this.onReconnectFailed) this.onReconnectFailed();
+            // Même verrou que la salve : « une reprise est programmée ». Sans
+            // lui, un second onclose pendant la minute d'attente entamerait le
+            // budget une deuxième fois pour la même panne.
+            this.isReconnecting = true;
+            this.scheduleReconnect(decision.delayMs);
             return;
         }
 
         this.isReconnecting = true;
-        this.reconnectAttempts++;
+        if (this.onReconnecting) this.onReconnecting(decision.attempt, decision.burstLimit);
+        this.scheduleReconnect(decision.delayMs);
+    }
 
-        if (this.onReconnecting) this.onReconnecting(this.reconnectAttempts, this.maxReconnectAttempts);
-
-        const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts - 1), 10000);
+    /** Le timer partagé par la salve et les reprises espacées. */
+    private scheduleReconnect(delay: number) {
         // Store the handle so disconnect() can cancel a pending backoff reconnect.
         // Without this, quitting during the 2–10s window still fired connect() on a
         // torn-down DM (a contributor to the "won't connect after quitting" bug).
@@ -1127,7 +1199,8 @@ export class LiveDungeonMaster {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
         }
-        this.reconnectAttempts = 0;
+        this.reconnectBudget.reset();
+        this.toolBreaker.reset();
         this.isReconnecting = false;
         this._lastConnectTime = 0;
         this.isDisconnected = false;
@@ -1187,6 +1260,10 @@ export class LiveDungeonMaster {
         if (this.reconnectTimer) {
             clearTimeout(this.reconnectTimer);
             this.reconnectTimer = null;
+        }
+        if (this.stableTimer) {
+            clearTimeout(this.stableTimer);
+            this.stableTimer = null;
         }
         const s = this.session;
         this.session = null; // Null FIRST
@@ -1260,6 +1337,13 @@ export class LiveConnectionManager {
         if (this.activeDM && this.activeSaveId === saveId && !this.activeDM.isDisconnectedState()) {
             if (this.activeDM.getLanguage() === language) {
                 log.info(`🔌 Reusing active Gemini Live session for save ${saveId}`);
+                // Un nouveau montage est une nouvelle intention du joueur : il
+                // revient dans la partie. Sans ce reset, on lui rendait une
+                // instance dont le budget de reconnexion était déjà épuisé —
+                // c'est le « je quitte, je reviens, et je ne peux plus me
+                // connecter » (la sortie sans le bouton Quitter ne déconnecte
+                // pas, donc l'instance grillée survit au démontage).
+                this.activeDM.resetResilience();
                 this.activeDM.updateCharacter(character);
                 this.activeDM.updateDirectorContext(directorContext);
                 return this.activeDM;

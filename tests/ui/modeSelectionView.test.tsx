@@ -216,7 +216,7 @@ describe('ModeSelectionView — contrat à préserver pendant la refonte', () =>
         expect(carte).toHaveAttribute('aria-pressed', 'true');
 
         // La chute est du texte, pas seulement une image : elle doit être là.
-        expect(screen.getAllByText(/Trois adolescents le tiennent en respect/).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/trois ados sur trottinette/i).length).toBeGreaterThan(0);
     });
 
     it('accroche dix vignettes au mur, et en change au mélange', () => {

@@ -286,6 +286,13 @@ const CombatantRow: React.FC<{
                                         }`}
                                     >
                                         {effect.name}
+                                        {/* La durée restante était calculée par le
+                                            moteur et jamais montrée : un badge sans
+                                            compteur ne dit pas si l'état va tomber
+                                            au prochain tour ou tenir cinq rounds. */}
+                                        {typeof effect.roundsRemaining === 'number' && (
+                                            <span className="ml-1 tabular-nums opacity-70">{effect.roundsRemaining}</span>
+                                        )}
                                     </span>
                                 );
                             })}

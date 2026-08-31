@@ -379,9 +379,27 @@ export function rollD20WithMode(mode: AdvantageMode): { die: number; rolls: numb
 }
 export function resolveRollPrompt(prompt: RollPromptState): RollOutcome {
     const { modifier, label } = parseD20Formula(prompt.formula, prompt.dmBonus);
+    const isDeathSave = prompt.type === 'DEATH_SAVE';
+
+    // INSPIRATION BRÛLÉE — le joueur a PAYÉ au lieu de lancer. Aucun dé ne
+    // roule (`rolls: []` le prouve au test), le total affiché atteint le DD
+    // pile : ni triche visible, ni critique volé. Jamais sur un jet de mort —
+    // on n'achète pas sa survie — ni contre un échec automatique de règle.
+    if (prompt.autoSuccess && !isDeathSave && !prompt.autoFail) {
+        return {
+            prompt,
+            total: prompt.dc,
+            die: 0,
+            rolls: [],
+            modifier,
+            success: true,
+            critical: 'none',
+            formulaLabel: label,
+        };
+    }
+
     const { die, rolls } = rollD20WithMode(prompt.advantage);
     const total = die + modifier;
-    const isDeathSave = prompt.type === 'DEATH_SAVE';
 
     let success = prompt.autoFail ? false : (prompt.dc > 0 ? total >= prompt.dc : true);
     let critical: RollOutcome['critical'] = 'none';

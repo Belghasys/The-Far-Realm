@@ -17,6 +17,9 @@ export interface RollPromptState {
     coverBonus?: number;
     concentrationDamage?: number;
     autoFail?: boolean;
+    /** Le joueur a brûlé une Inspiration au lieu de lancer : la réussite est
+     *  acquise. Jumeau d'`autoFail`, et sans effet sur un jet de mort. */
+    autoSuccess?: boolean;
     pendingSpell?: {
         spellName: string;
         target?: string;
@@ -167,6 +170,12 @@ export interface AttackResolution {
     relentless?: boolean;
     /** Le moteur a jugé ce coup en mêlée (false = tir/jet à distance). */
     isMeleeAttack?: boolean;
+    /** Ce qui a pesé sur ce jet — états, couverture, traits, équipement. Le
+     *  moteur les calculait déjà et les jetait : elles n'atteignaient l'écran
+     *  que par ActionPrompt, donc jamais pour l'attaque au bouton, qui est le
+     *  jet le plus fréquent du jeu. D'où l'impression que les états « n'influent
+     *  pas » alors qu'ils influaient en silence (audit du 2026-08-31). */
+    reasons?: string[];
 }
 export interface SpellCastResult {
     success: boolean;

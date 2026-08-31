@@ -16,6 +16,10 @@ export interface StatusEffect {
 interface StatusBarProps {
     effects: StatusEffect[];
     coverBonus: number;           // 0, 2, or 5
+    /** Réserve d'Inspiration : elle a sa place ICI parce que c'est la seule
+     *  bande toujours à l'écran. Sans pip, le compteur retomberait dans le
+     *  travers de l'ancienne inspiration — exister sans jamais se voir. */
+    inspiration?: number;
     onRemoveEffect?: (id: string) => void;
 }
 
@@ -35,19 +39,31 @@ const COVER_DISPLAY = {
     5: { labelKey: 'threeQuarterCover', icon: '🏰', color: 'bg-green-900/60 border-green-500' }
 } as const;
 
-export function StatusBar({ effects, coverBonus, onRemoveEffect }: StatusBarProps) {
+export function StatusBar({ effects, coverBonus, inspiration = 0, onRemoveEffect }: StatusBarProps) {
     const language = useGameStore(s => s.language);
     const tr = TRANS[language];
     const coverEntry = COVER_DISPLAY[coverBonus as keyof typeof COVER_DISPLAY];
     const coverDisplay = coverEntry ? { ...coverEntry, label: tr[coverEntry.labelKey] } : null;
 
-    // No effects and no cover = don't render
-    if (effects.length === 0 && !coverDisplay) {
+    // Rien à dire = rien à l'écran. L'Inspiration compte comme « quelque chose
+    // à dire » : c'est une ressource que le joueur doit voir pour la dépenser.
+    if (effects.length === 0 && !coverDisplay && inspiration <= 0) {
         return null;
     }
 
     return (
         <div className="flex flex-wrap items-center gap-2 p-2 bg-gray-900/80 border border-gray-700 rounded-lg mb-2">
+            {/* Réserve d'Inspiration */}
+            {inspiration > 0 && (
+                <div
+                    className="flex items-center gap-1.5 rounded border border-amber-500 bg-amber-900/50 px-2 py-1 text-xs font-medium"
+                    title={tr.inspirationTooltip}
+                >
+                    <span>✨</span>
+                    <span className="font-bold text-amber-300">{inspiration}</span>
+                </div>
+            )}
+
             {/* Cover Status */}
             {coverDisplay && (
                 <div

@@ -808,6 +808,7 @@ export function resolveAttackAction(
             attackName: monsterAttack?.name || args.attackName,
             damageParts: resolvedDamageParts.length ? resolvedDamageParts : undefined,
             mitigation,
+            reasons: context.prompt.contextReasons?.length ? [...context.prompt.contextReasons] : undefined,
             targetHP: updatedTarget.hp,
             state,
             log,

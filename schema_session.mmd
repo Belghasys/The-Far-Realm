@@ -1,0 +1,51 @@
+flowchart TB
+
+START(["Joueur entre en session"]) --> TOK
+
+subgraph BOOT["1 · OUVERTURE — repayé à CHAQUE connexion"]
+  TOK["Jeton voix · core.ts:216<br/>1 CRÉDIT sur 5 par jour"]
+  SYS["systemInstruction<br/>20 513 car. seul<br/>33 707 à 37 058 avec historique"]
+  TLS["tools · 66 déclarations<br/>31 912 car. · plafond 32 000"]
+  TOK --> SYS --> TLS
+end
+
+TLS --> FLOOR["PLANCHER MESURÉ<br/>24 809 tokens"]
+FLOOR --> CTX
+
+subgraph LOOP["2 · BOUCLE DE JEU — tout s'accumule"]
+  A1["Audio brut · core.ts:468<br/>flux continu · 20% des tokens"]
+  A2["Texte · core.ts:999<br/>SYSTEM et DM_CONTEXT<br/>5 918 à 8 949 car."]
+  A3["Résultats d'outils · core.ts:925<br/>177 appels · dont 53 échecs"]
+  A4["Sortie modèle<br/>60 à 628 tokens/tour"]
+  CTX["CONTEXTE CUMULÉ<br/>45 000 à 90 000 tokens/tour<br/>80% texte · 20% audio"]
+  A1 --> CTX
+  A2 --> CTX
+  A3 --> CTX
+  A4 --> CTX
+  CTX -->|"plus de 100k"| COMP["Compression Google<br/>ramené à 70k"]
+  COMP --> CTX
+end
+
+CTX -.->|"rafale d'échecs"| PEAK["PIC MESURÉ<br/>3 800 198 tokens<br/>à 20:05:33"]
+
+CTX --> Q{"Connexion tient ?"}
+Q -->|oui| CTX
+Q -->|"WebSocket fermé"| R0
+
+subgraph RECO["3 · RECONNEXION — 10 fois en 36 min"]
+  R0["attemptReconnect · core.ts:1060<br/>compteur remis à zéro si plus de 5 s"]
+  R0 --> RA["A · Reprise par handle<br/>6 fois<br/>contexte gardé, plancher REPAYÉ"]
+  R0 --> RB["B · Session fraîche<br/>4 fois<br/>126 à 197 répliques réinjectées"]
+  R0 --> RC["C · Refusée · quota à 0<br/>4 tentatives à 20:30<br/>erreur avalée · core.ts:1114"]
+end
+
+RA --> TOK
+RB --> TOK
+RC --> DEAD(["Mort silencieuse"])
+
+classDef cout fill:#7f1d1d,stroke:#ef4444,color:#fff
+classDef mes fill:#1e3a5f,stroke:#3b82f6,color:#fff
+classDef alerte fill:#78350f,stroke:#f59e0b,color:#fff
+class TOK,TLS,SYS cout
+class FLOOR,CTX mes
+class RC,PEAK,DEAD alerte

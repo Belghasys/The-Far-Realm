@@ -4,6 +4,7 @@ import { useGameStore } from '../../../store/gameStore';
 import { appendCampaignLog } from '../chronicle';
 import { freezeChapterDigest, reconcileMissingDigests } from '../../../services/dm/chapterChronicle';
 import { foldText } from '../../../engine/skillSystem';
+import { INSPIRATION_MAX, inspirationOf, grantInspiration } from '../../../engine/inspiration';
 import { resolveSceneIndex, stripOpeningCanonFact, isAtOpening, currentChapterNumber, secretLockLabel } from '../../../services/dm/campaignDirector';
 import { campaignEventLog } from '../../../services/persistence/campaignEventLog';
 import { buildBranchWriterRequest, buildSubBranchDigest, generateSubBranchPlan } from '../../../services/dm/branchWriterService';
@@ -498,9 +499,13 @@ export async function update_campaign_runtime(args: any, ctx: ToolContext) {
 export async function apply_complication(args: any, ctx: ToolContext) {
     const { d, store, name } = ctx;
     if (!store.character) return { success: false, error: 'No character loaded' };
+    // PIERRE TOMBALE (2026-08-31) — une 3e branche vivait ici pour
+    // « grant_inspiration », qui partageait ce corps par alias. L'inspiration
+    // est devenue un COMPTEUR de fiche (engine/inspiration.ts) : elle a sa
+    // propre fonction plus bas, et ne fabrique plus de modificateur que le
+    // moteur mangeait tout seul au jet suivant.
     const modifier = normalizeStoryModifier({
         ...args,
-        ...(name === 'grant_inspiration' ? { source: 'dm_inspiration', mode: args.mode || 'advantage', bonus: args.bonus ?? 0 } : {}),
         ...(name === 'apply_complication' ? { source: 'complication', mode: args.mode || 'disadvantage', bonus: args.bonus ?? 0 } : {}),
     });
     const char = {
@@ -514,6 +519,39 @@ export async function apply_complication(args: any, ctx: ToolContext) {
         text: `*[SYSTEM: ${modifier.name} active for ${modifier.remainingUses} roll(s): ${modifier.mode}${modifier.bonus ? ` ${modifier.bonus > 0 ? '+' : ''}${modifier.bonus}` : ''}]*`
     }]);
     return { success: true, modifier };
+}
+
+/**
+ * L'INSPIRATION — applaudissement pour le THÉÂTRE, jamais un modificateur.
+ *
+ * Avant le 2026-08-31 cet outil partageait le corps d'`apply_complication` :
+ * il fabriquait un StoryRollModifier `dm_inspiration` que le moteur consommait
+ * TOUT SEUL au jet suivant. Le joueur ne la voyait pas, ne la dépensait pas —
+ * et la fenêtre « brûle-la pour relancer » de GameSession ne pouvait quasiment
+ * jamais s'ouvrir, la récompense étant mangée avant l'échec. Désormais c'est
+ * un compteur sur la fiche, plafonné, que SEUL le joueur dépense.
+ */
+export async function grant_inspiration(args: any, ctx: ToolContext) {
+    const { d, store, sysText } = ctx;
+    if (!store.character) return { success: false, error: 'No character loaded' };
+    const avant = inspirationOf(store.character);
+    const apres = grantInspiration(avant);
+    const raison = String(args?.reason || '').trim();
+    if (apres === avant) {
+        // Plafond atteint : on le DIT au MJ plutôt que d'avaler l'appel en
+        // silence, sinon il recommence (leçon des 53 appels en rafale du log).
+        return {
+            success: false,
+            error: `The hero already holds ${INSPIRATION_MAX} Inspiration — the maximum. Do not retry; let them spend one first.`,
+        };
+    }
+    d.syncCharacterCritical({ ...store.character, inspiration: apres }, 'hp');
+    campaignEventLog.append('EFFECT_ADDED', `Inspiration granted: ${raison || 'roleplay'}`, { inspiration: apres });
+    store.setTranscript(prev => [...prev, {
+        speaker: 'dm',
+        text: `*[SYSTEM: ${sysText().inspirationGranted(apres)}]*`,
+    }]);
+    return { success: true, inspiration: apres, reason: raison };
 }
 
 export async function short_rest(args: any, ctx: ToolContext) {

@@ -12,6 +12,7 @@ import { auditBus } from '../../../../services/infra/auditBus';
 import { combatantSide, applyDamageToCharacter, applyDamageToEncounter, applyStoryModifiersToPrompt, normalizeRollPrompt, resolveCombatantReference, resolveAttackAction } from '../../../../engine/rulesEngine';
 import { lookupSpell, structureInventoryItem } from '../../../../engine/codexService';
 import { classSavePassives, classCheckPassives, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves } from '../../../../engine/rulesEngine';
+import { hideDC, isStealthCheck } from '../../../../engine/combat/stealth';
 import { holdForRollResolution } from '../shared';
 import type { ToolContext } from '../context';
 
@@ -22,7 +23,19 @@ export async function request_roll(args: any, ctx: ToolContext) {
     if (useGameStore.getState().activePrompt) {
         return { success: false, error: 'A roll is already pending on screen. Wait for its result before requesting another.' };
     }
-    const basePrompt = normalizeRollPrompt(args);
+    // AVANTAGE BINAIRE (audit du 2026-08-31) — le champ `advantage` est devenu
+    // OBLIGATOIRE et ne vaut plus que 'ADV' ou 'NONE' : il sert à juger l'IDÉE
+    // du joueur, jamais à le punir. Un 'DIS' envoyé par habitude est écarté
+    // ICI, avant tout le reste. Le désavantage n'est pas perdu pour autant :
+    // il continue d'arriver plus bas, calculé par le moteur à partir des
+    // conditions (empoisonné, effrayé, épuisement), de l'armure bruyante et de
+    // l'équipement — des règles, pas de l'humeur du MJ. Une pénalité VOULUE et
+    // nommée reste possible via apply_complication.
+    // Test sur place plutôt qu'exporter le normalisateur du moteur : ici on ne
+    // veut PAS sa tolérance (il comprend 'dis', 'désavantage'…), on veut
+    // exactement l'inverse — ne laisser passer que l'avantage.
+    const mjVeutAvantage = /adv/i.test(String(args?.advantage ?? ''));
+    const basePrompt = normalizeRollPrompt({ ...args, advantage: mjVeutAvantage ? 'ADV' : 'NONE' });
     // Use the SHEET, not an LLM-typed number: when the DM names a skill or
     // ability, compute the modifier from the character (ability mod +
     // proficiency + expertise; class save proficiency for saves) and override
@@ -112,6 +125,20 @@ export async function request_roll(args: any, ctx: ToolContext) {
         saveAbility: saveAbilityHint,
     });
     const prompt = conditionContext.prompt;
+    // CACHÉ (2026-08-31) — en combat, se cacher n'est pas un DD d'humeur : c'est
+    // la perception passive du plus attentif des ennemis VIVANTS. La même action
+    // est facile face à des gobelins (9) et presque vaine face à une liche (19).
+    // Hors combat, le DD reste au MJ : il seul sait de QUI le héros se cache.
+    if (store.combatState.isActive && isStealthCheck(prompt)) {
+        const watch = hideDC(store.combatState.combatants as any);
+        prompt.dc = watch.dc;
+        prompt.contextReasons = [
+            ...(prompt.contextReasons || []),
+            watch.watcher
+                ? `Hiding: DC ${watch.dc} — passive Perception of ${watch.watcher}`
+                : `Hiding: DC ${watch.dc}`,
+        ];
+    }
     const recentEvents = campaignEventLog.getEvents();
     const lastBranch = [...recentEvents].reverse().find(event => event.type === 'BRANCH_PLANNED');
     const lastPlayer = [...recentEvents].reverse().find(event => event.type === 'PLAYER_SPOKE');

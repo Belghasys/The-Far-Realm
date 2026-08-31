@@ -16,7 +16,7 @@ import { PLAN_LIMITS, PLAN_PRICE } from '../services/persistence/accountService'
 const TEXTS = {
     fr: {
         title: 'Tarifs',
-        intro: 'Un jeu de rôle sur table en ligne, avec un maître du jeu qui parle, écoute et se souvient. Le plan Découverte est gratuit, sans carte. Le plan Aventurier ouvre plus de sessions de jeu, sans engagement.',
+        intro: 'Le plan Découverte est gratuit et sans carte bancaire. Passez Aventurier quand vous aurez besoin de plus d’heures de jeu vocal par jour.',
         free: 'Découverte', adventurer: 'Aventurier',
         freePrice: 'Gratuit', perMonth: '/ mois', noCommitment: 'Sans engagement · résiliable à tout moment',
         perDay: 'par jour',
@@ -36,7 +36,7 @@ const TEXTS = {
     },
     en: {
         title: 'Pricing',
-        intro: 'An online tabletop role-playing game, with a dungeon master who speaks, listens and remembers. The Discovery plan is free, no card needed. The Adventurer plan opens more play sessions, with no commitment.',
+        intro: 'The Discovery tier is free with no card required. Upgrade to Adventurer whenever you need more daily voice sessions with the DM.',
         free: 'Discovery', adventurer: 'Adventurer',
         freePrice: 'Free', perMonth: '/ month', noCommitment: 'No commitment · cancel anytime',
         perDay: 'per day',

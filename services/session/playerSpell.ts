@@ -12,6 +12,7 @@ import { getCreature } from '../../data/bestiary';
 import { lookupMonster, lookupSpell, spellLabel } from '../../engine/codexService';
 import { playSpellSfx } from '../media/combatSfx';
 import { waitDice } from '../media/diceTiming';
+import { dropHidden } from '../../engine/combat/stealth';
 import type { SessionContext } from './context';
 
 export async function handlePlayerCastSpell(ctx: SessionContext, spellName: string, slotLevel: string | null, targetId: string) {
@@ -104,6 +105,18 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
       console.error('Spell cast failed:', spellResult.error);
       setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ⚠️ ${spellShown} — ${spellResult.error || (language === 'fr' ? 'lancement impossible' : 'cast failed')}]*` }]);
       return;
+    }
+
+    // CACHÉ — lancer un sort trahit autant que frapper : gestes, incantation,
+    // lumière. Comme pour l'attaque, le sort a DÉJÀ pris son avantage ci-dessus
+    // (castSpell a lu l'effet), on ne retire l'état qu'après (audit 2026-08-31).
+    {
+      const liveChar = useGameStore.getState().character || character;
+      const unhidden = dropHidden(liveChar.activeEffects);
+      if (unhidden.dropped) {
+        onCharacterUpdate({ ...liveChar, activeEffects: unhidden.effects } as any);
+        setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.gsNoLongerHidden}]*` }]);
+      }
     }
 
     // SFX déterministe : son élémentaire du sort (feu, glace, foudre, soin…).

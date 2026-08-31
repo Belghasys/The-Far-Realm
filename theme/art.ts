@@ -151,52 +151,52 @@ export const ALTER_ART: Record<string, ArtEntry> = Object.fromEntries(
 
 export const ALTER_CAPTION: Record<string, { en: string; fr: string }> = {
     Fighter: {
-        fr: 'Invincible au combat. Trois adolescents le tiennent en respect.',
-        en: 'Unbeatable in battle. Three teenagers have him cornered.',
+        fr: 'Invincible sur le champ de bataille. En panique totale face à trois ados sur trottinette.',
+        en: 'Unstoppable on the battlefield. Cornered at the mall by three teenagers on e-scooters.',
     },
     Paladin: {
-        fr: 'Le serment tient. La distance de sécurité, moins.',
-        en: 'The oath holds. The safe distance, less so.',
+        fr: 'Devait escorter la princesse au trône. L’a escortée directement dans son lit.',
+        en: 'Sworn to safely escort the princess to the throne. Escorted her straight to bed instead.',
     },
     Ranger: {
-        fr: 'Le loup a un avis très arrêté sur le brunch.',
-        en: 'The wolf has strong opinions about brunch.',
+        fr: 'Terreur des forêts sauvages : assis en terrasse avec son loup pour un brunch bio.',
+        en: 'Terror of the wild frontier: sitting on the patio having avocado toast with his wolf.',
     },
     Rogue: {
-        fr: 'Discrétion 20. Il a déjà ton badge.',
-        en: 'Stealth 20. He already has your badge.',
+        fr: 'Discrétion 20 : utilise ses talents d’assassin pour piller les tiroirs et les déjeuners de ses collègues.',
+        en: 'Stealth 20: using his master assassin skills to loot his coworkers’ desks and lunches.',
     },
     Cleric: {
-        fr: 'Canal divin occupé : il commande une deuxième tournée.',
-        en: 'Divine channel busy: he is ordering another round.',
+        fr: 'Canal divin en pause : surpris en plein pèlerinage dans un bar bondage.',
+        en: 'Divine channel on hold: caught doing very unholy penance in a leather bondage bar.',
     },
     Druid: {
-        fr: 'Forme sauvage, rayon surgelés.',
-        en: 'Wild shape, frozen food aisle.',
+        fr: 'Forme sauvage activée : s’est changé en ours pour dévaliser le bac à glaces du supermarché.',
+        en: 'Wild shape activated: turned into a 600-lb bear to raid the supermarket ice cream freezer.',
     },
     Mage: {
-        fr: 'Neuf niveaux de sorts, aucun contre le fisc.',
-        en: 'Nine levels of spells, none of them work on tax forms.',
+        fr: 'Neuf niveaux de magie arcanique. Zéro sort pour déclarer ses impôts en ligne.',
+        en: 'Master of nine spell levels. Still completely defeated by online tax forms.',
     },
     Barbarian: {
-        fr: 'Toujours en rage. Sur le divan du psy.',
-        en: 'Still raging. On a therapist couch.',
+        fr: 'Rage active. Pleure toutes les larmes de son corps sur le divan de son psychanalyste.',
+        en: 'Rage activated. Bawling his eyes out on his therapist’s couch.',
     },
     Bard: {
-        fr: 'Charisme 18. La cible est un cube gélatineux.',
-        en: 'Charisma 18. The target is a gelatinous cube.',
+        fr: 'Charisme 18 : tente désespérément de séduire un cube gélatineux.',
+        en: 'Charisma 18: desperately attempting to romance a gelatinous cube.',
     },
     Monk: {
-        fr: 'Parade parfaite. C’était l’addition.',
-        en: 'Perfect deflection. It was the bill.',
+        fr: 'Parade de projectiles légendaire : c’était juste le serveur qui apportait l’addition.',
+        en: 'Deflect Missiles triggered: the waiter was just handing him the restaurant bill.',
     },
     Warlock: {
-        fr: 'Un pacte signé. Douze abonnements.',
-        en: 'One pact signed. Twelve subscriptions.',
+        fr: 'Un pacte avec un démon majeur. Douze prélèvements mensuels impossibles à résilier.',
+        en: 'One dark pact with an archdevil. Twelve uncancelable monthly subscription fees.',
     },
     Sorcerer: {
-        fr: 'L’héritage draconique, version relation longue durée.',
-        en: 'Draconic bloodline, long-term-relationship edition.',
+        fr: 'Chaotique Mauvais jusqu’au bout : a exécuté la princesse et s’est mis en couple avec le dragon.',
+        en: 'Pure Chaotic Evil: executed the princess and moved in with the dragon.',
     },
 };
 
