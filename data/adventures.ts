@@ -45,6 +45,9 @@ export interface AdventureOption {
     sessions: string;
     /** Campagne écrite à la main (manifeste dans data/campaigns/). */
     authored?: boolean;
+    /** Short de démonstration. Réservé aux campagnes d'auteur : la vidéo montre
+     *  une trame ÉCRITE qui se joue, ce qu'une aventure générée ne promet pas. */
+    demoUrl?: string;
     /** Renseignés uniquement pour les campagnes d'auteur. */
     chapters?: number;
     acts?: number;
@@ -198,6 +201,7 @@ export const ADVENTURES: AdventureOption[] = [
         tagsFr: ['Horreur de survie', 'Deuil', 'Courte'],
         difficulty: 'harsh',
         sessions: '10 to 14',
+        demoUrl: 'https://www.youtube.com/shorts/ABkrmqKNBK8',
         authored: true,
         chapters: 7,
         acts: 3,
@@ -217,6 +221,7 @@ export const ADVENTURES: AdventureOption[] = [
         tagsFr: ['Cité morte', 'Musique', 'Pactes anciens'],
         difficulty: 'standard',
         sessions: '18 to 24',
+        demoUrl: 'https://www.youtube.com/shorts/qO3Gcr6h8r4',
         authored: true,
         chapters: 13,
         acts: 4,
@@ -236,6 +241,7 @@ export const ADVENTURES: AdventureOption[] = [
         tagsFr: ['Entre les mondes', 'Six actes', 'Adieux'],
         difficulty: 'standard',
         sessions: '28 to 40',
+        demoUrl: 'https://www.youtube.com/shorts/AppPR7YEj00',
         authored: true,
         chapters: 19,
         acts: 6,
@@ -271,6 +277,7 @@ export interface LocalizedAdventure {
     difficulty: AdventureDifficulty;
     sessions: string;
     authored: boolean;
+    demoUrl?: string;
     chapters?: number;
     acts?: number;
 }
@@ -289,6 +296,7 @@ export function localizeAdventure(a: AdventureOption, lang: 'fr' | 'en'): Locali
         difficulty: a.difficulty,
         sessions: a.sessions,
         authored: Boolean(a.authored),
+        demoUrl: a.demoUrl,
         chapters: a.chapters,
         acts: a.acts,
     };

@@ -51,8 +51,17 @@ export function AlterEgoFrame({
 
     const face = (slug: string, dos: boolean) => (
         <div style={{
-            position: dos ? 'absolute' : 'relative',
-            inset: dos ? 0 : undefined,
+            // Les deux faces occupent LA MÊME cellule de grille (voir le bouton
+            // ci-dessous) : le cadre prend donc la hauteur de la PLUS HAUTE.
+            //
+            // Le verso était en `position: absolute; inset: 0`, donc étiré à la
+            // hauteur du recto — dont la légende tient sur une ligne. Les
+            // légendes du verso en font quatre : elles débordaient hors du cadre
+            // et se superposaient à la carte suivante (2026-08-31). Une hauteur
+            // fixe aurait tronqué la chute de la blague, qui est tout l'intérêt
+            // de la carte — c'est donc la grille qui s'adapte, pas le texte.
+            gridArea: '1 / 1',
+            position: 'relative',
             width: '100%',
             background: tint,
             border: `4px solid ${T.ink}`,
@@ -104,8 +113,13 @@ export function AlterEgoFrame({
                 aria-pressed={retourne}
                 aria-label={`${label} — ${hint}`}
                 style={{
-                    display: 'block', width: '100%', padding: 0, border: 'none',
+                    width: '100%', padding: 0, border: 'none',
                     background: 'none', cursor: 'pointer',
+                    // Empilement par grille plutôt que par positionnement absolu :
+                    // la hauteur suit la face la plus haute au lieu d'être dictée
+                    // par le recto. `preserve-3d` et `backfaceVisibility` sur les
+                    // enfants continuent de fonctionner à l'identique.
+                    display: 'grid',
                     transformStyle: 'preserve-3d',
                     transform: `rotateY(${retourne ? 180 : 0}deg)`,
                     transition: 'transform .55s cubic-bezier(.3,.7,.3,1)',

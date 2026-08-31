@@ -16,7 +16,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Share2, MessageCircle, Send, Mail, Layers, Clock, Gauge, Book } from 'lucide-react';
+import { Share2, MessageCircle, Send, Mail, Layers, Clock, Gauge, Book, Play } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useGameStore } from '../store/gameStore';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
@@ -146,6 +146,29 @@ function AdventureCard({ adv, tr, picked, onPick }: {
                         }}>{tag}</span>
                     ))}
                 </div>
+
+                {/* La démo : une trame ÉCRITE qui se joue, en trente secondes.
+                    `stopPropagation` est indispensable — la carte entière est un
+                    bouton de sélection, et ouvrir la vidéo ne doit pas choisir la
+                    campagne au passage. `noopener` parce que la cible est externe. */}
+                {adv.demoUrl && (
+                    <a
+                        href={adv.demoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
+                            fontFamily: DISP, fontSize: 11, letterSpacing: '.04em',
+                            padding: '8px 12px', textDecoration: 'none',
+                            color: onTint(T.acid), background: T.acid,
+                            boxShadow: hardShadow(T.ink, 4),
+                        }}
+                    >
+                        <Play size={13} aria-hidden="true" />
+                        {tr.watchDemo}
+                    </a>
+                )}
 
                 {/* Les quatre chiffres qui font vraiment choisir. */}
                 <div style={{
