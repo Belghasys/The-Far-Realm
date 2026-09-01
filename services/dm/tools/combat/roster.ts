@@ -359,7 +359,16 @@ export async function propose_player_action(args: any, ctx: ToolContext) {
     // The DM authors a custom action card; we ONLY store it. The
     // player confirms it on screen and GameSession's generic
     // resolver runs the real dice. We never resolve or advance here.
-    if (!store.combatState.isActive) return { success: false, error: 'No active combat to propose an action in.' };
+    // Refus INSTRUCTIF (2026-09-01, cas du lustre) : « No active combat » nu
+    // n'apprenait rien — le MJ narrait par-dessus et le joueur voyait une belle
+    // prose sans un point de dégât. L'erreur porte la marche à suivre, au
+    // moment exact de la faute ; le disjoncteur coupe s'il s'entête.
+    if (!store.combatState.isActive) {
+        return {
+            success: false,
+            error: 'No active combat to propose an action in. Open the fight FIRST — start_combat + add_enemy_init — then re-propose this exact card. If no fight should start, narrate without mechanical effect.',
+        };
+    }
     const label = stringArg(args.label, 80);
     const resolution = String(args.resolution || '').toLowerCase();
     if (!label || !['attack', 'save', 'check', 'auto', 'effect'].includes(resolution)) {

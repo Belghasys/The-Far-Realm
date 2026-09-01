@@ -12,6 +12,7 @@
  */
 import type { MutableRefObject, RefObject } from 'react';
 import { useGameStore } from '../../../store/gameStore';
+import { playerFacingToolFailure } from './toolFailureNotice';
 import { describeFightEnd } from '../chronicle';
 import { generateGeminiImage, buildCombatImagePrompt, type ScenePromptOptions } from '../../../services/media/geminiImageService';
 import { collectSceneReferences, ensureStyleAnchor, heroDescriptor, styleTagsForCampaign } from '../../../services/media/imageReferences';
@@ -395,15 +396,30 @@ export async function runTool(refs: ToolRefs, call: { name: string; args: any })
     if (TOOLS_NEEDING_BESTIARY.includes(name)) {
         await preloadCodexBestiary();
     }
+    // Fin du silence (2026-09-01, cas du lustre) : quand un outil qui touche
+    // des PV échoue, le joueur doit le voir — sinon le MJ narre par-dessus et
+    // rien à l'écran ne distingue « raté » de « il ne s'est rien passé ».
+    // Décision pure et testée dans toolFailureNotice ; appliquée ICI parce que
+    // runTool est le point de passage de TOUS les outils, y compris leurs
+    // exceptions — aucun chemin ne peut l'oublier.
+    const surfaceFailure = (result: unknown) => {
+        const lang = useGameStore.getState().language === 'en' ? 'en' as const : 'fr' as const;
+        const notice = playerFacingToolFailure(name, result, lang);
+        if (notice) useGameStore.getState().setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${notice}]*` }]);
+    };
     try {
         const outil = TOOLS[name];
         if (!outil) {
             console.warn("Unknown tool call:", name);
             return { success: false, error: "Unknown tool" };
         }
-        return await outil(args, ctx);
+        const result = await outil(args, ctx);
+        surfaceFailure(result);
+        return result;
     } catch (e: any) {
         console.error("Error processing tool:", call, e);
-        return { success: false, error: e.message || String(e) };
+        const failure = { success: false, error: e.message || String(e) };
+        surfaceFailure(failure);
+        return failure;
     }
 }

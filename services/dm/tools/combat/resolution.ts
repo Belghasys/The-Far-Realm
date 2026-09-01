@@ -198,6 +198,16 @@ export async function request_roll(args: any, ctx: ToolContext) {
 }
 export async function resolve_attack(args: any, ctx: ToolContext) {
     const { d, deps, store, runMoraleCheck, moraleReport, outcomeReport, handleConcentrationAfterDamage, optionalBoolean } = ctx;
+    // Refus INSTRUCTIF (2026-09-01) : hors combat le roster est vide, la
+    // résolution échouait de toute façon — mais avec « Attack failed », qui
+    // n'apprenait rien. Une embuscade se joue en OUVRANT le combat, pas en
+    // le narrant à côté du moteur.
+    if (!store.combatState.isActive) {
+        return {
+            success: false,
+            error: 'No combat is open — nobody is in initiative. For an ambush or a fight: start_combat + add_enemy_init, then resolve the attack. For scripted harm from the world (trap, rockfall): environmental_damage.',
+        };
+    }
     // Anti double-resolution guard: during a TRACKED combat the
     // engine itself resolves every ENEMY action (runNPCTurn) and
     // only asks the DM to NARRATE. The old guard checked
@@ -472,6 +482,17 @@ export async function apply_damage(args: any, ctx: ToolContext) {
         // Concentration is at risk out of combat too.
         handleConcentrationAfterDamage(updatedChar, outOfCombat.amountApplied, 'concentration save (out of combat)');
         return { success: true, target: updatedChar.name, hp: updatedChar.hp, tempHP: updatedChar.tempHP, amountApplied: outOfCombat.amountApplied, mitigation: outOfCombat.mitigation };
+    }
+    // Refus INSTRUCTIF (2026-09-01) : hors combat, un PNJ n'existe pas comme
+    // combattant — le roster est vide. L'ancien « Target not found » tombait
+    // plus bas sans expliquer ; le MJ réessayait ou narrait par-dessus, et le
+    // lustre du joueur ne blessait personne. Le héros, lui, est déjà servi par
+    // la branche hors-combat ci-dessus (le poison à la taverne reste légitime).
+    if (!store.combatState.isActive) {
+        return {
+            success: false,
+            error: `No combat is open — "${target}" does not exist as a combatant yet. To FIGHT: start_combat + add_enemy_init, then re-apply. If the WORLD harms the hero (trap, fall, fire), use environmental_damage instead.`,
+        };
     }
      const applied = applyDamageToEncounter(store.combatState, target, amount, args.damageType);
     if (!applied.found || !applied.target) {

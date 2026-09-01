@@ -772,7 +772,14 @@ export async function handlePlayerProposedAction(ctx: SessionContext, p: Propose
       }
 
       removeProposedAction(p.id);
-      setTranscript(prev => [...prev, { speaker: 'dm', text: `*[🎬 ${p.label}]*` }]);
+      // Le RÉSULTAT au joueur, pas seulement le titre (2026-09-01). Le moteur
+      // construisait « Goblin A : 7 contondant | Goblin B : manqué », l'envoyait
+      // au MJ… et t'écrivait juste le nom de la carte. Impossible de distinguer
+      // « raté » de « il ne s'est rien passé » — la plainte exacte du lustre.
+      setTranscript(prev => [...prev, {
+        speaker: 'dm',
+        text: `*[🎬 ${p.label}${summaries.length ? ` — ${summaries.join(' · ')}` : ''}]*`,
+      }]);
       if (dm && isConnected) {
         await dm.sendUserMessage(`[SYSTEM] Player triggered improvised action "${p.label}" (${p.resolution}, cost ${p.cost}): ${summaries.join(' | ') || 'resolved'}. Narrate it vividly. Do NOT advance the turn — the player ends their own turn.`);
       }
