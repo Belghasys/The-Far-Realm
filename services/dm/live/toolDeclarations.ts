@@ -50,11 +50,9 @@ export const GAME_TOOL_DECLARATIONS = [
                 slotLevel: { type: "INTEGER" as any },
                 target: { type: "STRING" as any, description: "Combatant id/name; 'all_enemies' for an area spell (each rolls its own save); 'all_combatants' when the blast also covers allies." },
                 casterAbility: { type: "STRING" as any },
-                casterAbilityMod: { type: "INTEGER" as any },
-                spellAttackBonus: { type: "INTEGER" as any },
-                spellSaveDC: { type: "INTEGER" as any },
                 targetAC: { type: "INTEGER" as any },
-                targetSaveBonus: { type: "INTEGER" as any }
+                targetSaveBonus: { type: "INTEGER" as any },
+                ritual: { type: "BOOLEAN" as any, description: "Ritual (Bard/Cleric/Druid/Wizard): out of combat, 10 min, no slot spent." }
             },
             required: ["spellName"]
         }

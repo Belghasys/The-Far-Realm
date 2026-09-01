@@ -693,3 +693,13 @@ export function getNewSubclassFeaturesAtLevel(className: string, subclassName: s
     const option = config?.options.find(o => o.name === subclassName || o.id === subclassName);
     return option?.featuresByLevel[level] || [];
 }
+
+/** K7 (contre-audit du 2026-09-01) — les DEUX archétypes tiers-lanceurs du SRD.
+ *  Une seule définition, partagée par les emplacements (progression), le
+ *  plafond de niveau de sort et la liste apprenable (codexService) : le moteur
+ *  de lancement les mappait déjà sur la liste du magicien, mais rien ne leur
+ *  donnait d'emplacement — les données promettaient des sorts, aucun ne
+ *  passait hors tours de magie. */
+export function isThirdCasterSubclass(subclass?: string | null): boolean {
+    return /eldritch knight|chevalier occulte|arcane trickster|filou arcanique|escroc arcanique/i.test(String(subclass || ''));
+}

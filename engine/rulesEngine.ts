@@ -14,6 +14,6 @@ export { getActionCapability, classSavePassives, classCheckPassives, hasEvasion,
 export { applyDamageToEncounter, concentrationBreakOnDeparture, releaseNpcConcentrationEffect, parseItemAdditionalDamage, resolveAttackAction } from './combat/attack';
 export { tickRoundEffects, worldHourOf, stampEffectExpiry, sweepExpiredEffects, advanceClocksForNight, applyEffectArgs, applyConditionToCharacter, applyConditionToEncounter, CONDITION_TURNS, EVENTLESS_FALLBACK_TURNS } from './combat/effects';
 export { MORALE_DC, MORALE_HP_RATIO, resolveMoraleCheck } from './combat/morale';
-export { spendSpellSlot, castSpell, applyAutoDamageSpell, resolveSpellAgainstTargets, resolvePendingSpellRoll, resolveConcentrationAfterDamage } from './combat/spells';
+export { spendSpellSlot, castSpell, applyAutoDamageSpell, resolveSpellAgainstTargets, resolvePendingSpellRoll, resolveConcentrationAfterDamage, canCastAsRitual, RITUAL_CASTER_CLASSES, releasePlayerConcentrationConditions, tagPlayerConcentrationCondition } from './combat/spells';
 export { applyDamageToCharacter, stabilizeCharacter, applyDownedDamagePenalty, applyCharacterHP, applyDeathSaveOutcome } from './character/hp';
 export { ensureProgressionState, applyShortRest, applyLongRest } from './character/progression';

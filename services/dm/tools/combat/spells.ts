@@ -8,7 +8,7 @@ import { getCheckModifier } from '../../../../engine/skillSystem';
 import { campaignEventLog } from '../../../../services/persistence/campaignEventLog';
 import { waitDice } from '../../../../services/media/diceTiming';
 import { auditBus } from '../../../../services/infra/auditBus';
-import { applyAutoDamageSpell, castSpell, combatantSide, applyConditionToCharacter, applyConditionToEncounter, applyDamageToCharacter, applyDamageToEncounter, normalizeRollPrompt, resolveCombatantReference, resolveRollPrompt, resolveSpellAgainstTargets } from '../../../../engine/rulesEngine';
+import { applyAutoDamageSpell, castSpell, combatantSide, applyConditionToCharacter, applyConditionToEncounter, applyDamageToCharacter, applyDamageToEncounter, normalizeRollPrompt, resolveCombatantReference, resolveRollPrompt, resolveSpellAgainstTargets, canCastAsRitual, releasePlayerConcentrationConditions } from '../../../../engine/rulesEngine';
 import { lookupMonster, lookupSpell, spellLabel } from '../../../../engine/codexService';
 import { getCreature } from '../../../../data/bestiary';
 import { rollDice, isDiceFormula } from '../../../../engine/utils';
@@ -389,21 +389,57 @@ export async function cast_spell(args: any, ctx: ToolContext) {
             error: `${touchSpellDef.name} is a TOUCH spell: the target must be within melee reach (currently ${(targetLookup.combatant as any).range}). Close the distance first, or pick a ranged spell.`,
         };
     }
+    // Incantation RITUELLE — trait de classe (barde, clerc, druide, mage) : un
+    // sort marqué rituel se lance sans emplacement, en 10 minutes de plus,
+    // jamais en combat. Avant, le drapeau n'était qu'un badge du grimoire et
+    // Détection de la magie coûtait un emplacement de niveau 1.
+    const ritualRequested = args.ritual === true || String(args.ritual ?? '').trim().toLowerCase() === 'true';
+    if (ritualRequested) {
+        if (store.combatState.isActive) {
+            return { success: false, error: 'A ritual takes 10 extra minutes — it cannot be cast in combat. Cast the spell normally (it will spend a slot), or wait until the fight is over.' };
+        }
+        const ritualCheck = canCastAsRitual(store.character, touchSpellDef);
+        if (!ritualCheck.ok) {
+            return { success: false, error: `Cannot cast as a ritual: ${ritualCheck.reason}. Cast it normally (spends a slot), or omit ritual.` };
+        }
+    }
     const result = castSpell(store.character, {
         spellName,
+        ritual: ritualRequested,
         slotLevel: Number(args.slotLevel || args.slot || 0) || undefined,
         target: args.target,
         targetId: targetLookup?.combatant?.id,
         casterAbility: args.casterAbility,
-        casterAbilityMod: Number.isFinite(Number(args.casterAbilityMod)) ? Number(args.casterAbilityMod) : undefined,
-        spellAttackBonus: Number.isFinite(Number(args.spellAttackBonus)) ? Number(args.spellAttackBonus) : undefined,
-        spellSaveDC: Number.isFinite(Number(args.spellSaveDC || args.saveDC)) ? Number(args.spellSaveDC || args.saveDC) : undefined,
+        // T5 (contre-audit du 2026-09-01) — le MJ pouvait DICTER le DD et le
+        // bonus d'attaque de sort du JOUEUR (`spellSaveDC: 30` : aucune
+        // sauvegarde possible), alors que le prompt affirme que le moteur
+        // calcule. Ces trois surcharges ne sont plus transmises ni déclarées :
+        // pour le héros, le DD est 8 + maîtrise + carac, point. Un bonus de
+        // circonstance passe par grant_story_modifier, un objet par la fiche.
+        // `targetSaveBonus` reste : légitime pour un PNJ narratif non suivi.
         targetAC: Number.isFinite(Number(args.targetAC)) ? Number(args.targetAC) : targetLookup?.combatant?.ac,
         targetSaveBonus: Number.isFinite(Number(args.targetSaveBonus)) ? Number(args.targetSaveBonus) : undefined,
         worldHour: worldHourOf(store.campaignRuntime.dayCount || 1, store.campaignRuntime.timeOfDay),
         maximizeHealing: !!store.character.storyMode,
     });
      if (!result.success) return { success: false, error: result.error, spell: result.spell?.name };
+    // T11 (contre-audit du 2026-09-01) — Projectile magique sans cible RÉSOLUE :
+    // l'emplacement et l'action étaient dépensés, le transcript annonçait
+    // « touche automatiquement », et zéro dégât partait (applyAutoDamageSpell
+    // rendait null en silence). La cible est validée ICI, avant toute écriture
+    // — castSpell est pur, ne pas synchroniser sa fiche = rien de dépensé.
+    if (result.autoDamage && useGameStore.getState().combatState.isActive) {
+        const victims = aoeRequested ? aoeEnemyIds : (targetLookup?.combatant ? [targetLookup.combatant.id] : []);
+        if (!victims.length) {
+            const vivants = useGameStore.getState().combatState.combatants
+                .filter(c => !c.isPlayer && c.hp.current > 0)
+                .map(c => `${c.name} (id ${c.id})`);
+            return {
+                success: false,
+                error: `${result.spell?.name || spellName} needs a target that exists in the fight — "${String(args.target ?? '')}" is not a combatant. Nothing was spent (no slot, no action). Living foes: ${vivants.join(', ') || 'none'}. Retry with one of them (id or exact name), or target 'all_enemies'.`,
+            };
+        }
+    }
      // Dépense de l'action (ou de l'action bonus, Sort accéléré) —
     // AVANT les branches de résolution : chaque chemin de retour
     // repart d'un état frais, la dépense est donc visible partout.
@@ -416,6 +452,11 @@ export async function cast_spell(args: any, ctx: ToolContext) {
         store.setCombatState({ ...liveCombat, actionEconomy: { ...(liveCombat.actionEconomy || {}), player: spent } });
     }
      d.syncCharacterCritical(result.character, 'hp');
+    // T18 — un nouveau sort de concentration a REMPLACÉ l'ancien : les
+    // conditions que l'ancien avait posées sur les lignes tombent.
+    if (useGameStore.getState().combatState.isActive && result.concentrationReplaced?.length) {
+        store.setCombatState((prev: any) => releasePlayerConcentrationConditions(prev, result.concentrationReplaced || []).state);
+    }
     // T1 (contre-audit du 2026-09-01, CRITIQUE) — soin SUR SOI à la voix : la
     // fiche était soignée, la LIGNE de combat non (seule une cible non-soi est
     // recopiée plus bas), et le miroir fiche→ligne de GameSession exclut
@@ -434,6 +475,10 @@ export async function cast_spell(args: any, ctx: ToolContext) {
     // à chaque cast coûtait des tokens à chaque sort et gonflait le
     // contexte. Le MJ n'a besoin que du résumé mécanique.
     const { character: _castSheet, ...slimResult } = result as any;
+    if (ritualRequested) {
+        slimResult.ritual = true;
+        slimResult.note = 'Cast as a RITUAL: 10 extra minutes elapsed and NO spell slot was spent. Narrate the unhurried ceremony.';
+    }
      // CB1 — soin sur une cible NON-joueur : le moteur n'a pas
     // touché la fiche du lanceur, on applique le soin à la
     // cible réelle. Avant, « Cure Wounds sur le compagnon »

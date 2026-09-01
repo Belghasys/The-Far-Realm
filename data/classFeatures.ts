@@ -97,6 +97,7 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
         features: {
             1: [
                 { nameFr: "Incantation", descriptionEn: "Cast arcane spells using Intelligence. Prepare your spells from your spellbook.", name: 'Spellcasting', description: "Lance des sorts profanes grâce à l'Intelligence. Prépare tes sorts depuis ton grimoire." },
+                { nameFr: "Incantation rituelle", descriptionEn: "Cast a ritual-tagged spell without spending a slot: 10 extra minutes, out of combat only.", name: 'Ritual Casting', description: "Lance un sort marqué rituel sans dépenser d'emplacement : 10 minutes de plus, hors combat seulement." },
                 { nameFr: "Récupération arcanique", descriptionEn: "Recover spell slots during a short rest. Total = half your wizard level.", name: 'Arcane Recovery', description: 'Récupère des emplacements de sort pendant un repos court. Total = moitié du niveau de magicien.' }
             ],
             2: [
@@ -119,6 +120,7 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
         features: {
             1: [
                 { nameFr: "Incantation", descriptionEn: "Cast divine spells using Wisdom.", name: 'Spellcasting', description: 'Lance des sorts divins grâce à la Sagesse.' },
+                { nameFr: "Incantation rituelle", descriptionEn: "Cast a ritual-tagged spell without spending a slot: 10 extra minutes, out of combat only.", name: 'Ritual Casting', description: "Lance un sort marqué rituel sans dépenser d'emplacement : 10 minutes de plus, hors combat seulement." },
                 { nameFr: "Domaine divin", descriptionEn: "Choose your domain: Life, Light, War, Tempest, and so on.", name: 'Divine Domain', description: 'Choisis ton domaine : Life, Light, War, Tempest, etc.' }
             ],
             2: [
@@ -147,6 +149,7 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
         features: {
             1: [
                 { nameFr: "Incantation", descriptionEn: "Cast nature spells using Wisdom.", name: 'Spellcasting', description: 'Lance des sorts de la nature grâce à la Sagesse.' },
+                { nameFr: "Incantation rituelle", descriptionEn: "Cast a ritual-tagged spell without spending a slot: 10 extra minutes, out of combat only.", name: 'Ritual Casting', description: "Lance un sort marqué rituel sans dépenser d'emplacement : 10 minutes de plus, hors combat seulement." },
                 { nameFr: "Druidique", descriptionEn: "The secret language of druids.", name: 'Druidic', description: 'La langue secrète des druides.' }
             ],
             2: [
@@ -379,6 +382,7 @@ export const CLASS_FEATURES: Record<string, ClassFeatureData> = {
         features: {
             1: [
                 { nameFr: "Incantation", descriptionEn: "Cast bard spells using Charisma.", name: 'Spellcasting', description: 'Lance des sorts de barde grâce au Charisme.' },
+                { nameFr: "Incantation rituelle", descriptionEn: "Cast a ritual-tagged spell without spending a slot: 10 extra minutes, out of combat only.", name: 'Ritual Casting', description: "Lance un sort marqué rituel sans dépenser d'emplacement : 10 minutes de plus, hors combat seulement." },
                 { nameFr: "Inspiration bardique (d6)", descriptionEn: "Bonus action: give an ally a d6 to add to an attack, a check or a save. CHA modifier uses/long rest.", name: 'Bardic Inspiration (d6)', description: 'Action bonus : donne à un allié un d6 à ajouter à une attaque, un test ou une sauvegarde. Mod. CHA/repos long.' }
             ],
             2: [

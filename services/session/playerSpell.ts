@@ -7,7 +7,7 @@
  */
 import { useGameStore } from '../../store/gameStore';
 import { combatantSide } from '../../engine/combatants';
-import { resolvePendingSpellRoll, resolveRollPrompt, castSpell, applyStoryModifiersToPrompt, worldHourOf, resolveSpellAgainstTargets, applyAutoDamageSpell } from '../../engine/rulesEngine';
+import { resolvePendingSpellRoll, resolveRollPrompt, castSpell, applyStoryModifiersToPrompt, worldHourOf, resolveSpellAgainstTargets, applyAutoDamageSpell, releasePlayerConcentrationConditions } from '../../engine/rulesEngine';
 import { getCreature } from '../../data/bestiary';
 import { lookupMonster, lookupSpell, spellLabel } from '../../engine/codexService';
 import { playSpellSfx } from '../media/combatSfx';
@@ -125,6 +125,11 @@ export async function handlePlayerCastSpell(ctx: SessionContext, spellName: stri
     // Update character sheet
     onCharacterUpdate(spellResult.character);
     syncCharacterCritical(spellResult.character, 'hp');
+    // T18 — un nouveau sort de concentration a REMPLACÉ l'ancien : les
+    // conditions posées par l'ancien tombent des lignes de combat.
+    if (combatState.isActive && (spellResult as any).concentrationReplaced?.length) {
+      setCombatState((prev: any) => releasePlayerConcentrationConditions(prev, (spellResult as any).concentrationReplaced).state);
+    }
 
     if (spellResult.healing && spellResult.healing > 0) {
       // 1. Roll healing animation

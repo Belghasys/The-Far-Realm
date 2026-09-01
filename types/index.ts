@@ -118,6 +118,14 @@ export interface ActiveEffect {
    *  past which the effect drops. Swept when the in-game clock advances. */
   expiresAtWorldHour?: number;
   concentration?: boolean;
+  /** T18 (contre-audit du 2026-09-01) — condition posée sur une LIGNE de combat
+   *  par un sort de concentration du joueur (Immobilisation, Toile…) : le sort
+   *  source et le lanceur. Quand la concentration du joueur tombe (dégâts,
+   *  sort suivant), ces conditions tombent avec elle — avant, l'ennemi restait
+   *  paralysé alors que le sort n'existait plus. Le côté PNJ avait déjà son
+   *  lien (`concentratingOn` sur la ligne du lanceur). */
+  spellSource?: string;
+  concentrationBy?: 'player' | string;
   description?: string;
   modifiers: StatModifier[];
   /** Damage rider added to the player's weapon hits while the effect is active

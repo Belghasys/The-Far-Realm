@@ -58,7 +58,7 @@ import { LevelUpModal } from '../panels/LevelUpModal';
 import { campaignEventLog } from '../../services/persistence/campaignEventLog';
 import { buildCampaignDirectorContext, buildLockedSecretFacts, resolvePositionTarget, positionAdvanceAllowed } from '../../services/dm/campaignDirector';
 import { inspirationOf, spendInspiration } from '../../engine/inspiration';
-import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, resolveMountAfterCombat, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
+import { advanceClocksForNight, advanceTurn, applyDeathSaveOutcome, applyLongRest, applyShortRest, resolveConcentrationAfterDamage, releasePlayerConcentrationConditions, resolveMountAfterCombat, resolvePendingSpellRoll, resolveRollPrompt, encounterOutcome, tickRoundEffects, playerResistances, syncCompanionsFromState, worldHourOf, sweepExpiredEffects, levelUpCompanions, getActionCapability, victoryXP } from '../../engine/rulesEngine';
 import type { ProposedPlayerAction } from '../../store/gameStore';
 import { ProposedActionPrompt } from './ProposedActionPrompt';
 import { DeathScreen } from './DeathScreen';
@@ -1652,6 +1652,8 @@ export function GameSession({ character, adventure, adventureManifest = '', adve
       const concentration = resolveConcentrationAfterDamage(character, outcome.prompt.concentrationDamage, total);
       syncCharacterCritical(concentration.character, 'hp');
       if (concentration.broken) {
+        // T18 — les conditions posées par ces sorts tombent avec eux.
+        setCombatState((prev: any) => prev?.isActive ? releasePlayerConcentrationConditions(prev, concentration.removedEffects.map(e => e.name)).state : prev);
         setTranscript(prev => [...prev, {
           speaker: 'dm',
           text: `*[SYSTEM: ${tr.sysConcentrationBroken(concentration.removedEffects.map(effect => effect.name).join(', '))}]*`

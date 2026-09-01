@@ -87,6 +87,7 @@ export const CLASS_DATA: Record<string, {
         savingThrows: ["WIS", "CHA"],
         features: [
             { level: 1, name: "Sorts", nameFr: "Sorts", nameEn: "Spellcasting", desc: "Lanceur de sorts divin", descEn: "Divine spellcaster" },
+            { level: 1, name: "Ritual Casting", nameFr: "Incantation rituelle", nameEn: "Ritual Casting", desc: "Lancer un sort marqué rituel sans emplacement (10 min de plus, hors combat)", descEn: "Cast a ritual-tagged spell without a slot (10 extra minutes, out of combat)" },
             { level: 1, name: "Domaine divin", nameFr: "Domaine divin", nameEn: "Divine Domain", desc: "Vie, Lumière, Guerre, etc.", descEn: "Life, Light, War, and so on" },
             { level: 2, name: "Conduit divin", nameFr: "Canalisation d'énergie divine", nameEn: "Channel Divinity", desc: "Renvoi des morts-vivants + pouvoir de domaine", descEn: "Turn Undead + a domain power" },
             { level: 5, name: "Destruction des morts-vivants", nameFr: "Destruction des morts-vivants", nameEn: "Destroy Undead", desc: "Détruire les morts-vivants faibles", descEn: "Destroy weaker undead outright" }
@@ -102,6 +103,7 @@ export const CLASS_DATA: Record<string, {
         savingThrows: ["INT", "WIS"],
         features: [
             { level: 1, name: "Sorts", nameFr: "Sorts", nameEn: "Spellcasting", desc: "Lanceur de sorts naturel", descEn: "Nature spellcaster" },
+            { level: 1, name: "Ritual Casting", nameFr: "Incantation rituelle", nameEn: "Ritual Casting", desc: "Lancer un sort marqué rituel sans emplacement (10 min de plus, hors combat)", descEn: "Cast a ritual-tagged spell without a slot (10 extra minutes, out of combat)" },
             { level: 1, name: "Druidique", nameFr: "Druidique", nameEn: "Druidic", desc: "Langage secret des druides", descEn: "The secret language of druids" },
             { level: 2, name: "Forme sauvage", nameFr: "Forme sauvage", nameEn: "Wild Shape", desc: "Se transformer en animal", descEn: "Turn into an animal" },
             { level: 2, name: "Cercle druidique", nameFr: "Cercle druidique", nameEn: "Druid Circle", desc: "Terre ou Lune", descEn: "Land or Moon" }
@@ -117,6 +119,7 @@ export const CLASS_DATA: Record<string, {
         savingThrows: ["INT", "WIS"],
         features: [
             { level: 1, name: "Sorts", nameFr: "Sorts", nameEn: "Spellcasting", desc: "Grimoire de sorts, préparer depuis la liste", descEn: "Spellbook — prepare from your list" },
+            { level: 1, name: "Ritual Casting", nameFr: "Incantation rituelle", nameEn: "Ritual Casting", desc: "Lancer un sort marqué rituel sans emplacement (10 min de plus, hors combat)", descEn: "Cast a ritual-tagged spell without a slot (10 extra minutes, out of combat)" },
             { level: 1, name: "Récupération arcanique", nameFr: "Récupération arcanique", nameEn: "Arcane Recovery", desc: "Récupérer emplacements (1/jour)", descEn: "Regain spell slots (1/day)" },
             { level: 2, name: "Tradition arcanique", nameFr: "Tradition arcanique", nameEn: "Arcane Tradition", desc: "Évocation, Abjuration, etc.", descEn: "Evocation, Abjuration, and so on" }
         ]
@@ -146,6 +149,7 @@ export const CLASS_DATA: Record<string, {
         savingThrows: ["DEX", "CHA"],
         features: [
             { level: 1, name: "Sorts", nameFr: "Sorts", nameEn: "Spellcasting", desc: "Lanceur de sorts charismatique", descEn: "Charisma-based spellcaster" },
+            { level: 1, name: "Ritual Casting", nameFr: "Incantation rituelle", nameEn: "Ritual Casting", desc: "Lancer un sort marqué rituel sans emplacement (10 min de plus, hors combat)", descEn: "Cast a ritual-tagged spell without a slot (10 extra minutes, out of combat)" },
             { level: 1, name: "Inspiration bardique", nameFr: "Inspiration bardique", nameEn: "Bardic Inspiration", desc: "Donner d6 à un allié", descEn: "Grant a d6 to an ally" },
             { level: 2, name: "Chant reposant", nameFr: "Chant reposant", nameEn: "Song of Rest", desc: "Soins supplémentaires au repos", descEn: "Extra healing on a rest" },
             { level: 3, name: "Collège bardique", nameFr: "Collège bardique", nameEn: "Bard College", desc: "Vaillance ou Savoir", descEn: "Valor or Lore" }

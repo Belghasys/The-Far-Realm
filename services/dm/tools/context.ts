@@ -23,7 +23,7 @@ import { preloadCodexBestiary } from '../../../engine/codexService';
 import { cooldownRemainingMs, MEDIA_GENERATION_COOLDOWN_MS } from '../../../services/media/mediaThrottle';
 import { galleryService } from '../../../services/media/galleryService';
 import { getAppSettings } from '../../../store/settingsStore';
-import { releaseNpcConcentrationEffect } from '../../../engine/rulesEngine';
+import { releaseNpcConcentrationEffect, releasePlayerConcentrationConditions } from '../../../engine/rulesEngine';
 import { queueEnginePrompt } from './shared';
 import { TOOLS } from './index';
 import { SYSTEM_LINES } from '../../i18n/systemLines';
@@ -195,6 +195,12 @@ export function makeToolContext(refs: ToolRefs, call: { name: string; args: any 
         const concentration = resolveConcentrationAfterDamage(char, damage);
         if (concentration.broken) {
             d.syncCharacterCritical(concentration.character, 'hp');
+            // T18 — les conditions que ces sorts avaient posées sur les lignes
+            // de combat tombent avec eux (Immobilisation → l'ennemi n'est plus
+            // paralysé). Updater fonctionnel : état frais.
+            if (store.combatState.isActive) {
+                store.setCombatState((prev: any) => releasePlayerConcentrationConditions(prev, concentration.removedEffects.map((e: any) => e.name)).state);
+            }
             store.setTranscript(prev => [...prev, {
                 speaker: 'dm',
                 text: `*[SYSTEM: ${sysText().sysConcentrationBroken(concentration.removedEffects.map((effect: any) => effect.name).join(', '))}]*`

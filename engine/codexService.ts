@@ -1,6 +1,7 @@
 import { BESTIARY, loadBestiary, type CreatureStats } from '../data/bestiary';
 import { getCreatureAttacks } from './monsterAttacks';
 import { SRD51_ACTIONS, SRD51_CONDITIONS, SRD51_ITEMS, SRD51_RULES, SRD51_SPELLS } from '../data/srd51';
+import { isThirdCasterSubclass } from '../data/subclasses';
 import {
     CodexDamageType,
     CodexEntry,
@@ -412,8 +413,14 @@ export function spellClassFor(playableClass: string): string {
  * progression). 0 = non-caster (or a half-caster below level 2). Used by the
  * level-up spell picker to gate what can be learned.
  */
-export function maxSpellLevelForClass(playableClass: string, level: number): number {
+export function maxSpellLevelForClass(playableClass: string, level: number, subclass?: string | null): number {
     const lvl = Math.max(1, Math.min(20, Math.trunc(level || 1)));
+    // K7 — tiers-lanceur : niveau de lanceur ceil(niveau/3), donc niveau de
+    // sort max ceil(lanceur/2), plafonné au 4e (SRD : 1er au 3, 2e au 7,
+    // 3e au 13, 4e au 19).
+    if (isThirdCasterSubclass(subclass) && !['Bard', 'Cleric', 'Druid', 'Mage', 'Wizard', 'Sorcerer', 'Warlock', 'Paladin', 'Ranger'].includes(playableClass)) {
+        return lvl < 3 ? 0 : Math.min(4, Math.ceil(Math.ceil(lvl / 3) / 2));
+    }
     if (playableClass === 'Warlock') {
         return lvl >= 9 ? 5 : lvl >= 7 ? 4 : lvl >= 5 ? 3 : lvl >= 3 ? 2 : 1;
     }
@@ -433,8 +440,10 @@ export function maxSpellLevelForClass(playableClass: string, level: number): num
  * "Add spells" browser so a caster only sees their own list up to slots they
  * can use). Cantrips (level 0) are always included. Sorted by level then name.
  */
-export function spellsForClass(playableClass: string, maxLevel?: number): SpellEntry[] {
-    const cls = spellClassFor(playableClass);
+export function spellsForClass(playableClass: string, maxLevel?: number, subclass?: string | null): SpellEntry[] {
+    // K7 — un Chevalier occulte / Escroc arcanique apprend sur la liste du
+    // MAGICIEN (le moteur de lancement le savait déjà, le sélecteur non).
+    const cls = isThirdCasterSubclass(subclass) ? 'Wizard' : spellClassFor(playableClass);
     return SRD51_SPELLS
         .filter(spell => spell.classes.includes(cls))
         .filter(spell => maxLevel === undefined || spell.level === 0 || spell.level <= maxLevel)

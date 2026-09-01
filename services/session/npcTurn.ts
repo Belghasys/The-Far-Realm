@@ -14,7 +14,7 @@ import { auditBus } from '../infra/auditBus';
 import { Ability, getEffectiveAC, getEffectiveStat } from '../../types';
 import { combatantSide, isHero } from '../../engine/combatants';
 import { campaignEventLog } from '../persistence/campaignEventLog';
-import { advanceTurn, resolveConcentrationAfterDamage, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, releaseNpcConcentrationEffect, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, concentrationBreakOnDeparture, MORALE_DC } from '../../engine/rulesEngine';
+import { advanceTurn, resolveConcentrationAfterDamage, releasePlayerConcentrationConditions, resolveRollPrompt, resolveAttackAction, castSpell, consumeCombatAction, resolveMoraleCheck, normalizeRollPrompt, selectEnemyTarget, encounterOutcome, applyDamageToEncounter, applyConditionToEncounter, releaseNpcConcentrationEffect, allyAttackProfile, getActionCapability, applyDamageToCharacter, applyConditionToCharacter, classSavePassives, hasEvasion, featGrantsAdvantageOn, getProficientSaves, withdrawCombatant, concentrationBreakOnDeparture, MORALE_DC } from '../../engine/rulesEngine';
 import { getCreature, getMonsterAbilities, playableActions } from '../../data/bestiary';
 import { getCreatureAttacks, getMultiattackCount, getMultiattackSequence } from '../../engine/monsterAttacks';
 import { getBeastCompanion, DEFAULT_BEAST_ID, getMountType } from '../../data/companionOptions';
@@ -783,6 +783,10 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
             const concentration = resolveConcentrationAfterDamage(struck, res.damage);
             if (concentration.broken) {
               syncCharacterCritical(concentration.character, 'hp');
+              // T18 — les conditions posées par ces sorts tombent avec eux
+              // (écrites dans le STORE : la réconciliation de fin de tour
+              // recopie les lignes fraîches des non-cibles).
+              setCombatState((prev: any) => releasePlayerConcentrationConditions(prev, concentration.removedEffects.map(e => e.name)).state);
               setTranscript(prev => [...prev, {
                 speaker: 'dm',
                 text: `*[SYSTEM: ${tr.sysConcentrationBroken(concentration.removedEffects.map(e => e.name).join(', '))}]*`

@@ -7,6 +7,7 @@ import { clampHP } from '../gameValidator';
 import { rollDice, maxRollOfFormula } from '../utils';
 import { applyConcentrationReplacement, applyDamageToEncounter } from './attack';
 import { applyConditionToEncounter, stampEffectExpiry, worldHourOf } from './effects';
+import type { SpellEntry } from '../../types';
 import { combatantKey, makeId, matchPlayerClassAbility, resolveCombatantReference } from './encounter';
 import { CLASS_CASTER_ABILITY, abilityMod, featGrantsAdvantageOn, normalizeAbility, normalizeRollPrompt, proficiencyBonus, resolveRollPrompt, rollDamageAmount } from './rolls';
 import { AoESpellTargetResult, ConcentrationCheckResult, EncounterState, PendingSpellResolution, RollOutcome, RollPromptState, SpellCastResult } from './types';
@@ -47,6 +48,24 @@ export function spendSpellSlot(character: CharacterSheet, spellLevel: number, re
                 [slotKey]: { ...pool, current: Math.max(0, pool.current - 1) },
             },
         },
+    };
+}
+/** T12 — marqueur de concentration pour un sort sans effet modélisé. Durée en
+ *  rounds quand elle est courte (« Up to 1 minute » = 10, « 10 minutes » =
+ *  100) ; au-delà, jusqu'à la rupture, au sort suivant ou au repos long. */
+function concentrationMarkerFor(spell: SpellEntry): ActiveEffect | null {
+    if (!spell.concentration) return null;
+    const duration = String(spell.duration || '');
+    const rounds = /\b1 minute\b/i.test(duration) ? 10 : /\b10 minutes\b/i.test(duration) ? 100 : undefined;
+    return {
+        id: makeId('spell'),
+        name: spell.name,
+        source: 'spell',
+        duration: 'concentration',
+        concentration: true,
+        ...(rounds ? { roundsRemaining: rounds } : {}),
+        description: `Concentration — ${spell.name} (${duration || 'until broken'}).`,
+        modifiers: [],
     };
 }
 function spellEffectFor(spellName: string): ActiveEffect | null {
@@ -142,9 +161,25 @@ function spellEffectFor(spellName: string): ActiveEffect | null {
     }
     return null;
 }
+/** Incantation rituelle — trait de classe SRD (barde, clerc, druide, mage). */
+export const RITUAL_CASTER_CLASSES = ['Bard', 'Cleric', 'Druid', 'Mage', 'Wizard'];
+/** Ce sort peut-il être lancé EN RITUEL par ce personnage ? Sans emplacement,
+ *  10 minutes de plus. L'appelant (outil, panneau) interdit la voie rituelle en
+ *  combat — le moteur ne connaît pas l'état de la rencontre. */
+export function canCastAsRitual(character: Pick<CharacterSheet, 'class'>, spell: SpellEntry | null | undefined): { ok: boolean; reason?: string } {
+    if (!spell) return { ok: false, reason: 'unknown spell' };
+    if (!spell.ritual) return { ok: false, reason: `${spell.name} is not a ritual spell` };
+    if (spell.level <= 0) return { ok: false, reason: `${spell.name} is a cantrip — already cast at will` };
+    if (!RITUAL_CASTER_CLASSES.includes(character.class)) return { ok: false, reason: `${character.class} does not have the Ritual Casting feature (Bard, Cleric, Druid, Wizard do)` };
+    return { ok: true };
+}
+
 export function castSpell(character: CharacterSheet, args: {
     spellName: string;
     slotLevel?: number;
+    /** Incantation rituelle : aucun emplacement dépensé. Valider avec
+     *  canCastAsRitual AVANT, et jamais en combat. */
+    ritual?: boolean;
     target?: string;
     /** Id EXACT du combattant visé. Indispensable quand plusieurs ennemis
      *  partagent un nom (« Gobelin », « Gobelin ») : la résolution par nom seul
@@ -231,7 +266,10 @@ export function castSpell(character: CharacterSheet, args: {
         }
     }
 
-    const spent = spendSpellSlot(character, spell.level, args.slotLevel);
+    // Rituel : l'emplacement n'est PAS dépensé. La légitimité (drapeau du sort,
+    // classe, hors combat) est vérifiée par l'appelant via canCastAsRitual.
+    const asRitual = !!args.ritual && canCastAsRitual(character, spell).ok;
+    const spent = asRitual ? { character } : spendSpellSlot(character, spell.level, args.slotLevel);
     if (spent.error) {
         return { success: false, error: spent.error, spell, character, summary: spent.error };
     }
@@ -287,7 +325,14 @@ export function castSpell(character: CharacterSheet, args: {
     };
 
     const concentrationReplaced: string[] = [];
-    const rawEffect = spellEffectFor(spell.name);
+    // T12 (contre-audit du 2026-09-01) — la concentration n'existait que pour
+    // les 7 sorts modélisés dans spellEffectFor : les 36 sorts marqués
+    // `concentration` dans les données n'entraient jamais dans activeEffects,
+    // donc ni la règle « un seul sort de concentration » ni la sauvegarde sur
+    // dégâts ne les touchaient (Gardiens spirituels + Bénédiction +
+    // Immobilisation tenaient ensemble). Un sort de concentration sans effet
+    // modélisé pose désormais un MARQUEUR — la même forme qu'Immobilisation.
+    const rawEffect = spellEffectFor(spell.name) ?? concentrationMarkerFor(spell);
     const activeEffect = rawEffect ? stampEffectExpiry(rawEffect, args.worldHour) : null;
     if (activeEffect) {
         // Bénédiction RAW vit désormais entièrement dans l'ActiveEffect
@@ -368,6 +413,12 @@ export function castSpell(character: CharacterSheet, args: {
                 targetId: args.targetId,
                 damageFormula,
                 damageType: spell.damage?.type,
+                // Une attaque de sort peut AUSSI imposer une condition sur un
+                // coup au but (Contagion : « on a hit… the target is
+                // poisoned »). Ce champ n'existait que sur la branche
+                // SAUVEGARDE : la condition d'un sort d'ATTAQUE n'atteignait
+                // jamais le résolveur, elle était donc morte dans les données.
+                conditionOnFailure: spell.condition,
                 slotLevel,
             },
         };
@@ -564,8 +615,9 @@ export function resolveSpellAgainstTargets(
         if (!outcome.success && pending.conditionOnFailure) {
             const conditioned = applyConditionToEncounter(state, combatantKey(after), pending.conditionOnFailure);
             if (conditioned.found && conditioned.target) {
-                state = conditioned.state;
-                after = conditioned.target;
+                // T18 — étiquetée au sort du joueur : elle tombera avec sa concentration.
+                state = tagPlayerConcentrationCondition(conditioned.state, conditioned.target.id, conditioned.effect?.id, pending.spellName);
+                after = state.combatants.find(c => c.id === conditioned.target!.id) || conditioned.target;
                 conditionApplied = conditioned.condition?.name;
             }
         }
@@ -616,7 +668,12 @@ export function resolvePendingSpellRoll(current: EncounterState, outcome: RollOu
     const effectOnSuccess = pending.effectOnSuccess || 'negates';
     const shouldApplyFullDamage = isAttack ? attackHit : !saveSucceeded;
     const shouldApplyHalfDamage = !isAttack && saveSucceeded && effectOnSuccess === 'half';
-    const conditionFails = !isAttack && !saveSucceeded && Boolean(pending.conditionOnFailure);
+    // La condition s'applique quand le sort MORD : une sauvegarde ratée, ou —
+    // ajout du 2026-09-01 — un jet d'ATTAQUE de sort réussi. Avant, `!isAttack`
+    // rendait la condition d'un sort d'attaque INATTEIGNABLE : Contagion
+    // touchait sans jamais empoisonner (SRD : « on a hit… the target is
+    // poisoned »). Contagion est le seul sort concerné du codex — vérifié.
+    const conditionFails = (isAttack ? attackHit : !saveSucceeded) && Boolean(pending.conditionOnFailure);
 
     let state = current;
     let target = targetLookup.combatant;
@@ -640,8 +697,9 @@ export function resolvePendingSpellRoll(current: EncounterState, outcome: RollOu
     if (conditionFails && pending.conditionOnFailure) {
         const conditioned = applyConditionToEncounter(state, combatantKey(target), pending.conditionOnFailure);
         if (conditioned.found && conditioned.target) {
-            state = conditioned.state;
-            target = conditioned.target;
+            // T18 — étiquetée au sort du joueur : elle tombera avec sa concentration.
+            state = tagPlayerConcentrationCondition(conditioned.state, conditioned.target.id, conditioned.effect?.id, pending.spellName);
+            target = state.combatants.find(c => c.id === conditioned.target!.id) || conditioned.target;
             conditionApplied = conditioned.condition?.name;
         }
     }
@@ -740,5 +798,50 @@ export function resolveConcentrationAfterDamage(character: CharacterSheet, damag
         broken,
         removedEffects: broken ? concentrationEffects : [],
         prompt,
+    };
+}
+
+/** T18 (contre-audit du 2026-09-01) — la concentration du JOUEUR tombe (dégâts,
+ *  sort de concentration suivant, 0 PV) : les conditions que ses sorts avaient
+ *  posées sur les lignes de combat tombent avec elle. Avant, le joueur perdait
+ *  Immobilisation et l'ennemi restait paralysé jusqu'à son propre compteur.
+ *  Ne touche que les effets étiquetés `concentrationBy: 'player'` ET dont le
+ *  `spellSource` est dans la liste — jamais une condition posée par le MJ ou
+ *  par un autre sort. Le côté PNJ a son propre lien (releaseNpcConcentrationEffect). */
+export function releasePlayerConcentrationConditions(
+    current: EncounterState,
+    endedSpellNames: string[],
+): { state: EncounterState; released: { targetId: string; targetName: string; effectName: string }[] } {
+    const ended = new Set(endedSpellNames.map(n => String(n || '').toLowerCase()).filter(Boolean));
+    if (!ended.size) return { state: current, released: [] };
+    const released: { targetId: string; targetName: string; effectName: string }[] = [];
+    const combatants = (current.combatants || []).map(c => {
+        const effects = c.activeEffects || [];
+        const keep = effects.filter(e => {
+            const lie = e.concentrationBy === 'player' && ended.has(String(e.spellSource || '').toLowerCase());
+            if (lie) released.push({ targetId: c.id, targetName: c.name, effectName: e.name });
+            return !lie;
+        });
+        return keep.length === effects.length ? c : { ...c, activeEffects: keep };
+    });
+    return { state: released.length ? { ...current, combatants } : current, released };
+}
+
+/** Étiquette la condition qu'un sort de concentration du joueur vient de poser
+ *  sur une ligne, pour que releasePlayerConcentrationConditions la retrouve. */
+export function tagPlayerConcentrationCondition(
+    current: EncounterState,
+    targetId: string,
+    effectId: string | undefined,
+    spellName: string,
+): EncounterState {
+    const spell = lookupSpell(spellName);
+    if (!spell?.concentration || !effectId) return current;
+    return {
+        ...current,
+        combatants: (current.combatants || []).map(c => c.id !== targetId ? c : {
+            ...c,
+            activeEffects: (c.activeEffects || []).map(e => e.id === effectId ? { ...e, concentrationBy: 'player', spellSource: spell.name } : e),
+        }),
     };
 }

@@ -2,6 +2,7 @@
 import { CharacterSheet, getEffectiveStat, getEffectiveMaxHP } from '../../types';
 import { clampHP } from '../gameValidator';
 import { CELESTIAL_STEED_KIND } from '../../data/companionOptions';
+import { isThirdCasterSubclass } from '../../data/subclasses';
 import { abilityMod, hasFeatSpecial, songOfRestDie } from '../combat/rolls';
 
 function hitDieForClass(cls: string): number {
@@ -125,9 +126,16 @@ function defaultSpellSlots(character: CharacterSheet): CharacterSheet['spellSlot
     const fullCasters = ['Bard', 'Cleric', 'Druid', 'Mage', 'Wizard', 'Sorcerer'];
     const halfCasters = ['Paladin', 'Ranger'];
     const warlock = character.class === 'Warlock';
+    // K7 (contre-audit du 2026-09-01) — tiers-lanceurs (Chevalier occulte,
+    // Escroc arcanique) : ceil(niveau/3) dans la table des lanceurs complets,
+    // rien avant le niveau 3. Vérifié case par case contre le SRD : 3 → 2×L1,
+    // 7 → +2×L2, 13 → +2×L3, 19 → +1×L4. Les sauvegardes existantes sans
+    // emplacements en reçoivent au chargement (ensureProgressionState fait
+    // `spellSlots || defaultSpellSlots`).
+    const thirdCaster = isThirdCasterSubclass(character.subclass);
     const level = character.level;
 
-    if (!fullCasters.includes(character.class) && !halfCasters.includes(character.class) && !warlock) return undefined;
+    if (!fullCasters.includes(character.class) && !halfCasters.includes(character.class) && !warlock && !thirdCaster) return undefined;
 
     if (warlock) {
         // da-m1 — 4e emplacement de pacte au niveau 17 (SRD).
@@ -137,8 +145,11 @@ function defaultSpellSlots(character: CharacterSheet): CharacterSheet['spellSlot
     }
 
     if (halfCasters.includes(character.class) && level < 2) return undefined;
+    if (thirdCaster && !fullCasters.includes(character.class) && level < 3) return undefined;
 
-    const casterLevel = fullCasters.includes(character.class) ? level : Math.max(1, Math.ceil(level / 2));
+    const casterLevel = fullCasters.includes(character.class)
+        ? level
+        : thirdCaster ? Math.max(1, Math.ceil(level / 3)) : Math.max(1, Math.ceil(level / 2));
     const casterSlotProgression: Record<number, Record<string, number>> = {
         1: { '1': 2 },
         2: { '1': 3 },

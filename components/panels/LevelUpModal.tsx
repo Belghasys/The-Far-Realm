@@ -51,7 +51,7 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     // Budget généreux : 2 choix par niveau gagné pour les full casters/Warlock,
     // 1 pour les demi-casters. Les sorts déjà connus sont exclus ; le Grimoire
     // (onglet Apprendre) reste disponible pour compléter plus tard.
-    const maxSpellLvl = maxSpellLevelForClass(character.class, newLevel);
+    const maxSpellLvl = maxSpellLevelForClass(character.class, newLevel, character.subclass);
     const fullCaster = ['Bard', 'Cleric', 'Druid', 'Mage', 'Sorcerer', 'Warlock'].includes(character.class);
     const spellBudget = maxSpellLvl > 0 ? Math.max(1, (fullCaster ? 2 : 1) * Math.max(1, newLevel - previousLevel)) : 0;
     const [selectedSpells, setSelectedSpells] = useState<string[]>([]);
@@ -61,9 +61,9 @@ export function LevelUpModal({ character, newLevel, fromLevel, onConfirm, onClos
     ].map(name => name.toLowerCase())), [character.cantrips, character.knownSpells]);
     const learnableSpells = useMemo(
         () => spellBudget > 0
-            ? spellsForClass(character.class, maxSpellLvl).filter(sp => !knownSpellNames.has(sp.name.toLowerCase()))
+            ? spellsForClass(character.class, maxSpellLvl, character.subclass).filter(sp => !knownSpellNames.has(sp.name.toLowerCase()))
             : [],
-        [character.class, maxSpellLvl, spellBudget, knownSpellNames]
+        [character.class, character.subclass, maxSpellLvl, spellBudget, knownSpellNames]
     );
     const toggleSpell = (name: string) => {
         setSelectedSpells(prev => prev.includes(name)
