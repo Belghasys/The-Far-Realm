@@ -11,7 +11,7 @@ import { auditBus } from '../../../../services/infra/auditBus';
 import { applyAutoDamageSpell, castSpell, combatantSide, applyConditionToCharacter, applyConditionToEncounter, applyDamageToCharacter, applyDamageToEncounter, normalizeRollPrompt, resolveCombatantReference, resolveRollPrompt, resolveSpellAgainstTargets } from '../../../../engine/rulesEngine';
 import { lookupMonster, lookupSpell, spellLabel } from '../../../../engine/codexService';
 import { getCreature } from '../../../../data/bestiary';
-import { rollDice } from '../../../../engine/utils';
+import { rollDice, isDiceFormula } from '../../../../engine/utils';
 import { worldHourOf, classSavePassives, hasEvasion, applyDownedDamagePenalty, releaseNpcConcentrationEffect, getProficientSaves, featGrantsAdvantageOn } from '../../../../engine/rulesEngine';
 import { stringArg, holdForRollResolution } from '../shared';
 import type { ToolContext } from '../context';
@@ -26,6 +26,14 @@ export async function environmental_damage(args: any, ctx: ToolContext) {
     const hazard = stringArg(args.description || args.source || 'Danger environnemental', 120) || 'Danger environnemental';
     const damageFormula = String(args.damageFormula || args.formula || '').trim();
     if (!damageFormula) return { success: false, error: 'environmental_damage requires damageFormula (e.g. "2d6")' };
+    // T3 (contre-audit du 2026-09-01) — « beaucoup » donnait 0 dégâts AVEC
+    // success:true et un transcript « ne subit aucun dégât… et est empoisonné ».
+    if (!isDiceFormula(damageFormula)) {
+        return {
+            success: false,
+            error: `damageFormula "${damageFormula}" is not a dice formula. Use dice like "2d6" / "1d8+2", or a flat number ("5"). Nothing was applied — retry with a real formula.`,
+        };
+    }
     const damageType = args.damageType ? String(args.damageType) : undefined;
      // ── Multi-cibles (éboulis, incendie de taverne…) : targets =
     // 'all_enemies' ou liste. Chaque cible repasse par CE MÊME outil
@@ -50,10 +58,23 @@ export async function environmental_damage(args: any, ctx: ToolContext) {
                 const sub = await processToolCall({ name: 'environmental_damage', args: { ...args, targets: undefined, target: t } });
                 perTarget.push({ target: t, ...(sub || {}) });
             }
+            // N5 (contre-audit du 2026-09-01) — la garde « hors combat » vit dans
+            // chaque sous-appel : quand TOUTES les cibles étaient refusées,
+            // l'agrégat répondait quand même success:true « already applied ».
+            const refused = perTarget.filter(t => t.success === false);
+            if (refused.length === perTarget.length) {
+                return {
+                    success: false,
+                    targets: perTarget,
+                    error: `environmental_damage was refused for EVERY target — ${refused.map(t => `${t.target}: ${t.error || 'refused'}`).join(' | ')}. Nothing was applied.`,
+                };
+            }
             return {
                 success: true,
                 targets: perTarget,
-                instruction: 'Narrate the hazard sweeping over all of them in ONE beat. HP changes are already applied — do not re-apply.',
+                instruction: refused.length
+                    ? `Narrate the hazard in ONE beat for the targets that report success:true ONLY — ${refused.map(t => t.target).join(', ')} were refused (see their error). HP changes are already applied — do not re-apply.`
+                    : 'Narrate the hazard sweeping over all of them in ONE beat. HP changes are already applied — do not re-apply.',
             };
         }
         args.target = list[0];
@@ -61,6 +82,20 @@ export async function environmental_damage(args: any, ctx: ToolContext) {
     const targetRef = stringArg(args.target || 'player', 120) || 'player';
     const isPlayerTarget = targetRef.toLowerCase() === 'player'
         || targetRef.toLowerCase() === store.character.name.toLowerCase();
+    // BUG DE CIBLE (contre-audit du 2026-09-01) : hors combat, un PNJ n'existe
+    // pas comme combattant. La branche dégâts refusait déjà — mais avec des
+    // dégâts NULS (formule « 0 »), l'appel la sautait et retombait sur le
+    // `else` de la branche condition, qui empoisonnait LE HÉROS en rapportant
+    // `success: true` au nom du PNJ. Doublement silencieux : amount 0 saute
+    // aussi l'overlay de dés. Refus EN TÊTE, avant toute animation — le même
+    // enseignement que les autres gardes, et le disjoncteur coupe l'entêtement.
+    // Le héros, lui, reste servi hors combat (le gaz du piège est légitime).
+    if (!store.combatState.isActive && !isPlayerTarget) {
+        return {
+            success: false,
+            error: `No combat is open — "${targetRef}" does not exist as a combatant. environmental_damage outside combat can only strike the HERO. To harm that NPC in a fight: start_combat + add_enemy_init first; otherwise narrate without mechanical effect.`,
+        };
+    }
      // ── 1. Optional saving throw (auto-rolled, fully visible) ──
     let multiplier = 1;
     let saveSummary = '';
@@ -381,6 +416,19 @@ export async function cast_spell(args: any, ctx: ToolContext) {
         store.setCombatState({ ...liveCombat, actionEconomy: { ...(liveCombat.actionEconomy || {}), player: spent } });
     }
      d.syncCharacterCritical(result.character, 'hp');
+    // T1 (contre-audit du 2026-09-01, CRITIQUE) — soin SUR SOI à la voix : la
+    // fiche était soignée, la LIGNE de combat non (seule une cible non-soi est
+    // recopiée plus bas), et le miroir fiche→ligne de GameSession exclut
+    // hp.current. Au coup ennemi suivant, npcTurn (et apply_damage) réécrivait
+    // la fiche DEPUIS la ligne : héros 5/30, +9 → fiche 14, ligne 5 ; 6 dégâts
+    // → 0 au lieu de 8. Même miroir que le panneau de sorts (playerSpell.ts).
+    if (result.healing && result.healing > 0 && result.healingTargetsSelf !== false && useGameStore.getState().combatState.isActive) {
+        const healedHp = result.character.hp.current;
+        store.setCombatState((prev: any) => ({
+            ...prev,
+            combatants: prev.combatants.map((c: any) => c.isPlayer ? { ...c, hp: { ...c.hp, current: healedHp } } : c),
+        }));
+    }
      // Réponse d'outil AMINCIE : SpellCastResult.character est la fiche
     // COMPLÈTE (inventaire, sorts, effets) — la sérialiser vers Gemini
     // à chaque cast coûtait des tokens à chaque sort et gonflait le

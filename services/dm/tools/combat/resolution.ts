@@ -14,6 +14,7 @@ import { lookupSpell, structureInventoryItem } from '../../../../engine/codexSer
 import { classSavePassives, classCheckPassives, deriveRollContext, applyDownedDamagePenalty, releaseNpcConcentrationEffect, formatDamageParts, getProficientSaves } from '../../../../engine/rulesEngine';
 import { hideDC, isStealthCheck } from '../../../../engine/combat/stealth';
 import { holdForRollResolution } from '../shared';
+import { isDiceFormula } from '../../../../engine/utils';
 import type { ToolContext } from '../context';
 
 export async function request_roll(args: any, ctx: ToolContext) {
@@ -221,6 +222,18 @@ export async function resolve_attack(args: any, ctx: ToolContext) {
     if (store.combatState.isActive && atkSide === 'enemy') {
         return { success: true, narrateOnly: true, note: 'Enemy actions are resolved by the engine on their own turns — narrate only, never re-resolve. For scripted out-of-turn harm use environmental_damage or apply_damage.' };
     }
+    // T3 (contre-audit du 2026-09-01) — « un paquet » touchait pour 0 dégâts.
+    // VALIDATION D'ARGUMENT : elle doit précéder toute écriture. Placée plus
+    // bas, elle laissait `applyStoryModifiersToPrompt` CONSOMMER l'inspiration
+    // du joueur avant de refuser — le héros payait la faute de frappe du MJ,
+    // sous un message affirmant qu'aucune attaque n'avait eu lieu (relecture
+    // indépendante du lot). Même place que dans propose_player_action.
+    if (args.damageFormula !== undefined && args.damageFormula !== null && String(args.damageFormula).trim() && !isDiceFormula(args.damageFormula)) {
+        return {
+            success: false,
+            error: `damageFormula "${String(args.damageFormula)}" is not a dice formula. Use dice like "1d8+3", or omit it so the engine uses the attacker's own weapon/attack. No attack was rolled, and nothing was consumed.`,
+        };
+    }
     const baseAttackBonus = Number.isFinite(Number(args.attackBonus)) ? Number(args.attackBonus) : undefined;
     const attackPrompt = normalizeRollPrompt({
         reason: `${args.attacker} attacks ${args.target}`,
@@ -373,6 +386,18 @@ export async function resolve_attack(args: any, ctx: ToolContext) {
     // d'état de combat après un await dans ce handler (un tour de
     // PNJ concurrent pendant les ~8-12 s d'animation était écrasé).
     store.setCombatState(result.state);
+    // C7 (contre-audit du 2026-09-01) — riders à usage unique (Châtiment divin,
+    // consumeOnHit) : le chemin BOUTON les retirait de la fiche après le coup
+    // (playerActions), le chemin VOCAL jamais — un seul emplacement alimentait
+    // +2d8 sur chaque attaque suivante jusqu'au repos (mesuré : 3 × 2d8 contre
+    // 1 × 2d8). Même retrait, même porte.
+    if (isPlayerAttacker && result.resolution.consumedEffectIds?.length) {
+        const live = useGameStore.getState().character;
+        if (live) {
+            const consumed = new Set(result.resolution.consumedEffectIds);
+            d.syncCharacterUpdate({ ...live, activeEffects: (live.activeEffects || []).filter(e => !consumed.has(e.id)) });
+        }
+    }
      const isPlayer = Boolean(result.state.combatants.find(c => c.name === result.resolution?.attacker || c.id === args.attacker)?.isPlayer);
      // Show the visual roll for the attack
     store.setCurrentRoll({

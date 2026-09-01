@@ -312,7 +312,12 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
   const updateFeaturesAndProfs = (c: CharacterSheet, newClass?: string, newBg?: string, newStyle?: string, newRace?: string) => {
     const cls = newClass || c.class;
     const bg = newBg || c.background;
-    const style = newStyle || c.fightingStyle;
+    // K1 — le style n'existe que pour une classe martiale, et il est gardé ICI,
+    // à la source : un appelant qui passait '' pour « aucun » retombait sur
+    // l'ancien champ (`'' || 'Dueling'`) et « Style de combat (Duel) » restait
+    // dans les aptitudes d'un mage. Le moteur applique la même règle
+    // (activeFightingStyle) ; la fiche cesse de promettre ce qu'il n'exécute pas.
+    const style = MARTIAL_CLASSES.includes(cls) ? (newStyle || c.fightingStyle) : '';
     const race = newRace || c.race;
 
     const classInfo = CLASS_DATA[cls];
@@ -369,7 +374,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
     const classInfo = CLASS_DATA[newClass];
     if (!classInfo) return;
 
-    const { features, profs } = updateFeaturesAndProfs(char, newClass);
+    // K1 — vers une classe martiale, un style est obligatoire (défaut de la
+    // fiche) ; vers une autre, aucun. updateFeaturesAndProfs applique la même
+    // règle de son côté, quel que soit ce qu'on lui passe.
+    const styleApresBascule = MARTIAL_CLASSES.includes(newClass) ? (char.fightingStyle || DEFAULT_CHAR.fightingStyle) : '';
+    const { features, profs } = updateFeaturesAndProfs(char, newClass, undefined, styleApresBascule);
     // New model: free base package + default kit (player buys the rest with gold).
     const newInventory = getDefaultLoadout(newClass, char.background);
 
@@ -380,6 +389,11 @@ export const CharacterSheetUI: React.FC<Props> = ({ initialChar, onSave, readOnl
       class: newClass,
       // The archetype belongs to the previous class — reset it on class change.
       subclass: undefined,
+      // K1 (contre-audit du 2026-09-01) — le style de combat aussi : DEFAULT_CHAR
+      // porte « Dueling » et il survivait à la bascule vers une classe non
+      // martiale (mage au bâton à +2 dégâts). Le moteur le filtre désormais par
+      // classe (activeFightingStyle) ; la fiche cesse en plus de le promettre.
+      fightingStyle: styleApresBascule,
       inventory: newInventory,
       weapon: getWeaponFromInventory(newInventory),
       gold: startingGoldFor(newClass, prev.background),

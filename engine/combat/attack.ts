@@ -1,5 +1,6 @@
 /** L'attaque : resolution complete d'une attaque d'arme ou de monstre, degats sur la rencontre, concentration des PNJ. */
-import { Combatant, combatantSide } from '../combatants';
+import { Combatant, combatantSide, sheetRefOf } from '../combatants';
+import { activeFightingStyle } from '../character';
 import { getCreature } from '../../data/bestiary';
 import { getCreatureAttacks } from '../monsterAttacks';
 import { gearAdvantageFor } from '../skillSystem';
@@ -252,6 +253,12 @@ export function resolveAttackAction(
         kind?: 'action' | 'extraAttack';
         targetCoverBonus?: number;
         isMeleeAttack?: boolean;
+        /** Est-ce une attaque d'ARME ? (défaut : oui). `isMeleeAttack` disait
+         *  seulement « au contact ou à distance » ; la Déviation de projectiles
+         *  du Moine, elle, exige une attaque d'arme à DISTANCE. Sans cette
+         *  seconde clé, marquer les sorts de kit « à distance » (C5) laissait le
+         *  moine dévier un rayon de Guiding Bolt — trouvé par la relecture. */
+        isWeaponAttack?: boolean;
         /** Opt-in -5/+10 (Great Weapon Master / Sharpshooter). Validated here. */
         powerAttack?: boolean;
         /** OU4 — bonus plat additionnel (story modifiers du MJ déjà consommés) :
@@ -275,7 +282,9 @@ export function resolveAttackAction(
     if (target.hp.current <= 0) return { success: false, error: 'Target is already down', state: current };
 
     const monsterAttackResult: { attack: ResolvedMonsterAttack | null; error?: string; available: string[] } =
-        !attacker.isPlayer ? resolveMonsterAttack(attacker.name, args.attackName) : { attack: null, available: [] };
+        // C8 — la fiche portée par la ligne d'abord : sans elle, un « Éclaireur
+        // des Quais » (fiche Scout) perdait son arc et chargeait au contact.
+        !attacker.isPlayer ? resolveMonsterAttack(sheetRefOf(attacker), args.attackName) : { attack: null, available: [] };
     // An unknown attackName only hard-fails when the caller gave us NOTHING to
     // fall back on. DM-spawned custom enemies (names absent from the bestiary)
     // and renamed attacks used to be rejected here, so the enemy turn silently
@@ -558,7 +567,7 @@ export function resolveAttackAction(
     // Great Weapon Fighting: with a two-handed melee weapon, reroll damage dice
     // that show a 1 or 2 (once). Only for the player's main weapon part.
     const gwfActive = !!(attacker.isPlayer && character
-        && (character as any).fightingStyle === 'Great Weapon Fighting'
+        && activeFightingStyle(character) === 'Great Weapon Fighting'
         && (character.weapon?.properties || []).includes('two-handed'));
     // cb-m6 — « première attaque du tour » PARTAGÉE par tous les riders
     // 1×/tour : attacksUsed === 0 ET drapeau onceRiderUsed non consommé
@@ -674,7 +683,9 @@ export function resolveAttackAction(
             const econ = state.actionEconomy?.[combatantKey(target)];
             const reactionFree = !(econ?.reactionUsed);
             const lvl = character.level || 1;
-            if (reactionFree && character.class === 'Monk' && lvl >= 3 && !isMeleeAttack) {
+            // SRD : Déviation de projectiles vise une attaque d'ARME à distance.
+            // Un rayon de sort (Guiding Bolt, Fire Bolt) n'en est pas une.
+            if (reactionFree && character.class === 'Monk' && lvl >= 3 && !isMeleeAttack && args.isWeaponAttack !== false) {
                 deflectPool = rollDice(`1d10+${abilityMod(getEffectiveStat(character, 'DEX')) + lvl}`).total;
                 reactionUsed = 'deflect_missiles';
             } else if (reactionFree && character.class === 'Rogue' && lvl >= 5) {

@@ -23,6 +23,7 @@ import { appendTranscriptChunk } from './transcript';
 import { fetchLiveToken } from './liveToken';
 import { AUDIO_MODEL, MAX_DEFERRED, QueuedTextMessage, REANCHOR_MIN_INTERVAL_MS, diagStamp, isWebSocketOpen } from './util';
 import { RECONNECT_STABLE_MS, ReconnectBudget, ToolFailureBreaker } from './resilience';
+import { playerFacingToolFailure } from '../tools/toolFailureNotice';
 
 // --- Live Client ---
 
@@ -107,7 +108,11 @@ export class LiveDungeonMaster {
         this.adventure = adventure;
         this.adventureManifest = adventureManifest;
         this.directorContext = directorContext;
-        this.initialHistory = initialHistory;
+        // COPIE (contre-audit du 2026-09-01, M1) : recordHistory pousse dans ce
+        // tableau. Reçu par référence depuis le store, il polluait le transcript
+        // par défaut de la session suivante. Le store est corrigé aussi
+        // (fabrique) — ceinture et bretelles, ce côté-ci ne dépend de personne.
+        this.initialHistory = [...initialHistory];
         this.onTranscriptUpdate = onTranscript;
         this.onVolumeUpdate = onVolume;
         this.onConnectionChange = onConnectionChange;
@@ -892,6 +897,15 @@ export class LiveDungeonMaster {
                 log.warn(`⛔ Tool circuit breaker: ${name} coupé après ${this.toolBreaker.failureCount(name)} échecs consécutifs`);
                 auditBus.publish('engine', `Disjoncteur outil : ${name} coupé (${this.toolBreaker.failureCount(name)} échecs consécutifs)`, blocked);
                 sessionTrace.trace('director', `disjoncteur ${name}`, blocked.error);
+                // P6 (contre-audit du 2026-09-01) — la coupure court-circuite
+                // runTool, donc son avertissement joueur ne partait jamais : on
+                // voyait deux ⚠️ puis PLUS RIEN, précisément quand le MJ
+                // s'entêtait. Même ligne, même filtre, poussée d'ici.
+                {
+                    const lang = useGameStore.getState().language === 'en' ? 'en' as const : 'fr' as const;
+                    const notice = playerFacingToolFailure(name, { success: false, error: blocked.error }, lang);
+                    if (notice) useGameStore.getState().setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${notice}]*` }]);
+                }
                 this.queueToolResponses([{ id, name, response: blocked }]);
                 continue;
             }

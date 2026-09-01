@@ -85,7 +85,7 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
           // Don Tueur de mages : avantage contre un sort lancé AU CONTACT.
           if (featGrantsAdvantageOn(liveChar, 'save_vs_adjacent_spell') && ((npc.range || 'melee') === 'melee')) advantage = 'advantage';
         } else {
-          const creatureData: any = lookupMonster(row.name) || getCreature(row.name);
+          const creatureData: any = lookupMonster((row as any).sheetName || row.name) || getCreature((row as any).sheetName || row.name);
           if (creatureData && 'saves' in creatureData && creatureData.saves?.[ability] !== undefined) bonus = creatureData.saves[ability];
           else if (creatureData && 'stats' in creatureData && creatureData.stats?.[ability] !== undefined) bonus = Math.floor((creatureData.stats[ability] - 10) / 2);
         }
@@ -231,7 +231,8 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         // Dernier recours : profil générique proportionné au niveau du héros.
         // Un allié SANS profil restait planté à attendre le MJ pendant 8 s,
         // puis son tour passait — « les alliés ne servent à rien ».
-        return allyAttackProfile(null, getCreature(npc.name), character.level || 1);
+        // C8 — la fiche portée par la ligne d'abord (voir sheetRef plus bas).
+        return allyAttackProfile(null, getCreature((npc as any).sheetName || npc.name), character.level || 1);
       })();
 
       if (allyProfile) {
@@ -342,8 +343,12 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
     // "attack not found" and the loop continued silently: monsters dealt zero
     // damage all fight. Bestiary creatures now go through getCreatureAttacks;
     // codex monsters already store a resolved list.
-    const bestiaryCreature = getCreature(npc.name);
-    const codexMonster = bestiaryCreature ? null : lookupMonster(npc.name);
+    // C8 (contre-audit du 2026-09-01) — la fiche portée par la ligne d'abord :
+    // sans elle, un « Prêtre » (nom du MJ, non résolu par getCreature) tombait
+    // sur l'attaque de repli +4 / 1d6+2 au lieu de ses vraies attaques.
+    const sheetRef = (npc as any).sheetName || npc.name;
+    const bestiaryCreature = getCreature(sheetRef);
+    const codexMonster = bestiaryCreature ? null : lookupMonster(sheetRef);
     const creature: any = bestiaryCreature || codexMonster;
     const resolvedAttacks: any[] = bestiaryCreature
         ? getCreatureAttacks(bestiaryCreature)
@@ -478,7 +483,11 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
     }
 
     let spellWeaponOverride: any = null;
-    const casterKit = getCasterKit(npc.name);
+    // C8 — la fiche AVANT le nom affiché : `getCasterKit('Prêtre')` rendait
+    // null (il passe par getCreature), donc un lanceur nommé en français ne
+    // lançait JAMAIS de sort — le correctif C5 était inatteignable par le vrai
+    // chemin (add_enemy_init). Trouvé par la relecture indépendante du lot.
+    const casterKit = getCasterKit(sheetRef);
     if (casterKit && combatantSide(npc) === 'enemy') {
       const liveRow = useGameStore.getState().combatState.combatants.find((c: any) => c.id === npc.id);
       const usedSpells: Record<string, number> = liveRow?.spellUses || {};
@@ -532,6 +541,13 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
             attackBonus: chosen.attackBonus ?? casterKit.attackBonus,
             damage: chosen.formula || '1d8',
             damageType: chosen.damageType || 'force',
+            // C5 (contre-audit du 2026-09-01) — un sort du kit n'a pas de fiche
+            // d'arme : resolveMonsterAttack rendait null et le moteur jugeait le
+            // sort EN MÊLÉE. Comme un ennemi naît à la bande « near », le prêtre
+            // traversait la salle au lieu de lancer Guiding Bolt — ses usages
+            // limités déjà décomptés. Un sort d'attaque est à DISTANCE, sauf les
+            // sorts de contact (Inflict Wounds, Spiritual Weapon…).
+            spellRanged: !/inflict wounds|blessure|shocking grasp|poigne|spiritual weapon|arme spirituelle/i.test(chosen.name),
           };
         } else {
           setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: 🪄 ${npc.name} ${language === 'fr' ? 'lance' : 'casts'} ${chosen.name} !]*` }]);
@@ -601,6 +617,12 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         damageFormula,
         damageType,
         advantage: targetDodging ? 'disadvantage' : undefined,
+        // C5 — seul un sort du kit porte spellRanged ; les attaques d'arme
+        // laissent le moteur décider (fiche du bestiaire).
+        isMeleeAttack: (attack as any).spellRanged === undefined ? undefined : !(attack as any).spellRanged,
+        // ...et un sort n'est PAS une attaque d'arme : sans ce second drapeau,
+        // le moine déviait un rayon de Guiding Bolt (Déviation de projectiles).
+        isWeaponAttack: (attack as any).spellRanged === undefined,
         consumeAction: false
       }, liveCharForStrike);
 
@@ -815,7 +837,14 @@ export async function runNPCTurn(ctx: SessionContext, npc: any) {
         : freshEconomy,
       combatants: fresh.combatants.map((c: any) =>
         (after && c.id === target.id)
-          ? { ...c, hp: after.hp, tempHP: after.tempHP, activeEffects: after.activeEffects }
+          ? {
+              ...c, hp: after.hp, tempHP: after.tempHP, activeEffects: after.activeEffects,
+              // C1 (contre-audit du 2026-09-01) — Rage implacable : le moteur
+              // pose `relentlessUsed` sur la ligne, et cette greffe ne recopiait
+              // que trois champs. Le drapeau se perdait à chaque tour, le
+              // barbare 11+ rejouait sa sauvegarde CON DD 10 indéfiniment.
+              ...((after as any).relentlessUsed ? { relentlessUsed: true } : {}),
+            }
           : c
       ),
     };

@@ -9,6 +9,15 @@
  */
 import type { ActiveEffect } from '../types';
 
+/** La chaîne à donner au bestiaire pour CE combattant : sa fiche quand elle est
+ *  portée, son nom affiché sinon. UNE porte pour les ~15 sites qui faisaient
+ *  `getCreature(c.name)` — un « Prêtre » ou un « Éclaireur des Quais » ne résout
+ *  pas par son nom, et chaque site oublié rend le moteur incohérent avec
+ *  lui-même (budget de rencontre à 450 XP, récompense à 200). */
+export function sheetRefOf(c: { name: string; sheetName?: string } | null | undefined): string {
+    return String(c?.sheetName || c?.name || '');
+}
+
 export interface Combatant {
     id: string;
     name: string;
@@ -39,6 +48,16 @@ export interface Combatant {
     /** Usages de sorts LIMITÉS déjà dépensés par ce lanceur ennemi
      *  (data/casterKits.ts) — nom du sort → nombre d'utilisations. */
     spellUses?: Record<string, number>;
+    /** Nom CANONIQUE de la fiche du bestiaire dont ce combattant tire ses
+     *  statistiques, quand il diffère du nom affiché (contre-audit du
+     *  2026-09-01, C8). « Vétéran », « Prêtre », « Élémentaire de feu » :
+     *  pickSpecimen sait les résoudre, getCreature non — le combattant naissait
+     *  alors HOMEBREW (PV max(8, 6×niveau), CA 10, attaque de repli, XP estimée
+     *  au dixième). Renommer réglait les stats mais rouvrait TR10 : le MJ ne
+     *  retrouvait plus sa créature (« Prêtre » ne résout pas vers « Priest »).
+     *  Le nom affiché reste donc CELUI DU MJ ; c'est la fiche qui voyage à côté.
+     *  Absent = comportement d'avant (résolution par le nom). */
+    sheetName?: string;
     /** Explicit XP award (DM-provided via add_enemy_init). Falls back to bestiary → HP estimate. */
     xpValue?: number;
     /** CR de la fiche (allié ou ennemi) : le poids dans le budget de rencontre. */

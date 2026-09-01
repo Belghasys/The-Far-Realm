@@ -8,7 +8,18 @@
  * fonctions inchange.
  */
 import { isProficientWithWeapon } from '../data/weapons';
+import { MARTIAL_CLASSES } from '../data/classes';
 import { Ability, Item, Weapon, StatModifier, CharacterSheet, RACIAL_BONUSES, DRACONIC_ANCESTRIES, RANGED_NAME_RE, RANGED_PROP_RE, THROWN_PROP_RE, XP_THRESHOLDS, CodexDamageType } from '../types/index';
+
+/** K1 (contre-audit du 2026-09-01) — un style de combat n'existe que pour les
+ *  classes martiales. DEFAULT_CHAR porte « Dueling » et un changement de classe
+ *  ne le remettait pas : un mage au bâton, un roublard à la rapière, un clerc à
+ *  la masse touchaient à +2 (et +1 CA en Défense) — 9 classes sur 12. Le moteur
+ *  ne lit plus le champ qu'à travers cette porte, ce qui couvre aussi les
+ *  sauvegardes existantes. */
+export function activeFightingStyle(character: Pick<CharacterSheet, 'class' | 'fightingStyle'>): string | undefined {
+  return MARTIAL_CLASSES.includes(character.class) ? (character.fightingStyle || undefined) : undefined;
+}
 
 export function getRacialBonus(race: string, stat: Ability): number {
   return RACIAL_BONUSES[race]?.[stat] || 0;
@@ -210,7 +221,7 @@ export function getBaseACFromArmor(character: CharacterSheet): number {
     } else {
       baseAC = armorBase + dexMod + magicBonus;
     }
-    if (character.fightingStyle === 'Defense' && armorBase > 10) {
+    if (activeFightingStyle(character) === 'Defense' && armorBase > 10) {
       baseAC += 1;
     }
   } else {
@@ -510,7 +521,7 @@ export function getPlayerAttackModifier(character: CharacterSheet, weaponOverrid
     ? weapon.magicBonus
     : Math.max(0, legacyWeaponBonus - fullProficiency);
 
-  const styleBonus = character.fightingStyle === 'Archery' && isRangedWeapon(weapon) ? 2 : 0;
+  const styleBonus = activeFightingStyle(character) === 'Archery' && isRangedWeapon(weapon) ? 2 : 0;
 
   return abilityMod + proficiencyBonus + weaponExtraBonus + effectBonus + styleBonus;
 }
@@ -530,12 +541,12 @@ export function getPlayerDamageBonus(character: CharacterSheet, weaponOverride?:
 
   // Offhand attacks do not add the ability modifier unless the character has
   // the Two-Weapon Fighting style.
-  if (isOffhand && character.fightingStyle !== 'Two-Weapon Fighting') {
+  if (isOffhand && activeFightingStyle(character) !== 'Two-Weapon Fighting') {
     abilityMod = Math.min(0, abilityMod);
   }
 
   const hasOffhandWeapon = Boolean(character.inventory?.some(item => item.equipped && item.type === 'weapon' && item.slot === 'offHand'));
-  const duelingBonus = character.fightingStyle === 'Dueling'
+  const duelingBonus = activeFightingStyle(character) === 'Dueling'
     && !isOffhand
     && !isRangedWeapon(weapon)
     && !hasWeaponProperty(weapon, 'two-handed')

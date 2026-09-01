@@ -222,9 +222,17 @@ interface GameState {
     resetSessionState: () => void;
 }
 
-const defaultSessionState = {
+// FABRIQUE, pas constante (contre-audit du 2026-09-01, M1). L'objet était
+// partagé PAR RÉFÉRENCE entre deux resetSessionState : LiveDungeonMaster
+// recevait `transcript` (GameSessionView → initialHistory) et y poussait ses
+// répliques (recordHistory). Une DEUXIÈME nouvelle partie sans recharger la
+// page démarrait donc avec l'historique de la première — pas d'intro, pas de
+// prologue, prompt contaminé, lignes fantômes affichées ET sauvegardées.
+// Chaque appel rend des tableaux et objets neufs ; le journal aussi, par
+// principe (même référence partagée, sans mutateur en place aujourd'hui).
+const makeDefaultSessionState = () => ({
     transcript: [],
-    journal: DEFAULT_JOURNAL,
+    journal: { ...DEFAULT_JOURNAL, quests: [], npcs: [], locations: [], chronicle: [] },
     bgImage: '',
     activeSceneVisualRequest: null,
     lastSceneVisualRequest: null,
@@ -242,7 +250,7 @@ const defaultSessionState = {
     // into a freshly loaded/started one (loadSaveState/resetSessionState spread this).
     saveHealth: 'ok' as const,
     lastSaveErrorAt: null,
-};
+});
 
 function makeBranchId(): string {
     if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -333,7 +341,7 @@ export const useGameStore = create<GameState>((set) => ({
         return activated;
     },
 
-    ...defaultSessionState,
+    ...makeDefaultSessionState(),
 
     setTranscript: (updater) => set((state) => ({
         transcript: typeof updater === 'function' ? updater(state.transcript) : updater
@@ -461,7 +469,7 @@ export const useGameStore = create<GameState>((set) => ({
         // Spread defaultSessionState FIRST so a previous game's transient state
         // (bgImage, currentScene, isNPCTurn, currentRoll, activePrompt…) is
         // fully reset when loading another save in the same tab.
-        ...defaultSessionState,
+        ...makeDefaultSessionState(),
         // Migration à la volée : les anciennes sauvegardes stockaient les arcs
         // sans portée ni propriété « ammunition » — le moteur et le MJ les
         // prenaient pour des armes de mêlée.
@@ -492,13 +500,16 @@ export const useGameStore = create<GameState>((set) => ({
         })(),
         campaignRuntime: normalizeRuntime(saveData.campaignRuntime),
         transcript: saveData.transcript || [],
-        journal: saveData.journal || DEFAULT_JOURNAL,
+        // M1 — une fabrique ici aussi : `|| DEFAULT_JOURNAL` rendait encore la
+        // CONSTANTE partagée pour une sauvegarde sans journal, ce que la
+        // fabrique était censée éteindre.
+        journal: saveData.journal || makeDefaultSessionState().journal,
         // Only restore a combat that is genuinely ACTIVE — a cleared/legacy
         // combat block must never resurrect a finished fight on load.
         combatState: (saveData.combat && saveData.combat.isActive)
             ? saveData.combat
-            : defaultSessionState.combatState,
+            : makeDefaultSessionState().combatState,
     }),
 
-    resetSessionState: () => set({ ...defaultSessionState, character: null, selectedAdventure: '', activeSaveId: null, adventureManifest: '', adventureManifestData: null, manifestTokens: null, campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME }),
+    resetSessionState: () => set({ ...makeDefaultSessionState(), character: null, selectedAdventure: '', activeSaveId: null, adventureManifest: '', adventureManifestData: null, manifestTokens: null, campaignRuntime: DEFAULT_CAMPAIGN_RUNTIME }),
 }));

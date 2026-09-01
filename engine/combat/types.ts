@@ -87,6 +87,9 @@ export interface DepartedCombatant {
     /** PV au moment du départ — jamais 0 : il est parti sur ses jambes. */
     hp: { current: number; max: number };
     xpValue?: number;
+    /** Fiche du bestiaire portée par la ligne (C8) : sans elle, un « Prêtre »
+     *  en fuite valait une estimation par PV au lieu des 450 XP de sa fiche. */
+    sheetName?: string;
     round: number;
     /** Revenu au combat via add_enemy_init : ne pas le compter deux fois. */
     returned?: boolean;

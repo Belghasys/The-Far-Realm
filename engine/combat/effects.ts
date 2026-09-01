@@ -90,9 +90,35 @@ export function advanceClocksForNight<T extends {
     });
     return { clocks: next, ticked };
 }
+/** T6 (contre-audit du 2026-09-01) — le vocabulaire des `stat` d'add_effect,
+ *  PARTAGÉ par les deux branches de l'outil (fiche du joueur et ligne de
+ *  combat). Le premier correctif ne durcissait que la branche PNJ, la plus
+ *  rare : « CA=+2 » sur le HÉROS (le cas par défaut, `target` omis) restait un
+ *  succès sans le moindre effet, puisque getEffectiveAC ne lit que 'AC'. */
+const STAT_ALIASES: Record<string, string> = {
+    ac: 'AC', ca: 'AC', armor: 'AC', armour: 'AC', armure: 'AC', armorclass: 'AC', classedarmure: 'AC', defense: 'AC',
+    attack: 'attackBonus', attackbonus: 'attackBonus', tohit: 'attackBonus', attaque: 'attackBonus',
+    bonusattaque: 'attackBonus', bonusdattaque: 'attackBonus',
+    damage: 'damageBonus', damagebonus: 'damageBonus', degats: 'damageBonus', bonusdegats: 'damageBonus', bonusdedegats: 'damageBonus',
+    str: 'STR', force: 'STR', dex: 'DEX', dexterite: 'DEX', con: 'CON', constitution: 'CON',
+    int: 'INT', intelligence: 'INT', wis: 'WIS', sagesse: 'WIS', cha: 'CHA', charisme: 'CHA',
+    speed: 'speed', vitesse: 'speed',
+};
+/** Les trois seules stats qu'une LIGNE de combat sait lire (combatantEffectBonus).
+ *  La FICHE du joueur en lit davantage (caractéristiques via getEffectiveStat). */
+export const COMBATANT_READABLE_STATS = new Set(['AC', 'attackBonus', 'damageBonus']);
+export function normalizeEffectStat(raw: unknown): string {
+    // `'=+2'` (stat vide) défaultait à 'AC' avant la normalisation : conservé.
+    const brut = String(raw ?? 'AC').trim() || 'AC';
+    // Diacritiques combinantes en forme ÉCHAPPÉE : le littéral survivait mal à
+    // un ré-encodage d'éditeur (les deux bornes sont des caractères invisibles).
+    const key = brut.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+    return STAT_ALIASES[key] || brut;
+}
+
 export function applyEffectArgs(character: CharacterSheet, args: any): CharacterSheet {
     const [statRaw, bonusRaw] = String(args?.stat || 'AC=0').split('=');
-    const stat = (statRaw || 'AC').trim() as any;
+    const stat = normalizeEffectStat(statRaw) as any;
     const bonus = clampStatModifier(Number.parseInt((bonusRaw || '0').trim(), 10) || 0);
 
     // RE6 (contre-audit) — sans `roundsRemaining`, tickRoundEffects ignorait

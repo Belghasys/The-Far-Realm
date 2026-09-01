@@ -15,6 +15,7 @@ import { effectivePartySize } from '../../../../engine/partyWeight';
 import { pickSpecimen } from '../../../../engine/monsterPick';
 import { syncCompanionsFromState, resolveMountAfterCombat, releaseNpcConcentrationEffect } from '../../../../engine/rulesEngine';
 import { stringArg } from '../shared';
+import { isDiceFormula } from '../../../../engine/utils';
 import type { ToolContext } from '../context';
 
 export async function start_combat(_args: any, ctx: ToolContext) {
@@ -170,6 +171,15 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     // Le nom du combattant : la fiche choisie quand le moteur a tranché
     // (famille, type), le nom du MJ (épithète comprise) quand c'est un nom exact.
     if (pick.reason === 'family' || pick.reason === 'type' || pick.reason === 'planned') args = { ...args, name: pick.creature.name };
+    // C8 (contre-audit du 2026-09-01) — la fiche choisie voyage à côté du nom.
+    // « Vétéran », « Prêtre », « Élémentaire de feu » : pickSpecimen les résout,
+    // getCreature non — le combattant naissait HOMEBREW (30 PV au lieu de 58,
+    // CA 10 au lieu de 17, aucune attaque propre, ~90 XP pesés au lieu de 700).
+    // Le RENOMMER réglerait les stats mais rouvrirait TR10 : « Prêtre » ne
+    // résout pas vers « Priest », donc le MJ ne pourrait plus cibler sa propre
+    // créature (vérifié : resolveCombatantReference rend null). Le nom reste
+    // donc celui du MJ, et `statsFrom` porte la fiche.
+    args = { ...args, statsFrom: pick.creature.name };
     const choix = {
         chosen: pick.creature.name, reason: pick.reason, threat: pick.threat,
         ...(pick.candidates.length ? { candidates: pick.candidates } : {}),
@@ -192,11 +202,15 @@ export async function add_enemy_init(args: any, ctx: ToolContext) {
     };
     const livingEnemyXPs = baseState.combatants
         .filter((c: any) => !c.isPlayer && c.hp.current > 0 && (c.side ? c.side === 'enemy' : true))
-        .map((c: any) => xpOfEnemy(c.name, c.hp?.max));
+        // C8 — la fiche d'abord (« Prêtre » ne résout pas ; sa ligne porte
+        // « Priest »), le nom affiché ensuite pour les lignes d'avant.
+        .map((c: any) => xpOfEnemy(c.sheetName || c.name, c.hp?.max));
     // Les alliés pèsent selon leur CR (engine/partyWeight) : un civil secouru
     // ne double plus le budget, un vétéran compte pour un aventurier.
     const partySize = weightedParty;
-    const newcomerXP = xpOfEnemy(String(args.name || ''), Number(args.hp) || undefined);
+    // C8 — la fiche CHOISIE, pas le nom du MJ : « Vétéran » valait ~90 XP au
+    // budget au lieu des 700 du Veteran, et le garde-fou laissait passer.
+    const newcomerXP = xpOfEnemy(pick.creature.name, Number(args.hp) || undefined);
     const currentPressure = assessEncounterPressure(livingEnemyXPs, character?.level || 1, partySize);
     const projectedPressure = assessEncounterPressure([...livingEnemyXPs, newcomerXP], character?.level || 1, partySize);
     if (projectedPressure.overCap && args.force !== true) {
@@ -404,6 +418,14 @@ export async function propose_player_action(args: any, ctx: ToolContext) {
     // Malus CHIFFRÉ sur la CIBLE (« sable dans les yeux : -2 à ses
     // attaques 2 rounds ») — appliqué au succès de la carte.
     const hasTargetEffect = args.targetEffectStat !== undefined && args.targetEffectBonus !== undefined;
+    // T3 (contre-audit du 2026-09-01) — une formule illisible (« énorme ») était
+    // stockée telle quelle et la carte « touchait » pour 0 dégâts.
+    if (args.damageFormula !== undefined && args.damageFormula !== null && String(args.damageFormula).trim() && !isDiceFormula(args.damageFormula)) {
+        return {
+            success: false,
+            error: `damageFormula "${String(args.damageFormula)}" is not a dice formula. Use dice like "2d6" / "1d8+2", or a flat number. The card was NOT created — retry with a real formula, or omit damageFormula for a no-damage stunt.`,
+        };
+    }
     const proposed = {
         id: crypto.randomUUID(),
         label,
@@ -483,6 +505,21 @@ export async function build_encounter(args: any, ctx: ToolContext) {
     // est truthy) : le patron optionalBoolean est déjà utilisé sur 4 des 6
     // paramètres BOOLEAN du projet, celui-ci y échappait.
     if (optionalBoolean(args.startNow) === true && character && encounter.monsters.length) {
+        // T7 (contre-audit du 2026-09-01, CRITIQUE) — cette porte contournait
+        // les garde-fous de start_combat et add_enemy_init : deux appels à une
+        // seconde d'intervalle DOUBLAIENT le roster et l'XP (« Ancient Shadow »
+        // ×2), et la rencontre posée ici était ensuite refusée par
+        // add_enemy_init pour dépassement de budget. Même refus qu'à la porte
+        // d'à côté ; le plan est renvoyé quand même pour que le MJ puisse
+        // l'ajouter pièce par pièce via add_enemy_init (budget cumulé vérifié).
+        if (encounterAlreadyRunning(store.combatState)) {
+            return {
+                success: false,
+                alreadyRunning: true,
+                encounter,
+                error: 'A combat is ALREADY running — build_encounter(startNow) would DUPLICATE the roster and the XP. To bring in more foes, call add_enemy_init on the current fight (one creature per call, budget-checked); to close it, call end_combat.',
+            };
+        }
         let state = startEncounter(character, store.combatState);
         for (const monster of encounter.monsters) {
             const added = addEnemyToEncounter(state, {

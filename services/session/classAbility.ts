@@ -34,7 +34,8 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
     setIsResolvingAction(true);
     try {
       if (abilityId === 'rage' && (res.rage?.current ?? 0) > 0) {
-        const effect = rageEffect();
+        const effect = rageEffect(char.level || 1);
+        const rageBonus = effect.modifiers?.[0]?.bonus ?? 2;
         const updated = spendResource({ ...char, activeEffects: [...(char.activeEffects || []), effect] }, 'rage');
         syncCharacterCritical(updated, 'hp');
         patchCombat((s: any) => spendPlayerBonus({
@@ -42,7 +43,7 @@ export async function handleUseClassAbility(ctx: SessionContext, abilityId: Clas
           combatants: s.combatants.map((c: any) => c.isPlayer ? { ...c, activeEffects: updated.activeEffects } : c),
         }));
         setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${tr.abRage}]*` }]);
-        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player enters a RAGE (bonus action): +2 damage, resistance to physical damage. Narrate the fury briefly. Do NOT advance the turn.`);
+        if (dm && isConnected) await dm.sendUserMessage(`[SYSTEM] The player enters a RAGE (bonus action): +${rageBonus} damage, resistance to physical damage. Narrate the fury briefly. Do NOT advance the turn.`);
       } else if (abilityId === 'secondWind' && (res.secondWind?.current ?? 0) > 0) {
         const heal = rollDice(`1d10+${char.level || 1}`).total;
         const nextHP = Math.min(char.hp.max, char.hp.current + heal);

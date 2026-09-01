@@ -51,6 +51,19 @@ export function rollDice(formula: string): { total: number; rolls: number[]; mod
 }
 
 /**
+ * T3 (contre-audit du 2026-09-01) — une formule illisible venant du MJ
+ * (« beaucoup », « énorme ») donnait silencieusement 0 AVEC success:true et un
+ * transcript qui annonçait l'effet. Vrai si la chaîne porte au moins un groupe
+ * NdM, ou n'est qu'un entier plat (signé ou non). Les outils refusent le reste.
+ */
+export function isDiceFormula(formula: unknown): boolean {
+    const text = String(formula ?? '').trim();
+    if (!text) return false;
+    if (/(\d+)\s*d\s*(\d+)/i.test(text)) return true;
+    return /^[+-]?\d+$/.test(text);
+}
+
+/**
  * Valeur MAXIMALE d'une formule de dés (« 2d4+2 » → 10, « 8d4+8 » → 40).
  * Mode histoire : les soins (potions, sorts) rendent ce maximum au lieu d'un
  * jet. Gère plusieurs groupes de dés et les modificateurs plats signés.

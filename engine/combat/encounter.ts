@@ -1,5 +1,5 @@
 /** La rencontre : roster, initiative, tours, arrivees et departs, issue du combat, XP de victoire, compagnons. */
-import { Combatant, combatantSide, isHero, displayNameFor } from '../combatants';
+import { Combatant, combatantSide, isHero, displayNameFor, sheetRefOf } from '../combatants';
 import { getCreature } from '../../data/bestiary';
 import { getCreatureAttacks } from '../monsterAttacks';
 import { gearAdvantageFor, foldText } from '../skillSystem';
@@ -515,7 +515,13 @@ export function matchPlayerClassAbility(name: string): string | null {
 }
 export function addEnemyToEncounter(current: EncounterState, args: any): { state: EncounterState; combatant: Combatant } {
     const requested = String(args?.name || '').trim();
-    const creature = getCreature(requested || 'Enemy');
+    // C8 (contre-audit du 2026-09-01) — `statsFrom` : le nom CANONIQUE de la
+    // fiche, quand l'appelant l'a déjà résolue (add_enemy_init via
+    // pickSpecimen, qui connaît « Vétéran » et « Prêtre » là où getCreature
+    // échoue). Le nom affiché reste celui du MJ — voir TR10 ci-dessous ; seules
+    // les STATISTIQUES suivent la fiche. Absent : comportement inchangé.
+    const sheetName = String(args?.statsFrom || '').trim();
+    const creature = (sheetName ? getCreature(sheetName) : null) || getCreature(requested || 'Enemy');
     // TR10 (audit de séance du 2026-08-23) — le nom du MJ était ÉCRASÉ par celui
     // du bestiaire SRD. Séquence observée : add_enemy_init("Garde des Quais A")
     // et ("… B") créaient deux combattants nommés « Guard » ; ensuite
@@ -561,6 +567,10 @@ export function addEnemyToEncounter(current: EncounterState, args: any): { state
         portrait: creature?.imageUrl,
         activeEffects: [],
         dexMod,
+        // C8 — la fiche voyage avec la ligne : les relectures ultérieures
+        // (attaques du tour PNJ, résistances, XP) la lisent au lieu de
+        // ré-échouer sur le nom du MJ. Posée seulement si elle en diffère.
+        ...(creature && creature.name !== name ? { sheetName: creature.name } : {}),
         // XP explicite du MJ pour les ennemis custom (sinon bestiaire, sinon
         // estimation par PV au moment de la victoire).
         xpValue: Number.isFinite(Number(args?.xp)) && Number(args.xp) > 0 ? Number(args.xp) : undefined,
@@ -748,6 +758,8 @@ export function withdrawCombatant(current: EncounterState, reference: string, re
         reason,
         hp: { ...combatant.hp },
         xpValue: combatant.xpValue,
+        // C8 — la fiche suit le fuyard : victoryXP le pèse via enemyXPValue.
+        ...(combatant.sheetName ? { sheetName: combatant.sheetName } : {}),
         round: next.round || 1,
     };
     const verb = reason === 'fled' ? 'flees the battle (alive)' : 'surrenders (alive, out of the fight)';
@@ -892,10 +904,13 @@ export function encounterOutcome(current: EncounterState): 'ongoing' | 'victory'
 }
 /** XP d'un ennemi : valeur explicite du MJ (add_enemy_init) → bestiaire →
  *  codex → estimation par PV max (les ennemis custom valaient un forfait). */
-export function enemyXPValue(e: { name: string; xpValue?: number; hp?: { max?: number } }): number {
+export function enemyXPValue(e: { name: string; sheetName?: string; xpValue?: number; hp?: { max?: number } }): number {
+    // C8 — la fiche portée d'abord : sans elle, le garde-fou de budget pesait
+    // un « Prêtre » 450 XP à l'entrée et la victoire n'en payait que 200.
+    const ref = sheetRefOf(e);
     return (Number(e.xpValue) > 0 ? Number(e.xpValue) : 0)
-        || getCreature(e.name)?.xp
-        || lookupMonster(e.name)?.xp
+        || getCreature(ref)?.xp
+        || lookupMonster(ref)?.xp
         || estimateXPFromHP(e.hp?.max ?? 1);
 }
 /** XP d'une victoire : ennemis du roster (tombés) + sortis vivants (fuite,

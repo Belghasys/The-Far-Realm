@@ -344,16 +344,23 @@ function campaignChronicleContext(runtime?: CampaignRuntimeState): string[] {
     // la fenêtre, et donc de la compression qui efface l'histoire récente. Les
     // actes pliés couvrent déjà le passé lointain : garder les 3 derniers de
     // chaque étage suffit, le reste est atteignable via lookup_campaign.
+    // M3 (contre-audit du 2026-09-01) — les plafonds (400 / 550) étaient SOUS la
+    // longueur que le résumeur demande lui-même (llmService : 100-140 mots ≈
+    // 570-850 car. pour un acte, 80-120 ≈ 460-730 pour un chapitre). trimText
+    // garde la TÊTE : le digest d'acte perdait sa fin à tous les coups (30 à
+    // 53 %), soit précisément le dénouement de l'acte — et rien d'autre ne
+    // relit ces digests. Plafonds alignés sur la consigne ; coût ≈ +1,5 Ko sur
+    // un bloc de 17 Ko.
     const actDigests = (runtime?.actDigests || []).slice(-3);
     if (actDigests.length) {
         lines.push(`Closed ACTS (condensed history — canon, never contradict): ${actDigests
-            .map(a => `[${a.title} | ${a.days}] ${trimText(a.text, 400)}`)
+            .map(a => `[${a.title} | ${a.days}] ${trimText(a.text, 900)}`)
             .join(' ')}`);
     }
     const digests = (runtime?.chapterDigests || []).slice(-3);
     if (digests.length) {
         lines.push(`Closed chapters (established PAST — canon, never contradict): ${digests
-            .map(d => `[${d.title} | ${d.days}] ${trimText(d.text, 550)}`)
+            .map(d => `[${d.title} | ${d.days}] ${trimText(d.text, 800)}`)
             .join(' ')}`);
     }
     if (runtime?.currentChapterSummary) {
@@ -575,7 +582,10 @@ export function buildCampaignDirectorContext(input: DirectorContextInput): strin
             const stepPart = q.steps?.length
                 ? `; steps ${done}/${q.steps.length}${nextStep ? `, next: ${trimText(nextStep.text, 90)}` : ' (all done — consider complete_quest)'}`
                 : '';
-            return `${q.title} (${q.description.slice(0, 90)}${stepPart})`;
+            // M15 (contre-audit du 2026-09-01) — une quête sans description (argument
+            // omis par le modèle, vieille sauvegarde) faisait jeter ce useMemo et
+            // l'ErrorBoundary remplaçait TOUTE la session.
+            return `${q.title} (${String(q.description || '').slice(0, 90)}${stepPart})`;
         });
     // Chronologie : le passé RESTE le passé. Sans cette ligne, le MJ rouvrait
     // des quêtes bouclées des jours (de jeu) plus tôt comme si elles étaient

@@ -24,6 +24,7 @@
  * moteur et n'atteint jamais le modèle.
  */
 import { entitiesMentioned, textsCiting, type EntityRef } from './entities';
+import { PRESERVED_HEAD_FACTS } from './quests';
 
 /** Miroir de compactList (campaignDirector) : ce que le bloc montre. */
 export const CANON_HEAD = 4;
@@ -74,7 +75,20 @@ export function mergeExtractedFacts(prev: string[], extracted: ExtractedFactList
     for (const f of extracted?.canonFacts || []) push(f);
     for (const p of extracted?.promises || []) push(p, 'Promesse');
     for (const t of extracted?.threats || []) push(t, 'Menace');
-    return out.slice(-cap);
+    // M4 (contre-audit du 2026-09-01) — `slice(-cap)` évinçait la TÊTE, c'est-à-
+    // dire les faits SEMÉS par l'auteur (règles du monde, faiblesse du vilain :
+    // « Ysolde n'est pas maléfique »), les seuls que le MJ ne peut pas
+    // redécouvrir — et `retireFacts(seeds)` ne protège que du retrait explicite,
+    // pas du plafond. uniqueAppend (engine/quests) préservait déjà ses 6 têtes ;
+    // même politique ici, sinon les deux chemins se contredisaient.
+    if (cap <= 0) return [];
+    if (out.length <= cap) return out;
+    // Garde du cas limite : avec un cap <= PRESERVED_HEAD_FACTS, `cap - head`
+    // valait 0 ou négatif et `slice(-0)` rendait le tableau ENTIER — plafond
+    // dépassé, doublons. (Aucun appelant ne passe un petit cap aujourd'hui.)
+    const head = out.slice(0, Math.min(PRESERVED_HEAD_FACTS, Math.max(0, cap - 1)));
+    const tail = cap - head.length;
+    return tail > 0 ? [...head, ...out.slice(-tail)] : out.slice(-cap);
 }
 
 /** Les index que compactList ne montre PAS (rien sous head + tail). */

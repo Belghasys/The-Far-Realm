@@ -1,5 +1,6 @@
 /** Le moral : un ennemi qui rate son test fuit — il ne meurt pas (voir combat/encounter withdrawCombatant). */
 import { getCreature } from '../../data/bestiary';
+import { sheetRefOf } from '../combatants';
 import { lookupMonster } from '../codexService';
 import { resolveCombatantReference, withdrawCombatant } from './encounter';
 import { DepartedCombatant, EncounterState, MoraleCheckResult } from './types';
@@ -31,7 +32,10 @@ export function resolveMoraleCheck(current: EncounterState, targetIdOrName: stri
     // bestiaire d'abord (audit 2026-08-25 : la regex de nom ne couvrait que 5
     // morts-vivants sur 25 — une Ombre, une Goule, une Momie pouvaient fuir),
     // regex de nom en filet pour les homebrew hors bestiaire.
-    const monsterData: any = lookupMonster(combatant.name) || getCreature(combatant.name);
+    // C8 — la fiche portée d'abord : un nom français ne résolvait pas, et une
+    // créature sans volonté (mort-vivant, golem) pouvait donc « fuir ».
+    const ref = sheetRefOf(combatant);
+    const monsterData: any = lookupMonster(ref) || getCreature(ref);
     const creatureType = String(monsterData?.type || '').toLowerCase();
     const isMindless = MINDLESS_CREATURE_TYPES.has(creatureType) || MINDLESS_NAME_RE.test(combatant.name);
     const isBoss = maxHp >= 80;

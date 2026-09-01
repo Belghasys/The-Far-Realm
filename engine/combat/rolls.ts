@@ -51,7 +51,9 @@ export function damageAdjustment(target: Combatant, amount: number, damageType?:
     }
     if (target.isPlayer) return { amountApplied: Math.max(0, amount), mitigation: 'normal' };
 
-    const monster = lookupMonster(target.name);
+    // C8 — la fiche portée par la ligne d'abord : un nom re-skinné ou français
+    // ne résolvait pas, et la créature perdait silencieusement ses immunités.
+    const monster = lookupMonster((target as any).sheetName || target.name);
     if (!monster) return { amountApplied: Math.max(0, amount), mitigation: 'normal' };
     if (monster.immunities?.includes(type)) return { amountApplied: 0, mitigation: 'immune' };
     if (monster.vulnerabilities?.includes(type)) return { amountApplied: Math.max(0, amount * 2), mitigation: 'vulnerable' };
@@ -485,16 +487,22 @@ export function playerResistances(character: CharacterSheet): string[] {
     }
     return out;
 }
-/** The Barbarian Rage effect: +2 melee damage, physical resistance, ~1 minute. */
-export function rageEffect(): ActiveEffect {
+/** The Barbarian Rage effect: melee damage bonus, physical resistance, ~1 minute.
+ *  K5 (contre-audit du 2026-09-01) — SRD : +2 (niv. 1-8), +3 (9-15), +4 (16+).
+ *  Le +2 était codé en dur quel que soit le niveau, et un test le verrouillait. */
+export function rageDamageBonus(level = 1): number {
+    return level >= 16 ? 4 : level >= 9 ? 3 : 2;
+}
+export function rageEffect(level = 1): ActiveEffect {
+    const bonus = rageDamageBonus(level);
     return {
         id: makeId('rage'),
         name: 'Rage',
         source: 'class_feature',
         duration: 'rounds',
         roundsRemaining: 10,
-        description: 'Rage : +2 dégâts, résistance aux dégâts contondants/perforants/tranchants.',
-        modifiers: [{ stat: 'damageBonus', bonus: 2 }],
+        description: `Rage : +${bonus} dégâts, résistance aux dégâts contondants/perforants/tranchants.`,
+        modifiers: [{ stat: 'damageBonus', bonus }],
     };
 }
 /** Monk Martial Arts die by level (d4 → d6 L5 → d8 L11 → d10 L17). */
@@ -526,6 +534,11 @@ export function formatDamageParts(resolution: {
 export const CLASS_CASTER_ABILITY: Record<string, Ability> = {
     Mage: 'INT', Wizard: 'INT', Cleric: 'WIS', Druid: 'WIS', Ranger: 'WIS', Monk: 'WIS',
     Bard: 'CHA', Sorcerer: 'CHA', Warlock: 'CHA', Paladin: 'CHA',
+    // N1 (contre-audit du 2026-09-01) — tiers-lanceurs (Chevalier occulte,
+    // Escroc arcanique) : basés sur l'INT dans les données du projet, mais
+    // absents d'ici, la chaîne de repli tombait sur la carac du SORT (CHA pour
+    // Fire Bolt) : +2 au lieu de +7 à INT 18 / CHA 8. Les cantrips passent.
+    Fighter: 'INT', Rogue: 'INT',
 };
 export function rollDamageAmount(formula: string, critical = false): { total: number; raw: number } {
     const rolled = rollDice(formula);

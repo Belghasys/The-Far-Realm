@@ -6,9 +6,31 @@ import { useGameStore } from '../../../../store/gameStore';
 import { foldText } from '../../../../engine/skillSystem';
 import { campaignEventLog } from '../../../../services/persistence/campaignEventLog';
 import { applyConditionToCharacter, applyConditionToEncounter, applyCharacterHP, applyEffectArgs, resolveCombatantReference, updateEnemyHP } from '../../../../engine/rulesEngine';
+import { normalizeEffectStat, COMBATANT_READABLE_STATS } from '../../../../engine/combat/effects';
 import { lookupCondition, lookupSpell } from '../../../../engine/codexService';
+import { clampStatModifier } from '../../../../engine/gameValidator';
 import { stringArg } from '../shared';
 import type { ToolContext } from '../context';
+
+/** T6 (contre-audit du 2026-09-01) — le vocabulaire des `stat` d'add_effect.
+ *  Deux problèmes distincts, corrigés ensemble après la relecture du lot :
+ *   1. « CA=+2 » (français) était stocké tel quel et ne produisait AUCUN effet,
+ *      ni sur la fiche (getEffectiveAC ne lit que 'AC') ni sur une ligne de
+ *      combat — succès rapporté, mensonge silencieux. Les alias règlent ça, et
+ *      ils s'appliquent aux DEUX branches : le premier correctif ne durcissait
+ *      que la branche PNJ, la plus rare, en laissant intacte la branche joueur
+ *      qui est celle par défaut (`target` omis).
+ *   2. Refuser une stat inconnue était une FAUSSE bonne idée : la déclaration
+ *      d'outil et le prompt système demandent explicitement « STR=+2 » et
+ *      « speed=+10 ». On refusait donc ce qu'on avait demandé, et deux refus
+ *      d'affilée coupaient l'outil au disjoncteur. On accepte, et on PRÉVIENT
+ *      quand la stat n'a pas d'effet chiffré sur une ligne de combat. */
+/** La stat canonique si une LIGNE de combat sait la lire, sinon `null` —
+ *  l'appelant prévient alors le MJ au lieu de refuser (voir add_effect). */
+export function normalizeCombatantStat(raw: unknown): 'AC' | 'attackBonus' | 'damageBonus' | null {
+    const stat = normalizeEffectStat(raw);
+    return COMBATANT_READABLE_STATS.has(stat) ? stat as any : null;
+}
 
 export async function update_character_hp(args: any, ctx: ToolContext) {
     const { d, store } = ctx;
@@ -135,6 +157,18 @@ export async function remove_condition(args: any, ctx: ToolContext) {
     const rmTargetsPlayer = !rmTargetName
         || rmTargetName.toLowerCase() === 'player'
         || rmTargetName.toLowerCase() === store.character.name.toLowerCase();
+    // T13 (contre-audit du 2026-09-01) — hors combat, un PNJ n'existe pas comme
+    // combattant : la condition ci-dessous était fausse et l'on retombait dans
+    // le bloc JOUEUR sans revérifier la cible. « Le garde n'est plus
+    // empoisonné » retirait le poison DU HÉROS en répondant target:'player'.
+    // Quatrième porte du même couloir (apply_condition, add_effect et
+    // environmental_damage sont déjà gardés) : refus instructif, en tête.
+    if (!store.combatState.isActive && rmTargetName && !rmTargetsPlayer) {
+        return {
+            success: false,
+            error: `No combat is open — "${rmTargetName}" does not exist as a combatant. remove_condition outside combat can only target the HERO. To clear a condition on that NPC in a fight: start_combat + add_enemy_init first; otherwise narrate the recovery without mechanical effect.`,
+        };
+    }
      if (store.combatState.isActive && rmTargetName && !rmTargetsPlayer) {
         const lookup = resolveCombatantReference(store.combatState, rmTargetName, { autoResolve: true });
         if (!lookup.combatant) return { success: false, error: 'Target not found in combat.' };
@@ -224,6 +258,14 @@ export async function add_effect(args: any, ctx: ToolContext) {
             d.syncCharacterUpdate(char);
         } else {
             const [statRaw, bonusRaw] = String(args?.stat || 'AC=0').split('=');
+            // T6 (contre-audit du 2026-09-01) — cette branche acceptait un bonus
+            // SANS borne (« AC=+100 » : boss intouchable, jet requis 113) et une
+            // stat libre : « CA=+2 » rendait success:true pour un effet nul, le
+            // moteur ne lisant que AC | attackBonus | damageBonus. Alias
+            // normalisés (même vocabulaire que la fiche), bonus clampé ±10 comme
+            // la branche joueur ; une stat sans effet chiffré est POSÉE et
+            // signalée en sortie (voir la `note` plus bas), jamais refusée.
+            const statKey = normalizeEffectStat(statRaw);
             const rounds = Math.max(1, Math.trunc(Number(args.rounds) || 10));
             const effect = {
                 id: `fx-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -231,8 +273,8 @@ export async function add_effect(args: any, ctx: ToolContext) {
                 source: 'spell' as const,
                 duration: 'rounds' as const,
                 roundsRemaining: rounds,
-                description: String(args.description || `${statRaw} ${bonusRaw}`),
-                modifiers: [{ stat: (statRaw || 'AC').trim() as any, bonus: Number.parseInt((bonusRaw || '0').trim(), 10) || 0 }],
+                description: String(args.description || `${statKey} ${bonusRaw}`),
+                modifiers: [{ stat: statKey as any, bonus: clampStatModifier(Number.parseInt((bonusRaw || '0').trim(), 10) || 0) }],
             };
             // Updater FONCTIONNEL — l'ancien spread du snapshot de début
             // de handler écrasait tout changement concurrent (ex-:2921).
@@ -245,6 +287,18 @@ export async function add_effect(args: any, ctx: ToolContext) {
         }
         campaignEventLog.append('EFFECT_ADDED', `Effect added on ${lookup.combatant.name}: ${args.name}`, args);
         store.setTranscript(prev => [...prev, { speaker: 'dm', text: `*[SYSTEM: ${sysText().sysEffectAddedOn(lookup.combatant!.name, args.name, args.stat)}]*` }]);
+        // T6 — la stat est POSÉE quoi qu'il arrive (la déclaration d'outil
+        // encourage « STR=+2 » et « speed=+10 »), mais une ligne de combat ne
+        // sait en lire que trois : on le DIT au lieu de refuser. Refuser ici
+        // coupait l'outil au disjoncteur après deux buffs légitimes.
+        const statPosee = normalizeEffectStat(String(args?.stat || 'AC=0').split('=')[0]);
+        if (!lookup.combatant.isPlayer && !COMBATANT_READABLE_STATS.has(statPosee)) {
+            return {
+                success: true,
+                target: lookup.combatant.name,
+                note: `Effect recorded on ${lookup.combatant.name}, but "${statPosee}" has NO numeric effect on a combatant — the engine only reads AC, attackBonus and damageBonus there. Narrate it as flavour, or restate it with one of those three (e.g. stat "attackBonus=-2") if you want it to bite.`,
+            };
+        }
         return { success: true, target: lookup.combatant.name };
     }
     // OU2 — hors combat, un effet visant une cible non-joueur ne

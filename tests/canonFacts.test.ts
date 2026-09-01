@@ -68,12 +68,27 @@ describe('mergeExtractedFacts — le chemin qui produit le plus de faits', () =>
         expect(out).toEqual(['[J6] [Menace] Un groupe menace.']);
     });
 
-    it('plafonne à 80 en gardant les plus récents', () => {
+    it('plafonne à 80 en gardant les plus récents — ET les 6 faits de tête semés par l\'auteur', () => {
         const prev = Array.from({ length: 80 }, (_, i) => `[J1] Fait ${i}.`);
         const out = mergeExtractedFacts(prev, { canonFacts: ['Nouveau.'], promises: [], threats: [] }, 6);
         expect(out).toHaveLength(80);
         expect(out[out.length - 1]).toBe('[J6] Nouveau.');
-        expect(out[0]).toBe('[J1] Fait 1.');
+        // M4 (contre-audit du 2026-09-01) : slice(-cap) évinçait « Fait 0 » — le
+        // premier fait SEMÉ (règle du monde, faiblesse du vilain), le seul que le
+        // MJ ne peut pas redécouvrir. Même politique que uniqueAppend : tête
+        // préservée, c'est le 7e fait qui sort.
+        expect(out.slice(0, 6)).toEqual(Array.from({ length: 6 }, (_, i) => `[J1] Fait ${i}.`));
+        expect(out).not.toContain('[J1] Fait 6.');
+    });
+
+    it('un cap plus petit que la tête préservée ne duplique rien et ne déborde pas', () => {
+        // Auto-audit : `slice(-(cap - 6))` valait `slice(-0)` = tout le tableau.
+        const prev = Array.from({ length: 10 }, (_, i) => `[J1] Fait ${i}.`);
+        for (const cap of [1, 3, 6, 7]) {
+            const out = mergeExtractedFacts(prev, { canonFacts: ['Neuf.'], promises: [], threats: [] }, 6, cap);
+            expect(out.length, `cap ${cap}`).toBeLessThanOrEqual(cap);
+            expect(new Set(out).size, `cap ${cap} : doublons`).toBe(out.length);
+        }
     });
 });
 
