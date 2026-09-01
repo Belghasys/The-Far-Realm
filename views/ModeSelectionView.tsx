@@ -14,6 +14,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { AccountPanel } from '../components/hall/AccountPanel';
+import { BetaScribble } from './BetaScribble';
 import { useGameStore } from '../store/gameStore';
 import { saveService } from '../services/persistence/saveService';
 import { memoryManager } from '../services/persistence/memoryManager';
@@ -287,7 +288,7 @@ export function ModeSelectionView() {
                         </div>
 
                         <h1 style={{ fontFamily: DISP, margin: 0, fontSize: 'clamp(34px, 6vw, 62px)', lineHeight: 1.04 }}>
-                            THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span>
+                            THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span><BetaScribble color={T.acid} />
                         </h1>
 
                         <p style={{ margin: 0, fontSize: 'clamp(15px, 2vw, 18px)', fontStyle: 'italic', color: T.acid }}>{t.tagline}</p>

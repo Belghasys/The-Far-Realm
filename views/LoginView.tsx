@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../services/persistence/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, signInAnonymously } from 'firebase/auth';
 import { MenuMusicToggle } from '../components/shared/MenuMusicToggle';
+import { BetaScribble } from './BetaScribble';
 import { useGameStore } from '../store/gameStore';
 import { T, DISP, BODY, onTint } from '../theme/tokens';
 import { NeonButton, NeonInput } from '../components/neon/NeonButton';
@@ -122,7 +123,7 @@ export function LoginView() {
                         fontFamily: DISP, margin: 0, fontSize: 'clamp(34px, 5.5vw, 60px)',
                         lineHeight: 1.05, textWrap: 'pretty',
                     }}>
-                        THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span>
+                        THE LAST<br /><span style={{ color: T.magenta, textShadow: `4px 4px 0 ${T.cyan}` }}>BASEMENT</span><BetaScribble color={T.acid} />
                     </h1>
                     <p style={{ margin: 0, fontSize: 'clamp(16px, 2vw, 19px)', fontStyle: 'italic', color: T.acid }}>{tr.tagline}</p>
                     <p style={{ margin: 0, maxWidth: 480, fontSize: 16, lineHeight: 1.55, color: 'rgba(237,230,216,.78)' }}>{tr.pitch}</p>
