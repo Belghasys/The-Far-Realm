@@ -3,6 +3,7 @@ import { Ability, ATTUNEMENT_LIMIT, CharacterSheet, InventoryItem, ItemSlot, get
 import { Backpack, Coins, Gem, HeartPulse, Package, Scale, Shield, Sparkles, Star, Sword, User, Zap } from 'lucide-react';
 import { getSubclassConfig, subclassNeedsChoice, getSubclassFeaturesForLevel } from '../../data/subclasses';
 import { featureName, featureDesc, subclassName, dispClass, dispRace, dispBackground, dispSubclass, pick } from '../../data/labels';
+import { explainEffect } from '../../engine/combat/effectText';
 import { effectiveMountMaxHP } from '../../engine/rulesEngine';
 import { structureInventoryItem } from '../../engine/codexService';
 import { ensureProgressionState, featNumericBonus } from '../../engine/rulesEngine';
@@ -943,21 +944,42 @@ export function CharacterSheetPanel({ character, onClose, onUpdateCharacter }: P
                                 {tr.activeEffects}
                             </h3>
                             <div className="space-y-2">
-                                {character.activeEffects.map((effect, index) => (
-                                    <div key={effect.id || index} className="rounded-md border border-emerald-500/40 bg-stone-50 p-3">
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <span className="font-bold text-emerald-200">{effect.name}</span>
-                                            <span className="rounded bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase text-black">{formatEffectDuration(effect.duration, tr)}</span>
+                                {character.activeEffects.map((effect, index) => {
+                                    // La liste brute des modificateurs mentait : Benediction
+                                    // s'affichait « attackBonus+0 » parce que son vrai effet
+                                    // est un DE, et le champ `dice` n'etait rendu nulle part.
+                                    // explainEffect rend le chiffre juste ET, au survol, tout
+                                    // ce qui n'a pas de chiffre — avantage, riders de degats,
+                                    // concentration, et la regle SRD complete d'un etat.
+                                    const vu = explainEffect(effect, language === 'fr' ? 'fr' : 'en');
+                                    const restant = typeof effect.roundsRemaining === 'number'
+                                        ? ` · ${effect.roundsRemaining} ${tr.turnsShort}`
+                                        : '';
+                                    return (
+                                        <div
+                                            key={effect.id || index}
+                                            title={vu.details.join('\n')}
+                                            className="rounded-md border border-emerald-500/40 bg-stone-50 p-3"
+                                        >
+                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                <span className="font-bold text-emerald-200">{effect.name}</span>
+                                                <span className="rounded bg-emerald-400 px-2 py-0.5 text-[10px] font-bold uppercase text-black">
+                                                    {formatEffectDuration(effect.duration, tr)}{restant}
+                                                </span>
+                                            </div>
+                                            {vu.summary && (
+                                                <div className="mt-1 text-xs font-semibold text-emerald-200/90">{vu.summary}</div>
+                                            )}
+                                            {vu.extras.length > 0 && (
+                                                <ul className="mt-1 space-y-0.5 text-[11px] leading-snug text-emerald-200/60">
+                                                    {vu.extras.slice(0, 3).map((ligne, i) => (
+                                                        <li key={i}>· {ligne}</li>
+                                                    ))}
+                                                </ul>
+                                            )}
                                         </div>
-                                        <div className="mt-1 text-xs text-emerald-200/70">
-                                            {effect.modifiers.map(modifier =>
-                                                modifier.setTo !== undefined
-                                                    ? `${modifier.stat}=${modifier.setTo}`
-                                                    : `${modifier.stat}${modifier.bonus >= 0 ? '+' : ''}${modifier.bonus}`
-                                            ).join(', ') || effect.description}
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

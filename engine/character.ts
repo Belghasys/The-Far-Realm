@@ -214,6 +214,24 @@ export function getBaseACFromArmor(character: CharacterSheet): number {
       baseAC += 1;
     }
   } else {
+    // DÉFENSE SANS ARMURE (audit des traits de classe, 2026-08-31). Trait de
+    // NIVEAU 1 du Barbare (10 + DEX + CON) et du Moine (10 + DEX + SAG) : il
+    // n'existait nulle part, alors que c'est toute leur identité défensive et
+    // la raison pour laquelle ces deux classes se battent sans armure. Mesuré :
+    // trois points de CA en moins, en permanence, à chaque attaque subie.
+    //
+    // Pas de `Math.max` avec 10 + DEX : le trait REMPLACE le calcul de base, il
+    // ne l'améliore pas. Un barbare à CON 8 descend à 9 — c'est un pari sur la
+    // Constitution, pas un bonus gratuit.
+    //
+    // Le Barbare garde le droit au bouclier (il s'ajoute plus bas), le Moine
+    // non : sa condition RAW est « ni armure NI bouclier ».
+    const equippedShieldForMonk = Boolean(equippedShield);
+    if (character.class === 'Barbarian') {
+      baseAC = 10 + dexMod + abilityModifier(getEffectiveStat(character, 'CON'));
+    } else if (character.class === 'Monk' && !equippedShieldForMonk) {
+      baseAC = 10 + dexMod + abilityModifier(getEffectiveStat(character, 'WIS'));
+    }
     // Draconic Bloodline (Sorcerer): Draconic Resilience — unarmored AC is 13 + DEX.
     if (character.subclass === 'Draconic Bloodline') {
       baseAC = Math.max(baseAC, 13 + dexMod);
